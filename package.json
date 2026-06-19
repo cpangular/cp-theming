@@ -3,9 +3,9 @@
   "private": true,
   "packageManager": "pnpm@11.5.0",
   "scripts": {
-    "build":   "wireit",
+    "build": "wireit",
     "build.core": "wireit",
-    "fix":     "wireit",
+    "fix": "wireit",
     "prepare": "wireit",
     "git.remove-tags": "git tag | xargs -r git tag -d",
     "clean": "wireit",
@@ -23,23 +23,34 @@
   },
   "wireit": {
     "prepare": {
-      "dependencies": ["prepare.husky"]
+      "dependencies": [
+        "prepare.husky"
+      ]
     },
     "prepare.husky": {
-      "command": "git config core.hooksPath $(git rev-parse --show-prefix).husky/_",
-      "files": [".husky/**"],
+      "command": "husky",
+      "files": [
+        ".husky/**"
+      ],
       "output": []
     },
     "fix": {
-      "dependencies": ["fix.format"]
+      "dependencies": [
+        "fix.format"
+      ]
     },
     "fix.format": {
       "command": "prettier --write .",
-      "files": ["**/*.{ts,js,json,jsonc,scss}"],
+      "files": [
+        "**/*.{ts,js,json,jsonc,scss}"
+      ],
       "output": []
     },
     "clean": {
-      "dependencies": ["clean.files", "clean.install"]
+      "dependencies": [
+        "clean.files",
+        "clean.install"
+      ]
     },
     "clean.files": {
       "command": "git clean -dfX",
@@ -47,11 +58,15 @@
     },
     "clean.install": {
       "command": "pnpm i",
-      "dependencies": ["clean.files"],
+      "dependencies": [
+        "clean.files"
+      ],
       "cache": false
     },
     "reset": {
-      "dependencies": ["reset.install"]
+      "dependencies": [
+        "reset.install"
+      ]
     },
     "reset.hard": {
       "command": "git reset --hard",
@@ -59,12 +74,16 @@
     },
     "reset.files": {
       "command": "git clean -dfx",
-      "dependencies": ["reset.hard"],
+      "dependencies": [
+        "reset.hard"
+      ],
       "cache": false
     },
     "reset.install": {
       "command": "pnpm i",
-      "dependencies": ["reset.files"],
+      "dependencies": [
+        "reset.files"
+      ],
       "cache": false
     },
     "build": {
