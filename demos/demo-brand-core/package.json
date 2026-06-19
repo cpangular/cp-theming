@@ -1,0 +1,13 @@
+{
+  "name": "demo-brand-core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Example: how a company creates their own theme pack using cp-theming-core.",
+  "type": "module",
+  "dependencies": {
+    "@cpangular/cp-theming-core": "workspace:*"
+  },
+  "devDependencies": {
+    "sass": "^1.101.0"
+  }
+}

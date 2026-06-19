@@ -1,0 +1,49 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Shape — M3 corner radius scale.
+// Static — not light/dark varying, not density-affected.
+// ─────────────────────────────────────────────────────────────────────────────
+@use 'sass:map';
+
+$_defaults: (
+  xxs:  2px,
+  xs:   4px,
+  sm:   8px,
+  md:   12px,
+  lg:   16px,
+  xl:   28px,
+  xxl:  48px,
+  full: 9999px,
+);
+
+@function config(
+  $xxs:  null,
+  $xs:   null,
+  $sm:   null,
+  $md:   null,
+  $lg:   null,
+  $xl:   null,
+  $xxl:  null,
+  $full: null,
+) {
+  $overrides: ();
+  @if $xxs  != null { $overrides: map.set($overrides, xxs,  $xxs); }
+  @if $xs   != null { $overrides: map.set($overrides, xs,   $xs); }
+  @if $sm   != null { $overrides: map.set($overrides, sm,   $sm); }
+  @if $md   != null { $overrides: map.set($overrides, md,   $md); }
+  @if $lg   != null { $overrides: map.set($overrides, lg,   $lg); }
+  @if $xl   != null { $overrides: map.set($overrides, xl,   $xl); }
+  @if $xxl  != null { $overrides: map.set($overrides, xxl,  $xxl); }
+  @if $full != null { $overrides: map.set($overrides, full, $full); }
+  @return map.merge($_defaults, $overrides);
+}
+
+@mixin emit($config) {
+  --shape--xxs:  #{map.get($config, xxs)};
+  --shape--xs:   #{map.get($config, xs)};
+  --shape--sm:   #{map.get($config, sm)};
+  --shape--md:   #{map.get($config, md)};
+  --shape--lg:   #{map.get($config, lg)};
+  --shape--xl:   #{map.get($config, xl)};
+  --shape--xxl:  #{map.get($config, xxl)};
+  --shape--full: #{map.get($config, full)};
+}

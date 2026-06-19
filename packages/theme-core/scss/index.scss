@@ -1,0 +1,7 @@
+// Entry point for the cp-theming-core SCSS authoring API.
+// Import this in your theme file:
+//   @use '@cpangular/cp-theming-core/scss/theme' as t;
+//
+// This file intentionally has no content — all authoring is done
+// through the 'theme' module alias.
+@forward 'theme';

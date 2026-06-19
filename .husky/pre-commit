@@ -1,0 +1,1 @@
+cd repos/theme-concept/cp-theming && pnpm exec lint-staged

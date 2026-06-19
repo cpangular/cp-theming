@@ -1,0 +1,100 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Application mixins — how to consume a palette on an element
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Resolve the full var name for a role + optional modifier
+@function _pal-var($palette, $role, $modifier: null) {
+  @if $modifier {
+    @return var(--pal-#{$palette}--#{$role}--#{$modifier});
+  }
+  @return var(--pal-#{$palette}--#{$role});
+}
+
+@function _pal-contrast-var($palette, $role, $modifier: null) {
+  @if $modifier {
+    @return var(--pal-#{$palette}--#{$role}--#{$modifier}--contrast);
+  }
+  @return var(--pal-#{$palette}--#{$role}--contrast);
+}
+
+// ─── Plain: sets only text colour to the role value ───────────────────────────
+// Useful for icons, labels, non-container text.
+@mixin palette-color($palette, $role: color, $modifier: null) {
+  color: _pal-var($palette, $role, $modifier);
+}
+
+// ─── Inverted: text colour = contrast of the role (black or white) ────────────
+@mixin palette-color-inverted($palette, $role: color, $modifier: null) {
+  color: _pal-contrast-var($palette, $role, $modifier);
+}
+
+// ─── Container: background + blended + primary-tinted text colour ───────────
+// Sets background-color to the role value.
+// Text pipeline:
+//   1. Soften: blend contrast (b/w) into bg  → removes harshness
+//   2. Tint:   blend primary colour in       → cohesion with theme
+// --theme--text-primary-tint: 0% = pure softened b/w, higher = more primary tint
+// Exposes --container--text-emphasis and --container--text-deemphasis.
+@mixin palette-container($palette, $role: bg, $modifier: null) {
+  $bg: _pal-var($palette, $role, $modifier);
+  $contrast: _pal-contrast-var($palette, $role, $modifier);
+
+  background-color: #{$bg};
+
+  // Step 1 intermediates (set as vars so emphasis/deemphasis can reuse the pattern)
+  --container--_text-soft:            color-mix(in oklch, #{$contrast} var(--theme--text-blend, 82%),         #{$bg});
+  --container--_text-soft-emphasis:   color-mix(in oklch, #{$contrast} var(--theme--text-emphasis-blend, 96%), #{$bg});
+  --container--_text-soft-deemphasis: color-mix(in oklch, #{$contrast} var(--theme--text-deemphasis-blend, 55%), #{$bg});
+
+  // Step 2: tint with primary — defaults to 0% (no change) if var not set
+  color:                        color-mix(in oklch, var(--pal-primary--color) var(--theme--text-primary-tint, 0%), var(--container--_text-soft));
+  --container--text-emphasis:   color-mix(in oklch, var(--pal-primary--color) var(--theme--text-primary-tint, 0%), var(--container--_text-soft-emphasis));
+  --container--text-deemphasis: color-mix(in oklch, var(--pal-primary--color) var(--theme--text-primary-tint, 0%), var(--container--_text-soft-deemphasis));
+}
+
+// ─── Outlined: sets border-color to the stroke role ──────────────────────────
+@mixin palette-outlined($palette, $role: stroke, $modifier: null) {
+  border-color: _pal-var($palette, $role, $modifier);
+  border-style: solid;
+}
+
+// ─── Tonal container: base palette bg tinted with another palette's colour ───
+// Combines two palettes — base provides the bg, tint provides the colour overlay.
+// Level 1–5 uses --theme--tint-N opacity vars.
+// Text contrast is recomputed against the actual blended bg so it
+// correctly flips black/white at high tint levels.
+// Examples:
+//   @include palette-tonal(surface, primary, 2)   → surface bg tinted with primary
+//   @include palette-tonal(surface, danger,  3)   → surface bg tinted with danger
+@mixin palette-tonal($base-palette, $tint-palette, $level: 1, $role: bg, $modifier: null) {
+  @include palette-container($base-palette, $role, $modifier);
+
+  $base-bg: _pal-var($base-palette, $role, $modifier);
+
+  // Store the blended bg as a var so it can be used in downstream calculations
+  --container--_tonal-bg: color-mix(
+    in oklch,
+    var(--pal-#{$tint-palette}--color) var(--theme--tint-#{$level}),
+    #{$base-bg}
+  );
+
+  background-color: var(--container--_tonal-bg);
+
+  // Recompute contrast against the actual tonal bg (can flip vs. base bg at high tint levels)
+  --container--_tonal-contrast: oklch(from var(--container--_tonal-bg) clamp(0, (0.5 - l) * 99999, 1) 0 0);
+
+  // Recompute full text pipeline against tonal bg + tonal contrast
+  --container--_text-soft:            color-mix(in oklch, var(--container--_tonal-contrast) var(--theme--text-blend, 82%),            var(--container--_tonal-bg));
+  --container--_text-soft-emphasis:   color-mix(in oklch, var(--container--_tonal-contrast) var(--theme--text-emphasis-blend, 96%),   var(--container--_tonal-bg));
+  --container--_text-soft-deemphasis: color-mix(in oklch, var(--container--_tonal-contrast) var(--theme--text-deemphasis-blend, 55%), var(--container--_tonal-bg));
+
+  color:                        color-mix(in oklch, var(--pal-primary--color) var(--theme--text-primary-tint, 0%), var(--container--_text-soft));
+  --container--text-emphasis:   color-mix(in oklch, var(--pal-primary--color) var(--theme--text-primary-tint, 0%), var(--container--_text-soft-emphasis));
+  --container--text-deemphasis: color-mix(in oklch, var(--pal-primary--color) var(--theme--text-primary-tint, 0%), var(--container--_text-soft-deemphasis));
+}
+
+// ─── Elevated container: tonal shorthand with primary as the tint palette ────
+// Kept for convenience. Equivalent to palette-tonal($palette, primary, $level).
+@mixin palette-elevated($palette, $level: 1, $role: bg, $modifier: null) {
+  @include palette-tonal($palette, primary, $level, $role, $modifier);
+}

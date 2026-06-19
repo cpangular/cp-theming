@@ -1,0 +1,45 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Weights — percentage-based blend and interaction weights.
+// Light/dark varying. Used via t.light-dark(t.weights(...), t.weights(...)).
+// ─────────────────────────────────────────────────────────────────────────────
+@use 'sass:map';
+
+$_defaults: (
+  text-blend:            82%,
+  text-emphasis-blend:   96%,
+  text-deemphasis-blend: 55%,
+  text-primary-tint:     0%,
+  state-hover:           8%,
+  state-press:           12%,
+  state-focus:           12%,
+  state-drag:            16%,
+  tints:                 (10%, 20%, 38%, 60%, 80%),
+);
+
+@function defaults() {
+  @return $_defaults;
+}
+
+@function config(
+  $text-blend:            null,
+  $text-emphasis-blend:   null,
+  $text-deemphasis-blend: null,
+  $text-primary-tint:     null,
+  $state-hover:           null,
+  $state-press:           null,
+  $state-focus:           null,
+  $state-drag:            null,
+  $tints:                 null,
+) {
+  $result: ();
+  @if $text-blend            != null { $result: map.set($result, text-blend,            $text-blend); }
+  @if $text-emphasis-blend   != null { $result: map.set($result, text-emphasis-blend,   $text-emphasis-blend); }
+  @if $text-deemphasis-blend != null { $result: map.set($result, text-deemphasis-blend, $text-deemphasis-blend); }
+  @if $text-primary-tint     != null { $result: map.set($result, text-primary-tint,     $text-primary-tint); }
+  @if $state-hover           != null { $result: map.set($result, state-hover,           $state-hover); }
+  @if $state-press           != null { $result: map.set($result, state-press,           $state-press); }
+  @if $state-focus           != null { $result: map.set($result, state-focus,           $state-focus); }
+  @if $state-drag            != null { $result: map.set($result, state-drag,            $state-drag); }
+  @if $tints                 != null { $result: map.set($result, tints,                 $tints); }
+  @return $result;
+}

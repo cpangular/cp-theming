@@ -1,0 +1,111 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Palette — internal module. Use via @use 'theme' as t; t.palette(...).
+// ─────────────────────────────────────────────────────────────────────────────
+@use 'sass:map';
+@use 'variables' as vars;
+
+// config() — builds a single-variation palette config map.
+// Re-exported as t.palette() by _theme.scss.
+// $focus — explicit focus ring color for this palette variation.
+// Overrides the auto-derived focus color. Use inside t.light-dark() so you
+// can provide different values per mode:
+//   t.light-dark(
+//     t.palette(oklch(0.55 0.18 240)),
+//     t.palette(oklch(0.65 0.16 240), $focus: oklch(0.85 0.18 60)),
+//   )
+// If null, focus is auto-derived at CSS runtime from the color role.
+@function config($base, $color: null, $bg: null, $stroke: null, $focus: null) {
+  @return (
+    base:   $base,
+    color:  $color,
+    bg:     $bg,
+    stroke: $stroke,
+    focus:  $focus,
+  );
+}
+
+// Internal: resolve a role from a config, falling back to base
+@function _resolve-role($config, $role) {
+  $val: map.get($config, $role);
+  $resolved: map.get($config, base);
+  @if $val != null { $resolved: $val; }
+  @return $resolved;
+}
+
+// Internal: output all modifier vars + their contrasts for one role
+@mixin _role-derivatives($palette, $role) {
+  $p: --pal-#{$palette}--#{$role};
+
+  // contrast (black or white — whichever has highest contrast against the role value)
+  #{$p}--contrast: oklch(from var(#{$p}) clamp(0, (0.5 - l) * 99999, 1) 0 0);
+
+  // absolute lightness steps
+  #{$p}--dark:    oklch(from var(#{$p}) clamp(0, calc(l - #{vars.$theme-step-1}), 1) c h);
+  #{$p}--darker:  oklch(from var(#{$p}) clamp(0, calc(l - #{vars.$theme-step-2}), 1) c h);
+  #{$p}--light:   oklch(from var(#{$p}) clamp(0, calc(l + #{vars.$theme-step-1}), 1) c h);
+  #{$p}--lighter: oklch(from var(#{$p}) clamp(0, calc(l + #{vars.$theme-step-2}), 1) c h);
+
+  // modifier contrasts
+  #{$p}--dark--contrast:    oklch(from var(#{$p}--dark)    clamp(0, (0.5 - l) * 99999, 1) 0 0);
+  #{$p}--darker--contrast:  oklch(from var(#{$p}--darker)  clamp(0, (0.5 - l) * 99999, 1) 0 0);
+  #{$p}--light--contrast:   oklch(from var(#{$p}--light)   clamp(0, (0.5 - l) * 99999, 1) 0 0);
+  #{$p}--lighter--contrast: oklch(from var(#{$p}--lighter) clamp(0, (0.5 - l) * 99999, 1) 0 0);
+
+  // mode-relative aliases — light-dark() flips direction automatically with color-scheme
+  // light mode: high → darker,  low → lighter
+  // dark  mode: high → lighter, low → darker
+  #{$p}--high:    light-dark(var(#{$p}--dark),             var(#{$p}--light));
+  #{$p}--higher:  light-dark(var(#{$p}--darker),           var(#{$p}--lighter));
+  #{$p}--low:     light-dark(var(#{$p}--light),            var(#{$p}--dark));
+  #{$p}--lower:   light-dark(var(#{$p}--lighter),          var(#{$p}--darker));
+
+  #{$p}--high--contrast:   light-dark(var(#{$p}--dark--contrast),    var(#{$p}--light--contrast));
+  #{$p}--higher--contrast: light-dark(var(#{$p}--darker--contrast),  var(#{$p}--lighter--contrast));
+  #{$p}--low--contrast:    light-dark(var(#{$p}--light--contrast),   var(#{$p}--dark--contrast));
+  #{$p}--lower--contrast:  light-dark(var(#{$p}--lighter--contrast), var(#{$p}--darker--contrast));
+}
+
+// Internal: emit light-dark() only when values differ; plain value when identical
+@function _ld($l, $d) {
+  @if $l == $d { @return $l; }
+  @return light-dark(#{$l}, #{$d});
+}
+
+// Public: define a palette from light + dark config maps
+// Outputs all vars once using light-dark() — color-scheme controls which resolves.
+// Identical light/dark values are emitted as a single value (no light-dark wrapper).
+@mixin define-palette($name, $light, $dark) {
+  $l-base: map.get($light, base);
+  $d-base: map.get($dark,  base);
+
+  --pal-#{$name}--base:   #{_ld($l-base, $d-base)};
+  --pal-#{$name}--color:  #{_ld(_resolve-role($light, color),  _resolve-role($dark,  color))};
+  --pal-#{$name}--bg:     #{_ld(_resolve-role($light, bg),     _resolve-role($dark,  bg))};
+  --pal-#{$name}--stroke: #{_ld(_resolve-role($light, stroke), _resolve-role($dark,  stroke))};
+
+  @include _role-derivatives($name, color);
+  @include _role-derivatives($name, bg);
+  @include _role-derivatives($name, stroke);
+
+  // Palette tints — transparent versions of the color role
+  --pal-#{$name}--tint-1: oklch(from var(--pal-#{$name}--color) l c h / var(--theme--tint-1, 10%));
+  --pal-#{$name}--tint-2: oklch(from var(--pal-#{$name}--color) l c h / var(--theme--tint-2, 20%));
+  --pal-#{$name}--tint-3: oklch(from var(--pal-#{$name}--color) l c h / var(--theme--tint-3, 38%));
+  --pal-#{$name}--tint-4: oklch(from var(--pal-#{$name}--color) l c h / var(--theme--tint-4, 60%));
+  --pal-#{$name}--tint-5: oklch(from var(--pal-#{$name}--color) l c h / var(--theme--tint-5, 80%));
+
+  // Focus ring color — per-palette, adapts to mode via the resolved color var.
+  // Auto-derive: invert lightness + 60° hue shift → always visually distinct.
+  // Override by passing $focus to t.palette() inside t.light-dark().
+  $l-focus: map.get($light, focus);
+  $d-focus: map.get($dark,  focus);
+  @if $l-focus != null or $d-focus != null {
+    $lf: $l-focus;
+    $df: $d-focus;
+    @if $lf == null { $lf: $df; }
+    @if $df == null { $df: $lf; }
+    --pal-#{$name}--focus: #{_ld($lf, $df)};
+  } @else {
+    --pal-#{$name}--focus: oklch(from var(--pal-#{$name}--color) clamp(0.1, calc(1 - l), 0.9) c calc(h + 60));
+  }
+}

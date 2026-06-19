@@ -1,0 +1,86 @@
+{
+  "name": "cp-theming-workspace",
+  "private": true,
+  "packageManager": "pnpm@11.5.0",
+  "scripts": {
+    "build":   "wireit",
+    "build.core": "wireit",
+    "fix":     "wireit",
+    "prepare": "wireit",
+    "git.remove-tags": "git tag | xargs -r git tag -d",
+    "clean": "wireit",
+    "reset": "wireit",
+    "ws.run": "pnpm run ws.run.ordered",
+    "ws.run.parallel": "pnpm -r --parallel --if-present run",
+    "ws.run.ordered": "pnpm -r --workspace-concurrency=1 --if-present run",
+    "ws.exec": "pnpm run ws.exec.ordered",
+    "ws.exec.parallel": "pnpm -r --parallel exec",
+    "ws.exec.ordered": "pnpm -r --workspace-concurrency=1 exec"
+  },
+  "lint-staged": {
+    "**/*.{ts,js,json,jsonc}": "prettier --write",
+    "**/*.scss": "prettier --write"
+  },
+  "wireit": {
+    "prepare": {
+      "dependencies": ["prepare.husky"]
+    },
+    "prepare.husky": {
+      "command": "git config core.hooksPath $(git rev-parse --show-prefix).husky/_",
+      "files": [".husky/**"],
+      "output": []
+    },
+    "fix": {
+      "dependencies": ["fix.format"]
+    },
+    "fix.format": {
+      "command": "prettier --write .",
+      "files": ["**/*.{ts,js,json,jsonc,scss}"],
+      "output": []
+    },
+    "clean": {
+      "dependencies": ["clean.files", "clean.install"]
+    },
+    "clean.files": {
+      "command": "git clean -dfX",
+      "cache": false
+    },
+    "clean.install": {
+      "command": "pnpm i",
+      "dependencies": ["clean.files"],
+      "cache": false
+    },
+    "reset": {
+      "dependencies": ["reset.install"]
+    },
+    "reset.hard": {
+      "command": "git reset --hard",
+      "cache": false
+    },
+    "reset.files": {
+      "command": "git clean -dfx",
+      "dependencies": ["reset.hard"],
+      "cache": false
+    },
+    "reset.install": {
+      "command": "pnpm i",
+      "dependencies": ["reset.files"],
+      "cache": false
+    },
+    "build": {
+      "dependencies": [
+        "build.core"
+      ]
+    },
+    "build.core": {
+      "command": "pnpm --filter @cpangular/cp-theming-core build"
+    }
+  },
+  "devDependencies": {
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.8.0",
+    "wireit": "^0.14.12"
+  }
+}

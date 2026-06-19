@@ -1,0 +1,27 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Density — M3 density scale with dynamic per-scope CSS vars.
+// Static — not light/dark varying. No t.light-dark() needed.
+// ─────────────────────────────────────────────────────────────────────────────
+// --density-scale: 0 (default) to -5 (most compact). Override on any ancestor
+// to shift all --space--* values inside that scope. Components recalculate
+// automatically via calc().
+// ─────────────────────────────────────────────────────────────────────────────
+@use 'sass:map';
+
+@function config($scale: 0) {
+  @return (scale: $scale);
+}
+
+@mixin emit($config) {
+  $scale: map.get($config, scale);
+
+  --density-scale: #{$scale};
+
+  --space--xxs: calc(2px  + var(--density-scale, 0) * 1px);
+  --space--xs:  calc(4px  + var(--density-scale, 0) * 1px);
+  --space--sm:  calc(8px  + var(--density-scale, 0) * 2px);
+  --space--md:  calc(16px + var(--density-scale, 0) * 4px);
+  --space--lg:  calc(24px + var(--density-scale, 0) * 4px);
+  --space--xl:  calc(32px + var(--density-scale, 0) * 4px);
+  --space--xxl: calc(48px + var(--density-scale, 0) * 4px);
+}

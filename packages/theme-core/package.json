@@ -1,0 +1,36 @@
+{
+  "name": "@cpangular/cp-theming-core",
+  "version": "0.1.0-dev.0",
+  "description": "CSS variable-based theming system. Framework-agnostic core.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./scss/*": "./scss/*"
+  },
+  "scripts": {
+    "build":     "wireit",
+    "build.css": "wireit",
+    "build.ts":  "wireit"
+  },
+  "wireit": {
+    "build": {
+      "dependencies": ["build.css", "build.ts"]
+    },
+    "build.css": {
+      "command": "sass --style=expanded scss/theme-vars.scss:dist/theme-vars.css",
+      "files": ["scss/**/*.scss"],
+      "output": ["dist/**/*.css", "dist/**/*.css.map"]
+    },
+    "build.ts": {
+      "command": "tsc --build --pretty",
+      "clean": "if-file-deleted",
+      "files": ["src/**/*.ts", "tsconfig.json"],
+      "output": ["dist/**/*.js", "dist/**/*.d.ts", "dist/**/*.js.map", "dist/**/*.d.ts.map", ".tsbuildinfo"]
+    }
+  },
+  "devDependencies": {
+    "sass": "^1.101.0",
+    "typescript": "^5.8.0",
+    "wireit": "^0.14.12"
+  }
+}

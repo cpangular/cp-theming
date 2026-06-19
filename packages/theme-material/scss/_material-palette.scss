@@ -1,0 +1,16 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// material-palette() — Maps a cp-theming palette to Angular Material M3
+// tonal palette roles.
+// TODO(phase-6): implement.
+//
+// Angular Material M3 uses a tonal palette system with roles:
+//   primary, on-primary, primary-container, on-primary-container,
+//   secondary, on-secondary, ... error, surface, background, etc.
+//
+// Our system has: color, bg, stroke + their derivatives.
+// This mixin bridges the two.
+// ─────────────────────────────────────────────────────────────────────────────
+
+@mixin material-palette($name) {
+  // TODO(phase-6): implement
+}

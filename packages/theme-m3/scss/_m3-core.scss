@@ -1,0 +1,15 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// m3-core() — Plain M3 CSS token adapter (no Angular Material dependency).
+// TODO(phase-7+): implement.
+//
+// Maps our --pal-* and --theme--* vars to the plain M3 CSS token spec:
+//   MD3 reference tokens:  --md-ref-palette-*
+//   MD3 system tokens:     --md-sys-color-*, --md-sys-typescale-*, etc.
+//   MD3 component tokens:  --md-comp-*
+//
+// Useful for projects using M3 design tokens without Angular Material.
+// ─────────────────────────────────────────────────────────────────────────────
+
+@mixin m3-core() {
+  // TODO(phase-7+): implement --md-sys-* overrides
+}

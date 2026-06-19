@@ -1,0 +1,24 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Overlay — color-based overlay values (scrim, shadow).
+// Light/dark varying. Used via t.light-dark(t.overlays(...), t.overlays(...)).
+// ─────────────────────────────────────────────────────────────────────────────
+@use 'sass:map';
+
+$_defaults: (
+  scrim:  oklch(0 0 0 / 50%),
+  shadow: oklch(0 0 0 / 20%),
+);
+
+@function defaults() {
+  @return $_defaults;
+}
+
+@function config(
+  $scrim:  null,
+  $shadow: null,
+) {
+  $result: ();
+  @if $scrim  != null { $result: map.set($result, scrim,  $scrim); }
+  @if $shadow != null { $result: map.set($result, shadow, $shadow); }
+  @return $result;
+}

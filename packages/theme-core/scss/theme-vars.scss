@@ -1,0 +1,4 @@
+// Core vars entry point — outputs all CSS custom property definitions
+// (no theme applied, just the invariant system vars).
+// TODO(phase-2): move preset theme outputs to separate scss/presets/*.scss entry points.
+@use 'theme';

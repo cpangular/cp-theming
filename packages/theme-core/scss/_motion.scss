@@ -1,0 +1,49 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Motion — animation durations and easing curves (M3 defaults).
+// Static — not light/dark varying.
+// ─────────────────────────────────────────────────────────────────────────────
+@use 'sass:map';
+
+$_defaults: (
+  duration-short:    100ms,
+  duration-medium:   200ms,
+  duration-long:     300ms,
+  duration-extra:    500ms,
+  easing-standard:   cubic-bezier(0.2, 0, 0, 1),
+  easing-emphasized: cubic-bezier(0.2, 0, 0, 1),
+  easing-decelerate: cubic-bezier(0, 0, 0, 1),
+  easing-accelerate: cubic-bezier(0.3, 0, 1, 1),
+);
+
+@function config(
+  $duration-short:    null,
+  $duration-medium:   null,
+  $duration-long:     null,
+  $duration-extra:    null,
+  $easing-standard:   null,
+  $easing-emphasized: null,
+  $easing-decelerate: null,
+  $easing-accelerate: null,
+) {
+  $result: $_defaults;
+  @if $duration-short    != null { $result: map.set($result, duration-short,    $duration-short); }
+  @if $duration-medium   != null { $result: map.set($result, duration-medium,   $duration-medium); }
+  @if $duration-long     != null { $result: map.set($result, duration-long,     $duration-long); }
+  @if $duration-extra    != null { $result: map.set($result, duration-extra,    $duration-extra); }
+  @if $easing-standard   != null { $result: map.set($result, easing-standard,   $easing-standard); }
+  @if $easing-emphasized != null { $result: map.set($result, easing-emphasized, $easing-emphasized); }
+  @if $easing-decelerate != null { $result: map.set($result, easing-decelerate, $easing-decelerate); }
+  @if $easing-accelerate != null { $result: map.set($result, easing-accelerate, $easing-accelerate); }
+  @return $result;
+}
+
+@mixin emit($config) {
+  --motion--duration-short:    #{map.get($config, duration-short)};
+  --motion--duration-medium:   #{map.get($config, duration-medium)};
+  --motion--duration-long:     #{map.get($config, duration-long)};
+  --motion--duration-extra:    #{map.get($config, duration-extra)};
+  --motion--easing-standard:   #{map.get($config, easing-standard)};
+  --motion--easing-emphasized: #{map.get($config, easing-emphasized)};
+  --motion--easing-decelerate: #{map.get($config, easing-decelerate)};
+  --motion--easing-accelerate: #{map.get($config, easing-accelerate)};
+}

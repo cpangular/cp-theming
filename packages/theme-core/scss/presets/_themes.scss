@@ -1,0 +1,19 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Presets: Themes
+// TODO(phase-2): Define prebuilt theme maps using palettes from _palettes.scss.
+//
+// Each theme should be a complete t.theme() call:
+//
+//   $ocean: t.theme(
+//     $palettes: (...),
+//     $weights:  t.light-dark(t.weights(...), t.weights(...)),
+//     ...
+//   );
+//
+// And exported so consumers can @include t.define-theme('ocean', $ocean).
+// ─────────────────────────────────────────────────────────────────────────────
+@use '../theme' as t;
+@use 'palettes' as p;
+
+// TODO(phase-2): $theme-ocean
+// TODO(phase-2): $theme-ember

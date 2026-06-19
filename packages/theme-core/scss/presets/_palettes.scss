@@ -1,0 +1,16 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Presets: Palettes
+// TODO(phase-2): Define named palette maps for ocean, ember, forest, rose, etc.
+//
+// Each palette should expose a light + dark config pair via t.light-dark():
+//
+//   $ocean-primary: t.light-dark(
+//     t.palette(oklch(0.55 0.18 240)),
+//     t.palette(oklch(0.65 0.16 240)),
+//   );
+//
+// ─────────────────────────────────────────────────────────────────────────────
+@use '../theme' as t;
+
+// TODO(phase-2): $ocean-background, $ocean-surface, $ocean-primary, etc.
+// TODO(phase-2): $ember-background, $ember-surface, $ember-primary, etc.

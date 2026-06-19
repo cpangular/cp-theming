@@ -1,0 +1,32 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// material-core() — Invariant Angular Material M3 token overrides.
+// TODO(phase-6): implement full mapping.
+//
+// This mixin outputs Angular Material --mat-sys-* custom property overrides
+// that point at our --pal-* and --theme--* vars. Include it once in the
+// root stylesheet alongside your t.define-theme() calls.
+//
+// Targets Angular Material 17+ M3 only. No M2 support.
+//
+// Mapping strategy:
+//   --mat-sys-primary      → var(--pal-primary--color)
+//   --mat-sys-on-primary   → var(--pal-primary--color--contrast)
+//   --mat-sys-surface      → var(--pal-surface--bg)
+//   --mat-sys-on-surface   → var(--pal-surface--bg--contrast)
+//   --mat-sys-error        → var(--pal-danger--color)
+//   ... and so on for all M3 system tokens
+//
+// Typography:
+//   --mat-sys-body-large-font   → var(--typescale--body-large--font)
+//   ... etc
+//
+// Density:
+//   Angular Material density integer is separate from --density-scale.
+//   TODO(phase-6): determine how to bridge these.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// TODO(phase-6): @use '@cpangular/cp-theming-core/scss/theme' as t;
+
+@mixin material-core() {
+  // TODO(phase-6): implement --mat-sys-* overrides
+}

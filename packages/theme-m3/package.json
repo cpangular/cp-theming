@@ -1,0 +1,17 @@
+{
+  "name": "@cpangular/cp-theming-m3",
+  "version": "0.1.0-dev.0",
+  "description": "Plain M3 CSS token adapter for @cpangular/cp-theming-core. No Angular Material dependency.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./scss/*": "./scss/*"
+  },
+  "peerDependencies": {
+    "@cpangular/cp-theming-core": "workspace:*"
+  },
+  "devDependencies": {
+    "sass": "^1.101.0",
+    "typescript": "^5.8.0"
+  }
+}

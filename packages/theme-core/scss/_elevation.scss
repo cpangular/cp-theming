@@ -1,0 +1,73 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Elevation — 6 levels (0-5), each with:
+//   shadow: CSS box-shadow (color — usable with light-dark()).
+//   tint:   % of primary color to mix into surface bg (percentage — not
+//           compatible with light-dark(); needs dark-scope override pattern).
+//
+// Light/dark varying — use via:
+//   t.light-dark(t.elevation(), t.elevation($shadow-color: oklch(0 0 0 / 50%)))
+//
+// Defaults: light uses 30% opacity shadows; dark should use 50%+ opacity.
+// ─────────────────────────────────────────────────────────────────────────────
+@use 'sass:map';
+
+$_defaults: (
+  0: (shadow: none,                               tint: 0%),
+  1: (shadow: 0 1px  2px oklch(0 0 0 / 30%),     tint: 5%),
+  2: (shadow: 0 2px  6px oklch(0 0 0 / 30%),     tint: 8%),
+  3: (shadow: 0 4px  8px oklch(0 0 0 / 30%),     tint: 11%),
+  4: (shadow: 0 6px 12px oklch(0 0 0 / 30%),     tint: 12%),
+  5: (shadow: 0 8px 16px oklch(0 0 0 / 30%),     tint: 14%),
+);
+
+// config($shadow-color) — rescales shadow opacity across all 6 levels.
+// config($levels: (...)) — per-level overrides (merged onto defaults).
+@function config($shadow-color: null, $levels: null) {
+  $result: $_defaults;
+  @if $shadow-color != null {
+    $result: (
+      0: (shadow: none,                               tint: 0%),
+      1: (shadow: 0 1px  2px #{$shadow-color},        tint: 5%),
+      2: (shadow: 0 2px  6px #{$shadow-color},        tint: 8%),
+      3: (shadow: 0 4px  8px #{$shadow-color},        tint: 11%),
+      4: (shadow: 0 6px 12px #{$shadow-color},        tint: 12%),
+      5: (shadow: 0 8px 16px #{$shadow-color},        tint: 14%),
+    );
+  }
+  @if $levels != null { $result: map.merge($result, $levels); }
+  @return $result;
+}
+
+// Emit tint vars (percentages — cannot use light-dark()).
+// Call in the base/light scope.
+@mixin emit-tints($config) {
+  @each $level, $vals in $config {
+    --elevation-#{$level}--tint: #{map.get($vals, tint)};
+  }
+}
+
+// Emit only tint vars that changed between light and dark.
+// Call in every dark-scope override block.
+@mixin emit-tints-diff($lc, $dc) {
+  @each $level, $lvals in $lc {
+    $dvals: map.get($dc, $level);
+    @if $dvals != null {
+      $lt: map.get($lvals, tint);
+      $dt: map.get($dvals, tint);
+      @if $lt != $dt { --elevation-#{$level}--tint: #{$dt}; }
+    }
+  }
+}
+
+// Emit shadow vars with light-dark() (valid — shadows are colors/none).
+// Call once in the base scope.
+@mixin emit-shadows($lc, $dc, $dedupe: true) {
+  @each $level, $lvals in $lc {
+    $dvals: map.get($dc, $level);
+    $ls: map.get($lvals, shadow);
+    $ds: $ls;
+    @if $dvals != null { $ds: map.get($dvals, shadow); }
+    @if $dedupe and $ls == $ds { --elevation-#{$level}--shadow: #{$ls}; }
+    @else                      { --elevation-#{$level}--shadow: light-dark(#{$ls}, #{$ds}); }
+  }
+}

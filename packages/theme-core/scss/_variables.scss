@@ -1,0 +1,8 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// SCSS configuration — step amounts and blend defaults
+// These can be overridden before importing the library.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// OKLCH lightness steps for dark/darker and light/lighter modifiers
+$theme-step-1: 0.12 !default;
+$theme-step-2: 0.24 !default;
