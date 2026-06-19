@@ -68,6 +68,9 @@ importers:
       sass:
         specifier: ^1.101.0
         version: 1.101.0
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
       vite:
         specifier: ^6.0.0
         version: 6.4.3(sass@1.101.0)(yaml@2.9.0)

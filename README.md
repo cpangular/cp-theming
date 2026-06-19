@@ -19,7 +19,7 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 
 | Demo | Description | Status |
 |---|---|---|
-| `demos/demo-core` | Vanilla TS + Vite | ⬛ Stub |
+| `demos/demo-core` | Vanilla TS + Vite | 🟡 In Progress — POC reimplemented, no preset themes yet |
 | `demos/demo-material` | Angular + Material adapter | ⬛ Stub |
 | `demos/demo-brand-core` | Example brand theme pack | ⬛ Stub |
 | `demos/demo-brand-material` | Example brand + Material | ⬛ Stub |

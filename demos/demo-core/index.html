@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cp-theming — demo-core</title>
+    <style>
+      /* Demo chrome — not part of the theme system */
+      body { padding: 2rem; }
+      h1, h2, h3 { margin: 0 0 0.5rem; }
+      section { margin-bottom: 2rem; }
+      .row { display: flex; flex-wrap: wrap; align-items: flex-start; }
+      .controls {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        display: flex;
+        gap: 0.5rem;
+        z-index: 100;
+      }
+      .controls button, .controls select {
+        padding: 0.4rem 0.8rem;
+        border-radius: 0.25rem;
+        border: 1px solid #999;
+        background: #eee;
+        color: #333;
+        cursor: pointer;
+        font-size: 0.8rem;
+      }
+      .label {
+        font-size: 0.7rem;
+        opacity: 0.6;
+        margin-top: 0.25rem;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Mode + theme toggle controls -->
+    <div class="controls">
+      <select id="theme-select" onchange="window.switchTheme(this.value)">
+        <option value="ocean">ocean</option>
+        <option value="ember">ember</option>
+      </select>
+      <button onclick="window.switchMode('light')">Light</button>
+      <button onclick="window.switchMode('auto')">Auto</button>
+      <button onclick="window.switchMode('dark')">Dark</button>
+    </div>
+
+    <h1>cp-theming — demo-core</h1>
+    <p class="text--deemphasis">
+      All colour derivatives are computed at runtime via CSS relative colour syntax.
+      Toggle light / dark / auto above — no page reload, no CSS recalculation needed.
+    </p>
+
+    <!-- ── Containers ──────────────────────────────────────────────────── -->
+    <section>
+      <h2>Palette Containers</h2>
+      <div class="row">
+        <div class="card card--primary">
+          <h3>Primary</h3>
+          <p>Default container — bg + blended text.</p>
+          <p class="text--emphasis">Emphasis text</p>
+          <p class="text--deemphasis">Deemphasis text</p>
+        </div>
+        <div class="card card--primary-high">
+          <h3>Primary · high</h3>
+          <p>Mode-relative: darker in light mode, lighter in dark mode.</p>
+        </div>
+        <div class="card card--primary-low">
+          <h3>Primary · low</h3>
+          <p>Mode-relative: lighter in light mode, darker in dark mode.</p>
+        </div>
+        <div class="card card--secondary">
+          <h3>Secondary</h3>
+          <p>Secondary palette container.</p>
+        </div>
+        <div class="card card--danger">
+          <h3>Danger</h3>
+          <p>Danger palette container.</p>
+        </div>
+        <div class="card card--surface">
+          <h3>Surface</h3>
+          <p>Slightly more tinted than background. Good for cards, panels.</p>
+          <p class="text--emphasis">Emphasis text</p>
+          <p class="text--deemphasis">Deemphasis text</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Outlined ────────────────────────────────────────────────────── -->
+    <section>
+      <h2>Outlined</h2>
+      <div class="row">
+        <div class="card--outlined">
+          <h3>Primary outlined</h3>
+          <p>No background — stroke border + palette colour text.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Buttons ─────────────────────────────────────────────────────── -->
+    <section>
+      <h2>Buttons</h2>
+      <div class="row" style="gap: 0.75rem; padding: 1rem; align-items: center; flex-wrap: wrap;">
+        <div>
+          <button class="btn btn--primary">Filled (lightness shift)</button>
+          <p class="label">hover/press = high modifier</p>
+        </div>
+        <div>
+          <button class="btn btn--outlined">Outlined</button>
+          <p class="label">hover = lower modifier</p>
+        </div>
+        <div>
+          <button class="btn btn--state-layer">State Layer</button>
+          <p class="label">
+            hover/press = contrast overlay at --theme--state-* opacity<br />
+            works on any bg, no pre-computation
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Tonal combinations ──────────────────────────────────────────── -->
+    <section>
+      <h2>Tonal combinations</h2>
+      <p class="text--deemphasis">
+        Base palette provides the bg. Tint palette blends its colour into it at increasing amounts.
+        Text colours adapt automatically.
+      </p>
+
+      <h3 style="padding: 0 1rem; margin: 0.75rem 0 0.25rem;">surface → surface + primary</h3>
+      <div class="row">
+        <div class="card card--surface" style="flex:1; margin:0.25rem;"><strong>surface</strong><p class="text--deemphasis">0%</p></div>
+        <div class="card card--tonal-primary-1" style="flex:1; margin:0.25rem;"><strong>+ primary</strong><p class="text--deemphasis">tint 1</p></div>
+        <div class="card card--tonal-primary-2" style="flex:1; margin:0.25rem;"><strong>+ primary</strong><p class="text--deemphasis">tint 2</p></div>
+        <div class="card card--tonal-primary-3" style="flex:1; margin:0.25rem;"><strong>+ primary</strong><p class="text--deemphasis">tint 3</p></div>
+        <div class="card card--tonal-primary-4" style="flex:1; margin:0.25rem;"><strong>+ primary</strong><p class="text--deemphasis">tint 4</p></div>
+        <div class="card card--tonal-primary-5" style="flex:1; margin:0.25rem;"><strong>+ primary</strong><p class="text--deemphasis">tint 5</p></div>
+      </div>
+
+      <h3 style="padding: 0 1rem; margin: 0.75rem 0 0.25rem;">surface + secondary</h3>
+      <div class="row">
+        <div class="card card--surface" style="flex:1; margin:0.25rem;"><strong>surface</strong><p class="text--deemphasis">0%</p></div>
+        <div class="card card--tonal-secondary-1" style="flex:1; margin:0.25rem;"><strong>+ secondary</strong><p class="text--deemphasis">tint 1</p></div>
+        <div class="card card--tonal-secondary-2" style="flex:1; margin:0.25rem;"><strong>+ secondary</strong><p class="text--deemphasis">tint 2</p></div>
+        <div class="card card--tonal-secondary-3" style="flex:1; margin:0.25rem;"><strong>+ secondary</strong><p class="text--deemphasis">tint 3</p></div>
+        <div class="card card--tonal-secondary-4" style="flex:1; margin:0.25rem;"><strong>+ secondary</strong><p class="text--deemphasis">tint 4</p></div>
+        <div class="card card--tonal-secondary-5" style="flex:1; margin:0.25rem;"><strong>+ secondary</strong><p class="text--deemphasis">tint 5</p></div>
+      </div>
+
+      <h3 style="padding: 0 1rem; margin: 0.75rem 0 0.25rem;">surface + danger</h3>
+      <div class="row">
+        <div class="card card--surface" style="flex:1; margin:0.25rem;"><strong>surface</strong><p class="text--deemphasis">0%</p></div>
+        <div class="card card--tonal-danger-1" style="flex:1; margin:0.25rem;"><strong>+ danger</strong><p class="text--deemphasis">tint 1</p></div>
+        <div class="card card--tonal-danger-2" style="flex:1; margin:0.25rem;"><strong>+ danger</strong><p class="text--deemphasis">tint 2</p></div>
+        <div class="card card--tonal-danger-3" style="flex:1; margin:0.25rem;"><strong>+ danger</strong><p class="text--deemphasis">tint 3</p></div>
+        <div class="card card--tonal-danger-4" style="flex:1; margin:0.25rem;"><strong>+ danger</strong><p class="text--deemphasis">tint 4</p></div>
+        <div class="card card--tonal-danger-5" style="flex:1; margin:0.25rem;"><strong>+ danger</strong><p class="text--deemphasis">tint 5</p></div>
+      </div>
+    </section>
+
+    <!-- ── Colour swatches ─────────────────────────────────────────────── -->
+    <section>
+      <h2>Primary palette — all roles &amp; modifiers</h2>
+
+      <h3 style="padding: 0 1rem; margin-bottom: 0.25rem;">color role</h3>
+      <div class="swatch-grid">
+        <div class="swatch" style="background:var(--pal-primary--color--lighter);color:var(--pal-primary--color--lighter--contrast)">lighter</div>
+        <div class="swatch" style="background:var(--pal-primary--color--light);color:var(--pal-primary--color--light--contrast)">light</div>
+        <div class="swatch" style="background:var(--pal-primary--color);color:var(--pal-primary--color--contrast)">base</div>
+        <div class="swatch" style="background:var(--pal-primary--color--dark);color:var(--pal-primary--color--dark--contrast)">dark</div>
+        <div class="swatch" style="background:var(--pal-primary--color--darker);color:var(--pal-primary--color--darker--contrast)">darker</div>
+        <div class="swatch" style="background:var(--pal-primary--color--low);color:var(--pal-primary--color--low--contrast)">low ↕</div>
+        <div class="swatch" style="background:var(--pal-primary--color--lower);color:var(--pal-primary--color--lower--contrast)">lower ↕</div>
+        <div class="swatch" style="background:var(--pal-primary--color--high);color:var(--pal-primary--color--high--contrast)">high ↕</div>
+        <div class="swatch" style="background:var(--pal-primary--color--higher);color:var(--pal-primary--color--higher--contrast)">higher ↕</div>
+      </div>
+      <p class="label" style="padding: 0 1rem;">↕ = mode-relative: flips between light/dark steps depending on mode</p>
+
+      <h3 style="padding: 0 1rem; margin: 1rem 0 0.25rem;">All palettes — base colour</h3>
+      <div class="swatch-grid">
+        <div class="swatch" style="background:var(--pal-background--color);color:var(--pal-background--color--contrast)">bg</div>
+        <div class="swatch" style="background:var(--pal-primary--color);color:var(--pal-primary--color--contrast)">primary</div>
+        <div class="swatch" style="background:var(--pal-secondary--color);color:var(--pal-secondary--color--contrast)">secondary</div>
+        <div class="swatch" style="background:var(--pal-danger--color);color:var(--pal-danger--color--contrast)">danger</div>
+      </div>
+
+      <h3 style="padding: 0 1rem; margin: 1rem 0 0.25rem;">Palette tints</h3>
+      <p class="label" style="padding: 0 1rem;">Controlled by <code>--theme--tint-1</code> through <code>--theme--tint-5</code> per mode.</p>
+      <div style="display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem;">
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <span style="width: 72px; font-size: 0.7rem;">primary</span>
+          <div class="swatch" style="background:var(--pal-primary--tint-1)">1</div>
+          <div class="swatch" style="background:var(--pal-primary--tint-2)">2</div>
+          <div class="swatch" style="background:var(--pal-primary--tint-3)">3</div>
+          <div class="swatch" style="background:var(--pal-primary--tint-4)">4</div>
+          <div class="swatch" style="background:var(--pal-primary--tint-5)">5</div>
+          <div class="swatch" style="background:var(--pal-primary--color);color:var(--pal-primary--color--contrast)">100%</div>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <span style="width: 72px; font-size: 0.7rem;">secondary</span>
+          <div class="swatch" style="background:var(--pal-secondary--tint-1)">1</div>
+          <div class="swatch" style="background:var(--pal-secondary--tint-2)">2</div>
+          <div class="swatch" style="background:var(--pal-secondary--tint-3)">3</div>
+          <div class="swatch" style="background:var(--pal-secondary--tint-4)">4</div>
+          <div class="swatch" style="background:var(--pal-secondary--tint-5)">5</div>
+          <div class="swatch" style="background:var(--pal-secondary--color);color:var(--pal-secondary--color--contrast)">100%</div>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <span style="width: 72px; font-size: 0.7rem;">danger</span>
+          <div class="swatch" style="background:var(--pal-danger--tint-1)">1</div>
+          <div class="swatch" style="background:var(--pal-danger--tint-2)">2</div>
+          <div class="swatch" style="background:var(--pal-danger--tint-3)">3</div>
+          <div class="swatch" style="background:var(--pal-danger--tint-4)">4</div>
+          <div class="swatch" style="background:var(--pal-danger--tint-5)">5</div>
+          <div class="swatch" style="background:var(--pal-danger--color);color:var(--pal-danger--color--contrast)">100%</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Nested theme ───────────────────────────────────────────────── -->
+    <section>
+      <h2>Nested theme — "ocean" containing "ember"</h2>
+      <p class="text--deemphasis">
+        The inner element has <code>[theme="ember"]</code>. It gets its own full palette scope —
+        all vars, blend amounts, and mode-relative pointers are independent from the outer theme.
+      </p>
+
+      <div class="card card--primary">
+        <h3>ocean · primary container</h3>
+        <p class="text--deemphasis">Outer theme: ocean</p>
+
+        <div theme="ember" style="border-radius:0.75rem; padding:1.5rem; margin:0.75rem 0 0;">
+          <h3>ember · background container</h3>
+          <p class="text--deemphasis">
+            Inner theme: ember — mode toggle above affects both themes simultaneously
+          </p>
+
+          <div class="row" style="gap:0.5rem; margin-top:0.75rem;">
+            <div class="card card--primary" style="margin:0; flex:1;">
+              <strong>ember · primary</strong>
+              <p class="text--deemphasis">warm red</p>
+            </div>
+            <div class="card card--secondary" style="margin:0; flex:1;">
+              <strong>ember · secondary</strong>
+              <p class="text--deemphasis">amber</p>
+            </div>
+            <div class="card card--danger" style="margin:0; flex:1;">
+              <strong>ember · danger</strong>
+              <p class="text--deemphasis">deep red</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

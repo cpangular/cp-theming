@@ -1,11 +1,18 @@
-// TODO(phase-7): demo-core entry point
-// This demo will:
-//   1. Import a preset theme CSS file from @cpangular/cp-theming-core
-//   2. Use setTheme() and setMode() from the TS API
-//   3. Render a simple page showing palette swatches for each palette
-//
-// import { setTheme, setMode, ThemeMode } from '@cpangular/cp-theming-core';
-// import '@cpangular/cp-theming-core/dist/ocean.css';
-//
-// setTheme('ocean');
-// setMode(ThemeMode.AUTO);
+import './scss/themes/ocean.scss';
+import './scss/themes/ember.scss';
+import './scss/base.scss';
+import './scss/components.scss';
+
+import { setMode, setTheme, ThemeMode } from '@cpangular/cp-theming-core';
+
+// Set the initial theme
+setTheme('ocean');
+
+// Expose controls to the HTML onclick handlers
+(window as Record<string, unknown>).switchMode = (mode: string) => {
+  setMode(mode as ThemeMode);
+};
+
+(window as Record<string, unknown>).switchTheme = (theme: string) => {
+  setTheme(theme);
+};

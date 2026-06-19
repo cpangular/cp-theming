@@ -1,0 +1,24 @@
+// Base reset + theme container bindings.
+// Depends on theme CSS vars being emitted first (via ocean/ember imports).
+@use "@cpangular/cp-theming-core/scss/apply" as a;
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+// Any element with [theme], or <body> when a $default: true theme is active,
+// becomes a background-palette container.
+[theme],
+body {
+  @include a.palette-container(background);
+  min-height: 100vh;
+}

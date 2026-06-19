@@ -1,0 +1,64 @@
+// Theme: ocean
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+$ocean-background: t.light-dark(t.palette(oklch(0.97 0.005 220)), t.palette(oklch(0.18 0.015 220)));
+$ocean-surface: t.light-dark(t.palette(oklch(0.93 0.01 220)), t.palette(oklch(0.23 0.018 220)));
+$ocean-primary: t.light-dark(t.palette(oklch(0.55 0.18 240)), t.palette(oklch(0.65 0.16 240)));
+$ocean-secondary: t.light-dark(t.palette(oklch(0.55 0.16 290)), t.palette(oklch(0.65 0.14 290)));
+$ocean-danger: t.light-dark(t.palette(oklch(0.55 0.2 25)), t.palette(oklch(0.65 0.18 25)));
+
+$ocean-theme: t.theme(
+  $palettes: (
+    background: $ocean-background,
+    surface: $ocean-surface,
+    primary: $ocean-primary,
+    secondary: $ocean-secondary,
+    danger: $ocean-danger,
+  ),
+  $weights: t.light-dark(
+      t.weights(
+        $text-blend: 82%,
+        $text-primary-tint: 10%,
+      ),
+      t.weights(
+        $text-blend: 78%,
+        $text-primary-tint: 12%,
+        $tints: (
+          12%,
+          24%,
+          42%,
+          65%,
+          85%,
+        ),
+      )
+    ),
+  $overlay: t.light-dark(
+      t.overlays(
+        $scrim: oklch(0 0 0 / 50%),
+        $shadow: oklch(0.2 0.02 240 / 30%),
+      ),
+      t.overlays(
+        $scrim: oklch(0 0 0 / 60%),
+        $shadow: oklch(0 0 0 / 50%),
+      )
+    ),
+  $elevation: t.light-dark(
+      t.elevation(),
+      t.elevation(
+        $shadow-color: oklch(0 0 0 / 50%),
+      )
+    ),
+  $typography: t.typography(
+      $plain-family: system-ui,
+    ),
+  $density: t.density(
+      $scale: 0,
+    ),
+  $focus: t.focus(
+      $width: 3px,
+      $offset: 2px,
+    ),
+  $motion: t.motion(),
+);
+
+@include t.define-theme("ocean", $ocean-theme, $default: true);
