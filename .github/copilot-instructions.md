@@ -111,3 +111,20 @@ pnpm -r build
 - Do not use RxJS in `cp-theming-angular` where Angular signals are sufficient
 - Do not add features beyond what is asked — implement stubs with clear TODOs
 - Do not add Angular Material M2 support — `cp-theming-material` targets M3 only (Angular Material 17+)
+
+## README Maintenance
+
+**Always keep READMEs in sync with the actual state of the code.**
+
+Rules:
+- The root [README.md](../README.md) has a **Packages**, **Demos**, and **Development Phases** status table. Update these whenever a phase completes, a package moves from stub to real, or a new item is added.
+- Status indicators:
+  - `✅ Done` — fully implemented and building cleanly
+  - `🟡 In Progress` — partially implemented; add a short note on what's real vs stub
+  - `⬛ Stub` — package.json + empty/placeholder src only, no real implementation
+  - `🔴 Broken` — exists but currently not building or has known issues
+- When completing any phase or milestone, update the phase table row from `⬛ Not started` → `🟡 In Progress` → `✅ Done`.
+- When a package transitions from stub to real (even partially), update its row and add a parenthetical noting what is and isn't implemented yet.
+- If you add a new package, demo, or phase, add it to the README tables at the same time.
+- Do not remove "not started" or "stub" entries — they are intentional and help communicate project scope.
+
