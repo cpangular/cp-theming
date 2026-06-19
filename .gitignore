@@ -2,3 +2,16 @@ node_modules/
 dist/
 .wireit/
 *.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# editors
+.vscode/settings.json
+.idea/
+
+# env
+.env
+.env.*
+!.env.example
