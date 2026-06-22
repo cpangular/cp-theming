@@ -1,17 +1,18 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Theme — public API. Single import for all theme authoring.
 // ─────────────────────────────────────────────────────────────────────────────
-@use 'sass:map';
-@use 'sass:list';
-@use 'palette'    as _pal;
-@use 'weights'    as _w;
-@use 'overlay'    as _ov;
-@use 'typography' as _ty;
-@use 'density'    as _dn;
-@use 'shape'      as _sh;
-@use 'focus'      as _fo;
-@use 'motion'     as _mo;
-@use 'elevation'  as _el;
+@use "sass:map";
+@use "sass:list";
+@use "palette" as _pal;
+@use "weights" as _w;
+@use "overlay" as _ov;
+@use "typography" as _ty;
+@use "density" as _dn;
+@use "shape" as _sh;
+@use "focus" as _fo;
+@use "motion" as _mo;
+@use "elevation" as _el;
+@use "apply" as _ap;
 
 // ─── Public: sub-module config builders exposed as t.* ───────────────────────
 // (@forward can't rename individual members, so we use wrapper functions.)
@@ -21,26 +22,26 @@
 }
 
 @function weights(
-  $text-blend:            null,
-  $text-emphasis-blend:   null,
+  $text-blend: null,
+  $text-emphasis-blend: null,
   $text-deemphasis-blend: null,
-  $text-primary-tint:     null,
-  $state-hover:           null,
-  $state-press:           null,
-  $state-focus:           null,
-  $state-drag:            null,
-  $tints:                 null,
+  $text-primary-tint: null,
+  $state-hover: null,
+  $state-press: null,
+  $state-focus: null,
+  $state-drag: null,
+  $tints: null
 ) {
   @return _w.config(
-    $text-blend:            $text-blend,
-    $text-emphasis-blend:   $text-emphasis-blend,
+    $text-blend: $text-blend,
+    $text-emphasis-blend: $text-emphasis-blend,
     $text-deemphasis-blend: $text-deemphasis-blend,
-    $text-primary-tint:     $text-primary-tint,
-    $state-hover:           $state-hover,
-    $state-press:           $state-press,
-    $state-focus:           $state-focus,
-    $state-drag:            $state-drag,
-    $tints:                 $tints,
+    $text-primary-tint: $text-primary-tint,
+    $state-hover: $state-hover,
+    $state-press: $state-press,
+    $state-focus: $state-focus,
+    $state-drag: $state-drag,
+    $tints: $tints
   );
 }
 
@@ -49,20 +50,20 @@
 }
 
 @function typography(
-  $plain-family:    system-ui,
-  $brand-family:    null,
-  $bold-weight:     700,
-  $medium-weight:   500,
-  $regular-weight:  400,
-  $scale-overrides: null,
+  $plain-family: system-ui,
+  $brand-family: null,
+  $bold-weight: 700,
+  $medium-weight: 500,
+  $regular-weight: 400,
+  $scale-overrides: null
 ) {
   @return _ty.config(
-    $plain-family:    $plain-family,
-    $brand-family:    $brand-family,
-    $bold-weight:     $bold-weight,
-    $medium-weight:   $medium-weight,
-    $regular-weight:  $regular-weight,
-    $scale-overrides: $scale-overrides,
+    $plain-family: $plain-family,
+    $brand-family: $brand-family,
+    $bold-weight: $bold-weight,
+    $medium-weight: $medium-weight,
+    $regular-weight: $regular-weight,
+    $scale-overrides: $scale-overrides
   );
 }
 
@@ -71,8 +72,14 @@
 }
 
 @function shape(
-  $xxs:  null, $xs:  null, $sm: null, $md: null,
-  $lg:   null, $xl:  null, $xxl: null, $full: null,
+  $xxs: null,
+  $xs: null,
+  $sm: null,
+  $md: null,
+  $lg: null,
+  $xl: null,
+  $xxl: null,
+  $full: null
 ) {
   @return _sh.config($xxs, $xs, $sm, $md, $lg, $xl, $xxl, $full);
 }
@@ -82,24 +89,24 @@
 }
 
 @function motion(
-  $duration-short:    null,
-  $duration-medium:   null,
-  $duration-long:     null,
-  $duration-extra:    null,
-  $easing-standard:   null,
+  $duration-short: null,
+  $duration-medium: null,
+  $duration-long: null,
+  $duration-extra: null,
+  $easing-standard: null,
   $easing-emphasized: null,
   $easing-decelerate: null,
-  $easing-accelerate: null,
+  $easing-accelerate: null
 ) {
   @return _mo.config(
-    $duration-short:    $duration-short,
-    $duration-medium:   $duration-medium,
-    $duration-long:     $duration-long,
-    $duration-extra:    $duration-extra,
-    $easing-standard:   $easing-standard,
+    $duration-short: $duration-short,
+    $duration-medium: $duration-medium,
+    $duration-long: $duration-long,
+    $duration-extra: $duration-extra,
+    $easing-standard: $easing-standard,
     $easing-emphasized: $easing-emphasized,
     $easing-decelerate: $easing-decelerate,
-    $easing-accelerate: $easing-accelerate,
+    $easing-accelerate: $easing-accelerate
   );
 }
 
@@ -112,21 +119,23 @@
 // ─── Public: t.light-dark($light, $dark?) ────────────────────────────────────
 @function light-dark($light, $dark: null) {
   $resolved-dark: $light;
-  @if $dark != null { $resolved-dark: $dark; }
+  @if $dark != null {
+    $resolved-dark: $dark;
+  }
   @return (light: $light, dark: $resolved-dark);
 }
 
 // ─── Public: t.theme() ───────────────────────────────────────────────────────
 @function theme(
   $palettes,
-  $weights:    null,
-  $overlay:    null,
+  $weights: null,
+  $overlay: null,
   $typography: null,
-  $density:    null,
-  $shape:      null,
-  $focus:      null,
-  $motion:     null,
-  $elevation:  null,
+  $density: null,
+  $shape: null,
+  $focus: null,
+  $motion: null,
+  $elevation: null
 ) {
   $l-weights: _w.defaults();
   $d-weights: _w.defaults();
@@ -143,123 +152,180 @@
   }
 
   $typography-resolved: _ty.config();
-  @if $typography != null { $typography-resolved: $typography; }
+  @if $typography != null {
+    $typography-resolved: $typography;
+  }
 
   $density-resolved: _dn.config();
-  @if $density != null { $density-resolved: $density; }
+  @if $density != null {
+    $density-resolved: $density;
+  }
 
   $shape-resolved: _sh.config();
-  @if $shape != null { $shape-resolved: $shape; }
+  @if $shape != null {
+    $shape-resolved: $shape;
+  }
 
   $focus-resolved: _fo.config();
-  @if $focus != null { $focus-resolved: $focus; }
+  @if $focus != null {
+    $focus-resolved: $focus;
+  }
 
   $motion-resolved: _mo.config();
-  @if $motion != null { $motion-resolved: $motion; }
+  @if $motion != null {
+    $motion-resolved: $motion;
+  }
 
   // Elevation defaults: light=30% shadow opacity, dark=50% (shadows need more opacity on dark surfaces).
   $l-elevation: _el.config();
-  $d-elevation: _el.config($shadow-color: oklch(0 0 0 / 50%));
+  $d-elevation: _el.config(
+    $shadow-color: oklch(0 0 0 / 50%),
+  );
   @if $elevation != null {
     $l-elevation: map.get($elevation, light);
     $d-elevation: map.get($elevation, dark);
   }
 
   @return (
-    light:      (weights: $l-weights, overlay: $l-overlay, palettes: $palettes, elevation: $l-elevation),
-    dark:       (weights: $d-weights, overlay: $d-overlay, palettes: $palettes, elevation: $d-elevation),
+    light: (
+      weights: $l-weights,
+      overlay: $l-overlay,
+      palettes: $palettes,
+      elevation: $l-elevation,
+    ),
+    dark: (
+      weights: $d-weights,
+      overlay: $d-overlay,
+      palettes: $palettes,
+      elevation: $d-elevation,
+    ),
     typography: $typography-resolved,
-    density:    $density-resolved,
-    shape:      $shape-resolved,
-    focus:      $focus-resolved,
-    motion:     $motion-resolved,
+    density: $density-resolved,
+    shape: $shape-resolved,
+    focus: $focus-resolved,
+    motion: $motion-resolved
   );
 }
 
 // ─── Internal: emit weight vars for one mode ─────────────────────────────────
 @mixin _weight-vars($w) {
   $tints: map.get($w, tints);
-  --theme--text-blend:            #{map.get($w, text-blend)};
-  --theme--text-emphasis-blend:   #{map.get($w, text-emphasis-blend)};
-  --theme--text-deemphasis-blend: #{map.get($w, text-deemphasis-blend)};
-  --theme--text-primary-tint:     #{map.get($w, text-primary-tint)};
-  --theme--state-hover:           #{map.get($w, state-hover)};
-  --theme--state-press:           #{map.get($w, state-press)};
-  --theme--state-focus:           #{map.get($w, state-focus)};
-  --theme--state-drag:            #{map.get($w, state-drag)};
-  --theme--tint-1:                #{list.nth($tints, 1)};
-  --theme--tint-2:                #{list.nth($tints, 2)};
-  --theme--tint-3:                #{list.nth($tints, 3)};
-  --theme--tint-4:                #{list.nth($tints, 4)};
-  --theme--tint-5:                #{list.nth($tints, 5)};
+  --weight--text-blend: #{map.get($w, text-blend)};
+  --weight--text-emphasis-blend: #{map.get($w, text-emphasis-blend)};
+  --weight--text-deemphasis-blend: #{map.get($w, text-deemphasis-blend)};
+  --weight--text-primary-tint: #{map.get($w, text-primary-tint)};
+  --weight--state-hover: #{map.get($w, state-hover)};
+  --weight--state-press: #{map.get($w, state-press)};
+  --weight--state-focus: #{map.get($w, state-focus)};
+  --weight--state-drag: #{map.get($w, state-drag)};
+  --weight--tint-1: #{list.nth($tints, 1)};
+  --weight--tint-2: #{list.nth($tints, 2)};
+  --weight--tint-3: #{list.nth($tints, 3)};
+  --weight--tint-4: #{list.nth($tints, 4)};
+  --weight--tint-5: #{list.nth($tints, 5)};
 }
 
 // ─── Internal: emit only weight vars that differ between light and dark ───────
 @mixin _weight-vars-diff($lw, $dw) {
   $lt: map.get($lw, tints);
   $dt: map.get($dw, tints);
-  @if map.get($lw, text-blend)            != map.get($dw, text-blend)            { --theme--text-blend:            #{map.get($dw, text-blend)}; }
-  @if map.get($lw, text-emphasis-blend)   != map.get($dw, text-emphasis-blend)   { --theme--text-emphasis-blend:   #{map.get($dw, text-emphasis-blend)}; }
-  @if map.get($lw, text-deemphasis-blend) != map.get($dw, text-deemphasis-blend) { --theme--text-deemphasis-blend: #{map.get($dw, text-deemphasis-blend)}; }
-  @if map.get($lw, text-primary-tint)     != map.get($dw, text-primary-tint)     { --theme--text-primary-tint:     #{map.get($dw, text-primary-tint)}; }
-  @if map.get($lw, state-hover)           != map.get($dw, state-hover)           { --theme--state-hover:           #{map.get($dw, state-hover)}; }
-  @if map.get($lw, state-press)           != map.get($dw, state-press)           { --theme--state-press:           #{map.get($dw, state-press)}; }
-  @if map.get($lw, state-focus)           != map.get($dw, state-focus)           { --theme--state-focus:           #{map.get($dw, state-focus)}; }
-  @if map.get($lw, state-drag)            != map.get($dw, state-drag)            { --theme--state-drag:            #{map.get($dw, state-drag)}; }
+  @if map.get($lw, text-blend) != map.get($dw, text-blend) {
+    --weight--text-blend: #{map.get($dw, text-blend)};
+  }
+  @if map.get($lw, text-emphasis-blend) != map.get($dw, text-emphasis-blend) {
+    --weight--text-emphasis-blend: #{map.get($dw, text-emphasis-blend)};
+  }
+  @if map.get($lw, text-deemphasis-blend) != map.get($dw, text-deemphasis-blend) {
+    --weight--text-deemphasis-blend: #{map.get($dw, text-deemphasis-blend)};
+  }
+  @if map.get($lw, text-primary-tint) != map.get($dw, text-primary-tint) {
+    --weight--text-primary-tint: #{map.get($dw, text-primary-tint)};
+  }
+  @if map.get($lw, state-hover) != map.get($dw, state-hover) {
+    --weight--state-hover: #{map.get($dw, state-hover)};
+  }
+  @if map.get($lw, state-press) != map.get($dw, state-press) {
+    --weight--state-press: #{map.get($dw, state-press)};
+  }
+  @if map.get($lw, state-focus) != map.get($dw, state-focus) {
+    --weight--state-focus: #{map.get($dw, state-focus)};
+  }
+  @if map.get($lw, state-drag) != map.get($dw, state-drag) {
+    --weight--state-drag: #{map.get($dw, state-drag)};
+  }
   @for $i from 1 through 5 {
-    @if list.nth($lt, $i) != list.nth($dt, $i) { --theme--tint-#{$i}: #{list.nth($dt, $i)}; }
+    @if list.nth($lt, $i) != list.nth($dt, $i) {
+      --weight--tint-#{$i}: #{list.nth($dt, $i)};
+    }
   }
 }
 
 // ─── Internal: emit all CSS vars for both modes ───────────────────────────────
 @mixin _mode-vars($light, $dark, $dedupe: true) {
   $lw: map.get($light, weights);
-  $dw: map.get($dark,  weights);
+  $dw: map.get($dark, weights);
   $lo: map.get($light, overlay);
-  $do: map.get($dark,  overlay);
+  $do: map.get($dark, overlay);
   $palettes: map.get($light, palettes);
 
   color-scheme: light dark;
 
   @include _weight-vars($lw);
 
-  $l-scrim:  map.get($lo, scrim);  $d-scrim:  map.get($do, scrim);
-  $l-shadow: map.get($lo, shadow); $d-shadow: map.get($do, shadow);
-  @if $dedupe and $l-scrim  == $d-scrim  { --theme--scrim:  #{$l-scrim}; }
-  @else                                  { --theme--scrim:  light-dark(#{$l-scrim},  #{$d-scrim}); }
-  @if $dedupe and $l-shadow == $d-shadow { --theme--shadow: #{$l-shadow}; }
-  @else                                  { --theme--shadow: light-dark(#{$l-shadow}, #{$d-shadow}); }
+  $l-scrim: map.get($lo, scrim);
+  $d-scrim: map.get($do, scrim);
+  $l-shadow: map.get($lo, shadow);
+  $d-shadow: map.get($do, shadow);
+  @if $dedupe and $l-scrim == $d-scrim {
+    --overlay--scrim: #{$l-scrim};
+  } @else {
+    --overlay--scrim: light-dark(#{$l-scrim}, #{$d-scrim});
+  }
+  @if $dedupe and $l-shadow == $d-shadow {
+    --overlay--shadow: #{$l-shadow};
+  } @else {
+    --overlay--shadow: light-dark(#{$l-shadow}, #{$d-shadow});
+  }
 
   @if $palettes {
     @each $pal-name, $pal-config in $palettes {
       $l-resolved: $pal-config;
-      @if map.has-key($pal-config, light) { $l-resolved: map.get($pal-config, light); }
+      @if map.has-key($pal-config, light) {
+        $l-resolved: map.get($pal-config, light);
+      }
       $d-resolved: $pal-config;
-      @if map.has-key($pal-config, dark)  { $d-resolved: map.get($pal-config, dark); }
+      @if map.has-key($pal-config, dark) {
+        $d-resolved: map.get($pal-config, dark);
+      }
       @include _pal.define-palette($pal-name, $l-resolved, $d-resolved);
+
+      [palette="#{$pal-name}"] {
+        @include _ap.apply-palette($pal-name);
+      }
     }
   }
 
-  // Elevation shadows (colors — light-dark() compatible)
+  // Elevation shadows (colors — light-dark() compatible).
+  // Always present — theme() provides defaults when not explicitly configured.
   $l-el: map.get($light, elevation);
-  $d-el: map.get($dark,  elevation);
-  @if $l-el != null and $d-el != null {
-    @include _el.emit-tints($l-el);
-    @include _el.emit-shadows($l-el, $d-el, $dedupe);
-  }
+  $d-el: map.get($dark, elevation);
+  @include _el.emit-tints($l-el);
+  @include _el.emit-shadows($l-el, $d-el, $dedupe);
 }
 
 // ─── Public: define-theme ─────────────────────────────────────────────────────
 @mixin define-theme($name, $theme, $default: false, $dedupe: true) {
   $light: map.get($theme, light);
-  $dark:  map.get($theme, dark);
-  $lw:    map.get($light, weights);
-  $dw:    map.get($dark,  weights);
-  $le:    map.get($light, elevation);
-  $de:    map.get($dark,  elevation);
+  $dark: map.get($theme, dark);
+  $lw: map.get($light, weights);
+  $dw: map.get($dark, weights);
+  $le: map.get($light, elevation);
+  $de: map.get($dark, elevation);
 
   $selectors: '[theme="#{$name}"]';
-  @if $default { $selectors: '#{$selectors}, body'; }
+  @if $default {
+    $selectors: "#{$selectors}, body";
+  }
 
   #{$selectors} {
     @include _mode-vars($light, $dark, $dedupe);
@@ -271,47 +337,121 @@
 
     [themeMode="dark"] & {
       color-scheme: dark;
-      @if $dedupe { @include _weight-vars-diff($lw, $dw); }
-      @else       { @include _weight-vars($dw); }
-      @if $le != null { @include _el.emit-tints-diff($le, $de); }
+      @if $dedupe {
+        @include _weight-vars-diff($lw, $dw);
+      } @else {
+        @include _weight-vars($dw);
+      }
+      @include _el.emit-tints-diff($le, $de);
     }
     @media (prefers-color-scheme: dark) {
       html:not([themeMode]) &,
       [themeMode="auto"] & {
         color-scheme: dark;
-        @if $dedupe { @include _weight-vars-diff($lw, $dw); }
-        @else       { @include _weight-vars($dw); }
-        @if $le != null { @include _el.emit-tints-diff($le, $de); }
+        @if $dedupe {
+          @include _weight-vars-diff($lw, $dw);
+        } @else {
+          @include _weight-vars($dw);
+        }
+        @include _el.emit-tints-diff($le, $de);
       }
     }
 
-    [themeMode="light"] & { color-scheme: light; }
+    // 0,2,0 — handles global html[themeMode="light"] (body is child of html, not inside a themeMode="light" descendant)
+    [themeMode="light"] & {
+      color-scheme: light;
+    }
+    // 0,2,1 — handles forced-light panel inside body when html has no themeMode (auto+system=dark).
+    // html:not([themeMode]) [theme] in the media query above is also 0,2,1 but declared earlier,
+    // so this later rule wins for elements that also have a [themeMode="light"] ancestor.
+    // Also resets weight vars the media-query dark rule may have stamped.
+    html [themeMode="light"] & {
+      color-scheme: light;
+      @if $dedupe {
+        @include _weight-vars-diff($dw, $lw);
+      } @else {
+        @include _weight-vars($lw);
+      }
+      @include _el.emit-tints-diff($de, $le);
+    }
+    // Forced-dark nested inside a light ancestor — specificity 0,3,0 beats the 0,2,1 rule above.
+    [themeMode="light"] [themeMode="dark"] & {
+      color-scheme: dark;
+      @if $dedupe {
+        @include _weight-vars-diff($lw, $dw);
+      } @else {
+        @include _weight-vars($dw);
+      }
+      @include _el.emit-tints-diff($le, $de);
+    }
 
     [themeMode="invert"] & {
       color-scheme: dark;
-      @if $dedupe { @include _weight-vars-diff($lw, $dw); }
-      @else       { @include _weight-vars($dw); }
-      @if $le != null { @include _el.emit-tints-diff($le, $de); }
+      @if $dedupe {
+        @include _weight-vars-diff($lw, $dw);
+      } @else {
+        @include _weight-vars($dw);
+      }
+      @include _el.emit-tints-diff($le, $de);
     }
     [themeMode="dark"] [themeMode="invert"] & {
       color-scheme: light;
-      @if $dedupe { @include _weight-vars-diff($dw, $lw); }
-      @else       { @include _weight-vars($lw); }
-      @if $le != null { @include _el.emit-tints-diff($de, $le); }
+      @if $dedupe {
+        @include _weight-vars-diff($dw, $lw);
+      } @else {
+        @include _weight-vars($lw);
+      }
+      @include _el.emit-tints-diff($de, $le);
     }
     @media (prefers-color-scheme: dark) {
       html:not([themeMode]) [themeMode="invert"] &,
       [themeMode="auto"] [themeMode="invert"] & {
         color-scheme: light;
-        @if $dedupe { @include _weight-vars-diff($dw, $lw); }
-        @else       { @include _weight-vars($lw); }
-        @if $le != null { @include _el.emit-tints-diff($de, $le); }
+        @if $dedupe {
+          @include _weight-vars-diff($dw, $lw);
+        } @else {
+          @include _weight-vars($lw);
+        }
+        @include _el.emit-tints-diff($de, $le);
       }
     }
   }
 }
 
+// ─── Apply mixins — re-exported for single @use 'theme' as t convenience ──────
+@mixin apply-palette($name) {
+  @include _ap.apply-palette($name);
+}
+@mixin tone($modifier) {
+  @include _ap.tone($modifier);
+}
+@mixin container($modifier: null) {
+  @include _ap.container($modifier);
+}
+@mixin filled($modifier: null) {
+  @include _ap.filled($modifier);
+}
+@mixin outlined() {
+  @include _ap.outlined();
+}
+@mixin stroke() {
+  @include _ap.stroke();
+}
+@mixin global-selectors() {
+  @include _ap.global-selectors();
+}
+
 // ─── Public aliases ───────────────────────────────────────────────────────────
-@mixin dark-scope   { [themeMode="dark"]   & { @content; } }
-@mixin invert-scope { [themeMode="invert"] & { @content; } }
-@mixin light-scope  { @content; }
+@mixin dark-scope {
+  [themeMode="dark"] & {
+    @content;
+  }
+}
+@mixin invert-scope {
+  [themeMode="invert"] & {
+    @content;
+  }
+}
+@mixin light-scope {
+  @content;
+}

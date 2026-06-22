@@ -11,7 +11,7 @@
     "@angular/core": "^19.0.0",
     "@angular/material": "^19.0.0",
     "@cpangular/cp-theming-core": "workspace:*",
-    "@cpangular/cp-theming-angular": "workspace:*",
+    "@cpangular/cp-theming-ng-core": "workspace:*",
     "@cpangular/cp-theming-material": "workspace:*"
   },
   "devDependencies": {

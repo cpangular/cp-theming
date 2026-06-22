@@ -11,7 +11,7 @@ Angular Material is an optional adapter layer, not a core dependency.
 ```
 packages/
   theme-core/          @cpangular/cp-theming-core
-  theme-angular/       @cpangular/cp-theming-angular
+  theme-ng-core/       @cpangular/cp-theming-ng-core
   theme-material/      @cpangular/cp-theming-material
   theme-m3/            @cpangular/cp-theming-m3       ⬛ stub
 
@@ -30,7 +30,7 @@ The only package with real implementation initially. Contains:
 - **Vanilla TS API** — `ThemeMode`, `setTheme()`, `setMode()`, `watchMode()`, etc.
 - **Precompiled CSS** — one file per preset theme, for users without Sass
 
-### @cpangular/cp-theming-angular
+### @cpangular/cp-theming-ng-core
 Signal-based Angular wrapper around cp-theming-core. No Angular Material dependency.
 - `ThemeService` — `theme`, `mode`, `effectiveMode` signals
 - `[cpaTheme]` structural directive
@@ -40,7 +40,7 @@ SCSS adapter mapping our CSS vars → Angular Material `--mat-sys-*` tokens.
 - **M3 only** — Angular Material 17+ (M3). No M2 support.
 - `material-core()` mixin — invariant Angular Material token overrides
 - Typography + density passthrough to Angular Material
-- Depends on cp-theming-angular + cp-theming-core
+- Depends on cp-theming-ng-core + cp-theming-core
 
 ### @cpangular/cp-theming-m3  ⬛ stub
 Same concept as cp-theming-material but without the Angular Material dependency.
@@ -73,7 +73,7 @@ Each demo is a consumer project showing a specific use case. No library code her
    invisible. `--pal-{name}--focus` is auto-derived unless overridden.
 
 6. **Framework-agnostic core** — `theme-core` has zero Angular dependency.
-   Angular belongs in `theme-angular`.
+   Angular belongs in `theme-ng-core`.
 
 7. **oklch everywhere** — Perceptually uniform, wide gamut, direct hue/lightness
    control. Not hsl.
@@ -180,7 +180,7 @@ $my-theme: t.theme(
 - All TypeScript APIs (theme-core)
 - Preset palette + theme maps
 - Precompiled CSS outputs
-- theme-angular (Angular signals)
+- theme-ng-core (Angular signals)
 - theme-material (Angular Material adapter)
 - theme-m3 (plain M3 adapter)
 - All demos
@@ -208,7 +208,7 @@ $my-theme: t.theme(
 - Build pipeline (sass → dist/css/)
 - One CSS file per preset theme
 
-### Phase 5 — theme-angular
+### Phase 5 — theme-ng-core
 - `ThemeService` with Angular signals
 - `[cpaTheme]` directive
 

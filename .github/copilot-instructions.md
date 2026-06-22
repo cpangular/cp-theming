@@ -10,7 +10,7 @@ current status, and development phases.
 
 ```
 packages/theme-core/      @cpangular/cp-theming-core      — SCSS API + vanilla TS
-packages/theme-angular/   @cpangular/cp-theming-angular   — Angular signals adapter
+packages/theme-ng-core/   @cpangular/cp-theming-ng-core   — Angular signals adapter
 packages/theme-material/  @cpangular/cp-theming-material  — Angular Material adapter
 packages/theme-m3/        @cpangular/cp-theming-m3        — Plain M3 adapter (stub)
 demos/demo-core/                                           — Vite + vanilla demo
@@ -44,7 +44,7 @@ demos/demo-brand-material/                                 — Example brand+mat
   not a global. A matching-hue focus ring on a same-hue surface is invisible.
 
 - **theme-core has no Angular dependency.** Zero. Angular belongs in
-  theme-angular.
+  theme-ng-core.
 
 ## SCSS Conventions
 
@@ -57,10 +57,17 @@ demos/demo-brand-material/                                 — Example brand+mat
 
 ## CSS Variable Naming
 `--` = namespace separator (like `.` in OOP). `-` = word separator within a segment.
+The `color` role is the palette's primary identity — it becomes the namespace prefix with no trailing segment.
 ```
---pal-primary--color              ✓
---pal-primary-color               ✗ (ambiguous depth)
---pal-primary--color--dark        ✓
+--color--primary                      ✓  (primary color role — no suffix)
+--color--primary--contrast            ✓  (primary color contrast)
+--color--primary--dark                ✓  (primary color dark modifier)
+--color--primary--dark--contrast      ✓  (primary color dark contrast)
+--color--primary--bg                  ✓  (primary bg role)
+--color--primary--bg--dark            ✓  (primary bg dark modifier)
+--color--primary--tint-1              ✓  (primary tint)
+--color--primary--focus               ✓  (primary focus ring)
+--pal-primary--color                  ✗  (old naming — do not use)
 ```
 
 ## TypeScript Conventions (theme-core/src)

@@ -1,5 +1,5 @@
 {
-  "name": "@cpangular/cp-theming-angular",
+  "name": "@cpangular/cp-theming-ng-core",
   "version": "0.1.0-dev.0",
   "description": "Angular signal-based wrapper for @cpangular/cp-theming-core.",
   "type": "module",

@@ -8,24 +8,54 @@
     "./scss/*": "./scss/*"
   },
   "scripts": {
-    "build":     "wireit",
-    "build.css": "wireit",
-    "build.ts":  "wireit"
+    "build": "wireit",
+    "dev": "wireit"
   },
   "wireit": {
     "build": {
-      "dependencies": ["build.css", "build.ts"]
+      "dependencies": [
+        "build.css",
+        "build.ts"
+      ]
     },
     "build.css": {
       "command": "sass --style=expanded scss/theme-vars.scss:dist/theme-vars.css",
-      "files": ["scss/**/*.scss"],
-      "output": ["dist/**/*.css", "dist/**/*.css.map"]
+      "files": [
+        "scss/**/*.scss"
+      ],
+      "output": [
+        "dist/**/*.css",
+        "dist/**/*.css.map"
+      ]
     },
     "build.ts": {
       "command": "tsc --build --pretty",
       "clean": "if-file-deleted",
-      "files": ["src/**/*.ts", "tsconfig.json"],
-      "output": ["dist/**/*.js", "dist/**/*.d.ts", "dist/**/*.js.map", "dist/**/*.d.ts.map", ".tsbuildinfo"]
+      "files": [
+        "src/**/*.ts",
+        "tsconfig.json"
+      ],
+      "output": [
+        "dist/**/*.js",
+        "dist/**/*.d.ts",
+        "dist/**/*.js.map",
+        "dist/**/*.d.ts.map",
+        ".tsbuildinfo"
+      ]
+    },
+    "dev": {
+      "dependencies": [
+        "dev.css",
+        "dev.ts"
+      ]
+    },
+    "dev.css": {
+      "command": "sass --watch --style=expanded scss/theme-vars.scss:dist/theme-vars.css",
+      "service": true
+    },
+    "dev.ts": {
+      "command": "tsc --build --watch --pretty",
+      "service": true
     }
   },
   "devDependencies": {

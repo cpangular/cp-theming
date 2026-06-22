@@ -11,7 +11,7 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 | Package | npm | Status |
 |---|---|---|
 | `packages/theme-core` | `@cpangular/cp-theming-core` | 🟡 In Progress — SCSS real, TS stub |
-| `packages/theme-angular` | `@cpangular/cp-theming-angular` | ⬛ Stub |
+| `packages/theme-ng-core` | `@cpangular/cp-theming-ng-core` | ⬛ Stub |
 | `packages/theme-material` | `@cpangular/cp-theming-material` | ⬛ Stub |
 | `packages/theme-m3` | `@cpangular/cp-theming-m3` | ⬛ Stub |
 
@@ -34,7 +34,7 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 | 2 | Preset palettes + themes (`scss/presets/`) | ⬛ Not started |
 | 3 | `theme-core` TS API (real implementation) | ⬛ Not started |
 | 4 | Precompiled CSS per preset theme | ⬛ Not started |
-| 5 | `theme-angular` — Angular signals wrapper | ⬛ Not started |
+| 5 | `theme-ng-core` — Angular signals wrapper | ⬛ Not started |
 | 6 | `theme-material` — Angular Material M3 adapter | ⬛ Not started |
 | 7 | Demos | ⬛ Not started |
 

@@ -8,6 +8,17 @@ export enum ThemeMode {
   AUTO = 'auto',
   LIGHT = 'light',
   DARK = 'dark',
+  INVERT = 'invert',
+}
+
+/** Where theme and mode selections are persisted across page loads. */
+export enum ThemeStorage {
+  /** No persistence — selections reset on page reload. */
+  NONE = 'none',
+  /** Persist in sessionStorage — survives refresh, cleared when tab closes. */
+  SESSION = 'session',
+  /** Persist in localStorage — survives across tabs and browser restarts. */
+  LOCAL = 'local',
 }
 
 /** A theme definition discovered from a loaded CSS stylesheet. */

@@ -3,75 +3,155 @@
 // Static — not light/dark varying. No t.light-dark() needed.
 // ─────────────────────────────────────────────────────────────────────────────
 // M3 roles: display, headline, title, body, label × large, medium, small
-// CSS output: --typescale--{role}-{size}--{font|size|line-height|weight|tracking}
+// CSS output: --text--{role}-{size}--{font|size|line-height|weight|tracking}
 // ─────────────────────────────────────────────────────────────────────────────
-@use 'sass:map';
-@use 'sass:list';
-@use 'sass:string';
+@use "sass:map";
+@use "sass:list";
+@use "sass:string";
 
 // M3 type scale defaults (AM v22 / Material Design 3)
 $_scale: (
-  display-large:   (size: 57px, line-height: 64px, weight: 400, tracking: -0.25px),
-  display-medium:  (size: 45px, line-height: 52px, weight: 400, tracking:  0px),
-  display-small:   (size: 36px, line-height: 44px, weight: 400, tracking:  0px),
-  headline-large:  (size: 32px, line-height: 40px, weight: 400, tracking:  0px),
-  headline-medium: (size: 28px, line-height: 36px, weight: 400, tracking:  0px),
-  headline-small:  (size: 24px, line-height: 32px, weight: 400, tracking:  0px),
-  title-large:     (size: 22px, line-height: 28px, weight: 400, tracking:  0px),
-  title-medium:    (size: 16px, line-height: 24px, weight: 500, tracking:  0.15px),
-  title-small:     (size: 14px, line-height: 20px, weight: 500, tracking:  0.1px),
-  body-large:      (size: 16px, line-height: 24px, weight: 400, tracking:  0.5px),
-  body-medium:     (size: 14px, line-height: 20px, weight: 400, tracking:  0.25px),
-  body-small:      (size: 12px, line-height: 16px, weight: 400, tracking:  0.4px),
-  label-large:     (size: 14px, line-height: 20px, weight: 500, tracking:  0.1px),
-  label-medium:    (size: 12px, line-height: 16px, weight: 500, tracking:  0.5px),
-  label-small:     (size: 11px, line-height: 16px, weight: 500, tracking:  0.5px),
+  display-large: (
+    size: 57px,
+    line-height: 64px,
+    weight: 400,
+    tracking: -0.25px,
+  ),
+  display-medium: (
+    size: 45px,
+    line-height: 52px,
+    weight: 400,
+    tracking: 0px,
+  ),
+  display-small: (
+    size: 36px,
+    line-height: 44px,
+    weight: 400,
+    tracking: 0px,
+  ),
+  headline-large: (
+    size: 32px,
+    line-height: 40px,
+    weight: 400,
+    tracking: 0px,
+  ),
+  headline-medium: (
+    size: 28px,
+    line-height: 36px,
+    weight: 400,
+    tracking: 0px,
+  ),
+  headline-small: (
+    size: 24px,
+    line-height: 32px,
+    weight: 400,
+    tracking: 0px,
+  ),
+  title-large: (
+    size: 22px,
+    line-height: 28px,
+    weight: 400,
+    tracking: 0px,
+  ),
+  title-medium: (
+    size: 16px,
+    line-height: 24px,
+    weight: 500,
+    tracking: 0.15px,
+  ),
+  title-small: (
+    size: 14px,
+    line-height: 20px,
+    weight: 500,
+    tracking: 0.1px,
+  ),
+  body-large: (
+    size: 16px,
+    line-height: 24px,
+    weight: 400,
+    tracking: 0.5px,
+  ),
+  body-medium: (
+    size: 14px,
+    line-height: 20px,
+    weight: 400,
+    tracking: 0.25px,
+  ),
+  body-small: (
+    size: 12px,
+    line-height: 16px,
+    weight: 400,
+    tracking: 0.4px,
+  ),
+  label-large: (
+    size: 14px,
+    line-height: 20px,
+    weight: 500,
+    tracking: 0.1px,
+  ),
+  label-medium: (
+    size: 12px,
+    line-height: 16px,
+    weight: 500,
+    tracking: 0.5px,
+  ),
+  label-small: (
+    size: 11px,
+    line-height: 16px,
+    weight: 500,
+    tracking: 0.5px,
+  ),
 );
 
 @function config(
-  $plain-family:    system-ui,
-  $brand-family:    null,
-  $bold-weight:     700,
-  $medium-weight:   500,
-  $regular-weight:  400,
-  $scale-overrides: null,
+  $plain-family: system-ui,
+  $brand-family: null,
+  $bold-weight: 700,
+  $medium-weight: 500,
+  $regular-weight: 400,
+  $scale-overrides: null
 ) {
   $brand: $plain-family;
-  @if $brand-family != null { $brand: $brand-family; }
+  @if $brand-family != null {
+    $brand: $brand-family;
+  }
   $scale: $_scale;
-  @if $scale-overrides != null { $scale: map.merge($_scale, $scale-overrides); }
+  @if $scale-overrides != null {
+    $scale: map.merge($_scale, $scale-overrides);
+  }
   @return (
-    plain-family:   $plain-family,
-    brand-family:   $brand,
-    bold-weight:    $bold-weight,
-    medium-weight:  $medium-weight,
+    plain-family: $plain-family,
+    brand-family: $brand,
+    bold-weight: $bold-weight,
+    medium-weight: $medium-weight,
     regular-weight: $regular-weight,
-    scale:          $scale,
+    scale: $scale
   );
 }
 
 // Internal: emit all type scale vars
 @mixin emit($config) {
-  $plain:   map.get($config, plain-family);
-  $brand:   map.get($config, brand-family);
-  $scale:   map.get($config, scale);
+  $plain: map.get($config, plain-family);
+  $brand: map.get($config, brand-family);
+  $scale: map.get($config, scale);
 
-  --typescale--plain-family: #{$plain};
-  --typescale--brand-family: #{$brand};
-  --typescale--bold-weight:    #{map.get($config, bold-weight)};
-  --typescale--medium-weight:  #{map.get($config, medium-weight)};
-  --typescale--regular-weight: #{map.get($config, regular-weight)};
+  --text--plain-family: #{$plain};
+  --text--brand-family: #{$brand};
+  --text--bold-weight: #{map.get($config, bold-weight)};
+  --text--medium-weight: #{map.get($config, medium-weight)};
+  --text--regular-weight: #{map.get($config, regular-weight)};
 
   @each $role, $props in $scale {
     $font: $plain;
     // display and headline use brand family
-    @if string.slice('#{$role}', 1, 7) == 'display' or string.slice('#{$role}', 1, 8) == 'headline' {
+    @if string.slice("#{$role}", 1, 7) == "display" or string.slice("#{$role}", 1, 8) == "headline"
+    {
       $font: $brand;
     }
-    --typescale--#{$role}--font:        #{$font};
-    --typescale--#{$role}--size:        #{map.get($props, size)};
-    --typescale--#{$role}--line-height: #{map.get($props, line-height)};
-    --typescale--#{$role}--weight:      #{map.get($props, weight)};
-    --typescale--#{$role}--tracking:    #{map.get($props, tracking)};
+    --text--#{$role}--font: #{$font};
+    --text--#{$role}--size: #{map.get($props, size)};
+    --text--#{$role}--line-height: #{map.get($props, line-height)};
+    --text--#{$role}--weight: #{map.get($props, weight)};
+    --text--#{$role}--tracking: #{map.get($props, tracking)};
   }
 }

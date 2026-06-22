@@ -1,6 +1,7 @@
 // @cpangular/cp-theming-core — public API
 export {
   ThemeMode,
+  ThemeStorage,
   getTheme,
   setTheme,
   clearTheme,
@@ -11,6 +12,10 @@ export {
   watchMode,
   watchTheme,
   getAvailableThemes,
+  configurePersistence,
+  getPersistence,
+  restoreTheme,
+  restoreMode,
 } from './theme.js';
 
 export type { ThemeDef, WatchOptions } from './types.js';

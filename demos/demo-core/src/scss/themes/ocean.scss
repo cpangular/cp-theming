@@ -42,12 +42,6 @@ $ocean-theme: t.theme(
         $shadow: oklch(0 0 0 / 50%),
       )
     ),
-  $elevation: t.light-dark(
-      t.elevation(),
-      t.elevation(
-        $shadow-color: oklch(0 0 0 / 50%),
-      )
-    ),
   $typography: t.typography(
       $plain-family: system-ui,
     ),

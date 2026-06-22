@@ -5,9 +5,12 @@
   "description": "Demonstrates @cpangular/cp-theming-core with vanilla TS and Vite.",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "pnpm run demo-core.dev",
+    "build": "pnpm run demo-core.build",
+    "preview": "pnpm run demo-core.preview",
+    "demo-core.dev": "vite",
+    "demo-core.build": "vite build",
+    "demo-core.preview": "vite preview"
   },
   "dependencies": {
     "@cpangular/cp-theming-core": "workspace:*"

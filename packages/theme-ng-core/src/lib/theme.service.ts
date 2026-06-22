@@ -20,8 +20,9 @@ export class ThemeService {
   // TODO(phase-5): implement
   readonly theme = signal<string | null>(null);
   readonly mode = signal<ThemeMode>(ThemeMode.AUTO);
-  readonly effectiveMode = computed(() => this.mode() === ThemeMode.AUTO
-    ? ThemeMode.LIGHT // TODO(phase-5): read system preference
-    : this.mode() as ThemeMode.LIGHT | ThemeMode.DARK
+  readonly effectiveMode = computed(() =>
+    this.mode() === ThemeMode.AUTO
+      ? ThemeMode.LIGHT // TODO(phase-5): read system preference
+      : (this.mode() as ThemeMode.LIGHT | ThemeMode.DARK),
   );
 }

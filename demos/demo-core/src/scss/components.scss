@@ -10,34 +10,41 @@
 }
 
 .card--primary {
-  @include a.palette-container(primary);
+  @include a.apply-palette(primary);
+  @include a.container();
 }
 
 .card--secondary {
-  @include a.palette-container(secondary);
+  @include a.apply-palette(secondary);
+  @include a.container();
 }
 
 .card--primary-high {
-  @include a.palette-container(primary, bg, high);
+  @include a.apply-palette(primary);
+  @include a.container(high);
 }
 
 .card--primary-low {
-  @include a.palette-container(primary, bg, low);
+  @include a.apply-palette(primary);
+  @include a.container(low);
 }
 
 .card--danger {
-  @include a.palette-container(danger);
+  @include a.apply-palette(danger);
+  @include a.container();
 }
 
 .card--surface {
-  @include a.palette-container(surface);
+  @include a.apply-palette(surface);
+  @include a.container();
 }
 
 // ─── Outlined card ────────────────────────────────────────────────────────────
 .card--outlined {
   background: transparent;
-  @include a.palette-outlined(primary);
-  @include a.palette-color(primary);
+  @include a.apply-palette(primary);
+  @include a.outlined();
+  @include a.stroke();
   border-width: 2px;
   border-radius: 0.75rem;
   padding: 1.5rem;
@@ -45,6 +52,7 @@
 }
 
 // ─── Typography helpers ───────────────────────────────────────────────────────
+// Written by container()/filled()/outlined() — work under any surface variant.
 .text--emphasis {
   color: var(--container--text-emphasis);
 }
@@ -66,42 +74,37 @@
 }
 
 .btn--primary {
-  @include a.palette-container(primary);
+  @include a.apply-palette(primary);
+  @include a.container();
 }
 
 .btn--primary:hover {
-  @include a.palette-container(primary, bg, high);
+  @include a.apply-palette(primary);
+  @include a.container(high);
 }
 
 .btn--outlined {
   background: transparent;
-  @include a.palette-outlined(primary);
-  @include a.palette-color(primary);
+  @include a.apply-palette(primary);
+  @include a.stroke();
   border-width: 2px;
 }
 
 .btn--outlined:hover {
-  @include a.palette-container(primary, bg, lower);
+  @include a.apply-palette(primary);
+  @include a.container(lower);
 }
 
 // ─── Tonal cards ─────────────────────────────────────────────────────────────
-@for $i from 1 through 5 {
-  .card--tonal-primary-#{$i} {
-    @include a.palette-tonal(surface, primary, $i);
-  }
-  .card--tonal-secondary-#{$i} {
-    @include a.palette-tonal(surface, secondary, $i);
-  }
-  .card--tonal-danger-#{$i} {
-    @include a.palette-tonal(surface, danger, $i);
-  }
-}
+// Tonal = apply-palette + tone shift — uses attribute selectors in HTML.
+// No classes needed; [palette][tone][container] composes at the HTML layer.
 
 // ─── State-layer button ───────────────────────────────────────────────────────
 // Hover/press via contrast-colour overlay at themed opacity.
 // Works on any background without pre-computing lightness steps.
 .btn--state-layer {
-  @include a.palette-container(primary);
+  @include a.apply-palette(primary);
+  @include a.container();
   position: relative;
   overflow: hidden;
   isolation: isolate;
@@ -111,7 +114,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: var(--pal-primary--color--contrast);
+  background: var(--container--text);
   opacity: 0;
   transition: opacity 0.15s;
   border-radius: inherit;
@@ -119,13 +122,13 @@
 }
 
 .btn--state-layer:hover::after {
-  opacity: calc(var(--theme--state-hover, 8%) / 100);
+  opacity: calc(var(--weight--state-hover, 8%) / 100);
 }
 .btn--state-layer:active::after {
-  opacity: calc(var(--theme--state-press, 12%) / 100);
+  opacity: calc(var(--weight--state-press, 12%) / 100);
 }
 .btn--state-layer:focus-visible::after {
-  opacity: calc(var(--theme--state-focus, 12%) / 100);
+  opacity: calc(var(--weight--state-focus, 12%) / 100);
 }
 
 // ─── Swatch grid ─────────────────────────────────────────────────────────────

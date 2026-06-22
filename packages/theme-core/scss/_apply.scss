@@ -1,100 +1,196 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Application mixins — how to consume a palette on an element
+// Apply — composable palette/container/stroke mixins.
+// Usage:
+//   @include apply-palette(primary)   → select palette, stamp --palette-color* vars
+//   @include container()              → bg + text blend (palette-agnostic)
+//   @include stroke()                 → border (palette-agnostic)
+//   @include global-selectors()       → emit [container] attr + .stroke class globally
+//
+// Legacy mixins (palette-container, palette-tonal, etc.) are in _apply-legacy.scss
+// and re-exported below for backwards compatibility.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Resolve the full var name for a role + optional modifier
-@function _pal-var($palette, $role, $modifier: null) {
-  @if $modifier {
-    @return var(--pal-#{$palette}--#{$role}--#{$modifier});
+@forward "apply-legacy";
+
+// ─── Internal: alias all derivative vars for one role onto --palette-color* ───
+// Source: --color--{palette}--{role}--*
+// Target: --palette-color--{role}--*
+// Special case: 'color' role has no suffix (--color--{palette} / --palette-color).
+@mixin _scope-role($palette, $role) {
+  $src: --color--#{$palette}--#{$role};
+  $tgt: --palette-color--#{$role};
+  @if $role == color {
+    $src: --color--#{$palette};
+    $tgt: --palette-color;
   }
-  @return var(--pal-#{$palette}--#{$role});
+
+  #{$tgt}: var(#{$src});
+  #{$tgt}--contrast: var(#{$src}--contrast);
+  #{$tgt}--dark: var(#{$src}--dark);
+  #{$tgt}--darker: var(#{$src}--darker);
+  #{$tgt}--light: var(#{$src}--light);
+  #{$tgt}--lighter: var(#{$src}--lighter);
+  #{$tgt}--dark--contrast: var(#{$src}--dark--contrast);
+  #{$tgt}--darker--contrast: var(#{$src}--darker--contrast);
+  #{$tgt}--light--contrast: var(#{$src}--light--contrast);
+  #{$tgt}--lighter--contrast: var(#{$src}--lighter--contrast);
+  #{$tgt}--high: var(#{$src}--high);
+  #{$tgt}--higher: var(#{$src}--higher);
+  #{$tgt}--low: var(#{$src}--low);
+  #{$tgt}--lower: var(#{$src}--lower);
+  #{$tgt}--high--contrast: var(#{$src}--high--contrast);
+  #{$tgt}--higher--contrast: var(#{$src}--higher--contrast);
+  #{$tgt}--low--contrast: var(#{$src}--low--contrast);
+  #{$tgt}--lower--contrast: var(#{$src}--lower--contrast);
 }
 
-@function _pal-contrast-var($palette, $role, $modifier: null) {
+// ─── Layer 1: apply-palette ───────────────────────────────────────────────────
+// Selects a palette: stamps all --palette-color* vars pointing at --color--{name}*,
+// then sets color to the palette's identity color role.
+// Compose with container() and/or stroke() for visual treatment.
+// A [palette="name"] attribute selector is also auto-emitted per theme by define-theme.
+@mixin apply-palette($name) {
+  @include _scope-role($name, color);
+  @include _scope-role($name, bg);
+  @include _scope-role($name, stroke);
+
+  --palette-color--tint-1: var(--color--#{$name}--tint-1);
+  --palette-color--tint-2: var(--color--#{$name}--tint-2);
+  --palette-color--tint-3: var(--color--#{$name}--tint-3);
+  --palette-color--tint-4: var(--color--#{$name}--tint-4);
+  --palette-color--tint-5: var(--color--#{$name}--tint-5);
+  --palette-color--focus: var(--color--#{$name}--focus);
+
+  color: var(--palette-color);
+}
+
+// ─── Layer 2: container ───────────────────────────────────────────────────────
+// Palette-agnostic. Uses --palette-color--bg role as background.
+// $modifier: null | high | higher | low | lower | dark | darker | light | lighter
+// Writes --container--* surface vars consumed by .stroke, .text--emphasis etc.
+@mixin container($modifier: null) {
+  $bg: --palette-color--bg;
+  $contrast: --palette-color--bg--contrast;
   @if $modifier {
-    @return var(--pal-#{$palette}--#{$role}--#{$modifier}--contrast);
+    $bg: --palette-color--bg--#{$modifier};
+    $contrast: --palette-color--bg--#{$modifier}--contrast;
   }
-  @return var(--pal-#{$palette}--#{$role}--contrast);
+
+  background-color: var(#{$bg});
+  --container--text: color-mix(
+    in oklch,
+    var(#{$contrast}) var(--weight--text-blend, 82%),
+    var(#{$bg})
+  );
+  --container--text-emphasis: var(#{$contrast});
+  --container--text-deemphasis: color-mix(
+    in oklch,
+    var(#{$contrast}) var(--weight--text-deemphasis-blend, 55%),
+    var(#{$bg})
+  );
+  --container--stroke: var(--palette-color--stroke);
+  color: var(--container--text);
 }
 
-// ─── Plain: sets only text colour to the role value ───────────────────────────
-// Useful for icons, labels, non-container text.
-@mixin palette-color($palette, $role: color, $modifier: null) {
-  color: _pal-var($palette, $role, $modifier);
+// ─── Layer 2b: filled ───────────────────────────────────────────────────────────
+// Palette-agnostic. Uses --palette-color (identity role) as background —
+// the punchy filled variant (chip, badge, filled button).
+// $modifier: null | high | higher | low | lower | dark | darker | light | lighter
+// Writes --container--* surface vars consumed by .stroke, .text--emphasis etc.
+@mixin filled($modifier: null) {
+  $bg: --palette-color;
+  $contrast: --palette-color--contrast;
+  $stroke: --palette-color--high;
+  @if $modifier {
+    $bg: --palette-color--#{$modifier};
+    $contrast: --palette-color--#{$modifier}--contrast;
+    $stroke: --palette-color--#{$modifier}--high;
+  }
+
+  background-color: var(#{$bg});
+  --container--text: color-mix(
+    in oklch,
+    var(#{$contrast}) var(--weight--text-blend, 82%),
+    var(#{$bg})
+  );
+  --container--text-emphasis: var(#{$contrast});
+  --container--text-deemphasis: color-mix(
+    in oklch,
+    var(#{$contrast}) var(--weight--text-deemphasis-blend, 55%),
+    var(#{$bg})
+  );
+  --container--stroke: var(#{$stroke});
+  color: var(--container--text);
 }
 
-// ─── Inverted: text colour = contrast of the role (black or white) ────────────
-@mixin palette-color-inverted($palette, $role: color, $modifier: null) {
-  color: _pal-contrast-var($palette, $role, $modifier);
+// ─── Layer 2c: outlined ────────────────────────────────────────────────────────
+// Palette-agnostic. No background — transparent surface with palette color text
+// and stroke border. Compose with apply-palette.
+@mixin outlined() {
+  background: transparent;
+  --container--text: var(--palette-color);
+  --container--text-emphasis: var(--palette-color--high);
+  --container--text-deemphasis: var(--palette-color--low);
+  --container--stroke: var(--palette-color--stroke);
+  color: var(--container--text);
 }
 
-// ─── Container: background + blended + primary-tinted text colour ───────────
-// Sets background-color to the role value.
-// Text pipeline:
-//   1. Soften: blend contrast (b/w) into bg  → removes harshness
-//   2. Tint:   blend primary colour in       → cohesion with theme
-// --theme--text-primary-tint: 0% = pure softened b/w, higher = more primary tint
-// Exposes --container--text-emphasis and --container--text-deemphasis.
-@mixin palette-container($palette, $role: bg, $modifier: null) {
-  $bg: _pal-var($palette, $role, $modifier);
-  $contrast: _pal-contrast-var($palette, $role, $modifier);
-
-  background-color: #{$bg};
-
-  // Step 1 intermediates (set as vars so emphasis/deemphasis can reuse the pattern)
-  --container--_text-soft:            color-mix(in oklch, #{$contrast} var(--theme--text-blend, 82%),         #{$bg});
-  --container--_text-soft-emphasis:   color-mix(in oklch, #{$contrast} var(--theme--text-emphasis-blend, 96%), #{$bg});
-  --container--_text-soft-deemphasis: color-mix(in oklch, #{$contrast} var(--theme--text-deemphasis-blend, 55%), #{$bg});
-
-  // Step 2: tint with primary — defaults to 0% (no change) if var not set
-  color:                        color-mix(in oklch, var(--pal-primary--color) var(--theme--text-primary-tint, 0%), var(--container--_text-soft));
-  --container--text-emphasis:   color-mix(in oklch, var(--pal-primary--color) var(--theme--text-primary-tint, 0%), var(--container--_text-soft-emphasis));
-  --container--text-deemphasis: color-mix(in oklch, var(--pal-primary--color) var(--theme--text-primary-tint, 0%), var(--container--_text-soft-deemphasis));
-}
-
-// ─── Outlined: sets border-color to the stroke role ──────────────────────────
-@mixin palette-outlined($palette, $role: stroke, $modifier: null) {
-  border-color: _pal-var($palette, $role, $modifier);
+// ─── Layer 3: stroke ──────────────────────────────────────────────────────────
+// Reads --container--stroke written by container()/filled()/outlined().
+// Using --container--stroke means the border automatically matches the surface variant.
+@mixin stroke() {
+  border-color: var(--container--stroke);
   border-style: solid;
 }
 
-// ─── Tonal container: base palette bg tinted with another palette's colour ───
-// Combines two palettes — base provides the bg, tint provides the colour overlay.
-// Level 1–5 uses --theme--tint-N opacity vars.
-// Text contrast is recomputed against the actual blended bg so it
-// correctly flips black/white at high tint levels.
-// Examples:
-//   @include palette-tonal(surface, primary, 2)   → surface bg tinted with primary
-//   @include palette-tonal(surface, danger,  3)   → surface bg tinted with danger
-@mixin palette-tonal($base-palette, $tint-palette, $level: 1, $role: bg, $modifier: null) {
-  @include palette-container($base-palette, $role, $modifier);
-
-  $base-bg: _pal-var($base-palette, $role, $modifier);
-
-  // Store the blended bg as a var so it can be used in downstream calculations
-  --container--_tonal-bg: color-mix(
-    in oklch,
-    var(--pal-#{$tint-palette}--color) var(--theme--tint-#{$level}),
-    #{$base-bg}
-  );
-
-  background-color: var(--container--_tonal-bg);
-
-  // Recompute contrast against the actual tonal bg (can flip vs. base bg at high tint levels)
-  --container--_tonal-contrast: oklch(from var(--container--_tonal-bg) clamp(0, (0.5 - l) * 99999, 1) 0 0);
-
-  // Recompute full text pipeline against tonal bg + tonal contrast
-  --container--_text-soft:            color-mix(in oklch, var(--container--_tonal-contrast) var(--theme--text-blend, 82%),            var(--container--_tonal-bg));
-  --container--_text-soft-emphasis:   color-mix(in oklch, var(--container--_tonal-contrast) var(--theme--text-emphasis-blend, 96%),   var(--container--_tonal-bg));
-  --container--_text-soft-deemphasis: color-mix(in oklch, var(--container--_tonal-contrast) var(--theme--text-deemphasis-blend, 55%), var(--container--_tonal-bg));
-
-  color:                        color-mix(in oklch, var(--pal-primary--color) var(--theme--text-primary-tint, 0%), var(--container--_text-soft));
-  --container--text-emphasis:   color-mix(in oklch, var(--pal-primary--color) var(--theme--text-primary-tint, 0%), var(--container--_text-soft-emphasis));
-  --container--text-deemphasis: color-mix(in oklch, var(--pal-primary--color) var(--theme--text-primary-tint, 0%), var(--container--_text-soft-deemphasis));
+// ─── Layer 1b: tone ───────────────────────────────────────────────────────────
+// Shifts the base --palette-color* vars to a modifier step so that all
+// downstream layers (container, filled, outlined, stroke) automatically
+// operate on the toned values. Apply after apply-palette, before the surface layer.
+// Only the base + contrast for each role are remapped; modifier variants
+// (--palette-color--bg--high etc.) still resolve against the original palette.
+@mixin tone($modifier) {
+  --palette-color: var(--palette-color--#{$modifier});
+  --palette-color--contrast: var(--palette-color--#{$modifier}--contrast);
+  --palette-color--bg: var(--palette-color--bg--#{$modifier});
+  --palette-color--bg--contrast: var(--palette-color--bg--#{$modifier}--contrast);
+  --palette-color--stroke: var(--palette-color--stroke--#{$modifier});
+  --palette-color--stroke--contrast: var(--palette-color--stroke--#{$modifier}--contrast);
 }
 
-// ─── Elevated container: tonal shorthand with primary as the tint palette ────
-// Kept for convenience. Equivalent to palette-tonal($palette, primary, $level).
-@mixin palette-elevated($palette, $level: 1, $role: bg, $modifier: null) {
-  @include palette-tonal($palette, primary, $level, $role, $modifier);
+// ─── global-selectors: emit attribute/class rules globally ───────────────────────────
+// Call once from your root stylesheet (e.g. base.scss).
+// [palette="name"] (emitted per theme by define-theme) populates --palette-color* vars.
+@mixin global-selectors() {
+  // Surface layers require a palette to be selected on the same element.
+  // [palette][container] = specificity 0,2,0 — matches [theme] [palette] (also 0,2,0)
+  // but declared after all theme rules so declaration order gives these the win.
+  [palette][container] {
+    @include container();
+  }
+  [palette][filled] {
+    @include filled();
+  }
+  [palette][outlined] {
+    @include outlined();
+  }
+  .stroke {
+    @include stroke();
+  }
+
+  // tone — requires [palette] on the same element (specificity 0,2,0 matches
+  // [theme] [palette] rules, declaration order here wins since we're declared after).
+  $tone-modifiers: high, higher, low, lower, dark, darker, light, lighter;
+  @each $mod in $tone-modifiers {
+    [palette][tone="#{$mod}"] {
+      @include tone($mod);
+    }
+  }
+
+  // Elevation — shadow only, no color tinting.
+  @for $i from 0 through 5 {
+    [elevated="#{$i}"] {
+      box-shadow: var(--elevation-#{$i}--shadow);
+    }
+  }
 }

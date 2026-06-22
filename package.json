@@ -10,6 +10,7 @@
     "git.remove-tags": "git tag | xargs -r git tag -d",
     "clean": "wireit",
     "reset": "wireit",
+    "dev": "pnpm run ws.run.parallel dev",
     "ws.run": "pnpm run ws.run.ordered",
     "ws.run.parallel": "pnpm -r --parallel --if-present run",
     "ws.run.ordered": "pnpm -r --workspace-concurrency=1 --if-present run",
