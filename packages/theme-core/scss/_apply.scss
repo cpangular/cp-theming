@@ -3,14 +3,57 @@
 // Usage:
 //   @include apply-palette(primary)   → select palette, stamp --palette-color* vars
 //   @include container()              → bg + text blend (palette-agnostic)
-//   @include stroke()                 → border (palette-agnostic)
+//   @include stroke()                 → inset ::after border (palette-agnostic)
 //   @include global-selectors()       → emit [container] attr + .stroke class globally
 //
-// Legacy mixins (palette-container, palette-tonal, etc.) are in _apply-legacy.scss
-// and re-exported below for backwards compatibility.
+// Surface vars set by container()/filled()/outlined():
+//   --container--stroke         color of the stroke border
+//   --container--text           blended body text color
+//   --container--text-emphasis  pure contrast (white or black)
+//   --container--text-deemphasis deemphasized text
+//
+// User-facing layout vars:
+//   --container--radius         all corners (base fallback)
+//   --container--radius--top    top-left + top-right
+//   --container--radius--bottom bottom-left + bottom-right
+//   --container--radius--left   top-left + bottom-left
+//   --container--radius--right  top-right + bottom-right
+//   --container--radius--tl     top-left only
+//   --container--radius--tr     top-right only
+//   --container--radius--br     bottom-right only
+//   --container--radius--bl     bottom-left only
+//   Priority: individual corner > top/bottom side > left/right side > all
+//   --stroke-width              stroke width override (default 1px)
+//
+// Resolved internal vars (set by stroke(), read by consumers):
+//   --container--stroke-width   resolved stroke width; use in padding:
+//                               padding: calc(12px + var(--container--stroke-width, 0px))
+//
 // ─────────────────────────────────────────────────────────────────────────────
 
-@forward "apply-legacy";
+// ─── Internal: compute per-corner radius vars and apply border-radius ────────
+// Sets --container--_radius-tl/tr/br/bl which are also inherited by ::after.
+// Priority: individual > top/bottom side > left/right side > all.
+@mixin _apply-radius() {
+  --container--_radius-tl: var(
+    --container--radius--tl,
+    var(--container--radius--top, var(--container--radius--left, var(--container--radius, 0px)))
+  );
+  --container--_radius-tr: var(
+    --container--radius--tr,
+    var(--container--radius--top, var(--container--radius--right, var(--container--radius, 0px)))
+  );
+  --container--_radius-br: var(
+    --container--radius--br,
+    var(--container--radius--bottom, var(--container--radius--right, var(--container--radius, 0px)))
+  );
+  --container--_radius-bl: var(
+    --container--radius--bl,
+    var(--container--radius--bottom, var(--container--radius--left, var(--container--radius, 0px)))
+  );
+  border-radius: var(--container--_radius-tl) var(--container--_radius-tr)
+    var(--container--_radius-br) var(--container--_radius-bl);
+}
 
 // ─── Internal: alias all derivative vars for one role onto --palette-color* ───
 // Source: --color--{palette}--{role}--*
@@ -76,6 +119,8 @@
     $contrast: --palette-color--bg--#{$modifier}--contrast;
   }
 
+  position: relative;
+  @include _apply-radius();
   background-color: var(#{$bg});
   --container--text: color-mix(
     in oklch,
@@ -107,6 +152,8 @@
     $stroke: --palette-color--#{$modifier}--high;
   }
 
+  position: relative;
+  @include _apply-radius();
   background-color: var(#{$bg});
   --container--text: color-mix(
     in oklch,
@@ -127,6 +174,8 @@
 // Palette-agnostic. No background — transparent surface with palette color text
 // and stroke border. Compose with apply-palette.
 @mixin outlined() {
+  position: relative;
+  @include _apply-radius();
   background: transparent;
   --container--text: var(--palette-color);
   --container--text-emphasis: var(--palette-color--high);
@@ -137,10 +186,23 @@
 
 // ─── Layer 3: stroke ──────────────────────────────────────────────────────────
 // Reads --container--stroke written by container()/filled()/outlined().
-// Using --container--stroke means the border automatically matches the surface variant.
+// Renders as an inset ::after pseudo-element so the border sits inside the
+// component bounds and shares --container--radius with the surface.
+// Sets --container--stroke-width for consumers to use in padding compensation:
+//   padding: calc(12px + var(--container--stroke-width, 0px))
 @mixin stroke() {
-  border-color: var(--container--stroke);
-  border-style: solid;
+  --container--stroke-width: var(--stroke-width, 1px);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    box-sizing: border-box;
+    border-radius: var(--container--_radius-tl) var(--container--_radius-tr)
+      var(--container--_radius-br) var(--container--_radius-bl);
+    border: var(--container--stroke-width) solid var(--container--stroke);
+    pointer-events: none;
+  }
 }
 
 // ─── Layer 1b: tone ───────────────────────────────────────────────────────────
