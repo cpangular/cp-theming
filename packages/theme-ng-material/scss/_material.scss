@@ -182,6 +182,21 @@
 // hardcode values. Grows as gaps are discovered during demo-material development.
 
 @mixin apply-material-overrides() {
+  // mat-select option checkmark
+  //
+  // AM option CSS has:
+  //   .mat-mdc-option .mat-pseudo-checkbox {
+  //     --mat-pseudo-checkbox-minimal-selected-checkmark-color:
+  //       var(--mat-option-selected-state-label-text-color, var(--mat-sys-on-secondary-container));
+  //   }
+  // That resolves to white on themes where the secondary has a dark @property
+  // base color (via the contrast formula eager-resolution bug in Chromium).
+  // Use a more specific selector (3 classes vs 2) to guarantee we win the
+  // cascade even though component styles load after global stylesheets.
+  .mat-mdc-select-panel .mat-mdc-option .mat-pseudo-checkbox {
+    --mat-pseudo-checkbox-minimal-selected-checkmark-color: var(--color--primary);
+  }
+
   // Slide toggle — unselected track visibility + icon fix.
   //
   // AM22 maps the unselected track fill to --mat-sys-surface-variant (near-white
