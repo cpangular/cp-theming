@@ -24,11 +24,12 @@ demos/
 
 ### @cpangular/cp-theming-core
 The only package with real implementation initially. Contains:
-- **SCSS theme authoring API** — `t.palette()`, `t.theme()`, `@include t.define-theme()`, etc.
-- **CSS variable system** — all `--pal-*`, `--theme--*`, `--typescale--*` etc vars
-- **Preset palettes + themes** — ocean, ember, and more
-- **Vanilla TS API** — `ThemeMode`, `setTheme()`, `setMode()`, `watchMode()`, etc.
-- **Precompiled CSS** — one file per preset theme, for users without Sass
+- **SCSS theme authoring API** — `t.palette()`, `t.theme()`, `@include t.define-theme()`, `@include t.define-core-theme()`, etc.
+- **CSS variable system** — all `--color--*`, `--weight--*`, `--space--*`, `--shape--*`, `--motion--*`, `--elevation-*` vars, all registered as typed `@property` declarations
+- **Brand color API** — `t.palette-from-brand()`, `t.background-from-brand()`, `t.surface-from-brand()` derive palettes from `--color--brand` at CSS runtime
+- **Preset palettes + themes** — azure-blue, rose-red, cyan-orange, magenta-violet (M3-inspired)
+- **Vanilla TS API** — `ThemeMode`, `setTheme()`, `setMode()`, `watchMode()`, `watchTheme()`, `getAvailableThemes()`, `configurePersistence()`, etc.
+- **Precompiled CSS** — `dist/core.css` (shared), `dist/presets/{theme}.css` (one per preset), for users without Sass
 
 ### @cpangular/cp-theming-ng-core
 Signal-based Angular wrapper around cp-theming-core. No Angular Material dependency.
@@ -83,42 +84,53 @@ Each demo is a consumer project showing a specific use case. No library code her
 ## CSS Variable Conventions
 
 `--` separates namespace segments (like `.` in OOP). `-` is a word separator within a segment.
+The `color` role is the palette's primary identity — it becomes the namespace prefix with no trailing segment.
 
 ```
---pal-{name}--base                   seed color — never use in UI directly
---pal-{name}--color                  primary UI color role
---pal-{name}--color--contrast        black or white (whichever contrasts)
---pal-{name}--color--dark            l - step-1
---pal-{name}--color--darker          l - step-2
---pal-{name}--color--light           l + step-1
---pal-{name}--color--lighter         l + step-2
---pal-{name}--color--high            mode-relative alias → dark in light, light in dark
---pal-{name}--color--higher          mode-relative alias → darker / lighter
---pal-{name}--color--low             mode-relative alias → opposite of high
---pal-{name}--color--lower           opposite of higher
---pal-{name}--bg                     background role (same derivative set)
---pal-{name}--stroke                 border/outline role (same derivative set)
---pal-{name}--focus                  focus ring color (auto-derived or explicit)
---pal-{name}--tint-1..5              transparent tints of color role
+--color--{name}                      primary identity color (no role suffix)
+--color--{name}--contrast            black or white (whichever contrasts more)
+--color--{name}--dark                lightness − 0.12
+--color--{name}--darker              lightness − 0.24
+--color--{name}--light               lightness + 0.12
+--color--{name}--lighter             lightness + 0.24
+--color--{name}--high                mode-relative: darker in light, lighter in dark
+--color--{name}--higher
+--color--{name}--low                 mode-relative: opposite of high
+--color--{name}--lower
+--color--{name}--bg                  background role (same full derivative set)
+--color--{name}--stroke              stroke/border role (same full derivative set)
+--color--{name}--focus               focus ring color (auto-derived or explicit)
+--color--{name}--tint-1..5           transparent tints at 10%/20%/38%/60%/80%
+--color--brand                       runtime brand seed color (optional)
 
---theme--text-blend                  global blend weights (percentages)
---theme--text-emphasis-blend
---theme--text-deemphasis-blend
---theme--text-primary-tint
---theme--state-hover/press/focus/drag
---theme--tint-1..5
---theme--scrim / --theme--shadow
+--weight--text-blend                 blend percentages for text/state overlays
+--weight--text-emphasis-blend
+--weight--text-deemphasis-blend
+--weight--text-primary-tint
+--weight--state-hover/press/focus/drag
+--weight--tint-1..5
 
---typescale--{role}--font/size/line-height/weight/tracking
---density-scale                      0 (default) to -5 (most compact)
+--overlay--scrim / --overlay--shadow
+
+--density-scale                      0 (default) to −5 (most compact)
 --space--xxs .. --space--xxl         calc() using density-scale
+
 --shape--xxs .. --shape--full        corner radii
+
 --focus--width / --focus--offset / --focus--style
+
 --motion--duration-short/medium/long/extra
 --motion--easing-standard/emphasized/decelerate/accelerate
+
 --elevation-{0..5}--shadow
 --elevation-{0..5}--tint
+
+--palette-color                      scope vars: active palette's color role
+--palette-color--bg / --stroke / --focus / --tint-1..5
+--container--text / --text-emphasis / --text-deemphasis / --stroke
 ```
+
+All vars listed above are registered as typed `@property` declarations (in `dist/core.css`), enabling CSS transitions and `@keyframes` interpolation.
 
 ---
 
@@ -140,17 +152,20 @@ Each demo is a consumer project showing a specific use case. No library code her
 ```scss
 @use '@cpangular/cp-theming-core/scss/theme' as t;
 
-$primary: t.light-dark(
-  t.palette(oklch(0.55 0.18 240)),
-  t.palette(oklch(0.65 0.16 240)),
-);
-
 $my-theme: t.theme(
+  $brand: oklch(0.44 0.22 253),          // emits --color--brand; enables *-from-brand() helpers
   $palettes: (
-    background: t.light-dark(t.palette(oklch(0.97 0.005 220)), t.palette(oklch(0.18 0.015 220))),
-    surface:    t.light-dark(t.palette(oklch(0.93 0.010 220)), t.palette(oklch(0.23 0.018 220))),
-    primary:    $primary,
-    danger:     t.light-dark(t.palette(oklch(0.55 0.20 25)),   t.palette(oklch(0.65 0.18 25))),
+    background: t.background-from-brand(),
+    surface:    t.surface-from-brand(),
+    primary:    t.palette-from-brand(),
+    secondary:  t.light-dark(
+      t.palette(oklch(0.46 0.27 264)),
+      t.palette(oklch(0.71 0.21 264)),
+    ),
+    error:   t.light-dark(t.palette(oklch(0.52 0.22 27)),  t.palette(oklch(0.70 0.20 27))),
+    pass:    t.light-dark(t.palette(oklch(0.48 0.18 145)), t.palette(oklch(0.72 0.16 145))),
+    caution: t.light-dark(t.palette(oklch(0.55 0.16 103)), t.palette(oklch(0.82 0.15 103))),
+    warn:    t.light-dark(t.palette(oklch(0.55 0.18 55)),  t.palette(oklch(0.76 0.16 55))),
   ),
   $weights:    t.light-dark(t.weights($text-blend: 82%), t.weights($text-blend: 78%)),
   $overlay:    t.light-dark(t.overlays($shadow: oklch(0.2 0.02 240 / 30%)), t.overlays()),
@@ -163,58 +178,66 @@ $my-theme: t.theme(
 );
 
 @include t.define-theme('my-theme', $my-theme, $default: true);
+@include t.define-core-theme();
 ```
 
 ---
 
 ## Current Status
 
-### ✅ Implemented in theme-concept/scss (to be migrated to theme-core)
-- `_palette.scss` — config, define-palette, runtime color derivatives
-- `_theme.scss` — full public SCSS API
-- `_weights.scss`, `_overlay.scss`, `_typography.scss`, `_density.scss`
-- `_shape.scss`, `_focus.scss`, `_motion.scss`, `_elevation.scss`
-- `_variables.scss`, `_apply.scss`
+### ✅ Phase 1 — Workspace scaffold
+- Root pnpm-workspace.yaml, all package stubs
+- SCSS migrated from theme-concept into theme-core/scss
 
-### ⬛ Not started
-- All TypeScript APIs (theme-core)
-- Preset palette + theme maps
-- Precompiled CSS outputs
-- theme-ng-core (Angular signals)
-- theme-material (Angular Material adapter)
-- theme-m3 (plain M3 adapter)
-- All demos
+### ✅ Phase 2 — theme-core SCSS finalization
+- Complete palette system (`_palette.scss`) with runtime derivatives, from-var/from-brand helpers
+- All sub-config modules: weights, overlay, typography, density, shape, focus, motion, elevation
+- `_apply.scss` composable mixin system: apply-palette, tone, container, filled, outlined, stroke, radius, padding
+- `define-core-theme()` — replaces legacy `global-selectors()` — emits attribute rules + density scopes + all `@property` registrations
+- Brand API: `$brand` param in `t.theme()`, `palette-from-brand()`, `background-from-brand()`, `surface-from-brand()`
+- Preset palettes (`scss/presets/_palettes.scss`) — 4 M3-inspired color sets + semantic defaults
+- Preset themes (`scss/presets/_themes.scss`) — `$azure-blue`, `$rose-red`, `$cyan-orange`, `$magenta-violet`
 
----
+### ✅ Phase 3 — theme-core TypeScript API
+- `ThemeMode` enum (`AUTO`, `LIGHT`, `DARK`, `INVERT`), `ThemeStorage` enum, `ThemeDef` interface
+- `getTheme`, `setTheme`, `clearTheme`
+- `getMode`, `setMode`, `getEffectiveMode`, `getPreferredMode`
+- `watchMode` — watches `[themeMode]` attribute + `prefers-color-scheme` via `MediaQueryList`
+- `watchTheme` — watches `[theme]` attribute changes
+- `getAvailableThemes` — scans loaded stylesheets for `[theme="..."]` selectors
+- `configurePersistence`, `getPersistence`, `restoreTheme`, `restoreMode` — localStorage/sessionStorage
 
-## Development Phases
+### ✅ Phase 4 — theme-core precompiled CSS output
+- `dist/core.css` — shared, theme-independent; `@property` registrations + attribute rules + density scopes
+- `dist/presets/azure-blue.css`
+- `dist/presets/rose-red.css`
+- `dist/presets/cyan-orange.css`
+- `dist/presets/magenta-violet.css`
+- All exports wired in `package.json` (`./css/core`, `./css/presets/{name}`)
 
-### Phase 1 — Workspace scaffold ← current
-- Root pnpm-workspace.yaml, package.json
-- All package stubs (package.json only)
-- Migrate SCSS from theme-concept into theme-core/scss
+### ✅ Phase 5 — theme-ng-core
+- Angular workspace scaffolded at monorepo root (`angular.json` + `tsconfig.json`)
+- `ng generate library` wired into `packages/theme-ng-core` via `ng-package.json`, `tsconfig.lib.json`, `tsconfig.lib.prod.json`
+- `ThemeService` (`providedIn: 'root'`) — signals wrapping theme-core TS API
+  - `theme`, `mode`, `effectiveMode`, `availableThemes` readonly signals
+  - `setTheme()`, `setMode()`, `configurePersistence()`, `getPersistence()`, `restorePersistedState()`, `refreshAvailableThemes()` methods
+  - `watchMode()` + `watchTheme()` from theme-core wired in constructor; `DestroyRef.onDestroy` cleans up
+  - No NgZone — zoneless-first; `signal.set()` in observer callbacks is sufficient
+- `ThemeDirective` — standalone attribute directive `[theme]`
+  - Signal inputs: `theme`, `themeMode`
+  - `effect()` syncs inputs to `[theme]` / `[themeMode]` attrs on host via `Renderer2`
+- `public-api.ts` re-exports `ThemeMode`, `ThemeStorage`, `ThemeDef` from `@cpangular/cp-theming-core`
+- `ng build theme-ng-core` → `dist/theme-ng-core/` (fesm2022 + types) ✅
 
-### Phase 2 — theme-core SCSS finalization
-- Preset palettes (packages/theme-core/scss/presets/)
-- Preset themes
-- `_apply.scss` mixins for common usage patterns
-
-### Phase 3 — theme-core TypeScript API
-- `ThemeMode` enum, `ThemeDef` interface
-- `setTheme`, `setMode`, `getMode`, `getPreferredMode`, `watchMode`
-- MutationObserver for reactive DOM tracking
-
-### Phase 4 — theme-core precompiled output
-- Build pipeline (sass → dist/css/)
-- One CSS file per preset theme
-
-### Phase 5 — theme-ng-core
-- `ThemeService` with Angular signals
-- `[cpaTheme]` directive
-
-### Phase 6 — theme-material
-- SCSS adapter: `--pal-*` → `--mat-sys-*`
+### ⬛ Phase 6 — theme-material
+- SCSS adapter: `--color--*` → `--mat-sys-*`
 - `material-core()` mixin
 - Typography + density wiring
 
-### Phase 7 — demos
+### ⬛ Phase 7 — demos
+- demo-core: Vite + vanilla TS *(partially implemented — used for development)*
+- demo-material: Angular + Material
+- demo-brand-core: example brand pack
+- demo-brand-material: example brand + Material
+
+---

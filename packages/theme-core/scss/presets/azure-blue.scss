@@ -1,0 +1,11 @@
+// Pre-built theme: azure-blue
+// Suitable for direct <link> use without Sass.
+// Load dist/core.css after this file (or bundle both).
+//
+// Usage:
+//   <link rel="stylesheet" href="@cpangular/cp-theming-core/dist/presets/azure-blue.css">
+//   <link rel="stylesheet" href="@cpangular/cp-theming-core/dist/core.css">
+@use "../theme" as t;
+@use "themes" as th;
+
+@include t.define-theme("azure-blue", th.$azure-blue, $default: true);

@@ -2,15 +2,13 @@
   "name": "@cpangular/cp-theming-ng-core",
   "version": "0.1.0-dev.0",
   "description": "Angular signal-based wrapper for @cpangular/cp-theming-core.",
-  "type": "module",
-  "exports": {
-    ".": "./src/index.ts"
-  },
+  "sideEffects": false,
   "peerDependencies": {
-    "@angular/core": ">=19.0.0",
+    "@angular/common": "^21.2.0",
+    "@angular/core": "^21.2.0",
     "@cpangular/cp-theming-core": "workspace:*"
   },
-  "devDependencies": {
-    "typescript": "^5.8.0"
+  "dependencies": {
+    "tslib": "^2.3.0"
   }
 }

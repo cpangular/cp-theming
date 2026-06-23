@@ -130,24 +130,39 @@ export function getPreferredMode(): ThemeMode.LIGHT | ThemeMode.DARK {
 // ─── Watch ───────────────────────────────────────────────────────────────────
 
 /**
- * Watches for theme or mode changes on the given element.
+ * Watches for mode changes on the given element.
+ * Fires when the [themeMode] attribute changes OR when prefers-color-scheme
+ * changes (relevant when mode is AUTO or INVERT).
  * Returns a cleanup function — call it to stop watching.
- * TODO(phase-3): also watch prefers-color-scheme changes via MediaQueryList
  */
 export function watchMode(
   callback: (mode: ThemeMode) => void,
   options: WatchOptions = {},
 ): () => void {
   const el = options.element ?? document.documentElement;
-  const observer = new MutationObserver(() => callback(getMode(el)));
+  const notify = () => callback(getMode(el));
+
+  // Watch [themeMode] attribute changes on the element.
+  const observer = new MutationObserver(notify);
   observer.observe(el, { attributes: true, attributeFilter: [ATTR_MODE] });
-  return () => observer.disconnect();
+
+  // Also fire when the system color scheme changes — only relevant for AUTO / INVERT.
+  const mql = window.matchMedia('(prefers-color-scheme: dark)');
+  const onSystemChange = () => {
+    const mode = getMode(el);
+    if (mode === ThemeMode.AUTO || mode === ThemeMode.INVERT) notify();
+  };
+  mql.addEventListener('change', onSystemChange);
+
+  return () => {
+    observer.disconnect();
+    mql.removeEventListener('change', onSystemChange);
+  };
 }
 
 /**
  * Watches for [theme] attribute changes on the given element.
  * Returns a cleanup function.
- * TODO(phase-3): scan available themes from loaded stylesheets
  */
 export function watchTheme(
   callback: (theme: string | null) => void,

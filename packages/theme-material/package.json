@@ -8,7 +8,7 @@
     "./scss/*": "./scss/*"
   },
   "peerDependencies": {
-    "@angular/core": ">=19.0.0",
+    "@angular/core": "^21.2.0",
     "@angular/material": ">=19.0.0",
     "@cpangular/cp-theming-ng-core": "workspace:*",
     "@cpangular/cp-theming-core": "workspace:*"

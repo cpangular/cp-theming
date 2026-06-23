@@ -6,7 +6,11 @@
   "exports": {
     ".": "./src/index.ts",
     "./scss/*": "./scss/*",
-    "./css/core": "./dist/core.css"
+    "./css/core": "./dist/core.css",
+    "./css/presets/azure-blue": "./dist/presets/azure-blue.css",
+    "./css/presets/rose-red": "./dist/presets/rose-red.css",
+    "./css/presets/cyan-orange": "./dist/presets/cyan-orange.css",
+    "./css/presets/magenta-violet": "./dist/presets/magenta-violet.css"
   },
   "scripts": {
     "build": "wireit",
@@ -20,7 +24,7 @@
       ]
     },
     "build.css": {
-      "command": "sass --style=expanded scss/core.scss:dist/core.css scss/theme-vars.scss:dist/theme-vars.css",
+      "command": "sass --style=expanded scss/core.scss:dist/core.css scss/theme-vars.scss:dist/theme-vars.css scss/presets/azure-blue.scss:dist/presets/azure-blue.css scss/presets/rose-red.scss:dist/presets/rose-red.css scss/presets/cyan-orange.scss:dist/presets/cyan-orange.css scss/presets/magenta-violet.scss:dist/presets/magenta-violet.css",
       "files": [
         "scss/**/*.scss"
       ],

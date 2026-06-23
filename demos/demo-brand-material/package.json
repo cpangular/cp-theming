@@ -4,7 +4,7 @@
   "private": true,
   "description": "Example: how a company wires their brand theme pack into Angular Material.",
   "dependencies": {
-    "@angular/core": "^19.0.0",
+    "@angular/core": "^21.2.0",
     "@angular/material": "^19.0.0",
     "@cpangular/cp-theming-core": "workspace:*",
     "@cpangular/cp-theming-ng-core": "workspace:*",
