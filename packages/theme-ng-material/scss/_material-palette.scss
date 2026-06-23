@@ -1,16 +1,43 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// material-palette() — Maps a cp-theming palette to Angular Material M3
-// tonal palette roles.
-// TODO(phase-6): implement.
+// material-palette($name)
 //
-// Angular Material M3 uses a tonal palette system with roles:
-//   primary, on-primary, primary-container, on-primary-container,
-//   secondary, on-secondary, ... error, surface, background, etc.
+// Scopes --mat-sys-primary* tokens to a cp-theming named palette.
+// Apply to any selector that wraps the components you want recolored.
 //
-// Our system has: color, bg, stroke + their derivatives.
-// This mixin bridges the two.
+// Usage:
+//   .warn-button { @include material-palette('warn'); }
+//   .pass-chip   { @include material-palette('pass'); }
+//
+// All Material components inside that selector inherit the overridden tokens.
+// Scope tightly (a single wrapper element) to avoid coloring unintended siblings.
+//
+// NOTE: --mat-sys-* are unregistered vars — safe to override in local scope.
+// No eager-resolution issue (that only affects @property-registered vars like --color--*).
 // ─────────────────────────────────────────────────────────────────────────────
 
 @mixin material-palette($name) {
-  // TODO(phase-6): implement
+  --mat-sys-primary: var(--color--#{$name});
+  --mat-sys-on-primary: var(--color--#{$name}--contrast);
+  --mat-sys-primary-container: var(--color--#{$name}--bg);
+  --mat-sys-on-primary-container: var(--color--#{$name}--bg--contrast);
+  --mat-sys-primary-fixed: var(--color--#{$name}--bg);
+  --mat-sys-primary-fixed-dim: var(--color--#{$name}--bg--low);
+  --mat-sys-on-primary-fixed: var(--color--#{$name}--bg--contrast);
+  --mat-sys-on-primary-fixed-variant: var(--color--#{$name}--bg--contrast);
+  --mat-sys-inverse-primary: var(--color--#{$name}--contrast);
+  --mat-sys-surface-tint: var(--color--#{$name}--tint-1);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Per-component palette mixins — surgical single-component recoloring.
+// Prefer material-palette() for wrapping a single component instance.
+// Use these when you need mixed palettes at the same DOM level.
+// TODO(phase-6): implement as needed.
+//
+// @mixin button-palette($name) { ... }
+// @mixin icon-button-palette($name) { ... }
+// @mixin fab-palette($name) { ... }
+// @mixin checkbox-palette($name) { ... }
+// @mixin slide-toggle-palette($name) { ... }
+// @mixin chips-palette($name) { ... }
+// ─────────────────────────────────────────────────────────────────────────────
