@@ -1,4 +1,5 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 const LIB_OVERVIEW: Record<
@@ -295,8 +296,8 @@ const themes = getAvailableThemes(); // ['azure-blue', 'rose-red', …]</code></
   ],
 })
 export class OverviewPageComponent {
-  private readonly route = inject(ActivatedRoute);
-  readonly lib = () => (this.route.snapshot.parent?.params?.['lib'] as string) ?? 'core';
+  private readonly _parentParams = toSignal(inject(ActivatedRoute).parent!.params);
+  readonly lib = computed(() => (this._parentParams()?.['lib'] as string) ?? 'core');
   readonly content = () =>
     LIB_OVERVIEW[this.lib()] ?? { title: this.lib(), subtitle: '', intro: '', bullets: [] };
 }

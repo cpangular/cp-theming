@@ -1,4 +1,5 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 
 @Component({
@@ -351,6 +352,6 @@ import { ActivatedRoute } from '@angular/router';
   ],
 })
 export class ApiPageComponent {
-  private readonly route = inject(ActivatedRoute);
-  readonly lib = () => (this.route.snapshot.parent?.params?.['lib'] as string) ?? 'core';
+  private readonly _parentParams = toSignal(inject(ActivatedRoute).parent!.params);
+  readonly lib = computed(() => (this._parentParams()?.['lib'] as string) ?? 'core');
 }

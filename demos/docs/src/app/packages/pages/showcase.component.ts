@@ -1,4 +1,5 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -349,8 +350,8 @@ import { ThemeDirective, ThemeDensityDirective } from '@cpangular/cp-theming-ng-
   ],
 })
 export class ShowcasePageComponent {
-  private readonly route = inject(ActivatedRoute);
-  readonly lib = () => (this.route.snapshot.parent?.params?.['lib'] as string) ?? 'ng-material';
+  private readonly _parentParams = toSignal(inject(ActivatedRoute).parent!.params);
+  readonly lib = computed(() => (this._parentParams()?.['lib'] as string) ?? 'ng-material');
 
   readonly presets = [
     { value: 'azure-blue', label: 'Azure Blue' },
