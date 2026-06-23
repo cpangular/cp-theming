@@ -154,3 +154,35 @@ h4 {
 a {
   color: var(--color--primary, currentColor);
 }
+
+// ── Sidenav nav item overrides ─────────────────────────────────────────────
+
+// Remove the rounded corners Material applies to the sidenav panel
+mat-sidenav {
+  --mat-sidenav-container-shape: 0px;
+}
+// Angular Material sets border-radius on several internal elements and uses a
+// ::before state-layer for backgrounds — scoped ::ng-deep from the parent
+// component cannot reliably reach these. Global rules win via specificity.
+
+.sidenav {
+  // Remove pill shape from every nav list item in the sidenav
+  .mat-mdc-list-item,
+  .mat-mdc-list-item .mdc-list-item__ripple,
+  .mat-mdc-list-item::before {
+    border-radius: 0 !important;
+  }
+
+  // Active item: tinted background + left accent bar
+  .nav-active {
+    background-color: var(--color--primary--tint-2) !important;
+    color: var(--color--primary) !important;
+    font-weight: 500;
+    box-shadow: inset 3px 0 0 var(--color--primary);
+
+    // The MDC state layer lives on ::before — also kill its radius
+    &::before {
+      border-radius: 0 !important;
+    }
+  }
+}

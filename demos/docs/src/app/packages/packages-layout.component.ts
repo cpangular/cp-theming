@@ -53,7 +53,7 @@ const LIB_TITLES: Record<string, string> = {
       .sidenav {
         width: 248px;
         padding-top: 8px;
-        border-right: 1px solid var(--color--surface--stroke, rgba(0, 0, 0, 0.12));
+        border-right: 1px solid var(--color--surface--stroke);
       }
 
       .pkg-label {
@@ -73,12 +73,7 @@ const LIB_TITLES: Record<string, string> = {
       .page-scroll {
         height: 100%;
         overflow-y: auto;
-      }
-
-      ::ng-deep .nav-active {
-        background: var(--color--primary--tint-2, rgba(0, 0, 0, 0.08)) !important;
-        color: var(--color--primary) !important;
-        font-weight: 500;
+        padding: 40px 48px 64px;
       }
     `,
   ],

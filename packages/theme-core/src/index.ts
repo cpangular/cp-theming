@@ -19,3 +19,5 @@ export {
 } from './theme.js';
 
 export type { ThemeDef, WatchOptions } from './types.js';
+
+export { enableRelativeDensity } from './density.js';

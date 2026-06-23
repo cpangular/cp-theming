@@ -9,13 +9,14 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatDivider } from '@angular/material/divider';
-import { ThemeDirective } from '@cpangular/cp-theming-ng-core';
+import { ThemeDirective, ThemeDensityDirective } from '@cpangular/cp-theming-ng-core';
 
 @Component({
   selector: 'cpa-showcase-page',
   standalone: true,
   imports: [
     ThemeDirective,
+    ThemeDensityDirective,
     MatButtonModule,
     MatCardModule,
     MatFormFieldModule,
@@ -131,6 +132,47 @@ import { ThemeDirective } from '@cpangular/cp-theming-ng-core';
               </div>
             }
           </div>
+
+          <!-- Relative density chaining demo -->
+          <h3 class="subsection-title">Relative density chaining</h3>
+          <p class="section-desc" style="margin-top: 0">
+            <code>[themeDensityLower]</code> and <code>[themeDensityHigher]</code> resolve relative
+            to the nearest ancestor's inherited scale. Nesting chains correctly.
+          </p>
+          <div class="relative-density-demo">
+            <!-- Outer: absolute baseline 0 -->
+            <div class="density-col" themeDensity="0">
+              <p class="density-label"><code>themeDensity="0"</code> <span>Baseline</span></p>
+              <div class="demo-group">
+                <button mat-flat-button>Button</button>
+                <button mat-stroked-button>Outlined</button>
+              </div>
+
+              <!-- Inner: 1 step more compact -->
+              <div class="density-col" style="margin-top: 12px" [themeDensityLower]="1">
+                <p class="density-label">
+                  <code>[themeDensityLower]="1"</code>
+                  <span>1 step compact (resolves to -1)</span>
+                </p>
+                <div class="demo-group">
+                  <button mat-flat-button>Button</button>
+                  <button mat-stroked-button>Outlined</button>
+                </div>
+
+                <!-- Deeper: another 1 step more compact (chains to -2) -->
+                <div class="density-col" style="margin-top: 12px" [themeDensityLower]="1">
+                  <p class="density-label">
+                    <code>[themeDensityLower]="1"</code>
+                    <span>1 more step compact (chains to -2)</span>
+                  </p>
+                  <div class="demo-group">
+                    <button mat-flat-button>Button</button>
+                    <button mat-stroked-button>Outlined</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
 
         <!-- ─── Color palette display ─────────────────────────────────────── -->
@@ -239,6 +281,17 @@ import { ThemeDirective } from '@cpangular/cp-theming-ng-core';
 
       .demo-group.wrap {
         flex-wrap: wrap;
+      }
+
+      .subsection-title {
+        font-size: 16px;
+        font-weight: 500;
+        margin: 32px 0 8px;
+        opacity: 0.8;
+      }
+
+      .relative-density-demo {
+        max-width: 480px;
       }
 
       /* Density grid */
