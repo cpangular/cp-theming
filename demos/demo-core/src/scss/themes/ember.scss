@@ -5,7 +5,7 @@ $ember-background: t.light-dark(t.palette(oklch(0.97 0.008 50)), t.palette(oklch
 $ember-surface: t.light-dark(t.palette(oklch(0.93 0.014 50)), t.palette(oklch(0.21 0.022 30)));
 $ember-primary: t.light-dark(t.palette(oklch(0.55 0.2 30)), t.palette(oklch(0.65 0.18 30)));
 $ember-secondary: t.light-dark(t.palette(oklch(0.55 0.18 60)), t.palette(oklch(0.65 0.16 60)));
-$ember-danger: t.light-dark(t.palette(oklch(0.5 0.22 360)), t.palette(oklch(0.65 0.2 360)));
+$ember-error: t.light-dark(t.palette(oklch(0.5 0.22 360)), t.palette(oklch(0.65 0.2 360)));
 
 $ember-theme: t.theme(
   $palettes: (
@@ -13,7 +13,7 @@ $ember-theme: t.theme(
     surface: $ember-surface,
     primary: $ember-primary,
     secondary: $ember-secondary,
-    danger: $ember-danger,
+    error: $ember-error,
   ),
   $weights: t.light-dark(
       t.weights(

@@ -5,7 +5,7 @@ $ocean-background: t.light-dark(t.palette(oklch(0.97 0.005 220)), t.palette(oklc
 $ocean-surface: t.light-dark(t.palette(oklch(0.93 0.01 220)), t.palette(oklch(0.23 0.018 220)));
 $ocean-primary: t.light-dark(t.palette(oklch(0.55 0.18 240)), t.palette(oklch(0.65 0.16 240)));
 $ocean-secondary: t.light-dark(t.palette(oklch(0.55 0.16 290)), t.palette(oklch(0.65 0.14 290)));
-$ocean-danger: t.light-dark(t.palette(oklch(0.55 0.2 25)), t.palette(oklch(0.65 0.18 25)));
+$ocean-error: t.light-dark(t.palette(oklch(0.55 0.2 25)), t.palette(oklch(0.65 0.18 25)));
 
 $ocean-theme: t.theme(
   $palettes: (
@@ -13,7 +13,7 @@ $ocean-theme: t.theme(
     surface: $ocean-surface,
     primary: $ocean-primary,
     secondary: $ocean-secondary,
-    danger: $ocean-danger,
+    error: $ocean-error,
   ),
   $weights: t.light-dark(
       t.weights(

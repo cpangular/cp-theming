@@ -1,10 +1,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Apply — composable palette/container/stroke mixins.
+@use "density" as _dn;
 // Usage:
 //   @include apply-palette(primary)   → select palette, stamp --palette-color* vars
 //   @include container()              → bg + text blend (palette-agnostic)
 //   @include stroke()                 → inset ::after border (palette-agnostic)
-//   @include global-selectors()       → emit [container] attr + .stroke class globally
+//   @include define-core-theme()       → emit [container] attr + .stroke class globally
 //
 // Surface vars set by container()/filled()/outlined():
 //   --container--stroke         color of the stroke border
@@ -23,18 +24,122 @@
 //   --container--radius--br     bottom-right only
 //   --container--radius--bl     bottom-left only
 //   Priority: individual corner > top/bottom side > left/right side > all
+//
+//   --container--padding        all four sides (base fallback, density-reactive via --space--lg)
+//   --container--padding-block  top + bottom
+//   --container--padding-inline left + right
+//   --container--padding-block-start  top only
+//   --container--padding-block-end    bottom only
+//   --container--padding-inline-start left only
+//   --container--padding-inline-end   right only
+//   Priority: individual > axis pair > all > --space--lg (density default)
+//   Padding auto-compensates for inset stroke width.
 //   --stroke-width              stroke width override (default 1px)
 //
-// Resolved internal vars (set by stroke(), read by consumers):
-//   --container--stroke-width   resolved stroke width; use in padding:
-//                               padding: calc(12px + var(--container--stroke-width, 0px))
+// Computed vars (set internally, read-only):
+//   --container--stroke-width            resolved stroke width (set by stroke())
+//   --container--_padding-block-start / -block-end / -inline-start / -inline-end
 //
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ─── Internal: compute per-corner radius vars and apply border-radius ────────
-// Sets --container--_radius-tl/tr/br/bl which are also inherited by ::after.
-// Priority: individual > top/bottom side > left/right side > all.
-@mixin _apply-radius() {
+// ─── Layer 0a: radius ─────────────────────────────────────────────────────────
+// Sets --container--radius vars for use by container()/filled()/outlined().
+// $all:    all corners (base fallback)
+// $top:    top-left + top-right
+// $bottom: bottom-left + bottom-right
+// $left:   top-left + bottom-left
+// $right:  top-right + bottom-right
+// $tl/$tr/$br/$bl: individual corners
+// Priority when resolving each corner: individual > top/bottom > left/right > all
+@mixin radius(
+  $all: null,
+  $top: null,
+  $bottom: null,
+  $left: null,
+  $right: null,
+  $tl: null,
+  $tr: null,
+  $br: null,
+  $bl: null
+) {
+  @if $all != null {
+    --container--radius: #{$all};
+  }
+  @if $top != null {
+    --container--radius--top: #{$top};
+  }
+  @if $bottom != null {
+    --container--radius--bottom: #{$bottom};
+  }
+  @if $left != null {
+    --container--radius--left: #{$left};
+  }
+  @if $right != null {
+    --container--radius--right: #{$right};
+  }
+  @if $tl != null {
+    --container--radius--tl: #{$tl};
+  }
+  @if $tr != null {
+    --container--radius--tr: #{$tr};
+  }
+  @if $br != null {
+    --container--radius--br: #{$br};
+  }
+  @if $bl != null {
+    --container--radius--bl: #{$bl};
+  }
+}
+
+// ─── Layer 0b: padding ────────────────────────────────────────────────────────
+// Sets --container--padding vars consumed by _apply-geometry() inside
+// container()/filled()/outlined(). Unset args leave their var unset, so
+// the cascade falls through to axis pairs, then all, then --space--lg.
+// $all:           all four sides
+// $block:         top + bottom
+// $inline:        left + right
+// $block-start:   top only
+// $block-end:     bottom only
+// $inline-start:  left only
+// $inline-end:    right only
+@mixin padding(
+  $all: null,
+  $block: null,
+  $inline: null,
+  $block-start: null,
+  $block-end: null,
+  $inline-start: null,
+  $inline-end: null
+) {
+  @if $all != null {
+    --container--padding: #{$all};
+  }
+  @if $block != null {
+    --container--padding-block: #{$block};
+  }
+  @if $inline != null {
+    --container--padding-inline: #{$inline};
+  }
+  @if $block-start != null {
+    --container--padding-block-start: #{$block-start};
+  }
+  @if $block-end != null {
+    --container--padding-block-end: #{$block-end};
+  }
+  @if $inline-start != null {
+    --container--padding-inline-start: #{$inline-start};
+  }
+  @if $inline-end != null {
+    --container--padding-inline-end: #{$inline-end};
+  }
+}
+
+// ─── Internal: compute geometry — radius + padding ───────────────────────────
+// Resolves per-corner radius (priority: individual > top/bottom > left/right > all).
+// Computes per-side padding as base + stroke-width.
+// Inset stroke is always inside content bounds (auto no-op without stroke()).
+// Padding shrinks/grows with --density-scale via --space--lg.
+@mixin _apply-geometry() {
   --container--_radius-tl: var(
     --container--radius--tl,
     var(--container--radius--top, var(--container--radius--left, var(--container--radius, 0px)))
@@ -51,8 +156,43 @@
     --container--radius--bl,
     var(--container--radius--bottom, var(--container--radius--left, var(--container--radius, 0px)))
   );
+
   border-radius: var(--container--_radius-tl) var(--container--_radius-tr)
     var(--container--_radius-br) var(--container--_radius-bl);
+
+  --container--_padding-block-start: calc(
+    var(
+        --container--padding-block-start,
+        var(--container--padding-block, var(--container--padding, var(--space--lg, 24px)))
+      ) +
+      var(--container--stroke-width, 0px)
+  );
+  --container--_padding-block-end: calc(
+    var(
+        --container--padding-block-end,
+        var(--container--padding-block, var(--container--padding, var(--space--lg, 24px)))
+      ) +
+      var(--container--stroke-width, 0px)
+  );
+  --container--_padding-inline-start: calc(
+    var(
+        --container--padding-inline-start,
+        var(--container--padding-inline, var(--container--padding, var(--space--lg, 24px)))
+      ) +
+      var(--container--stroke-width, 0px)
+  );
+  --container--_padding-inline-end: calc(
+    var(
+        --container--padding-inline-end,
+        var(--container--padding-inline, var(--container--padding, var(--space--lg, 24px)))
+      ) +
+      var(--container--stroke-width, 0px)
+  );
+
+  padding-block-start: var(--container--_padding-block-start);
+  padding-block-end: var(--container--_padding-block-end);
+  padding-inline-start: var(--container--_padding-inline-start);
+  padding-inline-end: var(--container--_padding-inline-end);
 }
 
 // ─── Internal: alias all derivative vars for one role onto --palette-color* ───
@@ -120,7 +260,7 @@
   }
 
   position: relative;
-  @include _apply-radius();
+  @include _apply-geometry();
   background-color: var(#{$bg});
   --container--text: color-mix(
     in oklch,
@@ -153,7 +293,7 @@
   }
 
   position: relative;
-  @include _apply-radius();
+  @include _apply-geometry();
   background-color: var(#{$bg});
   --container--text: color-mix(
     in oklch,
@@ -175,7 +315,7 @@
 // and stroke border. Compose with apply-palette.
 @mixin outlined() {
   position: relative;
-  @include _apply-radius();
+  @include _apply-geometry();
   background: transparent;
   --container--text: var(--palette-color);
   --container--text-emphasis: var(--palette-color--high);
@@ -188,8 +328,8 @@
 // Reads --container--stroke written by container()/filled()/outlined().
 // Renders as an inset ::after pseudo-element so the border sits inside the
 // component bounds and shares --container--radius with the surface.
-// Sets --container--stroke-width for consumers to use in padding compensation:
-//   padding: calc(12px + var(--container--stroke-width, 0px))
+// Sets --container--stroke-width which is automatically factored into the
+// density padding computed by _apply-geometry() inside container()/filled()/outlined().
 @mixin stroke() {
   --container--stroke-width: var(--stroke-width, 1px);
 
@@ -220,10 +360,61 @@
   --palette-color--stroke--contrast: var(--palette-color--stroke--#{$modifier}--contrast);
 }
 
-// ─── global-selectors: emit attribute/class rules globally ───────────────────────────
+// ─── define-core-theme: emit attribute/class rules globally ───────────────────────────
 // Call once from your root stylesheet (e.g. base.scss).
 // [palette="name"] (emitted per theme by define-theme) populates --palette-color* vars.
-@mixin global-selectors() {
+@mixin define-core-theme() {
+  // Register scope vars (--palette-color--*) and surface vars (--container--*)
+  // as <color> so they can transition when palette or mode changes.
+  // initial-value: transparent — safe fallback (invisible rather than garish).
+  @property --palette-color {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: transparent;
+  }
+  @property --palette-color--bg {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: transparent;
+  }
+  @property --palette-color--stroke {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: transparent;
+  }
+  @property --palette-color--focus {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: transparent;
+  }
+
+  @property --container--text {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: transparent;
+  }
+  @property --container--text-emphasis {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: transparent;
+  }
+  @property --container--text-deemphasis {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: transparent;
+  }
+  @property --container--stroke {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: transparent;
+  }
+
+  @property --color--brand {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: transparent;
+  }
+
   // Surface layers require a palette to be selected on the same element.
   // [palette][container] = specificity 0,2,0 — matches [theme] [palette] (also 0,2,0)
   // but declared after all theme rules so declaration order gives these the win.
@@ -255,4 +446,11 @@
       box-shadow: var(--elevation-#{$i}--shadow);
     }
   }
+
+  // Density — [themeDensity="-3"] sets --density-scale AND re-declares all
+  // --space--* vars with the literal scale baked in. CSS custom properties
+  // are computed at definition time (var() is substituted on the defining element),
+  // so inheriting --space--lg from an ancestor won't pick up a descendant's
+  // --density-scale override unless we re-declare the space vars here.
+  @include _dn.scope-selectors();
 }

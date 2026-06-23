@@ -21,6 +21,46 @@
   @return _pal.config($base, $color, $bg, $stroke, $focus);
 }
 
+// palette-from-var($var) — derives a palette from any CSS custom property at runtime.
+// palette-from-brand()   — convenience wrapper for --color--brand.
+// Both return a light-dark config pair using oklch relative color syntax.
+// The --color--brand var is emitted when $brand is passed to t.theme().
+@function palette-from-var(
+  $var,
+  $light-l-min: 0.35,
+  $light-l-max: 0.5,
+  $dark-l-min: 0.65,
+  $dark-l-max: 0.82,
+  $c-max: 0.22
+) {
+  @return _pal.from-var($var, $light-l-min, $light-l-max, $dark-l-min, $dark-l-max, $c-max);
+}
+
+@function palette-from-brand(
+  $light-l-min: 0.35,
+  $light-l-max: 0.5,
+  $dark-l-min: 0.65,
+  $dark-l-max: 0.82,
+  $c-max: 0.22
+) {
+  @return _pal.from-brand($light-l-min, $light-l-max, $dark-l-min, $dark-l-max, $c-max);
+}
+
+// Tinted-neutral backgrounds derived from a CSS var or --color--brand.
+// c-tint controls chroma: 0.006 = barely perceptible, 0.015 = noticeable but still neutral.
+@function background-from-var($var, $c-tint: 0.006) {
+  @return _pal.background-from-var($var, $c-tint);
+}
+@function surface-from-var($var, $c-tint: 0.01) {
+  @return _pal.surface-from-var($var, $c-tint);
+}
+@function background-from-brand($c-tint: 0.006) {
+  @return _pal.background-from-brand($c-tint);
+}
+@function surface-from-brand($c-tint: 0.01) {
+  @return _pal.surface-from-brand($c-tint);
+}
+
 @function weights(
   $text-blend: null,
   $text-emphasis-blend: null,
@@ -135,7 +175,8 @@
   $shape: null,
   $focus: null,
   $motion: null,
-  $elevation: null
+  $elevation: null,
+  $brand: null
 ) {
   $l-weights: _w.defaults();
   $d-weights: _w.defaults();
@@ -203,7 +244,8 @@
     density: $density-resolved,
     shape: $shape-resolved,
     focus: $focus-resolved,
-    motion: $motion-resolved
+    motion: $motion-resolved,
+    brand: $brand
   );
 }
 
@@ -335,6 +377,11 @@
     @include _fo.emit(map.get($theme, focus));
     @include _mo.emit(map.get($theme, motion));
 
+    $brand: map.get($theme, brand);
+    @if $brand != null {
+      --color--brand: #{$brand};
+    }
+
     [themeMode="dark"] & {
       color-scheme: dark;
       @if $dedupe {
@@ -437,8 +484,57 @@
 @mixin stroke() {
   @include _ap.stroke();
 }
-@mixin global-selectors() {
-  @include _ap.global-selectors();
+@mixin radius(
+  $all: null,
+  $top: null,
+  $bottom: null,
+  $left: null,
+  $right: null,
+  $tl: null,
+  $tr: null,
+  $br: null,
+  $bl: null
+) {
+  @include _ap.radius(
+    $all: $all,
+    $top: $top,
+    $bottom: $bottom,
+    $left: $left,
+    $right: $right,
+    $tl: $tl,
+    $tr: $tr,
+    $br: $br,
+    $bl: $bl
+  );
+}
+@mixin padding(
+  $all: null,
+  $block: null,
+  $inline: null,
+  $block-start: null,
+  $block-end: null,
+  $inline-start: null,
+  $inline-end: null
+) {
+  @include _ap.padding(
+    $all: $all,
+    $block: $block,
+    $inline: $inline,
+    $block-start: $block-start,
+    $block-end: $block-end,
+    $inline-start: $inline-start,
+    $inline-end: $inline-end
+  );
+}
+@mixin define-core-theme() {
+  // Register all typed custom properties. @property rules are global to the
+  // document and must be at root level — this mixin should be called at the
+  // top level of a stylesheet, not inside a selector.
+  @include _w.register-properties();
+  @include _dn.register-properties();
+  @include _sh.register-properties();
+  @include _pal.register-core-palettes();
+  @include _ap.define-core-theme();
 }
 
 // ─── Public aliases ───────────────────────────────────────────────────────────

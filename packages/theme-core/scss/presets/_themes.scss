@@ -1,19 +1,135 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Presets: Themes
-// TODO(phase-2): Define prebuilt theme maps using palettes from _palettes.scss.
-//
-// Each theme should be a complete t.theme() call:
-//
-//   $ocean: t.theme(
-//     $palettes: (...),
-//     $weights:  t.light-dark(t.weights(...), t.weights(...)),
-//     ...
-//   );
-//
-// And exported so consumers can @include t.define-theme('ocean', $ocean).
+// Four themes matching Angular Material's M3 prebuilt themes:
+//   azure-blue    (light) — azure primary,   blue secondary
+//   rose-red      (light) — rose primary,    red secondary
+//   cyan-orange   (dark)  — cyan primary,    orange secondary
+//   magenta-violet(dark)  — magenta primary, violet secondary
 // ─────────────────────────────────────────────────────────────────────────────
-@use '../theme' as t;
-@use 'palettes' as p;
+@use "../theme" as t;
+@use "palettes" as p;
 
-// TODO(phase-2): $theme-ocean
-// TODO(phase-2): $theme-ember
+$_weights-light: t.weights(
+  $text-blend: 82%,
+  $text-primary-tint: 10%,
+);
+$_weights-dark: t.weights(
+  $text-blend: 78%,
+  $text-primary-tint: 12%,
+);
+$_overlay-light: t.overlays(
+  $scrim: oklch(0 0 0 / 50%),
+  $shadow: oklch(0.2 0.02 0 / 25%),
+);
+$_overlay-dark: t.overlays(
+  $scrim: oklch(0 0 0 / 65%),
+  $shadow: oklch(0 0 0 / 50%),
+);
+
+// ── azure-blue ────────────────────────────────────────────────────────────────
+$azure-blue: t.theme(
+  $palettes: (
+    background: p.$azure-blue-background,
+    surface: p.$azure-blue-surface,
+    primary: p.$azure-blue-primary,
+    secondary: p.$azure-blue-secondary,
+    error: p.$azure-blue-error,
+    pass: p.$default-pass,
+    caution: p.$default-caution,
+    warn: p.$default-warn,
+  ),
+  $weights: t.light-dark($_weights-light, $_weights-dark),
+  $overlay: t.light-dark($_overlay-light, $_overlay-dark),
+  $typography: t.typography(
+      $plain-family: system-ui,
+    ),
+  $density: t.density(
+      $scale: 0,
+    ),
+  $focus: t.focus(
+      $width: 3px,
+      $offset: 2px,
+    ),
+  $motion: t.motion(),
+);
+
+// ── rose-red ──────────────────────────────────────────────────────────────────
+$rose-red: t.theme(
+  $palettes: (
+    background: p.$rose-red-background,
+    surface: p.$rose-red-surface,
+    primary: p.$rose-red-primary,
+    secondary: p.$rose-red-secondary,
+    error: p.$rose-red-error,
+    pass: p.$default-pass,
+    caution: p.$default-caution,
+    warn: p.$default-warn,
+  ),
+  $weights: t.light-dark($_weights-light, $_weights-dark),
+  $overlay: t.light-dark($_overlay-light, $_overlay-dark),
+  $typography: t.typography(
+      $plain-family: system-ui,
+    ),
+  $density: t.density(
+      $scale: 0,
+    ),
+  $focus: t.focus(
+      $width: 3px,
+      $offset: 2px,
+    ),
+  $motion: t.motion(),
+);
+
+// ── cyan-orange ───────────────────────────────────────────────────────────────
+$cyan-orange: t.theme(
+  $palettes: (
+    background: p.$cyan-orange-background,
+    surface: p.$cyan-orange-surface,
+    primary: p.$cyan-orange-primary,
+    secondary: p.$cyan-orange-secondary,
+    error: p.$cyan-orange-error,
+    pass: p.$default-pass,
+    caution: p.$default-caution,
+    warn: p.$default-warn,
+  ),
+  $weights: t.light-dark($_weights-light, $_weights-dark),
+  $overlay: t.light-dark($_overlay-light, $_overlay-dark),
+  $typography: t.typography(
+      $plain-family: system-ui,
+    ),
+  $density: t.density(
+      $scale: 0,
+    ),
+  $focus: t.focus(
+      $width: 3px,
+      $offset: 2px,
+    ),
+  $motion: t.motion(),
+);
+
+// ── magenta-violet ────────────────────────────────────────────────────────────
+$magenta-violet: t.theme(
+  $palettes: (
+    background: p.$magenta-violet-background,
+    surface: p.$magenta-violet-surface,
+    primary: p.$magenta-violet-primary,
+    secondary: p.$magenta-violet-secondary,
+    error: p.$magenta-violet-error,
+    pass: p.$default-pass,
+    caution: p.$default-caution,
+    warn: p.$default-warn,
+  ),
+  $weights: t.light-dark($_weights-light, $_weights-dark),
+  $overlay: t.light-dark($_overlay-light, $_overlay-dark),
+  $typography: t.typography(
+      $plain-family: system-ui,
+    ),
+  $density: t.density(
+      $scale: 0,
+    ),
+  $focus: t.focus(
+      $width: 3px,
+      $offset: 2px,
+    ),
+  $motion: t.motion(),
+);

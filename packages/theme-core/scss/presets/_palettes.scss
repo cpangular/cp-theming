@@ -1,16 +1,93 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Presets: Palettes
-// TODO(phase-2): Define named palette maps for ocean, ember, forest, rose, etc.
-//
-// Each palette should expose a light + dark config pair via t.light-dark():
-//
-//   $ocean-primary: t.light-dark(
-//     t.palette(oklch(0.55 0.18 240)),
-//     t.palette(oklch(0.65 0.16 240)),
-//   );
-//
+// Source hues derived from Angular Material M3 prebuilt palette hex values,
+// converted to oklch. Light mode uses the "40" tone as the identity color;
+// dark mode uses the "80" tone (as M3 recommends for dark surfaces).
 // ─────────────────────────────────────────────────────────────────────────────
-@use '../theme' as t;
+@use "../theme" as t;
 
-// TODO(phase-2): $ocean-background, $ocean-surface, $ocean-primary, etc.
-// TODO(phase-2): $ember-background, $ember-surface, $ember-primary, etc.
+// ── Neutral defaults ──────────────────────────────────────────────────────────
+// Achromatic (chroma ≈ 0) background and surface for use when no theme-specific
+// tint is desired. Suitable as a base for any accent palette.
+$default-background: t.light-dark(t.palette(oklch(0.97 0.002 0)), t.palette(oklch(0.18 0.004 0)));
+$default-surface: t.light-dark(t.palette(oklch(0.93 0.003 0)), t.palette(oklch(0.23 0.005 0)));
+
+// ── Semantic defaults ─────────────────────────────────────────────────────────
+// Tuned for legibility on the neutral $default-background / $default-surface.
+// Light: darkened enough for contrast on near-white (oklch ~0.97).
+// Dark: lightened enough for contrast on near-black (oklch ~0.18).
+//
+// pass    — green  145° — success, confirmation
+// caution — yellow 103° — advisory, needs attention (uses amber-gold to stay readable on white)
+// warn    — orange  55° — warning, degraded state
+// error   — red     27° — failure, destructive action
+$default-pass: t.light-dark(t.palette(oklch(0.48 0.18 145)), t.palette(oklch(0.72 0.16 145)));
+$default-caution: t.light-dark(t.palette(oklch(0.55 0.16 103)), t.palette(oklch(0.82 0.15 103)));
+$default-warn: t.light-dark(t.palette(oklch(0.55 0.18 55)), t.palette(oklch(0.76 0.16 55)));
+$default-error: t.light-dark(t.palette(oklch(0.52 0.22 27)), t.palette(oklch(0.7 0.2 27)));
+
+// ── azure-blue ────────────────────────────────────────────────────────────────
+// primary: azure  (#005cbb → oklch ~0.43 0.19 253°)
+// secondary: blue (#343dff → oklch ~0.46 0.27 264°)
+$azure-blue-background: t.light-dark(
+  t.palette(oklch(0.97 0.004 253)),
+  t.palette(oklch(0.18 0.014 253))
+);
+$azure-blue-surface: t.light-dark(
+  t.palette(oklch(0.93 0.008 253)),
+  t.palette(oklch(0.24 0.018 253))
+);
+$azure-blue-primary: t.light-dark(t.palette(oklch(0.43 0.19 253)), t.palette(oklch(0.72 0.17 253)));
+$azure-blue-secondary: t.light-dark(
+  t.palette(oklch(0.46 0.27 264)),
+  t.palette(oklch(0.71 0.21 264))
+);
+$azure-blue-error: t.light-dark(t.palette(oklch(0.54 0.22 27)), t.palette(oklch(0.67 0.2 27)));
+
+// ── rose-red ──────────────────────────────────────────────────────────────────
+// primary: rose   (#ba005c → oklch ~0.48 0.24 349°)
+// secondary: red  (#c00100 → oklch ~0.44 0.26 27°)
+$rose-red-background: t.light-dark(
+  t.palette(oklch(0.97 0.005 349)),
+  t.palette(oklch(0.18 0.015 349))
+);
+$rose-red-surface: t.light-dark(t.palette(oklch(0.93 0.01 349)), t.palette(oklch(0.23 0.02 349)));
+$rose-red-primary: t.light-dark(t.palette(oklch(0.48 0.24 349)), t.palette(oklch(0.73 0.2 349)));
+$rose-red-secondary: t.light-dark(t.palette(oklch(0.44 0.26 27)), t.palette(oklch(0.7 0.22 27)));
+$rose-red-error: t.light-dark(t.palette(oklch(0.5 0.27 27)), t.palette(oklch(0.68 0.24 27)));
+
+// ── cyan-orange ───────────────────────────────────────────────────────────────
+// primary: cyan   (#006a6a → oklch ~0.44 0.10 191°)
+// secondary: orange (#964900 → oklch ~0.50 0.16 55°)
+$cyan-orange-background: t.light-dark(
+  t.palette(oklch(0.97 0.004 191)),
+  t.palette(oklch(0.17 0.014 191))
+);
+$cyan-orange-surface: t.light-dark(
+  t.palette(oklch(0.92 0.008 191)),
+  t.palette(oklch(0.22 0.018 191))
+);
+$cyan-orange-primary: t.light-dark(t.palette(oklch(0.44 0.1 191)), t.palette(oklch(0.78 0.09 191)));
+$cyan-orange-secondary: t.light-dark(t.palette(oklch(0.5 0.16 55)), t.palette(oklch(0.74 0.14 55)));
+$cyan-orange-error: t.light-dark(t.palette(oklch(0.54 0.22 27)), t.palette(oklch(0.67 0.2 27)));
+
+// ── magenta-violet ────────────────────────────────────────────────────────────
+// primary: magenta  (#a900a9 → oklch ~0.48 0.29 320°)
+// secondary: violet (#7d00fa → oklch ~0.47 0.31 295°)
+$magenta-violet-background: t.light-dark(
+  t.palette(oklch(0.97 0.005 320)),
+  t.palette(oklch(0.18 0.016 320))
+);
+$magenta-violet-surface: t.light-dark(
+  t.palette(oklch(0.93 0.01 320)),
+  t.palette(oklch(0.23 0.02 320))
+);
+$magenta-violet-primary: t.light-dark(
+  t.palette(oklch(0.48 0.29 320)),
+  t.palette(oklch(0.72 0.24 320))
+);
+$magenta-violet-secondary: t.light-dark(
+  t.palette(oklch(0.47 0.31 295)),
+  t.palette(oklch(0.7 0.26 295))
+);
+$magenta-violet-error: t.light-dark(t.palette(oklch(0.54 0.22 27)), t.palette(oklch(0.67 0.2 27)));

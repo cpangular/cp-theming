@@ -6,7 +6,7 @@
 // to shift all --space--* values inside that scope. Components recalculate
 // automatically via calc().
 // ─────────────────────────────────────────────────────────────────────────────
-@use 'sass:map';
+@use "sass:map";
 
 @function config($scale: 0) {
   @return (scale: $scale);
@@ -14,14 +14,79 @@
 
 @mixin emit($config) {
   $scale: map.get($config, scale);
+  @include _emit-space-vars($scale);
+}
 
+// Internal: emit --density-scale + all --space--* with a literal scale value.
+// Using #{$scale} (not var(--density-scale)) is intentional — CSS custom
+// properties are computed at definition time, so var() inside a custom property
+// value is substituted using the *defining element's* own value, not descendants'.
+// Baking in the literal value means [themeDensity] overrides cascade correctly.
+@mixin _emit-space-vars($scale) {
   --density-scale: #{$scale};
 
-  --space--xxs: calc(2px  + var(--density-scale, 0) * 1px);
-  --space--xs:  calc(4px  + var(--density-scale, 0) * 1px);
-  --space--sm:  calc(8px  + var(--density-scale, 0) * 2px);
-  --space--md:  calc(16px + var(--density-scale, 0) * 4px);
-  --space--lg:  calc(24px + var(--density-scale, 0) * 4px);
-  --space--xl:  calc(32px + var(--density-scale, 0) * 4px);
-  --space--xxl: calc(48px + var(--density-scale, 0) * 4px);
+  --space--xxs: calc(2px + #{$scale} * 1px);
+  --space--xs: calc(4px + #{$scale} * 1px);
+  --space--sm: calc(8px + #{$scale} * 2px);
+  --space--md: calc(16px + #{$scale} * 4px);
+  --space--lg: calc(24px + #{$scale} * 4px);
+  --space--xl: calc(32px + #{$scale} * 4px);
+  --space--xxl: calc(48px + #{$scale} * 4px);
+}
+
+// Emit [themeDensity="N"] scope selectors for all density levels (-5 to 5).
+// Call from define-core-theme() so each scope re-declares --density-scale and
+// all --space--* vars with the literal scale baked in.
+@mixin scope-selectors() {
+  @for $i from -5 through 5 {
+    [themeDensity="#{$i}"] {
+      @include _emit-space-vars($i);
+    }
+  }
+}
+
+// Register --density-scale and all --space--* vars with their types so they
+// can be animated. Call once from define-core-theme().
+// initial-values match scale=0 defaults.
+@mixin register-properties() {
+  @property --density-scale {
+    syntax: "<number>";
+    inherits: true;
+    initial-value: 0;
+  }
+  @property --space--xxs {
+    syntax: "<length>";
+    inherits: true;
+    initial-value: 2px;
+  }
+  @property --space--xs {
+    syntax: "<length>";
+    inherits: true;
+    initial-value: 4px;
+  }
+  @property --space--sm {
+    syntax: "<length>";
+    inherits: true;
+    initial-value: 8px;
+  }
+  @property --space--md {
+    syntax: "<length>";
+    inherits: true;
+    initial-value: 16px;
+  }
+  @property --space--lg {
+    syntax: "<length>";
+    inherits: true;
+    initial-value: 24px;
+  }
+  @property --space--xl {
+    syntax: "<length>";
+    inherits: true;
+    initial-value: 32px;
+  }
+  @property --space--xxl {
+    syntax: "<length>";
+    inherits: true;
+    initial-value: 48px;
+  }
 }

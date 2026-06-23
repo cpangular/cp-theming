@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./scss/*": "./scss/*"
+    "./scss/*": "./scss/*",
+    "./css/core": "./dist/core.css"
   },
   "scripts": {
     "build": "wireit",
@@ -19,7 +20,7 @@
       ]
     },
     "build.css": {
-      "command": "sass --style=expanded scss/theme-vars.scss:dist/theme-vars.css",
+      "command": "sass --style=expanded scss/core.scss:dist/core.css scss/theme-vars.scss:dist/theme-vars.css",
       "files": [
         "scss/**/*.scss"
       ],

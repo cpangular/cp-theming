@@ -2,7 +2,109 @@
 // Palette — internal module. Use via @use 'theme' as t; t.palette(...).
 // ─────────────────────────────────────────────────────────────────────────────
 @use "sass:map";
+@use "sass:list";
 @use "variables" as vars;
+
+// ─── Core palette registration ────────────────────────────────────────────────
+// These names are pre-registered once in define-core-theme().
+// initial-values form a print-ready greyscale theme (no color — safe fallback).
+$_core-palette-names: background, surface, primary, secondary, error, warn, caution, pass;
+
+// Grayscale initial values per palette role (color, bg, stroke, focus).
+// Designed as a legible black-on-white print fallback.
+$_core-grayscale: (
+  background: (
+    color: oklch(0.97 0 0),
+    bg: oklch(1 0 0),
+    stroke: oklch(0.85 0 0),
+    focus: oklch(0.2 0 0),
+  ),
+  surface: (
+    color: oklch(0.93 0 0),
+    bg: oklch(0.95 0 0),
+    stroke: oklch(0.78 0 0),
+    focus: oklch(0.2 0 0),
+  ),
+  primary: (
+    color: oklch(0.2 0 0),
+    bg: oklch(0.92 0 0),
+    stroke: oklch(0.2 0 0),
+    focus: oklch(0.5 0 0),
+  ),
+  secondary: (
+    color: oklch(0.4 0 0),
+    bg: oklch(0.92 0 0),
+    stroke: oklch(0.4 0 0),
+    focus: oklch(0.65 0 0),
+  ),
+  error: (
+    color: oklch(0.15 0 0),
+    bg: oklch(0.92 0 0),
+    stroke: oklch(0.15 0 0),
+    focus: oklch(0.45 0 0),
+  ),
+  warn: (
+    color: oklch(0.3 0 0),
+    bg: oklch(0.92 0 0),
+    stroke: oklch(0.3 0 0),
+    focus: oklch(0.55 0 0),
+  ),
+  caution: (
+    color: oklch(0.5 0 0),
+    bg: oklch(0.92 0 0),
+    stroke: oklch(0.5 0 0),
+    focus: oklch(0.68 0 0),
+  ),
+  pass: (
+    color: oklch(0.35 0 0),
+    bg: oklch(0.92 0 0),
+    stroke: oklch(0.35 0 0),
+    focus: oklch(0.6 0 0),
+  ),
+);
+
+// Dedup list — non-core palettes that have already been registered.
+$_registered-palette-names: ();
+
+// Internal: emit 4 @property rules for one palette name.
+// Must be called at root level (or inside @at-root).
+@mixin _register-palette-properties($name, $color-iv, $bg-iv, $stroke-iv, $focus-iv) {
+  @property --color--#{$name} {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #{$color-iv};
+  }
+  @property --color--#{$name}--bg {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #{$bg-iv};
+  }
+  @property --color--#{$name}--stroke {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #{$stroke-iv};
+  }
+  @property --color--#{$name}--focus {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #{$focus-iv};
+  }
+}
+
+// Public: emit @property registrations for all core palette names.
+// Called once from define-core-theme() at root level.
+@mixin register-core-palettes() {
+  @each $name in $_core-palette-names {
+    $iv: map.get($_core-grayscale, $name);
+    @include _register-palette-properties(
+      $name,
+      map.get($iv, color),
+      map.get($iv, bg),
+      map.get($iv, stroke),
+      map.get($iv, focus)
+    );
+  }
+}
 
 // config() — builds a single-variation palette config map.
 // Re-exported as t.palette() by _theme.scss.
@@ -78,6 +180,27 @@
 // Outputs all vars once using light-dark() — color-scheme controls which resolves.
 // Identical light/dark values are emitted as a single value (no light-dark wrapper).
 @mixin define-palette($name, $light, $dark) {
+  // Auto-register non-core palette names the first time they appear.
+  // Core names are pre-registered by register-core-palettes() in define-core-theme().
+  // Uses transparent as initial-value — safe for any color (renders invisible, not garish).
+  // initial-value cannot use var() (spec §4.1), so we can't use the actual base here
+  // for from-var()/from-brand() derived palettes; transparent is the correct fallback.
+  @if not
+    list.index($_core-palette-names, $name) and not
+    list.index($_registered-palette-names, $name)
+  {
+    $_registered-palette-names: list.append($_registered-palette-names, $name) !global;
+    @at-root {
+      @include _register-palette-properties(
+        $name,
+        transparent,
+        transparent,
+        transparent,
+        oklch(0.3 0 0)
+      );
+    }
+  }
+
   $l-base: map.get($light, base);
   $d-base: map.get($dark, base);
   $l-color: _resolve-role($light, color);
@@ -124,4 +247,79 @@
       from var(--color--#{$name}) clamp(0.1, calc(1 - l), 0.9) c calc(h + 60)
     );
   }
+}
+
+// ─── from-var / from-brand ───────────────────────────────────────────────────
+// Returns a light-dark palette config pair that derives its color at runtime
+// from a CSS custom property using relative color syntax.
+//
+// Light: clamps lightness 0.35–0.50 — contrast-safe on near-white (oklch ~0.97).
+// Dark:  clamps lightness 0.65–0.82 — contrast-safe on near-black (oklch ~0.18).
+// Chroma is capped at 0.22 to avoid oversaturation.
+//
+// NOTE: hues 75°–125° (yellow range) are a known rough edge in oklch. For full
+// accuracy on arbitrary brand colors, compute via JS (HCT) and pass a literal.
+@function from-var(
+  $var,
+  $light-l-min: 0.35,
+  $light-l-max: 0.5,
+  $dark-l-min: 0.65,
+  $dark-l-max: 0.82,
+  $c-max: 0.22
+) {
+  $light-base: unquote(
+    "oklch(from var(#{$var}) clamp(#{$light-l-min},l,#{$light-l-max}) clamp(0,c,#{$c-max}) h)"
+  );
+  $dark-base: unquote(
+    "oklch(from var(#{$var}) clamp(#{$dark-l-min},l,#{$dark-l-max}) clamp(0,calc(c*0.9),#{$c-max}) h)"
+  );
+  @return (light: config($light-base), dark: config($dark-base));
+}
+
+// Convenience: derive from the standard --color--brand var.
+@function from-brand(
+  $light-l-min: 0.35,
+  $light-l-max: 0.5,
+  $dark-l-min: 0.65,
+  $dark-l-max: 0.82,
+  $c-max: 0.22
+) {
+  @return from-var(
+    "--color--brand",
+    $light-l-min: $light-l-min,
+    $light-l-max: $light-l-max,
+    $dark-l-min: $dark-l-min,
+    $dark-l-max: $dark-l-max,
+    $c-max: $c-max
+  );
+}
+
+// ─── background-from-var / surface-from-var ───────────────────────────────────
+// Derives tinted neutral palettes from a CSS custom property.
+// The hue of $var is preserved; chroma is crushed to near-zero so the result
+// reads as a neutral that merely feels harmonious with the brand, not coloured.
+//
+// background: very near white/black — subtle warmth only.
+// surface:    slightly more chroma than background — sits visually above it.
+//
+// $c-tint: chroma amount. 0.006 = barely perceptible, 0.015 = noticeable but neutral.
+@function background-from-var($var, $c-tint: 0.006) {
+  $light-base: unquote("oklch(from var(#{$var}) 0.97 #{$c-tint} h)");
+  $dark-base: unquote("oklch(from var(#{$var}) 0.17 #{$c-tint} h)");
+  @return (light: config($light-base), dark: config($dark-base));
+}
+
+@function surface-from-var($var, $c-tint: 0.01) {
+  $light-base: unquote("oklch(from var(#{$var}) 0.93 #{$c-tint} h)");
+  $dark-base: unquote("oklch(from var(#{$var}) 0.22 #{$c-tint} h)");
+  @return (light: config($light-base), dark: config($dark-base));
+}
+
+// Convenience: derive tinted background/surface from --color--brand.
+@function background-from-brand($c-tint: 0.006) {
+  @return background-from-var("--color--brand", $c-tint);
+}
+
+@function surface-from-brand($c-tint: 0.01) {
+  @return surface-from-var("--color--brand", $c-tint);
 }
