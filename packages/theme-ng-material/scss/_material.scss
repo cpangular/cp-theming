@@ -1,0 +1,338 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// _material.scss
+// Maps --color--* / --weight--* / --shape--* / --motion--* vars from
+// @cpangular/cp-theming-core to Angular Material 22 --mat-sys-* tokens.
+//
+// Usage:
+//   @use '@cpangular/cp-theming-ng-material/scss/material' as m;
+//   @include m.define-ng-material-core-theme();
+//   @include m.apply-material-overrides();  // optional component patches
+//
+// The mappings are unscoped (emitted on :root). Since --color--* vars are
+// inherited custom properties, nested [theme] elements naturally change their
+// resolved values — Angular Material components inside pick the correct palette
+// without any additional rules.
+// ─────────────────────────────────────────────────────────────────────────────
+
+@use "sass:list";
+@use "sass:math";
+
+// ─── Core theme mapping ───────────────────────────────────────────────────────
+
+// Color-only tokens extracted into their own mixin.
+//
+// IMPORTANT: --color--* properties are registered via @property { syntax: "<color>" }.
+// Chromium resolves @property var() references eagerly when they appear inside
+// an unregistered custom property.  That means:
+//   :root { --mat-sys-primary: var(--color--primary); }
+// stores the RESOLVED azure-blue color in --mat-sys-primary, which then inherits
+// to all descendants — nested [theme=rose-red] can no longer override it.
+//
+// Fix: also emit these mappings at [theme] level so each scoped element
+// re-evaluates the tokens against its own --color--* computed values.
+@mixin _color-tokens() {
+  // ── Primary ──────────────────────────────────────────────────────────────
+  --mat-sys-primary: var(--color--primary);
+  --mat-sys-on-primary: var(--color--primary--contrast);
+  --mat-sys-primary-container: var(--color--primary--bg);
+  --mat-sys-on-primary-container: var(--color--primary--bg--contrast);
+  --mat-sys-primary-fixed: var(--color--primary--bg);
+  --mat-sys-primary-fixed-dim: var(--color--primary--bg--low);
+  --mat-sys-on-primary-fixed: var(--color--primary--bg--contrast);
+  --mat-sys-on-primary-fixed-variant: var(--color--primary--bg--contrast);
+  --mat-sys-inverse-primary: var(--color--primary--contrast);
+
+  // ── Secondary ─────────────────────────────────────────────────────────────
+  --mat-sys-secondary: var(--color--secondary);
+  --mat-sys-on-secondary: var(--color--secondary--contrast);
+  --mat-sys-secondary-container: var(--color--secondary--bg);
+  --mat-sys-on-secondary-container: var(--color--secondary--bg--contrast);
+  --mat-sys-secondary-fixed: var(--color--secondary--bg);
+  --mat-sys-secondary-fixed-dim: var(--color--secondary--bg--low);
+  --mat-sys-on-secondary-fixed: var(--color--secondary--bg--contrast);
+  --mat-sys-on-secondary-fixed-variant: var(--color--secondary--bg--contrast);
+
+  // ── Tertiary (no 3rd palette — maps to secondary) ─────────────────────────
+  --mat-sys-tertiary: var(--color--secondary);
+  --mat-sys-on-tertiary: var(--color--secondary--contrast);
+  --mat-sys-tertiary-container: var(--color--secondary--bg);
+  --mat-sys-on-tertiary-container: var(--color--secondary--bg--contrast);
+  --mat-sys-tertiary-fixed: var(--color--secondary--bg);
+  --mat-sys-tertiary-fixed-dim: var(--color--secondary--bg--low);
+  --mat-sys-on-tertiary-fixed: var(--color--secondary--bg--contrast);
+  --mat-sys-on-tertiary-fixed-variant: var(--color--secondary--bg--contrast);
+
+  // ── Error ─────────────────────────────────────────────────────────────────
+  --mat-sys-error: var(--color--error);
+  --mat-sys-on-error: var(--color--error--contrast);
+  --mat-sys-error-container: var(--color--error--bg);
+  --mat-sys-on-error-container: var(--color--error--bg--contrast);
+
+  // ── Surface ───────────────────────────────────────────────────────────────
+  --mat-sys-surface: var(--color--surface);
+  --mat-sys-on-surface: var(--color--surface--contrast);
+  --mat-sys-surface-variant: var(--color--surface--bg);
+  --mat-sys-on-surface-variant: var(--color--surface--bg--contrast);
+  --mat-sys-surface-dim: var(--color--surface--low);
+  --mat-sys-surface-bright: var(--color--surface--high);
+  --mat-sys-surface-container: var(--color--surface--bg);
+  --mat-sys-surface-container-low: var(--color--surface--bg--low);
+  --mat-sys-surface-container-high: var(--color--surface--bg--high);
+  --mat-sys-surface-container-highest: var(--color--surface--bg--higher);
+  --mat-sys-surface-tint: var(--color--primary--tint-1);
+  --mat-sys-inverse-surface: var(--color--surface--high);
+  --mat-sys-inverse-on-surface: var(--color--surface--high--contrast);
+
+  // ── Background ────────────────────────────────────────────────────────────
+  --mat-sys-background: var(--color--background);
+  --mat-sys-on-background: var(--color--background--contrast);
+
+  // ── Outline ───────────────────────────────────────────────────────────────
+  --mat-sys-outline: var(--color--surface--stroke);
+  --mat-sys-outline-variant: var(--color--surface--stroke--low);
+
+  // ── Overlays ──────────────────────────────────────────────────────────────
+  --mat-sys-scrim: var(--overlay--scrim);
+  --mat-sys-shadow: var(--overlay--shadow);
+}
+
+@mixin define-ng-material-core-theme() {
+  :root {
+    @include _color-tokens();
+
+    // ── State layer opacities ─────────────────────────────────────────────────
+    --mat-sys-hover-state-layer-opacity: var(--weight--state-hover);
+    --mat-sys-focus-state-layer-opacity: var(--weight--state-focus);
+    --mat-sys-pressed-state-layer-opacity: var(--weight--state-press);
+    --mat-sys-dragged-state-layer-opacity: var(--weight--state-drag);
+
+    // ── Shape ─────────────────────────────────────────────────────────────────
+    --mat-sys-corner-none: 0px;
+    --mat-sys-corner-extra-small: var(--shape--xs);
+    --mat-sys-corner-small: var(--shape--sm);
+    --mat-sys-corner-medium: var(--shape--md);
+    --mat-sys-corner-large: var(--shape--lg);
+    --mat-sys-corner-extra-large: var(--shape--xl);
+    --mat-sys-corner-full: var(--shape--full);
+
+    // ── Elevation ─────────────────────────────────────────────────────────────
+    --mat-sys-level0: var(--elevation-0--shadow);
+    --mat-sys-level1: var(--elevation-1--shadow);
+    --mat-sys-level2: var(--elevation-2--shadow);
+    --mat-sys-level3: var(--elevation-3--shadow);
+    --mat-sys-level4: var(--elevation-4--shadow);
+    --mat-sys-level5: var(--elevation-5--shadow);
+
+    // ── Motion — durations ────────────────────────────────────────────────────
+    --mat-sys-duration-short1: var(--motion--duration-short);
+    --mat-sys-duration-short2: var(--motion--duration-short);
+    --mat-sys-duration-short3: var(--motion--duration-short);
+    --mat-sys-duration-short4: var(--motion--duration-short);
+    --mat-sys-duration-medium1: var(--motion--duration-medium);
+    --mat-sys-duration-medium2: var(--motion--duration-medium);
+    --mat-sys-duration-medium3: var(--motion--duration-medium);
+    --mat-sys-duration-medium4: var(--motion--duration-medium);
+    --mat-sys-duration-long1: var(--motion--duration-long);
+    --mat-sys-duration-long2: var(--motion--duration-long);
+    --mat-sys-duration-long3: var(--motion--duration-long);
+    --mat-sys-duration-long4: var(--motion--duration-long);
+    --mat-sys-duration-extra-long1: var(--motion--duration-extra);
+    --mat-sys-duration-extra-long2: var(--motion--duration-extra);
+    --mat-sys-duration-extra-long3: var(--motion--duration-extra);
+    --mat-sys-duration-extra-long4: var(--motion--duration-extra);
+
+    // ── Motion — easing ───────────────────────────────────────────────────────
+    --mat-sys-easing-standard: var(--motion--easing-standard);
+    --mat-sys-easing-standard-accelerate: var(--motion--easing-accelerate);
+    --mat-sys-easing-standard-decelerate: var(--motion--easing-decelerate);
+    --mat-sys-easing-emphasized: var(--motion--easing-emphasized);
+    --mat-sys-easing-emphasized-accelerate: var(--motion--easing-accelerate);
+    --mat-sys-easing-emphasized-decelerate: var(--motion--easing-decelerate);
+    --mat-sys-easing-linear: linear;
+    --mat-sys-easing-legacy: var(--motion--easing-standard);
+    --mat-sys-easing-legacy-accelerate: var(--motion--easing-accelerate);
+    --mat-sys-easing-legacy-decelerate: var(--motion--easing-decelerate);
+
+    // ── Typography ────────────────────────────────────────────────────────────
+    // Maps --mat-sys-{scale}-{property} → --typescale--{scale}--{property}
+    // 15 scales × 5 properties
+
+    @each $scale in display-large, display-medium, display-small, headline-large, headline-medium,
+      headline-small, title-large, title-medium, title-small, body-large, body-medium, body-small,
+      label-large, label-medium, label-small
+    {
+      --mat-sys-#{$scale}-font: var(--typescale--#{$scale}--font);
+      --mat-sys-#{$scale}-size: var(--typescale--#{$scale}--size);
+      --mat-sys-#{$scale}-line-height: var(--typescale--#{$scale}--line-height);
+      --mat-sys-#{$scale}-tracking: var(--typescale--#{$scale}--tracking);
+      --mat-sys-#{$scale}-weight: var(--typescale--#{$scale}--weight);
+    }
+  }
+
+  // Re-declare color tokens at every [theme] element.
+  // This forces Chromium to re-evaluate the var() references at each scoped
+  // element, picking up the correct --color--* values for nested themes.
+  [theme] {
+    @include _color-tokens();
+  }
+}
+
+// ─── Component overrides ──────────────────────────────────────────────────────
+// Patches for Angular Material components that bypass --mat-sys-* tokens and
+// hardcode values. Grows as gaps are discovered during demo-material development.
+
+@mixin apply-material-overrides() {
+  // Slide toggle — unselected track visibility + icon fix.
+  //
+  // AM22 maps the unselected track fill to --mat-sys-surface-variant (near-white
+  // in light mode) and the outline to --mat-sys-outline (also near-white against
+  // our surface tokens), making the pill invisible.
+  //
+  // The M3 spec intent: the off-state icon should be the SAME color as the track
+  // fill, so it's invisible (hidden in plain sight). We use the surface--stroke
+  // token (a neutral mid-grey) for both track outline and icon fill, and a
+  // low-opacity surface--bg tint for the fill — matching the reference appearance
+  // at material.angular.dev.
+  mat-slide-toggle,
+  .mat-mdc-slide-toggle {
+    // Track fill: neutral surface-variant tint — visible but clearly "off"
+    --mat-slide-toggle-unselected-track-color: var(--color--surface--bg);
+    --mat-slide-toggle-unselected-hover-track-color: var(--color--surface--bg--high);
+    --mat-slide-toggle-unselected-focus-track-color: var(--color--surface--bg--high);
+    --mat-slide-toggle-unselected-pressed-track-color: var(--color--surface--bg--high);
+    // Track outline: use the surface stroke (neutral grey) — visible against track
+    --mat-slide-toggle-track-outline-color: var(--color--surface--stroke);
+    --mat-slide-toggle-hover-track-outline-color: var(--color--surface--stroke);
+    --mat-slide-toggle-focus-track-outline-color: var(--color--surface--stroke);
+    --mat-slide-toggle-pressed-track-outline-color: var(--color--surface--stroke);
+    // Off-state icon: same as track fill — invisible per M3 spec
+    --mat-slide-toggle-unselected-icon-color: var(--color--surface--bg);
+    --mat-slide-toggle-unselected-hover-icon-color: var(--color--surface--bg--high);
+    --mat-slide-toggle-unselected-focus-icon-color: var(--color--surface--bg--high);
+    --mat-slide-toggle-unselected-pressed-icon-color: var(--color--surface--bg--high);
+
+    // ── Selected (checked) state ───────────────────────────────────────────
+    //
+    // AM22 defaults:
+    //   handle (normal): --mat-sys-on-primary        → white (on-primary contrast)  ✓
+    //   handle (hover):  --mat-sys-primary-container → --color--primary--bg = primary ✗
+    //                    (same as track → handle disappears into track on hover)
+    //   icon:            --mat-sys-on-primary-container → contrast of primary--bg
+    //                    = white (because primary--bg is dark) → white on white ✗
+    //
+    // Fix: derive a "container" tone inline via CSS relative color — push
+    // lightness to 0.90 in light mode / 0.25 in dark mode, matching M3 tone-90/10.
+    // The icon should be the primary color itself (dark on white handle in light,
+    // light on dark handle in dark).
+    --mat-slide-toggle-selected-icon-color: var(--color--primary);
+    --mat-slide-toggle-selected-hover-icon-color: var(--color--primary);
+    --mat-slide-toggle-selected-focus-icon-color: var(--color--primary);
+    --mat-slide-toggle-selected-pressed-icon-color: var(--color--primary);
+
+    // Hover/focus/press handle: a container-like light tint of primary.
+    // light-dark() so both modes get a tone on the opposite end from the handle.
+    // Chroma is scaled down to ~25% — matching M3 primary-container tone (muted tint,
+    // not the saturated primary hue). Full chroma at L=0.90 looks vivid and off-hue.
+    --mat-slide-toggle-selected-hover-handle-color: light-dark(
+      oklch(from var(--color--primary) 0.9 calc(c * 0.25) h),
+      oklch(from var(--color--primary) 0.25 calc(c * 0.25) h)
+    );
+    --mat-slide-toggle-selected-focus-handle-color: light-dark(
+      oklch(from var(--color--primary) 0.9 calc(c * 0.25) h),
+      oklch(from var(--color--primary) 0.25 calc(c * 0.25) h)
+    );
+    --mat-slide-toggle-selected-pressed-handle-color: light-dark(
+      oklch(from var(--color--primary) 0.88 calc(c * 0.25) h),
+      oklch(from var(--color--primary) 0.22 calc(c * 0.25) h)
+    );
+  }
+}
+
+// ─── Per-element density scopes ───────────────────────────────────────────────
+// Maps [themeDensity="N"] scopes from theme-core to Angular Material M3
+// component size tokens. Call once from the global stylesheet alongside
+// define-ng-material-core-theme().
+//
+// Lookup tables are sourced from @angular/material/{comp}/_m3-{comp}.scss
+// `get-density-tokens()`. Keep in sync with your @angular/material version.
+//
+// Positive [themeDensity] values (spacious layouts) are deliberately excluded —
+// Angular Material does not define tokens above scale 0; the defaults apply.
+//
+// Each component has its own clamp level (the minimum before values stop
+// changing), matching Angular Material's theming.clamp-density() calls.
+//   scale=0 → index 1 (list head), scale=-1 → 2, scale=-5 → 6
+
+@mixin apply-material-density-scopes() {
+  @for $scale from -5 through 0 {
+    $i: ($scale * -1) + 1;
+
+    // Per-component clamped indices (match AM's clamp-density() per component)
+    $bi: math.min($i, 4); // buttons     — clamped at -3 (list length 4)
+    $ibi: $i; // icon-button — clamped at -5 (list length 6)
+    $ffi: $i; // form-field  — clamped at -5 (list length 6)
+    $li: $i; // list        — clamped at -5 (list length 6)
+    $tbi: math.min($i, 4); // toolbar     — clamped at -3 (list length 4)
+    $tabi: math.min($i, 5); // tabs        — clamped at -4 (list length 5)
+    $ci: math.min($i, 3); // chips       — clamped at -2 (list length 3)
+    $si: math.min($i, 5); // stepper     — clamped at -4 (list length 5)
+
+    [themeDensity="#{$scale}"] {
+      // ── Buttons — base 40px, step -4px ─────────────────────────────────────
+      --mat-button-filled-container-height: #{list.nth((40px, 36px, 32px, 28px), $bi)};
+      --mat-button-outlined-container-height: #{list.nth((40px, 36px, 32px, 28px), $bi)};
+      --mat-button-protected-container-height: #{list.nth((40px, 36px, 32px, 28px), $bi)};
+      --mat-button-text-container-height: #{list.nth((40px, 36px, 32px, 28px), $bi)};
+      --mat-button-tonal-container-height: #{list.nth((40px, 36px, 32px, 28px), $bi)};
+
+      // ── Icon button touch target — base 40px ───────────────────────────────
+      --mat-icon-button-state-layer-size: #{list.nth((40px, 36px, 32px, 28px, 24px, 24px), $ibi)};
+
+      // ── Form field — base 56px ─────────────────────────────────────────────
+      --mat-form-field-container-height: #{list.nth((56px, 52px, 48px, 44px, 40px, 36px), $ffi)};
+      --mat-form-field-container-vertical-padding: #{list.nth(
+          (16px, 14px, 12px, 10px, 8px, 6px),
+          $ffi
+        )};
+      --mat-form-field-filled-label-display: #{list.nth(
+          (block, block, none, none, none, none),
+          $ffi
+        )};
+      --mat-form-field-filled-with-label-container-padding-top: #{list.nth(
+          (24px, 22px, 12px, 10px, 8px, 6px),
+          $ffi
+        )};
+      --mat-form-field-filled-with-label-container-padding-bottom: #{list.nth(
+          (8px, 6px, 12px, 10px, 8px, 6px),
+          $ffi
+        )};
+
+      // ── List items ─────────────────────────────────────────────────────────
+      --mat-list-list-item-one-line-container-height: #{list.nth(
+          (48px, 44px, 40px, 36px, 32px, 24px),
+          $li
+        )};
+      --mat-list-list-item-two-line-container-height: #{list.nth(
+          (64px, 60px, 56px, 52px, 48px, 48px),
+          $li
+        )};
+      --mat-list-list-item-three-line-container-height: #{list.nth(
+          (88px, 84px, 80px, 76px, 72px, 56px),
+          $li
+        )};
+
+      // ── Toolbar — base 64px / 56px mobile ──────────────────────────────────
+      --mat-toolbar-standard-height: #{list.nth((64px, 60px, 56px, 52px), $tbi)};
+      --mat-toolbar-mobile-height: #{list.nth((56px, 52px, 48px, 44px), $tbi)};
+
+      // ── Tabs — base 48px ───────────────────────────────────────────────────
+      --mat-tab-container-height: #{list.nth((48px, 44px, 40px, 36px, 32px), $tabi)};
+
+      // ── Chips — base 32px ──────────────────────────────────────────────────
+      --mat-chip-container-height: #{list.nth((32px, 28px, 24px), $ci)};
+
+      // ── Stepper — base 72px ────────────────────────────────────────────────
+      --mat-stepper-header-height: #{list.nth((72px, 68px, 64px, 60px, 42px), $si)};
+    }
+  }
+}

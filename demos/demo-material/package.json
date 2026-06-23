@@ -2,17 +2,17 @@
   "name": "demo-material",
   "version": "0.0.0",
   "private": true,
-  "description": "Angular app demonstrating @cpangular/cp-theming-material.",
+  "description": "Angular app demonstrating @cpangular/cp-theming-ng-material.",
   "scripts": {
     "start": "ng serve",
     "build": "ng build"
   },
   "dependencies": {
-    "@angular/core": "^21.2.0",
-    "@angular/material": "^19.0.0",
+    "@angular/core": "^22.0.0",
+    "@angular/material": "^22.0.0",
     "@cpangular/cp-theming-core": "workspace:*",
     "@cpangular/cp-theming-ng-core": "workspace:*",
-    "@cpangular/cp-theming-material": "workspace:*"
+    "@cpangular/cp-theming-ng-material": "workspace:*"
   },
   "devDependencies": {
     "sass": "^1.101.0",

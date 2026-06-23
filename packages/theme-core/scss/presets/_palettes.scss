@@ -9,6 +9,7 @@
 // ── Neutral defaults ──────────────────────────────────────────────────────────
 // Achromatic (chroma ≈ 0) background and surface for use when no theme-specific
 // tint is desired. Suitable as a base for any accent palette.
+// Stroke is auto-derived at runtime — no $stroke override needed.
 $default-background: t.light-dark(t.palette(oklch(0.97 0.002 0)), t.palette(oklch(0.18 0.004 0)));
 $default-surface: t.light-dark(t.palette(oklch(0.93 0.003 0)), t.palette(oklch(0.23 0.005 0)));
 

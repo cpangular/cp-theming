@@ -6,6 +6,81 @@
   },
   "newProjectRoot": "packages",
   "projects": {
+    "docs": {
+      "projectType": "application",
+      "root": "demos/docs",
+      "sourceRoot": "demos/docs/src",
+      "prefix": "cpa",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "outputPath": "dist/docs",
+            "index": "demos/docs/src/index.html",
+            "browser": "demos/docs/src/main.ts",
+            "tsConfig": "demos/docs/tsconfig.app.json",
+            "assets": [],
+            "stylePreprocessorOptions": {
+              "includePaths": ["demos/docs/src/app/packages/pages"]
+            },
+            "styles": [
+              "packages/theme-core/dist/core.css",
+              "packages/theme-core/dist/presets/azure-blue.css",
+              "packages/theme-core/dist/presets/rose-red.css",
+              "packages/theme-core/dist/presets/cyan-orange.css",
+              "packages/theme-core/dist/presets/magenta-violet.css",
+              "packages/theme-ng-material/dist/material-core.css",
+              "packages/theme-ng-material/dist/material-overrides.css",
+              "demos/docs/src/styles.scss"
+            ]
+          },
+          "configurations": {
+            "production": {
+              "baseHref": "/cp-theming/",
+              "outputHashing": "all",
+              "budgets": [
+                { "type": "initial", "maximumWarning": "1MB", "maximumError": "2MB" },
+                { "type": "anyComponentStyle", "maximumWarning": "8kB", "maximumError": "16kB" }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "production": { "buildTarget": "docs:build:production" },
+            "development": { "buildTarget": "docs:build:development" }
+          },
+          "defaultConfiguration": "development"
+        }
+      }
+    },
+    "theme-ng-material": {
+      "projectType": "library",
+      "root": "packages/theme-ng-material",
+      "sourceRoot": "packages/theme-ng-material/src",
+      "prefix": "cpa",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "packages/theme-ng-material/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "packages/theme-ng-material/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        }
+      }
+    },
     "theme-ng-core": {
       "projectType": "library",
       "root": "packages/theme-ng-core",

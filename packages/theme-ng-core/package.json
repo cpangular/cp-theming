@@ -4,8 +4,8 @@
   "description": "Angular signal-based wrapper for @cpangular/cp-theming-core.",
   "sideEffects": false,
   "peerDependencies": {
-    "@angular/common": "^21.2.0",
-    "@angular/core": "^21.2.0",
+    "@angular/common": "^22.0.0",
+    "@angular/core": "^22.0.0",
     "@cpangular/cp-theming-core": "workspace:*"
   },
   "dependencies": {

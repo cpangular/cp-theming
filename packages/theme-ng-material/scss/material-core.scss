@@ -1,0 +1,5 @@
+// Maps @cpangular/cp-theming-core CSS vars → Angular Material 22 --mat-sys-* tokens.
+// Include once in your root stylesheet alongside t.define-core-theme().
+// Nested [theme] elements are handled automatically via CSS cascade.
+@use "material" as m;
+@include m.define-ng-material-core-theme();

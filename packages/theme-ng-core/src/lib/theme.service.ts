@@ -59,10 +59,13 @@ export class ThemeService {
   /**
    * The resolved mode — never AUTO or INVERT.
    * Derived from `mode`; also reacts to prefers-color-scheme via watchMode.
+   * Reading `_mode()` establishes a reactive dependency so this computed
+   * re-evaluates whenever the mode signal changes.
    */
-  readonly effectiveMode: Signal<ThemeMode.LIGHT | ThemeMode.DARK> = computed(() =>
-    getEffectiveMode(this._root),
-  );
+  readonly effectiveMode: Signal<ThemeMode.LIGHT | ThemeMode.DARK> = computed(() => {
+    this._mode(); // reactive dependency — triggers recompute when mode changes
+    return getEffectiveMode(this._root);
+  });
 
   /** Themes found in loaded stylesheets. Refreshed on init; call refreshAvailableThemes() to rescan. */
   readonly availableThemes: Signal<ThemeDef[]> = this._availableThemes.asReadonly();
@@ -73,7 +76,7 @@ export class ThemeService {
     const stopWatchMode = watchMode(
       (mode) => {
         this._mode.set(mode);
-        // effectiveMode is computed — no explicit set needed; it will recompute.
+        // effectiveMode will recompute via its _mode() dependency.
       },
       { element: this._root },
     );
@@ -97,16 +100,19 @@ export class ThemeService {
   setTheme(name: string | null): void {
     if (name === null) {
       clearTheme(this._root);
+      this._theme.set(null);
     } else {
       setTheme(name, this._root);
+      this._theme.set(name);
     }
-    // watchTheme will sync the signal; no manual set needed.
+    // watchTheme also fires asynchronously but signal is already up to date.
   }
 
   /** Sets the theme mode on the root element. */
   setMode(mode: ThemeMode): void {
     setMode(mode, this._root);
-    // watchMode will sync the signal.
+    this._mode.set(mode);
+    // watchMode also fires asynchronously but signal is already up to date.
   }
 
   // ─── Persistence ─────────────────────────────────────────────────────────

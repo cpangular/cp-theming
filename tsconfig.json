@@ -15,7 +15,9 @@
     "target": "ES2022",
     "module": "preserve",
     "paths": {
-      "@cpangular/cp-theming-ng-core": ["./packages/theme-ng-core/src/public-api.ts"]
+      "@cpangular/cp-theming-core": ["./packages/theme-core/src/index.ts"],
+      "@cpangular/cp-theming-ng-core": ["./packages/theme-ng-core/src/public-api.ts"],
+      "@cpangular/cp-theming-ng-material": ["./packages/theme-ng-material/src/public-api.ts"]
     }
   },
   "angularCompilerOptions": {
@@ -28,6 +30,12 @@
   "references": [
     {
       "path": "./packages/theme-ng-core/tsconfig.lib.json"
+    },
+    {
+      "path": "./packages/theme-ng-material/tsconfig.lib.json"
+    },
+    {
+      "path": "./demos/docs/tsconfig.app.json"
     }
   ]
 }

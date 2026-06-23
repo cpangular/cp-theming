@@ -16,13 +16,13 @@ $_core-grayscale: (
   background: (
     color: oklch(0.97 0 0),
     bg: oklch(1 0 0),
-    stroke: oklch(0.85 0 0),
+    stroke: oklch(0.65 0 0),
     focus: oklch(0.2 0 0),
   ),
   surface: (
     color: oklch(0.93 0 0),
     bg: oklch(0.95 0 0),
-    stroke: oklch(0.78 0 0),
+    stroke: oklch(0.6 0 0),
     focus: oklch(0.2 0 0),
   ),
   primary: (
@@ -214,7 +214,26 @@ $_registered-palette-names: ();
   }
 
   --color--#{$name}--bg: #{_ld(_resolve-role($light, bg), _resolve-role($dark, bg))};
-  --color--#{$name}--stroke: #{_ld(_resolve-role($light, stroke), _resolve-role($dark, stroke))};
+
+  // Stroke — auto-derived at CSS runtime unless an explicit override is given.
+  // Formula: clamp the base color's lightness into the visible mid-tone band (0.42–0.60).
+  // This ensures the stroke is always visible against its palette surface:
+  //   light surfaces (L≈0.93) → stroke at L≈0.60 (darkened into mid-range)
+  //   dark  surfaces (L≈0.24) → stroke at L≈0.42 (lightened into mid-range)
+  //   mid-tone accents (L≈0.43) → stroke unchanged (already in range)
+  // Three levels are emitted automatically by _role-derivatives below:
+  //   --color--{name}--stroke--low   — subtle divider   (mode-aware lighter step)
+  //   --color--{name}--stroke        — normal border     (this value)
+  //   --color--{name}--stroke--high  — emphasized border (mode-aware darker step)
+  $l-stroke: map.get($light, stroke);
+  $d-stroke: map.get($dark, stroke);
+  @if $l-stroke == null and $d-stroke == null {
+    --color--#{$name}--stroke: oklch(from var(--color--#{$name}) clamp(0.42, l, 0.6) c h);
+  } @else {
+    $lstr: if($l-stroke != null, $l-stroke, $d-stroke);
+    $dstr: if($d-stroke != null, $d-stroke, $l-stroke);
+    --color--#{$name}--stroke: #{_ld($lstr, $dstr)};
+  }
 
   @include _role-derivatives($name, color);
   @include _role-derivatives($name, bg);

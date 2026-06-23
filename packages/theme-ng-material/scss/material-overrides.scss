@@ -1,0 +1,5 @@
+// Component-level patches for Angular Material components that bypass --mat-sys-* tokens.
+// Include after material-core.scss. Grows as gaps are discovered during development.
+@use "material" as m;
+@include m.apply-material-overrides();
+@include m.apply-material-density-scopes();

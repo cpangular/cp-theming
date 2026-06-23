@@ -229,14 +229,46 @@ $my-theme: t.theme(
 - `public-api.ts` re-exports `ThemeMode`, `ThemeStorage`, `ThemeDef` from `@cpangular/cp-theming-core`
 - `ng build theme-ng-core` → `dist/theme-ng-core/` (fesm2022 + types) ✅
 
-### ⬛ Phase 6 — theme-material
-- SCSS adapter: `--color--*` → `--mat-sys-*`
-- `material-core()` mixin
-- Typography + density wiring
+### ✅ Phase 6 — theme-ng-material
+- `packages/theme-material` renamed to `packages/theme-ng-material` (`@cpangular/cp-theming-ng-material`)
+- All Angular peerDeps bumped to `^22.0.0`; TypeScript bumped to `^6.0.0` (Angular 22 requirement)
+- `ng-package.json`, `tsconfig.lib.json`, `tsconfig.lib.prod.json` wired into `angular.json` library project
+- `scss/_material.scss` — two mixins:
+  - `define-ng-material-core-theme()` — single unscoped `:root {}` block; 166 `--mat-sys-*` → `var(--color--*)` assignments covering color, surface tones, overlays, state layers, shape, elevation, motion, typography
+  - `apply-material-overrides()` — component patches (initially empty; grows during demo-material development)
+- Tertiary palette maps to secondary (documented; no 3rd palette in our system)
+- CSS cascade handles nested `[theme]` elements automatically — no per-theme repetition needed
+- `scss/material-core.scss` + `scss/material-overrides.scss` — precompiled entry points
+- `dist/material-core.css` (166 token mappings) + `dist/material-overrides.css` ✅
+- `ng build theme-ng-material` → `dist/theme-ng-material/` (fesm2022 + types) ✅
+- Package exports: `./css/material-core`, `./css/material-overrides`, `./scss/*`
 
-### ⬛ Phase 7 — demos
-- demo-core: Vite + vanilla TS *(partially implemented — used for development)*
-- demo-material: Angular + Material
+### 🟡 Phase 7 — docs site + demos
+
+**docs** (`demos/docs`) — Angular 22 + Material 22 documentation / showcase app:
+- Builds and deploys to GitHub Pages at `/cp-theming/` via `.github/workflows/pages.yml`
+- Five pages per package: Overview, Getting Started, API Reference, Guides, Showcase
+- Showcase page: 4-column theme comparison grid + 3-column density demo (live AM22 components)
+- Theme switching (via `ThemeService.setTheme`) and mode toggle (light/dark) both working
+- Dev server: `ng serve docs --host 0.0.0.0 --port 4200`
+
+**Bugs fixed in this phase:**
+- `ThemeService.setMode` / `setTheme` now update the internal signal synchronously so Angular
+  zoneless change detection picks up the change in the same microtask as the button click.
+  Previously the update relied solely on the async `watchMode` MutationObserver callback which
+  did not trigger the Angular scheduler.
+- Multi-preset cascade bug: loading all four preset CSS files simultaneously caused each preset's
+  `body { --color--* }` declaration to race, leaving the *last-loaded* preset's colour on `<body>`
+  regardless of which `[theme]` was set on `<html>`. Fixed by adding a `body { unset }` reset block
+  in `demos/docs/src/styles.scss` (loaded last) so all `--color--*` vars on body inherit from
+  `<html theme="azure-blue">` via `@property { inherits: true }`.
+- Material list items in the sidenav needed `mat-list-item` (kebab-case attribute selector) not the
+  deprecated `matListItem` camelCase; also required `<span matListItemTitle>` child for M3 styling.
+- `::ng-deep` required for nested Material component styles in `ThemeSwitcherComponent`.
+
+**Still pending:**
+- demo-core: Vite + vanilla TS
+- demo-material: Angular + Material (separate from docs)
 - demo-brand-core: example brand pack
 - demo-brand-material: example brand + Material
 
