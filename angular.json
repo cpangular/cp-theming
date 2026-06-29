@@ -2,7 +2,8 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "cli": {
-    "packageManager": "pnpm"
+    "packageManager": "pnpm",
+    "analytics": false
   },
   "newProjectRoot": "packages",
   "projects": {
@@ -20,10 +21,12 @@
             "browser": "demos/docs/src/main.ts",
             "tsConfig": "demos/docs/tsconfig.app.json",
             "assets": [],
+            "inlineStyleLanguage": "scss",
             "stylePreprocessorOptions": {
               "includePaths": ["demos/docs/src/app/packages/pages"]
             },
             "styles": [
+              "highlight.js/styles/github.min.css",
               "packages/theme-core/dist/core.css",
               "packages/theme-core/dist/presets/azure-blue.css",
               "packages/theme-core/dist/presets/rose-red.css",
@@ -53,6 +56,9 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "host": "0.0.0.0"
+          },
           "configurations": {
             "production": { "buildTarget": "docs:build:production" },
             "development": { "buildTarget": "docs:build:development" }

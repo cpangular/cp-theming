@@ -139,33 +139,53 @@ $_registered-palette-names: ();
     $p: --color--#{$palette};
   }
 
-  // contrast (black or white — whichever has highest contrast against the role value)
-  #{$p}--contrast: oklch(from var(#{$p}) clamp(0, (0.5 - l) * 99999, 1) 0 0);
+  // contrast (black or white — whichever has highest contrast against the role value).
+  // Chroma-aware: a saturated color reads perceptually darker than its raw oklch
+  // L suggests (e.g. red 0.54/0.22 looks dark), so bias the black↔white threshold
+  // up by 0.25·chroma before comparing against 0.5. Keeps amber/yellow (low-ish
+  // chroma, L~0.55) on black text while flipping saturated red/green to white.
+  $cl: "clamp(0, (0.5 - l + 0.25 * c) * 99999, 1)";
 
-  // absolute lightness steps
+  #{$p}--contrast: oklch(from var(#{$p}) #{$cl} 0 0);
+
+  // absolute lightness steps — 7-level ladder (±3 from base)
   #{$p}--dark: oklch(from var(#{$p}) clamp(0, calc(l - #{vars.$theme-step-1}), 1) c h);
   #{$p}--darker: oklch(from var(#{$p}) clamp(0, calc(l - #{vars.$theme-step-2}), 1) c h);
+  #{$p}--darkest: oklch(from var(#{$p}) clamp(0, calc(l - #{vars.$theme-step-3}), 1) c h);
   #{$p}--light: oklch(from var(#{$p}) clamp(0, calc(l + #{vars.$theme-step-1}), 1) c h);
   #{$p}--lighter: oklch(from var(#{$p}) clamp(0, calc(l + #{vars.$theme-step-2}), 1) c h);
+  #{$p}--lightest: oklch(from var(#{$p}) clamp(0, calc(l + #{vars.$theme-step-3}), 1) c h);
 
   // modifier contrasts
-  #{$p}--dark--contrast: oklch(from var(#{$p}--dark) clamp(0, (0.5 - l) * 99999, 1) 0 0);
-  #{$p}--darker--contrast: oklch(from var(#{$p}--darker) clamp(0, (0.5 - l) * 99999, 1) 0 0);
-  #{$p}--light--contrast: oklch(from var(#{$p}--light) clamp(0, (0.5 - l) * 99999, 1) 0 0);
-  #{$p}--lighter--contrast: oklch(from var(#{$p}--lighter) clamp(0, (0.5 - l) * 99999, 1) 0 0);
+  #{$p}--dark--contrast: oklch(from var(#{$p}--dark) #{$cl} 0 0);
+  #{$p}--darker--contrast: oklch(from var(#{$p}--darker) #{$cl} 0 0);
+  #{$p}--darkest--contrast: oklch(from var(#{$p}--darkest) #{$cl} 0 0);
+  #{$p}--light--contrast: oklch(from var(#{$p}--light) #{$cl} 0 0);
+  #{$p}--lighter--contrast: oklch(from var(#{$p}--lighter) #{$cl} 0 0);
+  #{$p}--lightest--contrast: oklch(from var(#{$p}--lightest) #{$cl} 0 0);
 
   // mode-relative aliases — light-dark() flips direction automatically with color-scheme
   // light mode: high → darker,  low → lighter
   // dark  mode: high → lighter, low → darker
   #{$p}--high: light-dark(var(#{$p}--dark), var(#{$p}--light));
   #{$p}--higher: light-dark(var(#{$p}--darker), var(#{$p}--lighter));
+  #{$p}--highest: light-dark(var(#{$p}--darkest), var(#{$p}--lightest));
   #{$p}--low: light-dark(var(#{$p}--light), var(#{$p}--dark));
   #{$p}--lower: light-dark(var(#{$p}--lighter), var(#{$p}--darker));
+  #{$p}--lowest: light-dark(var(#{$p}--lightest), var(#{$p}--darkest));
 
   #{$p}--high--contrast: light-dark(var(#{$p}--dark--contrast), var(#{$p}--light--contrast));
   #{$p}--higher--contrast: light-dark(var(#{$p}--darker--contrast), var(#{$p}--lighter--contrast));
+  #{$p}--highest--contrast: light-dark(
+    var(#{$p}--darkest--contrast),
+    var(#{$p}--lightest--contrast)
+  );
   #{$p}--low--contrast: light-dark(var(#{$p}--light--contrast), var(#{$p}--dark--contrast));
   #{$p}--lower--contrast: light-dark(var(#{$p}--lighter--contrast), var(#{$p}--darker--contrast));
+  #{$p}--lowest--contrast: light-dark(
+    var(#{$p}--lightest--contrast),
+    var(#{$p}--darkest--contrast)
+  );
 }
 
 // Internal: emit light-dark() only when values differ; plain value when identical
@@ -213,7 +233,23 @@ $_registered-palette-names: ();
     --color--#{$name}: #{_ld($l-color, $d-color)};
   }
 
-  --color--#{$name}--bg: #{_ld(_resolve-role($light, bg), _resolve-role($dark, bg))};
+  // bg role — the solid tonal background for this palette.
+  // Auto-derived at CSS runtime unless an explicit override is given: an opaque
+  // same-hue tint produced from the color role via relative oklch — high lightness
+  // (light mode) / low lightness (dark mode) with reduced chroma, keeping the
+  // palette's own hue. This is the fill bg() paints and the stroke filled()
+  // outlines with, so it is computed once here rather than at each apply site.
+  // background/surface ARE backgrounds, so their bg role stays the base color.
+  $l-bg: map.get($light, bg);
+  $d-bg: map.get($dark, bg);
+  @if $l-bg == null and $d-bg == null and $name != background and $name != surface {
+    --color--#{$name}--bg: light-dark(
+      oklch(from var(--color--#{$name}) 0.92 calc(c * var(--bg-chroma, 0.4)) h),
+      oklch(from var(--color--#{$name}) 0.24 calc(c * var(--bg-chroma, 0.4)) h)
+    );
+  } @else {
+    --color--#{$name}--bg: #{_ld(_resolve-role($light, bg), _resolve-role($dark, bg))};
+  }
 
   // Stroke — auto-derived at CSS runtime unless an explicit override is given.
   // Formula: clamp the base color's lightness into the visible mid-tone band (0.42–0.60).

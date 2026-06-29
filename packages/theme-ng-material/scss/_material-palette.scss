@@ -1,18 +1,41 @@
+@use "sass:meta";
+@use "sass:list";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // material-palette($name)
 //
 // Scopes --mat-sys-primary* tokens to a cp-theming named palette.
 // Apply to any selector that wraps the components you want recolored.
 //
-// Usage:
-//   .warn-button { @include material-palette('warn'); }
-//   .pass-chip   { @include material-palette('pass'); }
-//
 // All Material components inside that selector inherit the overridden tokens.
 // Scope tightly (a single wrapper element) to avoid coloring unintended siblings.
 //
 // NOTE: --mat-sys-* are unregistered vars — safe to override in local scope.
 // No eager-resolution issue (that only affects @property-registered vars like --color--*).
+//
+// ── Usage examples ────────────────────────────────────────────────────────────
+//
+// Flat (filled) warning button:
+//   <span class="cp-warn"><button mat-flat-button>Delete</button></span>
+//   .cp-warn { @include material-palette('warn'); }
+//
+// Tonal success chip:
+//   <span class="cp-pass"><mat-chip>Verified</mat-chip></span>
+//   .cp-pass { @include material-palette('pass'); }
+//
+// Error FAB:
+//   <span class="cp-error"><button mat-fab><mat-icon>close</mat-icon></button></span>
+//   .cp-error { @include material-palette('error'); }
+//
+// Caution slide toggle:
+//   <span class="cp-caution"><mat-slide-toggle>Enable</mat-slide-toggle></span>
+//   .cp-caution { @include material-palette('caution'); }
+//
+// If mat.adaptor() is passed to t.define-theme(), the [palette] attribute works
+// directly without a class wrapper — core and material tokens are both applied:
+//   <button mat-flat-button palette="warn">Delete</button>
+//   <mat-checkbox palette="pass">Confirmed</mat-checkbox>
+//   <mat-slide-toggle palette="caution">Beta feature</mat-slide-toggle>
 // ─────────────────────────────────────────────────────────────────────────────
 
 @mixin material-palette($name) {
@@ -41,3 +64,42 @@
 // @mixin slide-toggle-palette($name) { ... }
 // @mixin chips-palette($name) { ... }
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// adaptor() — Returns a hooks map for use with t.define-theme($adaptor: mat.adaptor()).
+//
+// Wires Angular Material --mat-sys-primary* tokens to each cp-theming palette
+// as it is registered, so [palette="warn"] etc. automatically recolor all
+// Material components inside that scope.
+//
+// Usage:
+//   @use '@cpangular/cp-theming-core/scss/theme' as t;
+//   @use '@cpangular/cp-theming-ng-material/scss/material' as mat;
+//
+//   @include t.define-theme('my-theme', $config, $adaptor: mat.adaptor());
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Hook: emits [palette="$name"] { @include material-palette($name) } after
+// core has already emitted its own [palette="$name"] rules, ensuring the
+// --mat-sys-* overrides come later in the cascade and win.
+@mixin _on-define-palette-after($name) {
+  // Surface and background palettes are neutral — remapping --mat-sys-primary
+  // to them would break Material's surface hierarchy. Skip them.
+  $skip: surface, background;
+  @if not list.index($skip, $name) {
+    [palette="#{$name}"] {
+      @include material-palette($name);
+    }
+  }
+}
+
+// Placeholder — no material action needed before palette registration.
+@mixin _on-define-palette-before($name) {
+}
+
+@function adaptor() {
+  @return (
+    define-palette-before: meta.get-mixin("_on-define-palette-before"),
+    define-palette-after: meta.get-mixin("_on-define-palette-after")
+  );
+}

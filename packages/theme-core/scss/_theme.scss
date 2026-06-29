@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 @use "sass:map";
 @use "sass:list";
+@use "sass:meta";
 @use "palette" as _pal;
 @use "weights" as _w;
 @use "overlay" as _ov;
@@ -303,7 +304,7 @@
 }
 
 // ─── Internal: emit all CSS vars for both modes ───────────────────────────────
-@mixin _mode-vars($light, $dark, $dedupe: true) {
+@mixin _mode-vars($light, $dark, $dedupe: true, $adaptor: ()) {
   $lw: map.get($light, weights);
   $dw: map.get($dark, weights);
   $lo: map.get($light, overlay);
@@ -339,10 +340,18 @@
       @if map.has-key($pal-config, dark) {
         $d-resolved: map.get($pal-config, dark);
       }
+      @if map.has-key($adaptor, define-palette-before) {
+        @include meta.apply(map.get($adaptor, define-palette-before), $pal-name);
+      }
+
       @include _pal.define-palette($pal-name, $l-resolved, $d-resolved);
 
       [palette="#{$pal-name}"] {
         @include _ap.apply-palette($pal-name);
+      }
+
+      @if map.has-key($adaptor, define-palette-after) {
+        @include meta.apply(map.get($adaptor, define-palette-after), $pal-name);
       }
     }
   }
@@ -356,7 +365,14 @@
 }
 
 // ─── Public: define-theme ─────────────────────────────────────────────────────
-@mixin define-theme($name, $theme, $default: false, $dedupe: true) {
+//
+// $adaptor — optional hooks map from an adapter package (e.g. theme-ng-material).
+// Supported keys (all optional):
+//   define-theme-before:   mixin($theme-name)  — called before theme vars are emitted
+//   define-theme-after:    mixin($theme-name)  — called after all theme vars are emitted
+//   define-palette-before: mixin($palette-name) — called before each palette is registered
+//   define-palette-after:  mixin($palette-name) — called after each palette is registered
+@mixin define-theme($name, $theme, $default: false, $dedupe: true, $adaptor: ()) {
   $light: map.get($theme, light);
   $dark: map.get($theme, dark);
   $lw: map.get($light, weights);
@@ -369,8 +385,12 @@
     $selectors: "#{$selectors}, body";
   }
 
+  @if map.has-key($adaptor, define-theme-before) {
+    @include meta.apply(map.get($adaptor, define-theme-before), $name);
+  }
+
   #{$selectors} {
-    @include _mode-vars($light, $dark, $dedupe);
+    @include _mode-vars($light, $dark, $dedupe, $adaptor);
     @include _ty.emit(map.get($theme, typography));
     @include _dn.emit(map.get($theme, density));
     @include _sh.emit(map.get($theme, shape));
@@ -463,6 +483,10 @@
       }
     }
   }
+
+  @if map.has-key($adaptor, define-theme-after) {
+    @include meta.apply(map.get($adaptor, define-theme-after), $name);
+  }
 }
 
 // ─── Apply mixins — re-exported for single @use 'theme' as t convenience ──────
@@ -472,8 +496,11 @@
 @mixin tone($modifier) {
   @include _ap.tone($modifier);
 }
-@mixin container($modifier: null) {
-  @include _ap.container($modifier);
+@mixin bg($modifier: null) {
+  @include _ap.bg($modifier);
+}
+@mixin container() {
+  @include _ap.container();
 }
 @mixin filled($modifier: null) {
   @include _ap.filled($modifier);
@@ -481,8 +508,8 @@
 @mixin outlined() {
   @include _ap.outlined();
 }
-@mixin stroke() {
-  @include _ap.stroke();
+@mixin shape($size) {
+  @include _ap.shape($size);
 }
 @mixin radius(
   $all: null,

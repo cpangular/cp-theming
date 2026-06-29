@@ -1,13 +1,18 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Apply — composable palette/container/stroke mixins.
+@use "sass:map";
+@use "sass:list";
 @use "density" as _dn;
-// Usage:
-//   @include apply-palette(primary)   → select palette, stamp --palette-color* vars
-//   @include container()              → bg + text blend (palette-agnostic)
-//   @include stroke()                 → inset ::after border (palette-agnostic)
-//   @include define-core-theme()       → emit [container] attr + .stroke class globally
+// Usage — atomic, composable layers (each does ONE thing, stack on a palette):
+//   @include apply-palette(primary)   → select palette, identity text color
+//   @include bg()                     → subtle tonal fill, keeps identity text
+//   @include filled()                 → intense fill + contrast text
+//   @include outlined()               → inset ::after border
+//   @include shape(md)                → corner radius from --shape--* scale
+//   @include container()              → density padding (containment only)
+//   @include define-core-theme()      → emit [palette][bg|filled|outlined|container|shape] globally
 //
-// Surface vars set by container()/filled()/outlined():
+// Surface vars set by bg()/filled()/outlined():
 //   --container--stroke         color of the stroke border
 //   --container--text           blended body text color
 //   --container--text-emphasis  pure contrast (white or black)
@@ -134,12 +139,12 @@
   }
 }
 
-// ─── Internal: compute geometry — radius + padding ───────────────────────────
-// Resolves per-corner radius (priority: individual > top/bottom > left/right > all).
-// Computes per-side padding as base + stroke-width.
-// Inset stroke is always inside content bounds (auto no-op without stroke()).
-// Padding shrinks/grows with --density-scale via --space--lg.
-@mixin _apply-geometry() {
+// ─── Internal: resolve per-corner radius ─────────────────────────────────────
+// Resolves per-corner radius (priority: individual > top/bottom > left/right > all)
+// into --container--_radius-* and emits border-radius. Called by shape().
+// outlined()'s ::after reads the same --container--_radius-* vars (0px fallback)
+// so the inset border always tracks the surface corners.
+@mixin _resolve-radius() {
   --container--_radius-tl: var(
     --container--radius--tl,
     var(--container--radius--top, var(--container--radius--left, var(--container--radius, 0px)))
@@ -159,7 +164,13 @@
 
   border-radius: var(--container--_radius-tl) var(--container--_radius-tr)
     var(--container--_radius-br) var(--container--_radius-bl);
+}
 
+// ─── Internal: compute & emit padding ────────────────────────────────────────
+// Per-side padding = base (density-reactive via --space--lg) + stroke-width.
+// Inset stroke is always inside content bounds (stroke-width auto no-op = 0px
+// without outlined()). Called by container().
+@mixin _apply-padding() {
   --container--_padding-block-start: calc(
     var(
         --container--padding-block-start,
@@ -195,36 +206,44 @@
   padding-inline-end: var(--container--_padding-inline-end);
 }
 
-// ─── Internal: alias all derivative vars for one role onto --palette-color* ───
-// Source: --color--{palette}--{role}--*
-// Target: --palette-color--{role}--*
+// ─── Internal: stamp source ladder + expose 3-wide public window ────────────
+// Source:  --color--{palette}--{role}--* (full theme ladder)
+// Private: --palette-src{--role}--*      (full mode-aware ladder copy)
+// Public:  --palette-color{--role}[--low|--high] (3-wide scope API)
 // Special case: 'color' role has no suffix (--color--{palette} / --palette-color).
 @mixin _scope-role($palette, $role) {
   $src: --color--#{$palette}--#{$role};
-  $tgt: --palette-color--#{$role};
+  $r: --#{$role};
   @if $role == color {
     $src: --color--#{$palette};
-    $tgt: --palette-color;
+    $r: "";
   }
+  $p: --palette-src#{$r};
+  $w: --palette-color#{$r};
 
-  #{$tgt}: var(#{$src});
-  #{$tgt}--contrast: var(#{$src}--contrast);
-  #{$tgt}--dark: var(#{$src}--dark);
-  #{$tgt}--darker: var(#{$src}--darker);
-  #{$tgt}--light: var(#{$src}--light);
-  #{$tgt}--lighter: var(#{$src}--lighter);
-  #{$tgt}--dark--contrast: var(#{$src}--dark--contrast);
-  #{$tgt}--darker--contrast: var(#{$src}--darker--contrast);
-  #{$tgt}--light--contrast: var(#{$src}--light--contrast);
-  #{$tgt}--lighter--contrast: var(#{$src}--lighter--contrast);
-  #{$tgt}--high: var(#{$src}--high);
-  #{$tgt}--higher: var(#{$src}--higher);
-  #{$tgt}--low: var(#{$src}--low);
-  #{$tgt}--lower: var(#{$src}--lower);
-  #{$tgt}--high--contrast: var(#{$src}--high--contrast);
-  #{$tgt}--higher--contrast: var(#{$src}--higher--contrast);
-  #{$tgt}--low--contrast: var(#{$src}--low--contrast);
-  #{$tgt}--lower--contrast: var(#{$src}--lower--contrast);
+  // Private source ladder for tone() sliding.
+  #{$p}--highest: var(#{$src}--highest);
+  #{$p}--higher: var(#{$src}--higher);
+  #{$p}--high: var(#{$src}--high);
+  #{$p}: var(#{$src});
+  #{$p}--low: var(#{$src}--low);
+  #{$p}--lower: var(#{$src}--lower);
+  #{$p}--lowest: var(#{$src}--lowest);
+  #{$p}--highest--contrast: var(#{$src}--highest--contrast);
+  #{$p}--higher--contrast: var(#{$src}--higher--contrast);
+  #{$p}--high--contrast: var(#{$src}--high--contrast);
+  #{$p}--contrast: var(#{$src}--contrast);
+  #{$p}--low--contrast: var(#{$src}--low--contrast);
+  #{$p}--lower--contrast: var(#{$src}--lower--contrast);
+  #{$p}--lowest--contrast: var(#{$src}--lowest--contrast);
+
+  // Public 3-wide window exposed by palette scope.
+  #{$w}: var(#{$p});
+  #{$w}--contrast: var(#{$p}--contrast);
+  #{$w}--high: var(#{$p}--high);
+  #{$w}--high--contrast: var(#{$p}--high--contrast);
+  #{$w}--low: var(#{$p}--low);
+  #{$w}--low--contrast: var(#{$p}--low--contrast);
 }
 
 // ─── Layer 1: apply-palette ───────────────────────────────────────────────────
@@ -244,120 +263,221 @@
   --palette-color--tint-5: var(--color--#{$name}--tint-5);
   --palette-color--focus: var(--color--#{$name}--focus);
 
+  // Identity text, plus a default stroke color so outlined() works with just a
+  // palette (no surface fill required).
   color: var(--palette-color);
+  --container--stroke: var(--palette-color--stroke);
 }
 
-// ─── Layer 2: container ───────────────────────────────────────────────────────
-// Palette-agnostic. Uses --palette-color--bg role as background.
-// $modifier: null | high | higher | low | lower | dark | darker | light | lighter
-// Writes --container--* surface vars consumed by .stroke, .text--emphasis etc.
-@mixin container($modifier: null) {
-  $bg: --palette-color--bg;
-  $contrast: --palette-color--bg--contrast;
+// ─── Shared surface extent ────────────────────────────────────────────────────
+// Shared outer extent for every surface layer (bg fill, filled fill, outlined
+// border). A negative inset bleeds the surface past the content box so a bare
+// inline element shows breathing room without moving its text or the surrounding
+// flow (the pseudo is out of flow). Because all three layers use this same
+// extent, their outer edges line up exactly when composed. container() and a
+// padded box reset --bg-bleed to 0, pinning every layer to the padded box.
+// Override --bg-bleed (or per-axis --bg-bleed-block / --bg-bleed-inline) to tune.
+@mixin _surface-extent() {
+  inset: calc(-1 * var(--bg-bleed-block, var(--bg-bleed, 0.1em)))
+    calc(-1 * var(--bg-bleed-inline, var(--bg-bleed, 0.3em)));
+}
+
+// ─── Layer: bg ────────────────────────────────────────────────────────────────
+// Subtle tonal fill: the palette's solid background role (--palette-color--bg) —
+// an opaque, same-hue tint precomputed in the palette by blending the color role
+// toward --color--surface. Deterministic (no compositing over whatever is behind
+// it) and always lighter than the identity text it inherits from apply-palette()
+// — colored text on a tonal surface (the pill / chip look). Follows tone().
+//
+// Rendered as an inset ::before pseudo-element (not a direct background) so an
+// inline element (e.g. a <span>) keeps its normal inline flow while still getting
+// a contiguous, corner-aware fill rectangle behind its content. isolation:isolate
+// scopes the pseudo's z-index:-1 to this element so the fill never drops behind an
+// ancestor's background. Tracks --container--radius (set by shape()/container()).
+// $modifier: null | high | low
+@mixin bg($modifier: null) {
+  $base: --palette-color--bg;
   @if $modifier {
-    $bg: --palette-color--bg--#{$modifier};
-    $contrast: --palette-color--bg--#{$modifier}--contrast;
+    $base: --palette-color--bg--#{$modifier};
   }
 
   position: relative;
-  @include _apply-geometry();
-  background-color: var(#{$bg});
-  --container--text: color-mix(
-    in oklch,
-    var(#{$contrast}) var(--weight--text-blend, 82%),
-    var(#{$bg})
-  );
-  --container--text-emphasis: var(#{$contrast});
-  --container--text-deemphasis: color-mix(
-    in oklch,
-    var(#{$contrast}) var(--weight--text-deemphasis-blend, 55%),
-    var(#{$bg})
-  );
-  --container--stroke: var(--palette-color--stroke);
-  color: var(--container--text);
+  isolation: isolate;
+
+  &::before {
+    content: "";
+    position: absolute;
+    @include _surface-extent();
+    z-index: -1;
+    box-sizing: border-box;
+    border-radius: var(--container--_radius-tl, 0px) var(--container--_radius-tr, 0px)
+      var(--container--_radius-br, 0px) var(--container--_radius-bl, 0px);
+    background-color: var(#{$base});
+    pointer-events: none;
+  }
 }
 
-// ─── Layer 2b: filled ───────────────────────────────────────────────────────────
-// Palette-agnostic. Uses --palette-color (identity role) as background —
-// the punchy filled variant (chip, badge, filled button).
-// $modifier: null | high | higher | low | lower | dark | darker | light | lighter
-// Writes --container--* surface vars consumed by .stroke, .text--emphasis etc.
+// ─── Layer: filled ────────────────────────────────────────────────────────────
+// Intense fill using --palette-color (identity role) as background — the punchy
+// variant (chip, badge, filled button). Text switches to the palette's contrast
+// (on-color) directly. Fills via the same inset ::before as bg() so its outer
+// edge matches bg() and outlined() exactly when composed.
+// $modifier: null | high | low
 @mixin filled($modifier: null) {
   $bg: --palette-color;
   $contrast: --palette-color--contrast;
-  $stroke: --palette-color--high;
   @if $modifier {
     $bg: --palette-color--#{$modifier};
     $contrast: --palette-color--#{$modifier}--contrast;
-    $stroke: --palette-color--#{$modifier}--high;
   }
 
   position: relative;
-  @include _apply-geometry();
-  background-color: var(#{$bg});
-  --container--text: color-mix(
-    in oklch,
-    var(#{$contrast}) var(--weight--text-blend, 82%),
-    var(#{$bg})
-  );
+  isolation: isolate;
+
+  // Pure contrast (on-color) text, with a deemphasis tier for secondary text.
+  --container--text: var(#{$contrast});
   --container--text-emphasis: var(#{$contrast});
   --container--text-deemphasis: color-mix(
     in oklch,
     var(#{$contrast}) var(--weight--text-deemphasis-blend, 55%),
     var(#{$bg})
   );
-  --container--stroke: var(#{$stroke});
+  // When composed with outlined(), the border uses the palette's solid bg role —
+  // the same tonal tint bg() paints (color blended toward surface).
+  --container--stroke: var(--palette-color--bg);
   color: var(--container--text);
+
+  &::before {
+    content: "";
+    position: absolute;
+    @include _surface-extent();
+    z-index: -1;
+    box-sizing: border-box;
+    border-radius: var(--container--_radius-tl, 0px) var(--container--_radius-tr, 0px)
+      var(--container--_radius-br, 0px) var(--container--_radius-bl, 0px);
+    background-color: var(#{$bg});
+    pointer-events: none;
+  }
 }
 
-// ─── Layer 2c: outlined ────────────────────────────────────────────────────────
-// Palette-agnostic. No background — transparent surface with palette color text
-// and stroke border. Compose with apply-palette.
+// ─── Layer: shape ─────────────────────────────────────────────────────────────
+// Corner rounding from the M3 --shape--* scale.
+// $size: xxs | xs | sm | md | lg | xl | xxl | full
+@mixin shape($size) {
+  --container--radius: var(--shape--#{$size});
+  @include _resolve-radius();
+}
+
+// ─── Layer: outlined ──────────────────────────────────────────────────────────
+// Border layer. Renders --container--stroke as an inset ::after pseudo-element
+// at the SAME outer extent as bg()/filled() so, when composed, the border sits
+// exactly on the fill's outer edge. Tracks --container--radius (set by shape()).
+// Sets --container--stroke-width which container() folds into its padding so
+// content never shifts when the border is added.
+// Needs a palette (or surface) on the same element to supply --container--stroke.
 @mixin outlined() {
   position: relative;
-  @include _apply-geometry();
-  background: transparent;
-  --container--text: var(--palette-color);
-  --container--text-emphasis: var(--palette-color--high);
-  --container--text-deemphasis: var(--palette-color--low);
-  --container--stroke: var(--palette-color--stroke);
-  color: var(--container--text);
-}
-
-// ─── Layer 3: stroke ──────────────────────────────────────────────────────────
-// Reads --container--stroke written by container()/filled()/outlined().
-// Renders as an inset ::after pseudo-element so the border sits inside the
-// component bounds and shares --container--radius with the surface.
-// Sets --container--stroke-width which is automatically factored into the
-// density padding computed by _apply-geometry() inside container()/filled()/outlined().
-@mixin stroke() {
   --container--stroke-width: var(--stroke-width, 1px);
 
   &::after {
     content: "";
     position: absolute;
-    inset: 0;
+    @include _surface-extent();
     box-sizing: border-box;
-    border-radius: var(--container--_radius-tl) var(--container--_radius-tr)
-      var(--container--_radius-br) var(--container--_radius-bl);
+    border-radius: var(--container--_radius-tl, 0px) var(--container--_radius-tr, 0px)
+      var(--container--_radius-br, 0px) var(--container--_radius-bl, 0px);
     border: var(--container--stroke-width) solid var(--container--stroke);
     pointer-events: none;
   }
 }
 
+// ─── Layer: container ─────────────────────────────────────────────────────────
+// Containment only: density-reactive padding (stroke-compensated) plus corner
+// resolution so an inline --container--radius / t.radius() override takes effect
+// without needing a shape() token. No fill, no color — compose with bg()/filled()
+// for a surface and shape() for scale-based corners.
+@mixin container() {
+  position: relative;
+  // Explicit padding defines the surface box; pin any bg() fill to it (no bleed).
+  --bg-bleed: 0px;
+  @include _resolve-radius();
+  @include _apply-padding();
+}
+
 // ─── Layer 1b: tone ───────────────────────────────────────────────────────────
-// Shifts the base --palette-color* vars to a modifier step so that all
-// downstream layers (container, filled, outlined, stroke) automatically
-// operate on the toned values. Apply after apply-palette, before the surface layer.
-// Only the base + contrast for each role are remapped; modifier variants
-// (--palette-color--bg--high etc.) still resolve against the original palette.
+// Slides the 3-wide lightness window (low / base / high) along the 7-level
+// mode-aware ladder so all downstream layers automatically shift together while
+// neighbors stay valid. Each tone names the new center; --low/--high become its
+// immediate ladder neighbors (clamped at the ends). Children that read the base
+// alias (--palette-color) shift; children that read --low/--high still find a
+// valid step. Apply after apply-palette, before the surface layer.
+//
+// Window definition per tone = (center, high-neighbor, low-neighbor):
+//   highest higher  high  base  low  lower  lowest   ← ladder
+$_tone-windows: (
+  high: (
+    high,
+    higher,
+    base,
+  ),
+  higher: (
+    higher,
+    highest,
+    high,
+  ),
+  highest: (
+    highest,
+    highest,
+    higher,
+  ),
+  low: (
+    low,
+    base,
+    lower,
+  ),
+  lower: (
+    lower,
+    low,
+    lowest,
+  ),
+  lowest: (
+    lowest,
+    lower,
+    lowest,
+  ),
+);
+
+@mixin _tone-window($modifier) {
+  $w: map.get($_tone-windows, $modifier);
+  $c: list.nth($w, 1);
+  $hi: list.nth($w, 2);
+  $lo: list.nth($w, 3);
+  $cs: "--#{$c}";
+  @if $c == base {
+    $cs: "";
+  }
+  $his: "--#{$hi}";
+  @if $hi == base {
+    $his: "";
+  }
+  $los: "--#{$lo}";
+  @if $lo == base {
+    $los: "";
+  }
+  @each $r in ("", "--bg", "--stroke") {
+    --palette-color#{$r}: var(--palette-src#{$r}#{$cs});
+    --palette-color#{$r}--contrast: var(--palette-src#{$r}#{$cs}--contrast);
+    --palette-color#{$r}--high: var(--palette-src#{$r}#{$his});
+    --palette-color#{$r}--high--contrast: var(--palette-src#{$r}#{$his}--contrast);
+    --palette-color#{$r}--low: var(--palette-src#{$r}#{$los});
+    --palette-color#{$r}--low--contrast: var(--palette-src#{$r}#{$los}--contrast);
+  }
+}
+
 @mixin tone($modifier) {
-  --palette-color: var(--palette-color--#{$modifier});
-  --palette-color--contrast: var(--palette-color--#{$modifier}--contrast);
-  --palette-color--bg: var(--palette-color--bg--#{$modifier});
-  --palette-color--bg--contrast: var(--palette-color--bg--#{$modifier}--contrast);
-  --palette-color--stroke: var(--palette-color--stroke--#{$modifier});
-  --palette-color--stroke--contrast: var(--palette-color--stroke--#{$modifier}--contrast);
+  @if map.has-key($_tone-windows, $modifier) {
+    @include _tone-window($modifier);
+  }
 }
 
 // ─── define-core-theme: emit attribute/class rules globally ───────────────────────────
@@ -416,26 +536,39 @@
   }
 
   // Surface layers require a palette to be selected on the same element.
-  // [palette][container] = specificity 0,2,0 — matches [theme] [palette] (also 0,2,0)
-  // but declared after all theme rules so declaration order gives these the win.
-  [palette][container] {
-    @include container();
+  // The theme palette rule is emitted as `[theme] [palette]` (specificity 0,2,0)
+  // and sets `color` + `--container--stroke` as defaults. Layers that only set
+  // non-colliding properties (bg → background-color, container/shape → geometry,
+  // outlined → stroke-width/::after) win at 0,2,0 by declaration order. Layers
+  // that override the palette's `color`/stroke defaults (filled, tone) double an
+  // attribute (0,3,0) so they win regardless of stylesheet load order.
+  [palette][bg] {
+    @include bg();
   }
-  [palette][filled] {
+  [palette][filled][filled] {
     @include filled();
   }
   [palette][outlined] {
     @include outlined();
   }
-  .stroke {
-    @include stroke();
+  [palette][container] {
+    @include container();
   }
 
-  // tone — requires [palette] on the same element (specificity 0,2,0 matches
-  // [theme] [palette] rules, declaration order here wins since we're declared after).
-  $tone-modifiers: high, higher, low, lower, dark, darker, light, lighter;
+  // shape — corner rounding from the --shape--* scale.
+  $shape-sizes: xxs, xs, sm, md, lg, xl, xxl, full;
+  @each $size in $shape-sizes {
+    [palette][shape="#{$size}"] {
+      @include shape($size);
+    }
+  }
+
+  // tone — remaps the base --palette-color* vars to a modifier step. Doubles an
+  // attribute (specificity 0,3,0) so it beats the theme's [theme] [palette] rule
+  // (0,2,0) regardless of stylesheet load order.
+  $tone-modifiers: highest, higher, high, low, lower, lowest;
   @each $mod in $tone-modifiers {
-    [palette][tone="#{$mod}"] {
+    [palette][tone="#{$mod}"][tone] {
       @include tone($mod);
     }
   }

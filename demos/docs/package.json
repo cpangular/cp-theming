@@ -4,7 +4,9 @@
   "private": true,
   "description": "cp-theming documentation site",
   "scripts": {
+    "predev": "lsof -ti :4200 | xargs kill -9 2>/dev/null || true",
     "start": "ng serve docs",
+    "dev": "ng serve docs --configuration development",
     "build": "ng build docs --configuration production",
     "build:dev": "ng build docs --configuration development"
   },
@@ -19,7 +21,8 @@
     "@cpangular/cp-theming-core": "workspace:*",
     "@cpangular/cp-theming-ng-core": "workspace:*",
     "@cpangular/cp-theming-ng-material": "workspace:*",
-    "rxjs": "^7.8.0",
+    "highlight.js": "^11.11.1",
+    "rxjs": "^7.8.2",
     "tslib": "^2.3.0"
   },
   "devDependencies": {

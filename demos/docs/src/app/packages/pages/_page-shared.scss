@@ -2,39 +2,56 @@
 // Loaded via stylePreprocessorOptions includePaths (see angular.json).
 
 .doc-page {
-  max-width: 860px;
+  max-width: 880px;
+  animation: doc-fade-in 0.25s ease;
+}
+
+@keyframes doc-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .page-header {
-  margin-bottom: 40px;
+  margin-bottom: 44px;
   padding-bottom: 24px;
   border-bottom: 1px solid var(--color--surface--stroke, rgba(0, 0, 0, 0.1));
 
   h1 {
-    font-size: 36px;
+    font-size: 40px;
     font-weight: 300;
-    margin: 0 0 8px;
+    margin: 0 0 10px;
     color: var(--color--primary);
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
   }
 
   .subtitle {
-    font-size: 14px;
-    opacity: 0.6;
+    display: inline-block;
+    font-size: 12.5px;
     margin: 0;
+    padding: 3px 10px;
+    border-radius: 999px;
     font-family: "Roboto Mono", monospace;
+    color: var(--color--primary);
+    background: var(--color--primary--tint-1, rgba(0, 0, 0, 0.05));
   }
 }
 
 .page-section {
-  margin-bottom: 40px;
+  margin-bottom: 48px;
 
   h2 {
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 400;
-    margin: 0 0 16px;
+    margin: 0 0 18px;
     color: var(--color--primary);
-    opacity: 0.85;
+    letter-spacing: -0.01em;
   }
 
   h3 {
@@ -49,6 +66,12 @@
     line-height: 1.75;
     color: var(--color--background--contrast, rgba(0, 0, 0, 0.8));
     max-width: 720px;
+  }
+
+  .intro {
+    font-size: 16.5px;
+    line-height: 1.7;
+    opacity: 0.92;
   }
 }
 
@@ -110,5 +133,317 @@
     font-family: "Roboto Mono", monospace;
     font-size: 12px;
     opacity: 0.65;
+  }
+}
+
+// ── API reference — material.angular.dev-style layout ────────────────────────
+
+.api-import-line {
+  margin: -8px 0 40px;
+
+  code {
+    display: block;
+    padding: 12px 18px;
+    background: var(--color--surface--bg, rgba(0, 0, 0, 0.03));
+    border: 1px solid var(--color--surface--stroke, rgba(0, 0, 0, 0.1));
+    border-radius: 4px;
+    font-family: "Roboto Mono", monospace;
+    font-size: 13px;
+    color: var(--color--primary);
+  }
+}
+
+.api-section-heading {
+  font-size: 26px;
+  font-weight: 400;
+  margin: 8px 0 10px;
+  color: inherit;
+}
+
+.api-section-rule {
+  border: none;
+  border-top: 1px solid var(--color--surface--stroke, rgba(0, 0, 0, 0.12));
+  margin: 0 0 28px;
+}
+
+.api-symbol {
+  margin-bottom: 48px;
+}
+
+.api-symbol-name {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  font-family: inherit;
+  color: inherit;
+}
+
+.api-symbol-selector {
+  font-size: 13px;
+  margin: 0 0 10px;
+  opacity: 0.75;
+
+  code {
+    font-family: "Roboto Mono", monospace;
+  }
+}
+
+.api-symbol-desc {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--color--background--contrast, rgba(0, 0, 0, 0.8));
+  max-width: 720px;
+  margin: 0 0 18px;
+}
+
+.api-sub-heading {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 20px 0 10px;
+  color: inherit;
+}
+
+.api-member-card {
+  border: 1px solid var(--color--surface--stroke, rgba(0, 0, 0, 0.12));
+  border-radius: 10px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.api-signature-row {
+  display: block;
+  padding: 14px 20px;
+  background: var(--color--surface--bg, rgba(0, 0, 0, 0.025));
+  border-bottom: 1px solid var(--color--surface--stroke, rgba(0, 0, 0, 0.08));
+  font-family: "Roboto Mono", monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  word-break: break-word;
+
+  .api-sig-kw {
+    opacity: 0.45;
+  }
+
+  .api-sig-name {
+    color: var(--color--primary);
+    font-weight: 600;
+  }
+
+  .api-sig-param {
+    color: var(--color--primary);
+    opacity: 0.9;
+  }
+
+  .api-sig-default {
+    opacity: 0.55;
+  }
+
+  .api-sig-type {
+    color: var(--color--secondary, var(--color--primary));
+    opacity: 0.8;
+  }
+
+  .api-sig-punct {
+    opacity: 0.6;
+  }
+
+  .api-sig-return {
+    color: var(--color--secondary, var(--color--primary));
+    font-style: italic;
+  }
+}
+
+.api-member-body {
+  padding: 16px 20px 20px;
+}
+
+// ── Live demo blocks ──────────────────────────────────────────────────────────
+
+.demo-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 20px 0 28px;
+}
+
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 20px 0 28px;
+}
+
+// A live swatch box — add [palette] + [container]/[filled]/[outlined] on this element
+.demo-swatch {
+  padding: 18px 20px 14px;
+  border-radius: 8px;
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2px;
+
+  .demo-name {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .demo-tag {
+    font-size: 10px;
+    font-family: "Roboto Mono", monospace;
+    opacity: 0.65;
+    letter-spacing: 0.04em;
+  }
+}
+
+// Code + demo side by side
+.demo-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+  margin: 20px 0 28px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.demo-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.5;
+  margin: 0 0 8px;
+}
+
+.api-member-desc {
+  font-size: 14px;
+  line-height: 1.75;
+  margin: 0 0 4px;
+  max-width: 680px;
+  color: var(--color--background--contrast, rgba(0, 0, 0, 0.8));
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.api-params-heading,
+.api-returns-heading {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 18px 0 4px;
+  letter-spacing: 0.01em;
+}
+
+.api-param-row {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--color--surface--stroke, rgba(0, 0, 0, 0.06));
+  font-size: 13px;
+  line-height: 1.6;
+  transition: background 0.12s ease;
+
+  &:hover {
+    background: var(--color--surface--bg, rgba(0, 0, 0, 0.02));
+  }
+}
+
+.api-param-name {
+  font-family: "Roboto Mono", monospace;
+  font-size: 13px;
+  font-weight: 500;
+  display: block;
+}
+
+.api-param-type {
+  font-family: "Roboto Mono", monospace;
+  font-size: 12px;
+  color: var(--color--primary);
+  opacity: 0.85;
+  display: block;
+  margin-top: 2px;
+}
+
+.api-param-default {
+  font-family: "Roboto Mono", monospace;
+  font-size: 11px;
+  opacity: 0.5;
+  display: block;
+}
+
+.api-param-desc {
+  color: var(--color--background--contrast, rgba(0, 0, 0, 0.8));
+  padding-top: 2px;
+}
+
+// Props table — used for inputs/outputs on directives and service members
+.api-props-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 8px 0 0;
+  border: 1px solid var(--color--surface--stroke, rgba(0, 0, 0, 0.1));
+  border-radius: 10px;
+  overflow: hidden;
+
+  th {
+    text-align: left;
+    padding: 11px 18px;
+    background: var(--color--surface--bg, rgba(0, 0, 0, 0.03));
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    opacity: 0.7;
+    border-bottom: 1px solid var(--color--surface--stroke, rgba(0, 0, 0, 0.12));
+  }
+
+  td {
+    padding: 11px 18px;
+    border-bottom: 1px solid var(--color--surface--stroke, rgba(0, 0, 0, 0.07));
+    vertical-align: top;
+    line-height: 1.65;
+  }
+
+  tbody tr {
+    transition: background 0.12s ease;
+  }
+
+  tbody tr:hover {
+    background: var(--color--surface--bg, rgba(0, 0, 0, 0.02));
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  .prop-decorator {
+    font-family: "Roboto Mono", monospace;
+    font-size: 11px;
+    opacity: 0.55;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .prop-name {
+    font-family: "Roboto Mono", monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color--primary);
+  }
+
+  .prop-type {
+    font-family: "Roboto Mono", monospace;
+    font-size: 12px;
+    opacity: 0.65;
+    display: block;
+    margin-top: 2px;
   }
 }
