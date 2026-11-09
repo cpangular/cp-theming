@@ -76,8 +76,9 @@ Each demo is a consumer project showing a specific use case. No library code her
 6. **Framework-agnostic core** — `theme-core` has zero Angular dependency.
    Angular belongs in `theme-ng-core`.
 
-7. **oklch everywhere** — Perceptually uniform, wide gamut, direct hue/lightness
-   control. Not hsl.
+7. **Any colour in, oklch out** — Authors may pass any CSS colour (oklch, hex, `rgb()`,
+   `hsl()`, …). Every derivative is computed in oklch at runtime, so steps stay perceptually
+   uniform whatever the input. oklch inputs are recommended for predictable steps.
 
 ---
 
@@ -243,7 +244,7 @@ $my-theme: t.theme(
 - `ng build theme-ng-material` → `dist/theme-ng-material/` (fesm2022 + types) ✅
 - Package exports: `./css/material-core`, `./css/material-overrides`, `./scss/*`
 
-### 🟡 Phase 7 — docs site + demos
+### 🟡 Phase 7 — docs site + demos (paused until Phase 9 lands — see PORT-PLAN.md)
 
 **docs** (`demos/docs`) — Angular 22 + Material 22 documentation / showcase app:
 - Builds and deploys to GitHub Pages at `/cp-theming/` via `.github/workflows/pages.yml`
@@ -271,5 +272,30 @@ $my-theme: t.theme(
 - demo-material: Angular + Material (separate from docs)
 - demo-brand-core: example brand pack
 - demo-brand-material: example brand + Material
+
+### ✅ Phase 8 — Test harness and CI (PORT-PLAN.md)
+- CSS checks, `node --test` + Sass JS API (`packages/theme-core/test/css`, `packages/theme-ng-material/test/css`):
+  zero deprecation warnings from our files; every `var()` read without a fallback is declared
+  (core + preset, core + fixture, core + preset + adapter, the docs style list); contrast sweep
+  with colorjs.io over every preset role and ladder step plus a hue × lightness × chroma grid;
+  size, `@property` count and the exact registered list of `core.css`. Checks today's code fails
+  are `todo` naming their phase: the 75 `--typescale--*` reads (Phase 11), the contrast sweep
+  (Phase 10), the cascade-shape check (written in Phase 9).
+- Fixture themes: brand + `*-from-brand()` + custom palette name, explicit `$bg`/`$stroke`/`$focus`
+  with `t.light-dark()` weights and elevation, hex/`rgb()`/`hsl()` inputs, and a theme defined with
+  `$adaptor: mat.adaptor()`.
+- TypeScript API tests with vitest + jsdom: persistence and `getAvailableThemes`.
+- Browser check `packages/theme-core/test/render.ts` (Playwright, Chromium + Firefox, local only):
+  31 rows, one per "Behaviour today" case plus the mode, palette and nesting cases; 15 pass today,
+  the other 16 are the cascade defects Phase 9 fixes.
+- Wiring: wireit `test` scripts, `github.actions.build` / `github.actions.test`, git-flow's
+  `test.yml`; `pages.yml` is manual-only until the repo is public.
+
+### ⬛ Phases 9–13 — planned in PORT-PLAN.md
+- Phase 9 — Cascade: a theme is one rule; core derives once
+- Phase 10 — Contrast and alpha
+- Phase 11 — Material adapter from Material's role tables
+- Phase 12 — Startup: no flash, safe import
+- Phase 13 — Release through cpdevtools/git-flow
 
 ---

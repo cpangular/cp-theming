@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 @use "sass:map";
 @use "sass:list";
+@use "sass:string";
 @use "variables" as vars;
 
 // ─── Core palette registration ────────────────────────────────────────────────
@@ -266,8 +267,14 @@ $_registered-palette-names: ();
   @if $l-stroke == null and $d-stroke == null {
     --color--#{$name}--stroke: oklch(from var(--color--#{$name}) clamp(0.42, l, 0.6) c h);
   } @else {
-    $lstr: if($l-stroke != null, $l-stroke, $d-stroke);
-    $dstr: if($d-stroke != null, $d-stroke, $l-stroke);
+    $lstr: $l-stroke;
+    @if $lstr == null {
+      $lstr: $d-stroke;
+    }
+    $dstr: $d-stroke;
+    @if $dstr == null {
+      $dstr: $l-stroke;
+    }
     --color--#{$name}--stroke: #{_ld($lstr, $dstr)};
   }
 
@@ -322,10 +329,10 @@ $_registered-palette-names: ();
   $dark-l-max: 0.82,
   $c-max: 0.22
 ) {
-  $light-base: unquote(
+  $light-base: string.unquote(
     "oklch(from var(#{$var}) clamp(#{$light-l-min},l,#{$light-l-max}) clamp(0,c,#{$c-max}) h)"
   );
-  $dark-base: unquote(
+  $dark-base: string.unquote(
     "oklch(from var(#{$var}) clamp(#{$dark-l-min},l,#{$dark-l-max}) clamp(0,calc(c*0.9),#{$c-max}) h)"
   );
   @return (light: config($light-base), dark: config($dark-base));
@@ -359,14 +366,14 @@ $_registered-palette-names: ();
 //
 // $c-tint: chroma amount. 0.006 = barely perceptible, 0.015 = noticeable but neutral.
 @function background-from-var($var, $c-tint: 0.006) {
-  $light-base: unquote("oklch(from var(#{$var}) 0.97 #{$c-tint} h)");
-  $dark-base: unquote("oklch(from var(#{$var}) 0.17 #{$c-tint} h)");
+  $light-base: string.unquote("oklch(from var(#{$var}) 0.97 #{$c-tint} h)");
+  $dark-base: string.unquote("oklch(from var(#{$var}) 0.17 #{$c-tint} h)");
   @return (light: config($light-base), dark: config($dark-base));
 }
 
 @function surface-from-var($var, $c-tint: 0.01) {
-  $light-base: unquote("oklch(from var(#{$var}) 0.93 #{$c-tint} h)");
-  $dark-base: unquote("oklch(from var(#{$var}) 0.22 #{$c-tint} h)");
+  $light-base: string.unquote("oklch(from var(#{$var}) 0.93 #{$c-tint} h)");
+  $dark-base: string.unquote("oklch(from var(#{$var}) 0.22 #{$c-tint} h)");
   @return (light: config($light-base), dark: config($dark-base));
 }
 

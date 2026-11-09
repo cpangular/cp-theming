@@ -10,7 +10,7 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 
 | Package | npm | Status |
 |---|---|---|
-| `packages/theme-core` | `@cpangular/cp-theming-core` | 🟡 In Progress — SCSS real, TS API real (Phase 3 done) |
+| `packages/theme-core` | `@cpangular/cp-theming-core` | 🟡 In Progress — SCSS real, TS API real (Phase 3 done), harness in `test/` (Phase 8 done) |
 | `packages/theme-ng-core` | `@cpangular/cp-theming-ng-core` | ✅ Done — `ThemeService`, `ThemeDirective`, `ThemeModeDirective` |
 | `packages/theme-ng-material` | `@cpangular/cp-theming-ng-material` | ✅ Done — 166 `--mat-sys-*` token mappings, density scopes |
 | `packages/theme-material` | `@cpangular/cp-theming-material` | ⬛ Stub |
@@ -20,7 +20,7 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 
 | Demo | Description | Status |
 |---|---|---|
-| `demos/docs` | Angular 22 + Material 22 docs/showcase site | 🟡 In Progress — all pages scaffolded, theme + mode switching working, deploys to GitHub Pages |
+| `demos/docs` | Angular 22 + Material 22 docs/showcase site | 🟡 In Progress — all pages scaffolded, theme + mode switching working; Pages deploy is manual-only until the repo is public |
 | `demos/demo-core` | Vanilla TS + Vite | 🟡 In Progress — POC reimplemented |
 | `demos/demo-material` | Angular + Material adapter | ⬛ Stub |
 | `demos/demo-brand-core` | Example brand theme pack | ⬛ Stub |
@@ -38,7 +38,15 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 | 4 | Precompiled CSS per preset theme | ✅ Done |
 | 5 | `theme-ng-core` — Angular signals wrapper | ✅ Done |
 | 6 | `theme-ng-material` — Angular Material M3 adapter + density scopes | ✅ Done |
-| 7 | `demos/docs` — Documentation + showcase site | 🟡 In Progress |
+| 7 | `demos/docs` — Documentation + showcase site | 🟡 In Progress — paused until Phase 9 |
+| 8 | Test harness and CI (`node --test` CSS checks, vitest API tests, Playwright `render.ts`, git-flow `test.yml`) | ✅ Done |
+| 9 | Cascade: a theme is one rule; core derives once | ⬛ Not started |
+| 10 | Contrast and alpha | ⬛ Not started |
+| 11 | Material adapter from Material's role tables | ⬛ Not started |
+| 12 | Startup: no flash, safe import | ⬛ Not started |
+| 13 | Release through cpdevtools/git-flow | ⬛ Not started |
+
+Phases 8–13 are specified in [PORT-PLAN.md](PORT-PLAN.md).
 
 ---
 
@@ -48,7 +56,11 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 pnpm install
 pnpm build         # builds all packages
 pnpm build.core    # builds @cpangular/cp-theming-core only
+pnpm test          # CSS checks (node --test) + TypeScript API tests (vitest) in both packages
 pnpm fix           # format all files with prettier
+
+# Browser check of the cascade (Playwright, Chromium + Firefox; local only)
+pnpm --filter @cpangular/cp-theming-core render
 ```
 
 ---
@@ -79,7 +91,7 @@ $my-theme: t.theme(
 ## Design Principles
 
 - **Runtime derivatives** — `oklch(from var(--pal-primary--color) calc(l - 0.1) c h)`, not `darken($color, 10%)`
-- **oklch everywhere** — perceptually uniform, wide-gamut color space
+- **Any colour in, oklch out** — pass palette colours in any CSS format (oklch, hex, `rgb()`, `hsl()`); every derivative is computed in oklch, so steps stay perceptually uniform
 - **Single SCSS import** — one `@use` gives the full authoring surface
 - **Per-palette focus color** — focus ring is derived per palette, not global
 - **Framework-agnostic core** — `theme-core` has zero Angular dependency

@@ -1,0 +1,65 @@
+// Fixture: explicit $color / $bg / $stroke / $focus role overrides, mode-varying
+// weights, overlays and elevation through t.light-dark(), and a default theme.
+@use "../../scss/theme" as t;
+@use "../../scss/presets/palettes" as p;
+
+$theme: t.theme(
+  $palettes: (
+    background: p.$default-background,
+    surface: p.$default-surface,
+    primary: t.light-dark(
+        t.palette(
+          oklch(0.45 0.15 250),
+          $bg: oklch(0.88 0.06 250),
+          $stroke: oklch(0.55 0.12 250),
+          $focus: oklch(0.6 0.2 60)
+        ),
+        t.palette(
+          oklch(0.75 0.12 250),
+          $bg: oklch(0.3 0.06 250),
+          $stroke: oklch(0.5 0.1 250),
+          $focus: oklch(0.8 0.18 60)
+        )
+      ),
+    secondary: t.light-dark(
+        t.palette(oklch(0.5 0.12 300), $color: oklch(0.45 0.14 300)),
+        t.palette(oklch(0.75 0.1 300))
+      ),
+    error: p.$default-error,
+    pass: p.$default-pass,
+    caution: p.$default-caution,
+    warn: p.$default-warn,
+  ),
+  $weights: t.light-dark(
+      t.weights(
+        $text-blend: 85%,
+        $state-hover: 6%,
+      ),
+      t.weights(
+        $text-blend: 75%,
+        $state-hover: 10%,
+      )
+    ),
+  $overlay: t.light-dark(
+      t.overlays(
+        $scrim: oklch(0 0 0 / 40%),
+      ),
+      t.overlays(
+        $scrim: oklch(0 0 0 / 70%),
+      )
+    ),
+  $elevation: t.light-dark(
+      t.elevation(),
+      t.elevation(
+        $shadow-color: oklch(0 0 0 / 60%),
+      )
+    ),
+  $shape: t.shape(
+      $md: 10px,
+    ),
+  $focus: t.focus(
+      $width: 2px,
+    ),
+);
+
+@include t.define-theme("fixture-explicit", $theme, $default: true);

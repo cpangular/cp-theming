@@ -27,8 +27,11 @@ demos/demo-brand-material/                                 — Example brand+mat
   by the browser using CSS relative color syntax: `oklch(from var(--x) ...)`.
   Never use Sass `darken()`, `mix()`, `adjust-color()`, or any compile-time color math.
 
-- **oklch color space.** All palette colors must be in `oklch(l c h / alpha)`.
-  Not `hsl`, not `rgb`, not `hex`.
+- **Any CSS colour in, oklch out.** Authors may write palette, brand and override colours in
+  any CSS colour format — `oklch()`, hex, `rgb()`, `hsl()`, named colours. The library derives
+  every variant in oklch (`oklch(from var(--x) …)`), so lightness steps stay perceptual whatever
+  the input. oklch inputs are recommended for predictable steps, never required.
+  (Withdrew the former "oklch only" rule for inputs on 2026-11-09.)
 
 - **Single SCSS entry point.** Everything the user needs for authoring is in
   `_theme.scss`. One `@use '@cpangular/cp-theming-core/scss/theme' as t;` import.
@@ -54,6 +57,22 @@ demos/demo-brand-material/                                 — Example brand+mat
 - All modules use `@use 'sass:map'` etc, never global builtins
 - Deprecated `if()` → use `@if` block before `@return`
 - Deprecated `str-slice()` → use `string.slice()` from `sass:string`
+
+## Scripts and Tests
+- Every script and test is **TypeScript run by Node 24** (type stripping). Never `.mjs`, `.cjs`
+  or `.js`. Files Node runs directly use only erasable syntax (no enums, namespaces or
+  parameter properties); files vitest runs may import anything from `src/`.
+- CSS checks: `packages/theme-core/test/css/*.test.ts` and `packages/theme-ng-material/test/css/*.test.ts`,
+  run by `node --test`. They compile the Sass through the JS API; a check today's code fails is
+  marked `todo` naming the phase that fixes it, so the run stays green and each phase removes
+  its own `todo`.
+- TypeScript API tests: `packages/theme-core/test/api/*.spec.ts`, run by vitest with jsdom.
+- Browser check: `packages/theme-core/test/render.ts` (Playwright, Chromium + Firefox), local
+  only: `pnpm --filter @cpangular/cp-theming-core render`. Rows that fail today are the
+  cascade defects PORT-PLAN.md Phase 9 fixes.
+- Fixture themes live in `packages/theme-core/test/fixtures/` and `packages/theme-ng-material/test/fixtures/`.
+- CI: `.github/workflows/test.yml` (cpdevtools/git-flow) runs `github.actions.build` then
+  `github.actions.test` in every package that defines them.
 
 ## CSS Variable Naming
 `--` = namespace separator (like `.` in OOP). `-` = word separator within a segment.
@@ -102,10 +121,17 @@ cd packages/theme-core && pnpm build   # compiles SCSS → dist/css/
 
 # All packages
 pnpm -r build
+
+# Tests (CSS checks + TypeScript API tests)
+pnpm test                                   # both packages, through wireit
+pnpm --filter @cpangular/cp-theming-core test
+pnpm --filter @cpangular/cp-theming-ng-material test
+pnpm --filter @cpangular/cp-theming-core render   # browser check, local only
 ```
 
 ## Key Files
 - [PLAN.md](../PLAN.md) — full plan, status, phases
+- [PORT-PLAN.md](../PORT-PLAN.md) — phases 8–13 (harness, cascade, contrast, Material adapter, startup, release)
 - [packages/theme-core/scss/_theme.scss](../packages/theme-core/scss/_theme.scss) — public SCSS API (`@cpangular/cp-theming-core`)
 - [packages/theme-core/scss/_palette.scss](../packages/theme-core/scss/_palette.scss) — palette system
 

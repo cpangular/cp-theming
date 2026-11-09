@@ -3,7 +3,8 @@
 See [.github/copilot-instructions.md](.github/copilot-instructions.md) for the full
 project context, conventions, non-negotiable design decisions, and what is stub vs real.
 
-See [PLAN.md](PLAN.md) for the full architecture, current status, and development phases.
+See [PLAN.md](PLAN.md) for the full architecture, current status, and development phases, and
+[PORT-PLAN.md](PORT-PLAN.md) for phases 8–13.
 
 ## Quick Context
 
@@ -11,7 +12,12 @@ This is a CSS-variable-based theming system. Key facts:
 
 - All color derivatives are **runtime** — computed by the browser via `oklch(from ...)`.
   Never compile-time Sass color functions.
-- Color space: **oklch** everywhere.
+- Colour inputs: **any CSS colour** (oklch, hex, `rgb()`, `hsl()`, …). Derivation: **oklch**,
+  always `oklch(from …)` at runtime. oklch inputs are recommended, not required.
+- Scripts and tests are **TypeScript run by Node 24** — never `.mjs`, `.cjs` or `.js`.
+- Tests: `pnpm test` (CSS checks with `node --test`, API tests with vitest). A check today's code
+  fails is marked `todo` with the phase that fixes it. Browser check: `pnpm --filter
+  @cpangular/cp-theming-core render` (Playwright, local only).
 - SCSS public API lives in `packages/theme-core/scss/_theme.scss` (`@cpangular/cp-theming-core`) — single `@use '@cpangular/cp-theming-core/scss/theme' as t;` import.
 - Mode variation uses `t.light-dark($light, $dark)` wrapper — not CSS `light-dark()` for percentages.
 - Focus ring color is **per-palette**, auto-derived via CSS relative color.

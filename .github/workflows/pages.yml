@@ -1,8 +1,9 @@
 name: Deploy GitHub Pages
 
+# Manual trigger only until the repository is public: GitHub Pages is not
+# available on a private repository under GitHub Free, so every push run failed.
+# Phase 13 replaces this with git-flow's static-site artifact (PORT-PLAN.md).
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

@@ -9,7 +9,10 @@
     "./css/material-overrides": "./dist/material-overrides.css"
   },
   "scripts": {
-    "build": "wireit"
+    "build": "wireit",
+    "test": "wireit",
+    "github.actions.build": "wireit",
+    "github.actions.test": "wireit"
   },
   "wireit": {
     "build": {
@@ -20,6 +23,27 @@
       "output": [
         "dist/**/*.css",
         "dist/**/*.css.map"
+      ]
+    },
+    "test": {
+      "command": "node --test \"test/css/*.test.ts\"",
+      "files": [
+        "scss/**/*.scss",
+        "test/**",
+        "../theme-core/scss/**/*.scss",
+        "../theme-core/test/lib/**",
+        "package.json"
+      ],
+      "output": []
+    },
+    "github.actions.build": {
+      "dependencies": [
+        "build"
+      ]
+    },
+    "github.actions.test": {
+      "dependencies": [
+        "test"
       ]
     }
   },

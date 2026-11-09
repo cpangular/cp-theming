@@ -5,6 +5,7 @@
   "scripts": {
     "build": "wireit",
     "build.core": "wireit",
+    "test": "wireit",
     "fix": "wireit",
     "prepare": "wireit",
     "git.remove-tags": "git tag | xargs -r git tag -d",
@@ -94,6 +95,18 @@
     },
     "build.core": {
       "command": "pnpm --filter @cpangular/cp-theming-core build"
+    },
+    "test": {
+      "dependencies": [
+        "test.core",
+        "test.material"
+      ]
+    },
+    "test.core": {
+      "command": "pnpm --filter @cpangular/cp-theming-core test"
+    },
+    "test.material": {
+      "command": "pnpm --filter @cpangular/cp-theming-ng-material test"
     }
   },
   "devDependencies": {
@@ -109,10 +122,12 @@
     "@angular/material": "^22.0.0",
     "@angular/platform-browser": "^22.0.2",
     "@angular/router": "^22.0.2",
+    "@types/node": "^24.19.2",
     "husky": "^9.0.0",
     "jsdom": "^28.0.0",
     "lint-staged": "^15.0.0",
     "ng-packagr": "^22.0.0",
+    "playwright": "1.65.0",
     "prettier": "^3.0.0",
     "typescript": "^6.0.3",
     "vitest": "^4.0.8",
