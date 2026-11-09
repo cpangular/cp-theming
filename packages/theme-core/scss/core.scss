@@ -1,17 +1,18 @@
-// Pre-built core stylesheet. Load this AFTER your theme CSS.
+// Pre-built core stylesheet. Load this BEFORE your theme CSS.
 //
-// Contains (theme-independent, safe to share across all themes):
-//   - @property registrations for all typed custom properties
+// Contains (theme-independent, shared by every theme):
+//   - @property registrations for the typed custom properties
+//   - the defaults, the themeMode rules and every derivation, declared once
 //   - [palette], [container], [filled], [outlined], [tone], [elevated] attribute rules
 //   - [themeDensity="N"] scope selectors (-5 to 5)
 //
 // Usage (HTML):
-//   <link rel="stylesheet" href="my-theme.css">
 //   <link rel="stylesheet" href="@cpangular/cp-theming-core/css/core">
+//   <link rel="stylesheet" href="my-theme.css">
 //
 // Usage (CSS):
+//   @import "@cpangular/cp-theming-core/css/core";
 //   @import "my-theme.css";
-//   @import "@cpangular/cp-theming-core/dist/core.css";
 @use "theme" as t;
 
 @include t.define-core-theme();

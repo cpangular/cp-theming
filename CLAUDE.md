@@ -20,6 +20,9 @@ This is a CSS-variable-based theming system. Key facts:
   @cpangular/cp-theming-core render` (Playwright, local only).
 - SCSS public API lives in `packages/theme-core/scss/_theme.scss` (`@cpangular/cp-theming-core`) — single `@use '@cpangular/cp-theming-core/scss/theme' as t;` import.
 - Mode variation uses `t.light-dark($light, $dark)` wrapper — not CSS `light-dark()` for percentages.
+- Cascade (Phase 9): core (`define-core-theme()`) derives once on `:where(:root, [theme])`; a theme
+  rule holds only what was passed. Registered: the role colour pairs `--mode-light`/`--mode-dark`,
+  `--color--brand`, the scalars. Load order: core, themes, adapter.
 - Focus ring color is **per-palette**, auto-derived via CSS relative color.
 - `cp-theming-core` has **zero Angular dependency**.
 - Most packages are currently **stubs** — implement with `// TODO(phase-N):` comments.

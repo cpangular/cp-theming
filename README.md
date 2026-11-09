@@ -10,7 +10,7 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 
 | Package | npm | Status |
 |---|---|---|
-| `packages/theme-core` | `@cpangular/cp-theming-core` | 🟡 In Progress — SCSS real, TS API real (Phase 3 done), harness in `test/` (Phase 8 done) |
+| `packages/theme-core` | `@cpangular/cp-theming-core` | 🟡 In Progress — SCSS real, TS API real (Phase 3 done), harness in `test/` (Phase 8 done), cascade: core derives once, a theme is one rule (Phase 9 done) |
 | `packages/theme-ng-core` | `@cpangular/cp-theming-ng-core` | ✅ Done — `ThemeService`, `ThemeDirective`, `ThemeModeDirective` |
 | `packages/theme-ng-material` | `@cpangular/cp-theming-ng-material` | ✅ Done — 166 `--mat-sys-*` token mappings, density scopes |
 | `packages/theme-material` | `@cpangular/cp-theming-material` | ⬛ Stub |
@@ -20,8 +20,8 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 
 | Demo | Description | Status |
 |---|---|---|
-| `demos/docs` | Angular 22 + Material 22 docs/showcase site | 🟡 In Progress — all pages scaffolded, theme + mode switching working; Pages deploy is manual-only until the repo is public |
-| `demos/demo-core` | Vanilla TS + Vite | 🟡 In Progress — POC reimplemented |
+| `demos/docs` | Angular 22 + Material 22 docs/showcase site | 🟡 In Progress — all pages scaffolded, theme + mode switching working without the Phase 7 workaround block; Pages deploy is manual-only until the repo is public |
+| `demos/demo-core` | Vanilla TS + Vite | 🟡 In Progress — POC reimplemented; loads core first via `t.define-core-theme()` |
 | `demos/demo-material` | Angular + Material adapter | ⬛ Stub |
 | `demos/demo-brand-core` | Example brand theme pack | ⬛ Stub |
 | `demos/demo-brand-material` | Example brand + Material | ⬛ Stub |
@@ -40,13 +40,27 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 | 6 | `theme-ng-material` — Angular Material M3 adapter + density scopes | ✅ Done |
 | 7 | `demos/docs` — Documentation + showcase site | 🟡 In Progress — paused until Phase 9 |
 | 8 | Test harness and CI (`node --test` CSS checks, vitest API tests, Playwright `render.ts`, git-flow `test.yml`) | ✅ Done |
-| 9 | Cascade: a theme is one rule; core derives once | ⬛ Not started |
+| 9 | Cascade: a theme is one rule; core derives once | ✅ Done |
 | 10 | Contrast and alpha | ⬛ Not started |
 | 11 | Material adapter from Material's role tables | ⬛ Not started |
 | 12 | Startup: no flash, safe import | ⬛ Not started |
 | 13 | Release through cpdevtools/git-flow | ⬛ Not started |
 
 Phases 8–13 are specified in [PORT-PLAN.md](PORT-PLAN.md).
+
+### Browser baseline
+
+`packages/theme-core/test/render.ts` (40 rows: `themeMode` on any element, nested themes, coexisting
+presets, user overrides, the theme-switch crossfade) passes in the Playwright builds installed here:
+**Chromium 158** and **Firefox 159** (40 of 40) and **WebKit 27.2** (39 of 40). The one WebKit
+miss is `mode-invert/os-dark-nested-theme`: with Playwright's emulated dark OS preference, WebKit
+resolves `light-dark()` to dark whatever `color-scheme` says, even `html { color-scheme: light }` or a
+`<meta name="color-scheme" content="light">`, which real Safari does honour — so that row needs the
+hand check below under a dark macOS appearance. The newest features the cascade needs are `light-dark()` (Chrome 123, Firefox 120, Safari 17.5), `@property` (Chrome 85,
+Firefox 128, Safari 16.4) and relative colour syntax (Chrome 119, Firefox 128, Safari 16.4), so the
+expected floor is Chrome 123, Firefox 128 and Safari 17.5. Safari is checked by hand: run
+`node test/render.ts --html` in `packages/theme-core` and open `dist/render.html` in Safari; it runs
+every row and prints a pass count.
 
 ---
 
@@ -76,15 +90,16 @@ $my-theme: t.theme(
     primary:    t.light-dark(t.palette(oklch(0.55 0.18 240)),  t.palette(oklch(0.65 0.16 240))),
   ),
   $weights:    t.light-dark(t.weights(), t.weights($text-blend: 78%)),
-  $typography: t.typography(),
-  $density:    t.density(),
-  $shape:      t.shape(),
+  $typography: t.typography($plain-family: system-ui),
 );
 
-:root {
-  @include t.define-theme('my-theme', $my-theme, $default: true);
-}
+@include t.define-core-theme();                                   // once, first: registrations, defaults, derivations
+@include t.define-theme('my-theme', $my-theme, $default: true);  // one rule holding only what was passed
 ```
+
+A theme declares only what its author passed and core derives everything once, so `themeMode`
+works on any element, themes nest and inherit, presets coexist, an author's own `:root` rule wins,
+and a theme switch crossfades when the registered light/dark colours are transitioned.
 
 ---
 

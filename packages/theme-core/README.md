@@ -14,9 +14,9 @@ npm install @cpangular/cp-theming-core
 @use '@cpangular/cp-theming-core/scss/theme' as t;
 @use '@cpangular/cp-theming-core/scss/presets' as presets;
 
-// Emit a preset theme on body + all @property registrations
-@include t.define-theme('azure-blue', presets.$azure-blue, $default: true);
+// Core first (registrations, defaults, every derivation — once), then the theme
 @include t.define-core-theme();
+@include t.define-theme('azure-blue', presets.$azure-blue, $default: true);
 ```
 
 ```html
@@ -44,8 +44,8 @@ Pre-built themes matching the Angular Material M3 palette system:
 Or via pre-compiled CSS (no SCSS required):
 
 ```html
-<link rel="stylesheet" href="node_modules/@cpangular/cp-theming-core/dist/css/azure-blue.css">
 <link rel="stylesheet" href="node_modules/@cpangular/cp-theming-core/dist/core.css">
+<link rel="stylesheet" href="node_modules/@cpangular/cp-theming-core/dist/presets/azure-blue.css">
 ```
 
 ---
@@ -80,21 +80,22 @@ $my-theme: t.theme(
   $motion:     t.motion(),
 );
 
-// Emit under [theme="my-theme"] and body ($default: true)
-@include t.define-theme('my-theme', $my-theme, $default: true);
-
-// Emit @property registrations + attribute/class rules — call once per stylesheet
+// Core: @property registrations, defaults, mode rules and every derivation — once, first
 @include t.define-core-theme();
+
+// The theme: one rule, [theme="my-theme"] (plus :where(:root) for $default: true),
+// holding only what was passed above
+@include t.define-theme('my-theme', $my-theme, $default: true);
 ```
 
-`define-core-theme()` is theme-independent — use the pre-built `dist/core.css` instead of calling it if preferred.
+`define-core-theme()` is theme-independent — load the pre-built `dist/core.css` before your theme CSS instead of calling it if preferred. A theme declares only what its author passed, so a nested theme inherits the rest from the theme around it.
 
 ### Multiple themes
 
 ```scss
+@include t.define-core-theme();
 @include t.define-theme('light-theme', $light-theme, $default: true);
 @include t.define-theme('dark-theme', $dark-theme);
-@include t.define-core-theme();
 ```
 
 ```html
@@ -143,7 +144,7 @@ primary: t.palette(
 
 ### Core palette names
 
-These names are pre-registered automatically: `primary`, `secondary`, `error`, `warn`, `caution`, `pass`, `surface`, `background`. Any additional names in your `$palettes` map are registered on demand.
+These names are registered and derived once by `define-core-theme()`: `primary`, `secondary`, `error`, `warn`, `caution`, `pass`, `surface`, `background`. Any additional name in your `$palettes` map gets its registrations, derivations and `[palette]` rule once, at root level, from the first `define-theme()` that uses it.
 
 ### Emitted CSS variables (per palette)
 

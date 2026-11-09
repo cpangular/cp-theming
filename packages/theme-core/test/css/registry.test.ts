@@ -1,9 +1,10 @@
-// Check 4 — core.css: size, @property count and the exact registered list.
-// Theme stylesheets register nothing for core palette names; a custom palette
-// name gets four registrations in its theme stylesheet until Phase 9 moves them
-// to root level (Phase 9 updates the custom-palette assertion).
+// Check 4 — core.css: size, @property count and the exact registered list:
+// each core palette role's light and dark colour, --color--brand and the 29
+// scalars. Theme stylesheets register nothing for core palette names; a custom
+// palette name gets its eight registrations at root level in its theme stylesheet.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { gzipSync } from 'node:zlib';
 import { registeredProperties } from '../lib/css.ts';
 import { CORE_PALETTE_NAMES, coreFixtureSheets, coreSheets } from '../lib/sets.ts';
 
@@ -26,15 +27,13 @@ const WEIGHTS = [
 ];
 const SIZES = ['xxs', 'xs', 'sm', 'md', 'lg', 'xl', 'xxl'];
 const ROLES = ['', '--bg', '--stroke', '--focus'];
+const MODES = ['--mode-light', '--mode-dark'];
 
-export const expectedRegistrations = [
-  ...CORE_PALETTE_NAMES.flatMap((n) => ROLES.map((r) => `--color--${n}${r}`)),
-  ...ROLES.map((r) => `--palette-color${r}`),
-  '--container--text',
-  '--container--text-emphasis',
-  '--container--text-deemphasis',
-  '--container--stroke',
-  '--color--brand',
+/** The eight registrations of one palette name: four roles × light and dark. */
+export const paletteRegistrations = (name: string) =>
+  ROLES.flatMap((r) => MODES.map((m) => `--color--${name}${r}${m}`));
+
+export const scalarRegistrations = [
   ...WEIGHTS.map((w) => `--weight--${w}`),
   '--density-scale',
   ...SIZES.map((s) => `--space--${s}`),
@@ -42,21 +41,38 @@ export const expectedRegistrations = [
   '--shape--full',
 ];
 
-test('core.css registers exactly the expected 70 properties, each once', () => {
+export const expectedRegistrations = [
+  ...CORE_PALETTE_NAMES.flatMap(paletteRegistrations),
+  '--color--brand',
+  ...scalarRegistrations,
+];
+
+test('the scalar list is the 29 the plan names', () => {
+  assert.equal(scalarRegistrations.length, 29);
+});
+
+test('core.css registers exactly the expected 94 properties, each once', () => {
   const registered = registeredProperties(core.css);
-  assert.equal(registered.length, 70);
+  assert.equal(registered.length, 94);
   assert.equal(new Set(registered).size, registered.length, 'no duplicate registrations');
   assert.deepEqual([...registered].sort(), [...expectedRegistrations].sort());
 });
 
-test('core.css stays under 32 KiB', (t) => {
+// Core now carries every derivation once (the presets carried eight copies).
+test('core.css stays under 192 KiB expanded and 16 KiB gzipped', (t) => {
   const bytes = Buffer.byteLength(core.css);
-  t.diagnostic(`core.css: ${bytes} bytes`);
-  assert.ok(bytes <= 32 * 1024, `${bytes} bytes`);
+  const gz = gzipSync(core.css).length;
+  t.diagnostic(`core.css: ${bytes} bytes, ${gz} gzipped`);
+  assert.ok(bytes <= 192 * 1024, `${bytes} bytes`);
+  assert.ok(gz <= 16 * 1024, `${gz} bytes gzipped`);
 });
 
-test('preset sizes (recorded, not asserted)', (t) => {
-  for (const p of presets) t.diagnostic(`${p.label}: ${Buffer.byteLength(p.css)} bytes`);
+test('each preset stays under 4 KiB (a theme rule holds only what was passed)', (t) => {
+  for (const p of presets) {
+    const bytes = Buffer.byteLength(p.css);
+    t.diagnostic(`${p.label}: ${bytes} bytes, ${gzipSync(p.css).length} gzipped`);
+    assert.ok(bytes <= 4 * 1024, `${p.label}: ${bytes} bytes`);
+  }
 });
 
 for (const preset of presets) {
@@ -69,8 +85,8 @@ for (const fixture of coreFixtureSheets()) {
   const custom = [
     ...new Set([...fixture.css.matchAll(/\[palette=["']?([\w-]+)["']?\]/g)].map((m) => m[1])),
   ].filter((n) => !CORE_PALETTE_NAMES.includes(n));
-  test(`${fixture.label} registers 4 names per custom palette (${custom.join(', ') || 'none'}) and nothing else`, () => {
-    const expected = custom.flatMap((n) => ROLES.map((r) => `--color--${n}${r}`));
+  test(`${fixture.label} registers 8 names per custom palette (${custom.join(', ') || 'none'}) and nothing else`, () => {
+    const expected = custom.flatMap(paletteRegistrations);
     assert.deepEqual([...registeredProperties(fixture.css)].sort(), expected.sort());
   });
 }

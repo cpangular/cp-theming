@@ -1,6 +1,6 @@
+import './scss/base.scss'; // core first
 import './scss/themes/ocean.scss';
 import './scss/themes/ember.scss';
-import './scss/base.scss';
 import './scss/components.scss';
 
 import {

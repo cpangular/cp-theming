@@ -208,8 +208,10 @@ Emits all CSS custom property declarations for a theme.
 |-----------|---------|-------------|
 | `$name` | — | Theme name. Applied via `[theme="name"]` attribute in HTML. |
 | `$theme` | — | Theme object from `t.theme()`. |
-| `$default` | `false` | Also emit on `body` so the theme is active without an explicit attribute. |
-| `$dedupe` | `true` | Emit light/dark differences using CSS `light-dark()` instead of separate selectors. Slightly smaller output. |
+| `$default` | `false` | Also apply on `:where(:root)` so the theme is active without a `theme` attribute. Zero specificity: any `theme` attribute and any author `:root` rule beat it, so several default themes can be loaded at once. |
+| `$dedupe` | `true` | Accepted for compatibility; nothing is left to dedupe. |
+
+The rule holds **only what the author passed** to `t.theme()`: for each palette the light and dark colour of the colour role and of any explicit `$bg` / `$stroke` / `$focus` (`--color--{name}[--role]--mode-light` / `--mode-dark`, each followed by its joined token), `--color--brand`, the passed keys of each sub-config, and the light and dark values of the mode-varying percentages (`--weight--*--mode-light` / `--mode-dark`, `--elevation-N--tint--mode-light` / `--mode-dark`). Everything else — every derivation, every default, the mode rules — is declared once by `define-core-theme()`. A theme nested inside another therefore inherits whatever it did not pass, and does not inherit the outer theme's explicit `$bg` / `$stroke` / `$focus` (core re-derives those on every `[theme]` element).
 
 ```scss
 @include t.define-theme('ocean', $ocean-theme, $default: true);
@@ -250,35 +252,39 @@ Attributes can be placed on `<html>`, `<body>`, or any element. They cascade dow
 
 Emits everything that is theme-independent and shared across all themes. Call once in your root stylesheet.
 
-**What it emits:**
+**What it emits, once:**
 
-- **`@property` registrations** for all typed custom properties (see below)
-- **`[palette]`, `[container]`, `[filled]`, `[outlined]`** attribute rules
-- **`[tone="…"]`** tone modifier attribute rules (8 modifiers)
-- **`[elevated="N"]`** elevation box-shadow attribute rules (levels 0–5)
+- **`@property` registrations** for the typed custom properties (see below)
+- **`:where(:root)`** — `color-scheme: light dark`, the mode flag, and the default of every unregistered group (weight and elevation-tint pairs, overlay, elevation shadows, typography, focus geometry, motion). The greyscale palette fallback lives in the registered colours' `initial-value`s.
+- **The `themeMode` rules** for `light`, `dark`, `auto` and `invert`, each wrapped in `:where()`, setting `color-scheme` and a private 0/1 mode flag. They match the `[themeMode]` element itself, so a mode works on any element.
+- **`:where(:root, [theme])`** — every derivation for the eight core palette names (the auto `--bg`, `--stroke` and `--focus` roles, the 7-step ladders, contrasts, mode-relative aliases and tints) and the typography role fonts.
+- **`:where(:root, [theme], [themeMode])`** — every mode-varying percentage (weights, elevation tints) picked arithmetically from its light and dark value and the mode flag. CSS `light-dark()` is never used for a percentage.
+- **`[palette="name"]`** selection rules for the core names, and the **`[container]`, `[filled]`, `[outlined]`, `[tone="…"]`, `[elevated="N"]`** attribute rules
 - **`[themeDensity="N"]`** density scope selectors (−5 to +5)
 
-Must be called **after** any `define-theme()` calls in the same stylesheet due to CSS declaration order (the attribute rules share specificity with theme rules; being last wins):
+Rules that only declare custom properties have zero specificity (`:where()`), so an author's own `:root { --color--primary: … }` wins wherever it is placed, and a named theme's `[theme="name"]` rule beats every default. Per-element attribute scopes (`[palette]`, `[themeDensity]`) and the apply layers keep attribute specificity so they beat a theme rule on the same element.
+
+Load order is **core, then themes, then an adapter**. Call it before any `define-theme()` in the same stylesheet:
 
 ```scss
+@include t.define-core-theme();
 @include t.define-theme('ocean', $ocean-theme, $default: true);
 @include t.define-theme('ember', $ember-theme);
-@include t.define-core-theme();
 ```
 
 ### Pre-built option
 
-`define-core-theme()` is completely theme-independent and ships as a pre-built file: `dist/core.css`. Load it as a plain CSS file after your theme CSS:
+`define-core-theme()` is completely theme-independent and ships as a pre-built file, `css/core`. Load it as a plain CSS file before your theme CSS:
 
 ```html
-<link rel="stylesheet" href="my-theme.css">
 <link rel="stylesheet" href="node_modules/@cpangular/cp-theming-core/dist/core.css">
+<link rel="stylesheet" href="my-theme.css">
 ```
 
 Or via CSS import:
 ```css
+@import "@cpangular/cp-theming-core/css/core";
 @import "my-theme.css";
-@import "@cpangular/cp-theming-core/dist/core.css";
 ```
 
 The pre-built `dist/core.css` is identical to calling `@include t.define-core-theme()` inline — choose whichever fits your build pipeline.
@@ -287,46 +293,60 @@ The pre-built `dist/core.css` is identical to calling `@include t.define-core-th
 
 ## `@property` registrations and animation
 
-`define-core-theme()` registers all system custom properties as typed CSS properties using `@property`. This unlocks:
-
-- **CSS transitions on custom properties directly** — e.g. `transition: --palette-color 200ms`
-- **`color-mix()` blend percentages animating** — hover/press state overlays can fade in/out
-- **Typed interpolation in `@keyframes`** — animate spacing, radius, colors as proper values
-
-`@property` rules are global to the document and must appear at stylesheet root level — which is exactly where `define-core-theme()` emits them.
-
-### Which vars are registered and why
+`define-core-theme()` registers **what animation needs, and nothing derived**:
 
 | Group | Count | Type | Why registration is needed |
 |-------|-------|------|---------------------------|
+| `--color--{name}--mode-light` / `--mode-dark`, and the same for `--bg`, `--stroke`, `--focus` | 4 roles × 2 modes × 8 core palettes = 64 | `<color>` | The light and dark colour of each role. These are what a theme switch transitions |
+| `--color--brand` | 1 | `<color>` | Runtime brand seed |
 | `--weight--*` | 13 | `<percentage>` | Used as `color-mix()` blend amount — browser can't interpolate without a type |
-| `--space--*` | 7 | `<length>` | Density/spacing transitions |
 | `--density-scale` | 1 | `<number>` | Drives `calc()` in space tokens |
+| `--space--*` | 7 | `<length>` | Density/spacing transitions |
 | `--shape--*` | 8 | `<length>` | Radius transitions |
-| `--color--{name}`, `--color--{name}--bg`, `--color--{name}--stroke`, `--color--{name}--focus` | 4 × 8 core palettes = 32 | `<color>` | Palette color transitions |
-| `--palette-color`, `--palette-color--bg`, `--palette-color--stroke`, `--palette-color--focus` | 4 | `<color>` | Scope vars — animate palette switches |
-| `--container--text`, `--container--text-emphasis`, `--container--text-deemphasis`, `--container--stroke` | 4 | `<color>` | Surface vars — animate mode/palette changes |
-| `--color--brand` | 1 | `<color>` | Runtime brand color override |
-| **Total** | **70** | | |
+| **Total** | **94** | | |
 
-Derivative vars (`--contrast`, `--dark`, `--high`, etc.) are **not** registered — they are computed via `oklch(from var(…) …)` and update automatically when their base var transitions. No extra declarations needed.
+Not registered: the role tokens themselves (`--color--{name}`, `--bg`, `--stroke`, `--focus`), every derivative (`--contrast`, `--dark`, `--high`, `--tint-*`, …), the `--palette-color*` scope vars and the `--container--*` surface vars. A role token is declared as `light-dark(var(--…--mode-light), var(--…--mode-dark))` and a derivative as `oklch(from var(--…) …)`, so they resolve **where they are used**, against the `color-scheme` of that element. That is what makes `themeMode` work on a plain element, inside a `[palette]` scope and inside a nested theme.
+
+### Crossfading a theme switch
+
+A theme switch crossfades when the author transitions the registered light and dark colours on the element whose `theme` attribute changes. The library itself emits no transition:
+
+```css
+html {
+  transition-property:
+    --color--primary--mode-light, --color--primary--mode-dark,
+    --color--secondary--mode-light, --color--secondary--mode-dark,
+    --color--background--mode-light, --color--background--mode-dark,
+    --color--surface--mode-light, --color--surface--mode-dark;
+  transition-duration: 400ms;
+}
+```
+
+Every derivative follows: the ladder steps, the contrasts, nested themes and dark subtrees are all mid-way at half time, because each is an expression of the registered pair. Chromium interpolates the pair in Oklab, Firefox in sRGB.
+
+Consequences:
+
+- A light/dark flip is **instant at the variable level**, and so is a `palette` attribute change. Elements that transition `background-color` or `color` still fade. Making the variables themselves fade on a mode flip is exactly what would stop `themeMode` working on plain elements.
+- `getPropertyValue('--color--primary')` returns an expression (`light-dark(…)`), not a resolved colour. Read a painted property (`color`, `background-color`) to get a colour.
+- Plain `color-scheme` on an element flips colours but not weights; weights follow `themeMode`.
+- A hand-written rule that sets `--color--primary` directly (for example `[theme="x"] { --color--primary: red }`) still works and re-derives, it just does not crossfade.
 
 ### Core palette initial values
 
-The 8 core palettes use print-suitable greyscale `initial-value` declarations — a safe, legible fallback when no theme is active:
+The 8 core palettes' registered colours use print-suitable greyscale `initial-value`s — a safe, legible fallback when no theme is loaded. Light and dark share the value:
 
-| Palette | identity `initial-value` | bg `initial-value` |
-|---------|--------------------------|---------------------|
-| `background` | `oklch(0.97 0 0)` | `oklch(1.00 0 0)` |
-| `surface` | `oklch(0.93 0 0)` | `oklch(0.95 0 0)` |
-| `primary` | `oklch(0.20 0 0)` | `oklch(0.92 0 0)` |
-| `secondary` | `oklch(0.40 0 0)` | `oklch(0.92 0 0)` |
-| `error` | `oklch(0.15 0 0)` | `oklch(0.92 0 0)` |
-| `warn` | `oklch(0.30 0 0)` | `oklch(0.92 0 0)` |
-| `caution` | `oklch(0.50 0 0)` | `oklch(0.92 0 0)` |
-| `pass` | `oklch(0.35 0 0)` | `oklch(0.92 0 0)` |
+| Palette | colour role | bg | stroke | focus |
+|---------|-------------|----|--------|-------|
+| `background` | `oklch(0.97 0 0)` | `oklch(1.00 0 0)` | `oklch(0.65 0 0)` | `oklch(0.20 0 0)` |
+| `surface` | `oklch(0.93 0 0)` | `oklch(0.95 0 0)` | `oklch(0.60 0 0)` | `oklch(0.20 0 0)` |
+| `primary` | `oklch(0.20 0 0)` | `oklch(0.92 0 0)` | `oklch(0.20 0 0)` | `oklch(0.50 0 0)` |
+| `secondary` | `oklch(0.40 0 0)` | `oklch(0.92 0 0)` | `oklch(0.40 0 0)` | `oklch(0.65 0 0)` |
+| `error` | `oklch(0.15 0 0)` | `oklch(0.92 0 0)` | `oklch(0.15 0 0)` | `oklch(0.45 0 0)` |
+| `warn` | `oklch(0.30 0 0)` | `oklch(0.92 0 0)` | `oklch(0.30 0 0)` | `oklch(0.55 0 0)` |
+| `caution` | `oklch(0.50 0 0)` | `oklch(0.92 0 0)` | `oklch(0.50 0 0)` | `oklch(0.68 0 0)` |
+| `pass` | `oklch(0.35 0 0)` | `oklch(0.92 0 0)` | `oklch(0.35 0 0)` | `oklch(0.60 0 0)` |
 
-Non-core palette names (any name beyond the 8 above) are auto-registered the first time `define-palette()` encounters them, with `initial-value: transparent`.
+A custom palette name (any name beyond the 8 above) gets its eight registrations, its derivations on `:where(:root, [theme])` and its `[palette="name"]` rule once, at root level, from the first `define-theme()` that uses it, with `initial-value: transparent` (focus: `oklch(0.3 0 0)`).
 
 ### `initial-value` constraint
 

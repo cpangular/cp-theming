@@ -8,9 +8,9 @@
 @use '@cpangular/cp-theming-core/scss/theme' as t;
 @use '@cpangular/cp-theming-core/scss/presets' as presets;
 
-// Emit a preset as the default theme
-@include t.define-theme('azure-blue', presets.$azure-blue, $default: true);
+// Core first, then a preset as the default theme
 @include t.define-core-theme();
+@include t.define-theme('azure-blue', presets.$azure-blue, $default: true);
 ```
 
 Or import only palettes for use in a custom theme:

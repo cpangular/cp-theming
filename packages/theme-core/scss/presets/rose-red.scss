@@ -1,10 +1,10 @@
 // Pre-built theme: rose-red
 // Suitable for direct <link> use without Sass.
-// Load dist/core.css after this file (or bundle both).
+// Load core.css before this file (or bundle both, core first).
 //
 // Usage:
-//   <link rel="stylesheet" href="@cpangular/cp-theming-core/dist/presets/rose-red.css">
-//   <link rel="stylesheet" href="@cpangular/cp-theming-core/dist/core.css">
+//   <link rel="stylesheet" href="@cpangular/cp-theming-core/css/core">
+//   <link rel="stylesheet" href="@cpangular/cp-theming-core/css/presets/rose-red">
 @use "../theme" as t;
 @use "themes" as th;
 

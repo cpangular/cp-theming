@@ -5,9 +5,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { themeSteps } from '../lib/sass.ts';
-import { declarationsFor } from '../lib/css.ts';
 import { contextFor, evaluateColor, wcagContrast, type Mode } from '../lib/color.ts';
-import { CORE_PALETTE_NAMES, coreFixtureSheets, coreSheets, themeName } from '../lib/sets.ts';
+import {
+  CORE_PALETTE_NAMES,
+  coreFixtureSheets,
+  coreSheets,
+  themeDeclarations,
+  themeName,
+  themePalettes,
+} from '../lib/sets.ts';
 
 const MIN_RATIO = 4.5;
 const MODES: Mode[] = ['light', 'dark'];
@@ -15,10 +21,12 @@ const ROLES = ['', '--bg', '--stroke'];
 const STEPS = ['', '--dark', '--darker', '--darkest', '--light', '--lighter', '--lightest'];
 const PHASE_10 = 'Phase 10 — contrast chosen by a luminance step at 0.179 in clamped linear sRGB';
 
-const { presets } = coreSheets();
+const { core, presets } = coreSheets();
+// Core derives once, so a token is read from core's root rules + the theme rule.
 const themes = [...presets, ...coreFixtureSheets()].map((s) => ({
   label: s.label,
-  decls: declarationsFor(s.css, `[theme="${themeName(s)}"]`),
+  decls: themeDeclarations(core, s, themeName(s)),
+  names: themePalettes(s, themeName(s)),
 }));
 
 interface Failure {
@@ -35,7 +43,6 @@ function sweep(
   const failures: Failure[] = [];
   let checked = 0;
   for (const name of names) {
-    if (!decls.has(`--color--${name}`)) continue;
     for (const role of ROLES) {
       for (const step of STEPS) {
         const token = `--color--${name}${role}${step}`;
@@ -84,12 +91,10 @@ for (const theme of themes) {
     (t) => {
       let checked = 0;
       const failures: Failure[] = [];
-      // Every palette the theme declares, core or custom (a palette has a --contrast; --color--brand does not).
-      const names = [...theme.decls.keys()]
-        .map((k) => /^--color--(\w+)--contrast$/.exec(k)?.[1] ?? '')
-        .filter(Boolean);
+      // Every palette the theme declares, core or custom.
+      assert.ok(theme.names.length > 0, 'the theme declares palettes');
       for (const mode of MODES) {
-        const r = sweep(theme.decls, mode, names);
+        const r = sweep(theme.decls, mode, theme.names);
         checked += r.checked;
         failures.push(...r.failures);
       }
@@ -106,8 +111,7 @@ for (const theme of themes) {
     for (const mode of MODES) {
       const ctx = contextFor(theme.decls, mode);
       for (const name of CORE_PALETTE_NAMES) {
-        if (name === 'background' || name === 'surface' || !theme.decls.has(`--color--${name}`))
-          continue;
+        if (name === 'background' || name === 'surface' || !theme.names.includes(name)) continue;
         const ratio = wcagContrast(
           evaluateColor(`var(--color--${name})`, ctx),
           evaluateColor(`var(--color--${name}--bg)`, ctx),

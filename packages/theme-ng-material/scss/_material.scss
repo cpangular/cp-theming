@@ -22,15 +22,14 @@
 
 // Color-only tokens extracted into their own mixin.
 //
-// IMPORTANT: --color--* properties are registered via @property { syntax: "<color>" }.
-// Chromium resolves @property var() references eagerly when they appear inside
-// an unregistered custom property.  That means:
+// var() is substituted where a custom property is declared, so
 //   :root { --mat-sys-primary: var(--color--primary); }
-// stores the RESOLVED azure-blue color in --mat-sys-primary, which then inherits
-// to all descendants — nested [theme=rose-red] can no longer override it.
-//
-// Fix: also emit these mappings at [theme] level so each scoped element
-// re-evaluates the tokens against its own --color--* computed values.
+// holds the root theme's expression and a nested [theme=rose-red] would not
+// change it. The mappings are therefore also emitted at [theme] level, where
+// each theme element re-evaluates them against its own --color--* values.
+// Since Phase 9 the --color--* role tokens are unregistered light-dark()
+// expressions, so a nested themeMode flips every --mat-sys-* colour as well.
+// Phase 11 replaces this hand map with Material's own role tables.
 @mixin _color-tokens() {
   // ── Primary ──────────────────────────────────────────────────────────────
   --mat-sys-primary: var(--color--primary);

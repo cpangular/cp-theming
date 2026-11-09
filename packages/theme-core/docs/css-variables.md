@@ -1,6 +1,6 @@
 # CSS custom property reference
 
-All CSS custom properties emitted by `@cpangular/cp-theming-core`. Properties are scoped to the theme root element (`[theme="name"]` / `body` when `$default: true`) unless noted otherwise.
+All CSS custom properties emitted by `@cpangular/cp-theming-core`. A theme rule (`[theme="name"]`, plus `:where(:root)` when `$default: true`) declares only what its author passed: the registered light and dark colour of each role (`--color--{name}[--role]--mode-light` / `--mode-dark`) with its joined token, `--color--brand`, the passed sub-config keys and the light/dark pairs of mode-varying percentages. Every derivation below is declared once by `define-core-theme()` on `:where(:root, [theme])`; the defaults on `:where(:root)`.
 
 ---
 
@@ -295,18 +295,27 @@ Or use the HTML attribute emitted by `define-core-theme()`:
 
 ## Animation and CSS transitions
 
-All custom properties listed in this reference are registered as typed CSS properties via `@property`, emitted by `define-core-theme()`. This enables:
+`define-core-theme()` registers what animation needs and nothing derived: the light and dark colour of each core palette role (`--color--{name}[--bg|--stroke|--focus]--mode-light` / `--mode-dark`), `--color--brand`, and the scalars `--weight--*`, `--density-scale`, `--space--*`, `--shape--*` — 94 properties. The role tokens and every derivative are plain custom properties holding `light-dark()` and `oklch(from …)` expressions that resolve where they are used.
 
-### Transitioning custom properties directly
+### Crossfading a theme switch
+
+Transition the registered pair on the element whose `theme` changes; everything derived from it follows (ladder steps, contrasts, nested themes, dark subtrees):
 
 ```css
-[palette] {
+html {
   transition:
-    --palette-color 200ms ease,
-    --palette-color--bg 200ms ease,
-    --container--text 200ms ease;
+    --color--primary--mode-light 400ms,
+    --color--primary--mode-dark 400ms,
+    --color--surface--mode-light 400ms,
+    --color--surface--mode-dark 400ms;
 }
 ```
+
+```js
+document.documentElement.setAttribute('theme', 'rose-red'); // crossfades
+```
+
+A light/dark flip and a `palette` attribute change are instant at the variable level; elements that transition `background-color` or `color` still fade.
 
 ### Animating weights (hover/press state fades)
 
@@ -335,19 +344,22 @@ All custom properties listed in this reference are registered as typed CSS prope
 }
 ```
 
-### Animating palette switches
-
-Because `--palette-color`, `--palette-color--bg` etc. are typed `<color>`, changing the `[palette]` attribute can be transitioned via JavaScript:
-
-```js
-el.style.transition = '--palette-color 300ms, --palette-color--bg 300ms';
-el.setAttribute('palette', 'secondary');
-```
-
-### Why derivatives don't need registration
+### Why derivatives are not registered
 
 Derivative vars (`--contrast`, `--dark`, `--high`, etc.) are computed using CSS relative color syntax:
 ```css
 --color--primary--dark: oklch(from var(--color--primary) clamp(0, calc(l - 0.12), 1) c h);
 ```
-When `--color--primary` transitions (as a registered `<color>`), the browser re-evaluates this expression on every animation frame — the derivative animates automatically without needing its own `@property` declaration.
+and `--color--primary` is `light-dark(var(--color--primary--mode-light), var(--color--primary--mode-dark))`. Unregistered, both stay expressions until an element uses them, so a `themeMode` on any element flips them, and when the registered pair transitions the browser re-evaluates them on every frame. Registering them would freeze them to a colour on the element where they are declared.
+
+### Reading a value from JavaScript
+
+`getComputedStyle(el).getPropertyValue('--color--primary')` returns the expression, not a colour. To get the painted colour, read a real property of an element that uses it:
+
+```js
+const probe = document.createElement('span');
+probe.style.color = 'var(--color--primary)';
+el.appendChild(probe);
+const colour = getComputedStyle(probe).color;
+probe.remove();
+```

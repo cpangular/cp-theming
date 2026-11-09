@@ -1,27 +1,38 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Focus ring — geometry only (width, offset, style).
-// Color is per-palette: auto-derived in define-palette(), or override with
+// Color is per-palette: auto-derived in core, or override with
 // t.palette($base, $focus: <color>) inside t.light-dark().
-// Static — not light/dark varying.
+// Static — not light/dark varying. Core declares the defaults once; a theme
+// declares only what its author passed.
 // ─────────────────────────────────────────────────────────────────────────────
-@use 'sass:map';
+@use "sass:map";
 
 $_defaults: (
-  width:  3px,
+  width: 3px,
   offset: 2px,
-  style:  solid,
+  style: solid,
 );
 
 @function config($width: null, $offset: null, $style: null) {
-  $result: $_defaults;
-  @if $width  != null { $result: map.set($result, width,  $width); }
-  @if $offset != null { $result: map.set($result, offset, $offset); }
-  @if $style  != null { $result: map.set($result, style,  $style); }
+  $result: ();
+  @if $width != null {
+    $result: map.set($result, width, $width);
+  }
+  @if $offset != null {
+    $result: map.set($result, offset, $offset);
+  }
+  @if $style != null {
+    $result: map.set($result, style, $style);
+  }
   @return $result;
 }
 
-@mixin emit($config) {
-  --focus--width:  #{map.get($config, width)};
-  --focus--offset: #{map.get($config, offset)};
-  --focus--style:  #{map.get($config, style)};
+@mixin emit-root-defaults() {
+  @include emit-theme($_defaults);
+}
+
+@mixin emit-theme($config) {
+  @each $key, $val in $config {
+    --focus--#{$key}: #{$val};
+  }
 }

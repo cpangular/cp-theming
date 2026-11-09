@@ -25,7 +25,7 @@ demos/
 ### @cpangular/cp-theming-core
 The only package with real implementation initially. Contains:
 - **SCSS theme authoring API** — `t.palette()`, `t.theme()`, `@include t.define-theme()`, `@include t.define-core-theme()`, etc.
-- **CSS variable system** — all `--color--*`, `--weight--*`, `--space--*`, `--shape--*`, `--motion--*`, `--elevation-*` vars, all registered as typed `@property` declarations
+- **CSS variable system** — all `--color--*`, `--weight--*`, `--space--*`, `--shape--*`, `--motion--*`, `--elevation-*` vars. Registered as typed `@property`: what animation needs (each core palette role's light and dark colour, `--color--brand`, and the scalars); the role tokens and every derivative are unregistered `light-dark()` / `oklch(from …)` expressions that resolve where they are used
 - **Brand color API** — `t.palette-from-brand()`, `t.background-from-brand()`, `t.surface-from-brand()` derive palettes from `--color--brand` at CSS runtime
 - **Preset palettes + themes** — azure-blue, rose-red, cyan-orange, magenta-violet (M3-inspired)
 - **Vanilla TS API** — `ThemeMode`, `setTheme()`, `setMode()`, `watchMode()`, `watchTheme()`, `getAvailableThemes()`, `configurePersistence()`, etc.
@@ -131,7 +131,9 @@ The `color` role is the palette's primary identity — it becomes the namespace 
 --container--text / --text-emphasis / --text-deemphasis / --stroke
 ```
 
-All vars listed above are registered as typed `@property` declarations (in `dist/core.css`), enabling CSS transitions and `@keyframes` interpolation.
+`dist/core.css` registers 94 typed `@property` declarations: `--color--{name}[--bg|--stroke|--focus]--mode-light` / `--mode-dark` for the eight core palettes (64), `--color--brand`, and the 29 scalars (`--weight--*`, `--density-scale`, `--space--*`, `--shape--*`). The role tokens (`--color--{name}` …) are `light-dark()` joins of their registered pair and every derivative is an `oklch(from …)` expression; neither is registered, so they resolve on the element that uses them and `themeMode` works anywhere. A theme switch crossfades when the author transitions the registered pair; a mode flip is instant at the variable level.
+
+Core (`define-core-theme()`) declares every default and every derivation once, on `:where(:root)` and `:where(:root, [theme])`; a theme rule (`define-theme()`) holds only what its author passed, so nested themes inherit, presets coexist, and an author's `:root` rule wins. Load order: core, then themes, then the adapter.
 
 ---
 
@@ -142,9 +144,12 @@ All vars listed above are registered as typed `@property` declarations (in `dist
   <body theme="ocean">                <!-- scopes ocean vars to subtree -->
     <div themeMode="invert">...</div> <!-- flips mode in subtree -->
     <div themeMode="dark">...</div>   <!-- forces dark in subtree -->
+    <div theme="ember">...</div>      <!-- nested theme: inherits what ember does not pass -->
   </body>
 </html>
 ```
+
+`themeMode` works on any element, with or without a `theme` attribute: the mode rules match the `[themeMode]` element itself and set `color-scheme` plus a private flag that picks the mode-varying percentages. `invert` inside an explicit light ancestor that is itself inside dark still reads the dark ancestor (needs `@scope`; see PORT-PLAN.md).
 
 ---
 
@@ -244,7 +249,7 @@ $my-theme: t.theme(
 - `ng build theme-ng-material` → `dist/theme-ng-material/` (fesm2022 + types) ✅
 - Package exports: `./css/material-core`, `./css/material-overrides`, `./scss/*`
 
-### 🟡 Phase 7 — docs site + demos (paused until Phase 9 lands — see PORT-PLAN.md)
+### 🟡 Phase 7 — docs site + demos (resumes after Phase 11 — see PORT-PLAN.md)
 
 **docs** (`demos/docs`) — Angular 22 + Material 22 documentation / showcase app:
 - Builds and deploys to GitHub Pages at `/cp-theming/` via `.github/workflows/pages.yml`
@@ -260,9 +265,9 @@ $my-theme: t.theme(
   did not trigger the Angular scheduler.
 - Multi-preset cascade bug: loading all four preset CSS files simultaneously caused each preset's
   `body { --color--* }` declaration to race, leaving the *last-loaded* preset's colour on `<body>`
-  regardless of which `[theme]` was set on `<html>`. Fixed by adding a `body { unset }` reset block
-  in `demos/docs/src/styles.scss` (loaded last) so all `--color--*` vars on body inherit from
-  `<html theme="azure-blue">` via `@property { inherits: true }`.
+  regardless of which `[theme]` was set on `<html>`. Worked around in Phase 7 with a `body { unset }`
+  block in `demos/docs/src/styles.scss`; Phase 9 removed the cause (a default theme is `:where(:root)`,
+  not `body`) and the block.
 - Material list items in the sidenav needed `mat-list-item` (kebab-case attribute selector) not the
   deprecated `matListItem` camelCase; also required `<span matListItemTitle>` child for M3 styling.
 - `::ng-deep` required for nested Material component styles in `ThemeSwitcherComponent`.
@@ -291,8 +296,27 @@ $my-theme: t.theme(
 - Wiring: wireit `test` scripts, `github.actions.build` / `github.actions.test`, git-flow's
   `test.yml`; `pages.yml` is manual-only until the repo is public.
 
-### ⬛ Phases 9–13 — planned in PORT-PLAN.md
-- Phase 9 — Cascade: a theme is one rule; core derives once
+### ✅ Phase 9 — Cascade: a theme is one rule; core derives once (PORT-PLAN.md)
+- Registration is what animation needs, nothing derived: each core palette role's light and dark
+  colour (`--color--{name}[--role]--mode-light` / `--mode-dark`, 64), `--color--brand` and the 29
+  scalars — 94 `@property` rules. The eight alias registrations (`--palette-color*`, `--container--*`)
+  are gone; the greyscale fallback lives in the pairs' initial values.
+- `t.define-core-theme()` emits once: `:where(:root)` defaults (colour joins, weight and tint pairs,
+  overlay, elevation, typography, focus, motion), the `themeMode` rules (`:where()`, `color-scheme` +
+  a private 0/1 flag), every derivation for the core names on `:where(:root, [theme])`, the
+  percentage pick on `:where(:root, [theme], [themeMode])`, the `[palette="name"]` rules, apply layers
+  and density scopes.
+- `t.define-theme()` emits one rule, `[theme="name"]` (+ `:where(:root)` when `$default`), holding
+  only what was passed. Custom palette names and `$adaptor` hooks are emitted once at root level.
+  Sub-config builders and `t.theme()` return only passed keys.
+- Each preset went from 124 KB (9.9 KB gzipped) to 2.5 KB; core.css from 29 KB to 159 KB
+  (12 KB gzipped) because it now carries the derivations once instead of eight times.
+- Harness check 5 (cascade shape) written; render.ts has 40 rows including the theme-switch
+  crossfade (base, ladder step, nested theme, dark subtree) and all pass in Chromium and Firefox.
+- Consumers: the docs workaround block is deleted; demo-core loads core first via
+  `t.define-core-theme()`.
+
+### ⬛ Phases 10–13 — planned in PORT-PLAN.md
 - Phase 10 — Contrast and alpha
 - Phase 11 — Material adapter from Material's role tables
 - Phase 12 — Startup: no flash, safe import

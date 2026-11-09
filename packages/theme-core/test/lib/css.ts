@@ -13,6 +13,18 @@ export function stripComments(css: string): string {
   return css.replace(/\/\*[\s\S]*?\*\//g, '');
 }
 
+/** `@property` name → its `initial-value`, for every registration in the CSS. */
+export function registeredInitialValues(css: string): Map<string, string> {
+  const map = new Map<string, string>();
+  const re = /@property\s+(--[\w-]+)\s*\{([^}]*)\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(stripComments(css)))) {
+    const iv = /initial-value\s*:\s*([^;]+);/.exec(m[2]);
+    if (iv) map.set(m[1], iv[1].trim());
+  }
+  return map;
+}
+
 /** Names registered with `@property`, in document order (duplicates kept). */
 export function registeredProperties(css: string): string[] {
   return [...stripComments(css).matchAll(/@property\s+(--[\w-]+)/g)].map((m) => m[1]);

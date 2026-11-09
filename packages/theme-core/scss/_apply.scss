@@ -3,6 +3,7 @@
 @use "sass:map";
 @use "sass:list";
 @use "density" as _dn;
+@use "palette" as _pal;
 // Usage — atomic, composable layers (each does ONE thing, stack on a palette):
 //   @include apply-palette(primary)   → select palette, identity text color
 //   @include bg()                     → subtle tonal fill, keeps identity text
@@ -10,7 +11,8 @@
 //   @include outlined()               → inset ::after border
 //   @include shape(md)                → corner radius from --shape--* scale
 //   @include container()              → density padding (containment only)
-//   @include define-core-theme()      → emit [palette][bg|filled|outlined|container|shape] globally
+//   @include define-core-theme()      → emit [palette="name"] for the core names and
+//                                       [palette][bg|filled|outlined|container|shape] globally
 //
 // Surface vars set by bg()/filled()/outlined():
 //   --container--stroke         color of the stroke border
@@ -250,7 +252,10 @@
 // Selects a palette: stamps all --palette-color* vars pointing at --color--{name}*,
 // then sets color to the palette's identity color role.
 // Compose with container() and/or stroke() for visual treatment.
-// A [palette="name"] attribute selector is also auto-emitted per theme by define-theme.
+// A [palette="name"] attribute rule is emitted once by define-core-theme() for
+// the core names and by define-theme() for a custom name. The --palette-* vars
+// are plain custom properties (not registered) so the light-dark() tokens they
+// hold resolve where they are used: a palette scope follows a nested themeMode.
 @mixin apply-palette($name) {
   @include _scope-role($name, color);
   @include _scope-role($name, bg);
@@ -481,67 +486,26 @@ $_tone-windows: (
 }
 
 // ─── define-core-theme: emit attribute/class rules globally ───────────────────────────
-// Call once from your root stylesheet (e.g. base.scss).
-// [palette="name"] (emitted per theme by define-theme) populates --palette-color* vars.
+// Called by the public t.define-core-theme() after the registrations and the
+// shared variable rules.
 @mixin define-core-theme() {
-  // Register scope vars (--palette-color--*) and surface vars (--container--*)
-  // as <color> so they can transition when palette or mode changes.
-  // initial-value: transparent — safe fallback (invisible rather than garish).
-  @property --palette-color {
-    syntax: "<color>";
-    inherits: true;
-    initial-value: transparent;
-  }
-  @property --palette-color--bg {
-    syntax: "<color>";
-    inherits: true;
-    initial-value: transparent;
-  }
-  @property --palette-color--stroke {
-    syntax: "<color>";
-    inherits: true;
-    initial-value: transparent;
-  }
-  @property --palette-color--focus {
-    syntax: "<color>";
-    inherits: true;
-    initial-value: transparent;
-  }
-
-  @property --container--text {
-    syntax: "<color>";
-    inherits: true;
-    initial-value: transparent;
-  }
-  @property --container--text-emphasis {
-    syntax: "<color>";
-    inherits: true;
-    initial-value: transparent;
-  }
-  @property --container--text-deemphasis {
-    syntax: "<color>";
-    inherits: true;
-    initial-value: transparent;
-  }
-  @property --container--stroke {
-    syntax: "<color>";
-    inherits: true;
-    initial-value: transparent;
-  }
-
-  @property --color--brand {
-    syntax: "<color>";
-    inherits: true;
-    initial-value: transparent;
+  // Palette selection for the core names: [palette="primary"] etc. stamps the
+  // --palette-color* window and sets the identity text colour. Attribute
+  // specificity (0,1,0), emitted once; a custom name gets the same rule from
+  // define-theme() at root level.
+  @each $name in _pal.$core-palette-names {
+    [palette="#{$name}"] {
+      @include apply-palette($name);
+    }
   }
 
   // Surface layers require a palette to be selected on the same element.
-  // The theme palette rule is emitted as `[theme] [palette]` (specificity 0,2,0)
-  // and sets `color` + `--container--stroke` as defaults. Layers that only set
-  // non-colliding properties (bg → background-color, container/shape → geometry,
-  // outlined → stroke-width/::after) win at 0,2,0 by declaration order. Layers
-  // that override the palette's `color`/stroke defaults (filled, tone) double an
-  // attribute (0,3,0) so they win regardless of stylesheet load order.
+  // The [palette="name"] rule above (0,1,0) sets `color` + `--container--stroke`
+  // as defaults. Layers that only set non-colliding properties (bg →
+  // background-color, container/shape → geometry, outlined → stroke-width/::after)
+  // win at 0,2,0. Layers that override the palette's `color`/stroke defaults
+  // (filled, tone) double an attribute (0,3,0) so they win regardless of
+  // stylesheet load order.
   [palette][bg] {
     @include bg();
   }
@@ -564,8 +528,8 @@ $_tone-windows: (
   }
 
   // tone — remaps the base --palette-color* vars to a modifier step. Doubles an
-  // attribute (specificity 0,3,0) so it beats the theme's [theme] [palette] rule
-  // (0,2,0) regardless of stylesheet load order.
+  // attribute (specificity 0,3,0) so it beats the [palette="name"] rule and the
+  // apply layers regardless of stylesheet load order.
   $tone-modifiers: highest, higher, high, low, lower, lowest;
   @each $mod in $tone-modifiers {
     [palette][tone="#{$mod}"][tone] {

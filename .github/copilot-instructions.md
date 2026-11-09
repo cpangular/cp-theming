@@ -41,7 +41,19 @@ demos/demo-brand-material/                                 — Example brand+mat
 
 - **t.light-dark() for mode variation.** The universal wrapper for any value
   that differs between light and dark. Does NOT use CSS `light-dark()` for
-  percentage values (only valid for `<color>` type in CSS).
+  percentage values (only valid for `<color>` type in CSS): percentages are a
+  `--mode-light` / `--mode-dark` pair picked with the private mode flag.
+
+- **Register what animation needs, nothing derived.** `@property` is for each
+  core palette role's light and dark colour (`--color--{name}[--role]--mode-light`
+  / `--mode-dark`), `--color--brand` and the scalars. The role tokens and every
+  derivative stay unregistered `light-dark()` / `oklch(from …)` expressions so
+  they resolve where they are used and `themeMode` works on any element.
+
+- **Core derives once; a theme is one rule.** `define-core-theme()` declares
+  every default and derivation on `:where(:root)` / `:where(:root, [theme])`;
+  `define-theme()` emits `[theme="name"]` holding only what was passed. Load
+  order is core, then themes, then the adapter. Variable-only rules are `:where()`.
 
 - **Focus color is per-palette.** `--pal-{name}--focus` is derived per palette,
   not a global. A matching-hue focus ring on a same-hue surface is invisible.
@@ -67,9 +79,9 @@ demos/demo-brand-material/                                 — Example brand+mat
   marked `todo` naming the phase that fixes it, so the run stays green and each phase removes
   its own `todo`.
 - TypeScript API tests: `packages/theme-core/test/api/*.spec.ts`, run by vitest with jsdom.
-- Browser check: `packages/theme-core/test/render.ts` (Playwright, Chromium + Firefox), local
-  only: `pnpm --filter @cpangular/cp-theming-core render`. Rows that fail today are the
-  cascade defects PORT-PLAN.md Phase 9 fixes.
+- Browser check: `packages/theme-core/test/render.ts` (Playwright, Chromium + Firefox; `webkit`
+  as an argument), local only: `pnpm --filter @cpangular/cp-theming-core render`. Every row passes
+  in Chromium and Firefox since Phase 9; `--html` writes a self-contained page for Safari.
 - Fixture themes live in `packages/theme-core/test/fixtures/` and `packages/theme-ng-material/test/fixtures/`.
 - CI: `.github/workflows/test.yml` (cpdevtools/git-flow) runs `github.actions.build` then
   `github.actions.test` in every package that defines them.

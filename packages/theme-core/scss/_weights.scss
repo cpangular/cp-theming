@@ -1,8 +1,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Weights — percentage-based blend and interaction weights.
 // Light/dark varying. Used via t.light-dark(t.weights(...), t.weights(...)).
+//
+// Percentages cannot use light-dark(), so each weight is stored as a light and
+// a dark value (--weight--x--mode-light / --mode-dark) and the registered token
+// --weight--x is picked from them with the mode flag (see _mode.scss). Core
+// declares the default pair of every weight; a theme declares only the sides
+// its author passed.
 // ─────────────────────────────────────────────────────────────────────────────
 @use "sass:map";
+@use "sass:list";
+@use "mode" as _m;
 
 $_defaults: (
   text-blend: 82%,
@@ -21,6 +29,11 @@ $_defaults: (
     80%,
   ),
 );
+
+// Every --weight--* token name, in registration order.
+$tokens:
+  text-blend, text-emphasis-blend, text-deemphasis-blend, text-primary-tint, state-hover,
+  state-press, state-focus, state-drag, tint-1, tint-2, tint-3, tint-4, tint-5;
 
 @function defaults() {
   @return $_defaults;
@@ -68,73 +81,56 @@ $_defaults: (
   @return $result;
 }
 
+// Internal: a config map flattened to token → value (tints become tint-1..5).
+@function _flat($config) {
+  $flat: ();
+  @each $key, $val in $config {
+    @if $key == tints {
+      @for $i from 1 through 5 {
+        $flat: map.set($flat, tint-#{$i}, list.nth($val, $i));
+      }
+    } @else {
+      $flat: map.set($flat, $key, $val);
+    }
+  }
+  @return $flat;
+}
+
+// Core: the default light and dark value of every weight. Once, on :where(:root).
+@mixin emit-root-defaults() {
+  $flat: _flat($_defaults);
+  @each $token in $tokens {
+    $v: map.get($flat, $token);
+    @include _m.pair(--weight--#{$token}, $v, $v);
+  }
+}
+
+// Core: pick every weight from its pair. Once, on :where(:root, [theme], [themeMode]).
+@mixin emit-pick() {
+  @each $token in $tokens {
+    @include _m.pick(--weight--#{$token});
+  }
+}
+
+// Theme: only the sides the author passed.
+@mixin emit-theme($light, $dark) {
+  $l: _flat($light);
+  $d: _flat($dark);
+  @each $token in $tokens {
+    @include _m.pair(--weight--#{$token}, map.get($l, $token), map.get($d, $token));
+  }
+}
+
 // Register all --weight--* vars as <percentage> so they can be animated
 // (required for color-mix() blend percentage transitions).
 // Call once from define-core-theme().
 @mixin register-properties() {
-  @property --weight--text-blend {
-    syntax: "<percentage>";
-    inherits: true;
-    initial-value: 82%;
-  }
-  @property --weight--text-emphasis-blend {
-    syntax: "<percentage>";
-    inherits: true;
-    initial-value: 96%;
-  }
-  @property --weight--text-deemphasis-blend {
-    syntax: "<percentage>";
-    inherits: true;
-    initial-value: 55%;
-  }
-  @property --weight--text-primary-tint {
-    syntax: "<percentage>";
-    inherits: true;
-    initial-value: 0%;
-  }
-  @property --weight--state-hover {
-    syntax: "<percentage>";
-    inherits: true;
-    initial-value: 8%;
-  }
-  @property --weight--state-press {
-    syntax: "<percentage>";
-    inherits: true;
-    initial-value: 12%;
-  }
-  @property --weight--state-focus {
-    syntax: "<percentage>";
-    inherits: true;
-    initial-value: 12%;
-  }
-  @property --weight--state-drag {
-    syntax: "<percentage>";
-    inherits: true;
-    initial-value: 16%;
-  }
-  @property --weight--tint-1 {
-    syntax: "<percentage>";
-    inherits: true;
-    initial-value: 10%;
-  }
-  @property --weight--tint-2 {
-    syntax: "<percentage>";
-    inherits: true;
-    initial-value: 20%;
-  }
-  @property --weight--tint-3 {
-    syntax: "<percentage>";
-    inherits: true;
-    initial-value: 38%;
-  }
-  @property --weight--tint-4 {
-    syntax: "<percentage>";
-    inherits: true;
-    initial-value: 60%;
-  }
-  @property --weight--tint-5 {
-    syntax: "<percentage>";
-    inherits: true;
-    initial-value: 80%;
+  $flat: _flat($_defaults);
+  @each $token in $tokens {
+    @property --weight--#{$token} {
+      syntax: "<percentage>";
+      inherits: true;
+      initial-value: #{map.get($flat, $token)};
+    }
   }
 }

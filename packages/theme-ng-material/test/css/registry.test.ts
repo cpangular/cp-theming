@@ -1,6 +1,7 @@
 // Check 4 (adapter) — the adapter registers nothing; the adaptor fixture registers
-// four names for its custom palette (until Phase 9) and its [palette] hooks emit
-// the Material remap for every non-neutral palette.
+// eight names (four roles × light and dark) for its custom palette, once at root
+// level, and its [palette] hooks emit the Material remap for every non-neutral
+// palette, once per palette name.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -26,9 +27,11 @@ for (const fixture of materialFixtureSheets()) {
   ];
   const custom = palettes.filter((n) => !CORE_PALETTE_NAMES.includes(n));
 
-  test(`${fixture.label} registers 4 names per custom palette (${custom.join(', ')})`, () => {
+  test(`${fixture.label} registers 8 names per custom palette (${custom.join(', ')})`, () => {
     const expected = custom.flatMap((n) =>
-      ['', '--bg', '--stroke', '--focus'].map((r) => `--color--${n}${r}`),
+      ['', '--bg', '--stroke', '--focus'].flatMap((r) =>
+        ['--mode-light', '--mode-dark'].map((m) => `--color--${n}${r}${m}`),
+      ),
     );
     assert.deepEqual([...registeredProperties(fixture.css)].sort(), expected.sort());
   });
@@ -49,6 +52,16 @@ for (const fixture of materialFixtureSheets()) {
     assert.deepEqual(
       [...remapped].sort(),
       palettes.filter((n) => n !== 'surface' && n !== 'background').sort(),
+    );
+    // Once per palette name, at root level (no [theme] ancestor).
+    const hookRules = rules(fixture.css).filter((r) =>
+      r.declarations.some(([n]) => n === '--mat-sys-primary'),
+    );
+    for (const r of hookRules) assert.doesNotMatch(r.selector, /\[theme/, r.selector);
+    assert.equal(
+      hookRules.length,
+      new Set(hookRules.map((r) => r.selector)).size,
+      'no duplicate hook rules',
     );
   });
 }

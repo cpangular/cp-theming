@@ -356,13 +356,28 @@ export function evaluateNumber(
   return n;
 }
 
+/**
+ * The private 0/1 flag the mode rules set (see scss/_mode.scss). Core declares
+ * it as 0 on :root; the context answers it from `mode` instead, the way a
+ * themeMode rule would on the element.
+ */
+export const MODE_FLAG = '--theme--_dark';
+
 /** A context over a declaration map, with optional overriding declarations. */
 export function contextFor(
   decls: Map<string, string>,
   mode: Mode,
   overrides?: Map<string, string>,
 ): EvalContext {
-  return { mode, lookup: (name) => overrides?.get(name) ?? decls.get(name) };
+  return {
+    mode,
+    lookup: (name) => {
+      const o = overrides?.get(name);
+      if (o !== undefined) return o;
+      if (name === MODE_FLAG) return mode === 'dark' ? '1' : '0';
+      return decls.get(name);
+    },
+  };
 }
 
 /** What the screen paints: the colour clipped into sRGB, channel by channel. */

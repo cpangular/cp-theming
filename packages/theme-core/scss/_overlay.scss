@@ -1,11 +1,15 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Overlay — color-based overlay values (scrim, shadow).
 // Light/dark varying. Used via t.light-dark(t.overlays(...), t.overlays(...)).
+// Core declares the defaults once; a theme declares only the keys its author
+// passed, as light-dark() when the modes differ (a side not passed takes the
+// default, because light-dark() needs both).
 // ─────────────────────────────────────────────────────────────────────────────
-@use 'sass:map';
+@use "sass:map";
+@use "mode" as _m;
 
 $_defaults: (
-  scrim:  oklch(0 0 0 / 50%),
+  scrim: oklch(0 0 0 / 50%),
   shadow: oklch(0 0 0 / 20%),
 );
 
@@ -13,12 +17,35 @@ $_defaults: (
   @return $_defaults;
 }
 
-@function config(
-  $scrim:  null,
-  $shadow: null,
-) {
+@function config($scrim: null, $shadow: null) {
   $result: ();
-  @if $scrim  != null { $result: map.set($result, scrim,  $scrim); }
-  @if $shadow != null { $result: map.set($result, shadow, $shadow); }
+  @if $scrim != null {
+    $result: map.set($result, scrim, $scrim);
+  }
+  @if $shadow != null {
+    $result: map.set($result, shadow, $shadow);
+  }
   @return $result;
+}
+
+@mixin emit-root-defaults() {
+  @each $key, $val in $_defaults {
+    --overlay--#{$key}: #{$val};
+  }
+}
+
+@mixin emit-theme($light, $dark) {
+  @each $key, $default in $_defaults {
+    $l: map.get($light, $key);
+    $d: map.get($dark, $key);
+    @if $l != null or $d != null {
+      @if $l == null {
+        $l: $default;
+      }
+      @if $d == null {
+        $d: $default;
+      }
+      --overlay--#{$key}: #{_m.ld($l, $d)};
+    }
+  }
 }

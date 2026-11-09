@@ -1,6 +1,7 @@
 // The stylesheet sets the checks run on: the build entries of both packages,
 // the fixture themes, and the docs app's style list. Compiled once per import.
 import path from 'node:path';
+import { declarationsFor, registeredInitialValues, rules } from './css.ts';
 import {
   buildEntries,
   compileFile,
@@ -77,4 +78,31 @@ export function formatWarning(w: {
   message: string;
 }): string {
   return `${w.type ?? 'warning'} ${w.file ? path.relative(repoRoot, w.file) : '?'}:${w.line ?? '?'} ${w.message}`;
+}
+
+/**
+ * The declarations in force on a theme's root element, in cascade order: the
+ * registered initial values, every root-level variable rule of core and of the
+ * theme stylesheet (`:where(:root)`, `:where(:root, [theme])`, …), then the
+ * theme's own `[theme="name"]` rule. This is what the evaluator reads a token
+ * from now that core derives once and a theme rule holds only what was passed.
+ */
+export function themeDeclarations(core: Stylesheet, theme: Stylesheet, name: string) {
+  const map = new Map<string, string>();
+  for (const css of [core.css, theme.css])
+    for (const [n, v] of registeredInitialValues(css)) map.set(n, v);
+  for (const css of [core.css, theme.css])
+    for (const rule of rules(css)) {
+      if (rule.context.length || !rule.selector.includes(':root')) continue;
+      for (const [n, v] of rule.declarations) map.set(n, v);
+    }
+  for (const [n, v] of declarationsFor(theme.css, `[theme="${name}"]`)) map.set(n, v);
+  return map;
+}
+
+/** Palette names a theme rule itself declares (its colour-role pairs). */
+export function themePalettes(theme: Stylesheet, name: string): string[] {
+  return [...declarationsFor(theme.css, `[theme="${name}"]`).keys()]
+    .map((k) => /^--color--([\w-]+)--mode-light$/.exec(k)?.[1] ?? '')
+    .filter((n) => n && !n.includes('--'));
 }
