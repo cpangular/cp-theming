@@ -164,6 +164,9 @@ Goal: the repo can tell on every push whether its CSS is sound. Needs no answers
   `playwright` at the root; the script names `github.actions.build` and `github.actions.test` in each
   package, and git-flow's `test.yml` so the harness runs on every push. Publishing pieces wait for
   Phase 13.
+- **Colour formats**: replace the "oklch color space" rule in .github/copilot-instructions.md,
+  CLAUDE.md, PLAN.md and README.md with: authors may pass any CSS colour; the library derives in
+  oklch. Add a fixture theme written in hex, `rgb()` and `hsl()` and run every check on it.
 - **Housekeeping**: replace the two deprecated `if()` calls at `_palette.scss:269-270`; switch
   `pages.yml` to manual trigger only so `main` stops going red (Pages cannot work until the repo is public);
   record "scripts are TypeScript run by Node 24, never `.mjs` / `.cjs` / `.js`" in
@@ -343,6 +346,8 @@ Goal: a code sample in the docs cannot disagree with the library. Depends on Pha
 - The harness compiles every `examples/**/*.scss` against the real packages with zero warnings and
   runs the undefined-variable check on core + a preset + the example. Examples are complete
   snippets; a fragment that cannot compile carries an explicit display-only marker.
+- The Palette and Getting Started pages say that any CSS colour format is accepted and that oklch is
+  recommended for predictable lightness steps.
 - One manual correction pass for the prose the compile check cannot see: `define-core-theme($selector)`
   (theme.component.ts:150-163), the "Simplified output CSS" formulas (palette.component.ts:66-74),
   the "@property registry" wording (typescript-api.component.ts:79, api.component.ts:1088 and :1301),
@@ -403,6 +408,8 @@ So they are not reopened. Tell me if you want any reversed.
 - Sass examples in the docs are compile-checked, not rendered live. Getting Started keeps its custom
   Sass section.
 - `themeMode="invert"` keeps today's selector semantics, emitted once.
+- Authors may write palette colours in any CSS colour format (your instruction of 2026-11-09, which
+  withdraws the former "oklch only" rule for inputs). Derivation stays in oklch.
 - All port work is pushed to `feature/port-spike-findings`; nothing merges to `main` without you.
 
 ## Dropped or changed by the critics
@@ -443,13 +450,14 @@ So they are not reopened. Tell me if you want any reversed.
 | First version | `0.1.0-alpha.0` | `.publish/versions.yml` (Phase 13) |
 | Docs hosting | The repo will be public, docs on Pages | Pages through git-flow once the repo is public (Phase 13) |
 | Peers between the packages | Not answered | Compatible range (`workspace:^`), decided for you |
+| Names for the registered light and dark colours | `--mode-light` / `--mode-dark` accepted | Phase 9 |
+| Repo visibility | You will make it public | Pages and the docs deploy follow in Phase 13 |
+| Colour formats | "I want the author to be able to provide whatever colours" | The "oklch only" rule for authors is withdrawn (your instruction, 2026-11-09). Any CSS colour is accepted as a palette, brand or override colour; the library still derives everything in oklch. Phase 8 changes the rule text and adds a fixture theme written in hex, rgb() and hsl(); Phase 7 (resumed) says so in the docs |
 
 How I read two of them:
 
-- **"Any colour system is acceptable"** settles the contrast question too: the automatic contrast
-  calculation reads linear sRGB internally, because that is how WCAG defines luminance. I have not
-  changed the "oklch color space" rule in copilot-instructions.md for what theme authors write in
-  Sass; say so if you meant to relax that as well.
+- **"Any colour system is acceptable"** also settles the contrast question: the automatic contrast
+  calculation reads linear sRGB internally, because that is how WCAG defines luminance.
 - **"Register what animation needs"** covers theme switches. A light/dark flip and a `palette`
   attribute change stay instant at the variable level, because the registration that would fade them
   is exactly what stops `themeMode` working on plain elements today. Ordinary
@@ -457,13 +465,9 @@ How I read two of them:
 
 ### Still open
 
-1. **Names for the registered light and dark colours.** Proposed: `--color--{name}--mode-light` and
-   `--color--{name}--mode-dark` (and `--color--{name}--bg--mode-light`, and so on). `--light` and
-   `--dark` are already the lightness steps. Phase 9 uses the proposal unless you give other names.
-2. **Making the repo public** is yours to do; Pages and the docs deploy wait for it.
-3. **If you want the variables themselves to fade on a light/dark flip**, tell me before Phase 9: it
-   means keeping the role tokens registered, and `themeMode` then takes effect only on or above an
-   element that has a `theme` attribute.
+Nothing blocks any session. One standing offer: if you ever want the variables themselves to fade on
+a light/dark flip, say so before Phase 9 starts; it means keeping the role tokens registered, and
+`themeMode` then takes effect only on or above an element that has a `theme` attribute.
 
 For reference, the runtime theme helper would have been a small TypeScript function that creates a
 theme in the browser from data, for example colours a user picks or a row from a database. After

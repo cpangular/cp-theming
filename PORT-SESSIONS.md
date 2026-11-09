@@ -9,10 +9,9 @@ the bottom of the prompt box, paste the prompt. Each session ends with a commit 
 is not done. The only things a session never does on its own are merging into `main`, merging a
 release PR, and running `gitflow version`.
 
-Your answers of 2026-11-09 are already folded into the plan and the prompts, so every prompt can be
-pasted as it is. Two things are still yours: other names for the registered light and dark colours if
-you do not want `--mode-light` / `--mode-dark` (say so before session 2), and making the repo public
-before session 8 so the docs can deploy to Pages.
+Your answers of 2026-11-09 are folded into the plan and the prompts, so every prompt can be pasted
+as it is. The only thing still yours is making the repo public before session 8 so the docs can
+deploy to Pages.
 
 How to set things in the VS Code extension (Claude Code chat panel):
 
@@ -46,7 +45,7 @@ not copy code from `/devcontainer/repos/ng-material-theme`.
 ## Session 1 — Phase 8 harness and CI
 
 ```
-Work in /devcontainer/repos/cp-theming on branch feature/port-spike-findings. Read CLAUDE.md, .github/copilot-instructions.md, PLAN.md and PORT-PLAN.md, then execute Phase 8 of PORT-PLAN.md exactly as written. Run pnpm install first. Order: (1) the node --test CSS checks in packages/theme-core/test and packages/theme-ng-material/test, compiling through the Sass JS API, with each check that today's code fails marked todo and naming the phase that fixes it; (2) the fixture themes; (3) the first vitest tests for the TypeScript API; (4) packages/theme-core/test/render.ts with Playwright, static fixture pages only, one row per case in "Behaviour today" plus the extra mode, palette and nesting cases the phase lists; rows that work today assert today's values; (5) wireit test scripts, the github.actions.build and github.actions.test script names, and git-flow's test.yml from https://github.com/cpdevtools/git-flow-template (read its README; add only what the test workflow needs, no .publish/ and no release workflows yet); (6) the housekeeping bullets. All scripts are TypeScript run by Node 24; never .mjs, .cjs or .js. Do not change any Sass behaviour in this session beyond the two if() replacements. When the Done-when holds, update the README and PLAN.md status tables, commit with the render.ts output in the message, and push without asking. Then tell me whether the test workflow is green and fix anything red.
+Work in /devcontainer/repos/cp-theming on branch feature/port-spike-findings. Read CLAUDE.md, .github/copilot-instructions.md, PLAN.md and PORT-PLAN.md, then execute Phase 8 of PORT-PLAN.md exactly as written. Run pnpm install first. Order: (1) the node --test CSS checks in packages/theme-core/test and packages/theme-ng-material/test, compiling through the Sass JS API, with each check that today's code fails marked todo and naming the phase that fixes it; (2) the fixture themes; (3) the first vitest tests for the TypeScript API; (4) packages/theme-core/test/render.ts with Playwright, static fixture pages only, one row per case in "Behaviour today" plus the extra mode, palette and nesting cases the phase lists; rows that work today assert today's values; (5) wireit test scripts, the github.actions.build and github.actions.test script names, and git-flow's test.yml from https://github.com/cpdevtools/git-flow-template (read its README; add only what the test workflow needs, no .publish/ and no release workflows yet); (6) the colour-formats bullet: withdraw the "oklch only" rule for authors in copilot-instructions.md, CLAUDE.md, PLAN.md and README.md (any CSS colour is accepted; derivation stays oklch) and add the hex/rgb()/hsl() fixture theme; (7) the housekeeping bullets. All scripts are TypeScript run by Node 24; never .mjs, .cjs or .js. Do not change any Sass behaviour in this session beyond the two if() replacements. When the Done-when holds, update the README and PLAN.md status tables, commit with the render.ts output in the message, and push without asking. Then tell me whether the test workflow is green and fix anything red.
 ```
 
 ## Session 2 — Phase 9 cascade
