@@ -50,8 +50,9 @@ Phases 8–13 are specified in [PORT-PLAN.md](PORT-PLAN.md).
 
 ### Browser baseline
 
-`packages/theme-core/test/render.ts` (40 rows: `themeMode` on any element, nested themes, coexisting
-presets, user overrides, the theme-switch crossfade) passes 40 of 40 in the Playwright builds
+`packages/theme-core/test/render.ts` (53 rows: `themeMode` on any element, nested themes, coexisting
+presets, user overrides, the theme-switch crossfade, and the eight defects the Phase 9 critique
+confirmed) passes 53 of 53 in the Playwright builds
 installed here: **Chromium 158**, **Firefox 159** and **WebKit 27.2** (the Safari engine; run with
 `node test/render.ts webkit`). WebKit gets the OS colour scheme pinned into the CSS rather than
 emulated, because Playwright's emulated dark scheme makes WebKit resolve `light-dark()` to dark

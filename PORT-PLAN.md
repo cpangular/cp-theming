@@ -229,6 +229,24 @@ and a theme switch can still crossfade.
 - **Harness.** Write check 5 (variable rules are `:where()`; a theme rule holds only what was passed;
   no `body` selector; the registered list is exactly the role colour pairs, `--color--brand` and the
   29 scalars) and remove the Phase 9 `todo`s. Add a `render.ts` row for the theme-switch crossfade.
+- **Amended after the Phase 9 critique (2026-11-10).** Six Opus critics tried to refute the six
+  Phase 9 claims against the compiled CSS in Chromium and Firefox; eight defects were confirmed by
+  three independent verifiers each, and each has a `render.ts` row. What changed from the text above:
+  the theme rule is `:where([theme="name"]):not(cp-theming-none)`, specificity (0,0,1), so an
+  author's `:root` rule wins on `<html theme="…">` too (a plain `[theme="name"]` tied with `:root`
+  and won on source order). Core derives the auto `--bg`, `--stroke` and `--focus` into their
+  registered pairs, from the colour pair, and joins them, so a switch between an auto and an
+  explicit role crossfades instead of jumping or flashing through the greyscale initial value; a
+  hand-written `--color--x` therefore re-derives the ladder, contrasts and tints but not those
+  three roles (set the pair). `background` / `surface` always carry their bg pair (the base) in the
+  theme rule and core only joins it, so a nested theme inherits the outer base, not an outer
+  `$color`. The tints and the `[filled]` de-emphasis text read each mode's weight pair inside
+  `light-dark()` (a substituted percentage froze at the declaring element). A custom palette's
+  derivations sit on `:where([theme])` and a `$default` theme derives the name inside its own rule,
+  so separately compiled stylesheets sharing a name cannot override a default's explicit roles on
+  `:root`. The adapter's `[theme]` re-declaration is `:where([theme])` so the adaptor's `[palette]`
+  remap wins on an element with both attributes, and its state-layer opacities are re-declared on
+  `:where([theme], [themeMode])`.
 
 Consequences to state in the docs:
 

@@ -1,6 +1,6 @@
 # CSS custom property reference
 
-All CSS custom properties emitted by `@cpangular/cp-theming-core`. A theme rule (`[theme="name"]`, plus `:where(:root)` when `$default: true`) declares only what its author passed: the registered light and dark colour of each role (`--color--{name}[--role]--mode-light` / `--mode-dark`) with its joined token, `--color--brand`, the passed sub-config keys and the light/dark pairs of mode-varying percentages. Every derivation below is declared once by `define-core-theme()` on `:where(:root, [theme])`; the defaults on `:where(:root)`.
+All CSS custom properties emitted by `@cpangular/cp-theming-core`. A theme rule (`:where([theme="name"]):not(cp-theming-none)`, specificity (0,0,1), plus `:where(:root)` when `$default: true`) declares only what its author passed: the registered light and dark colour of each role (`--color--{name}[--role]--mode-light` / `--mode-dark`) with its joined token, `--color--brand`, the passed sub-config keys and the light/dark pairs of mode-varying percentages. Every derivation below is declared once by `define-core-theme()` on `:where(:root, [theme])`; the defaults on `:where(:root)`.
 
 ---
 
@@ -61,7 +61,7 @@ Same full set of derivatives, prefixed with `--color--{name}--stroke`:
 
 ### Tints
 
-Transparent versions of the identity color role. Opacity is controlled by the `--weight--tint-N` variables.
+Transparent versions of the identity color role. Opacity is the mode-varying `--weight--tint-N` weight. A tint reads the weight's `--weight--tint-N--mode-light` / `--mode-dark` pair inside `light-dark()`, so it follows a nested `themeMode`; override the pair, not the picked `--weight--tint-N` token, to change a tint's opacity.
 
 | Variable | Default opacity |
 |----------|----------------|
@@ -299,7 +299,7 @@ Or use the HTML attribute emitted by `define-core-theme()`:
 
 ### Crossfading a theme switch
 
-Transition the registered pair on the element whose `theme` changes; everything derived from it follows (ladder steps, contrasts, nested themes, dark subtrees):
+Transition the registered pairs on the element whose `theme` changes; everything derived from them follows (ladder steps, contrasts, nested themes, dark subtrees). Include a palette's `--bg`, `--stroke` and `--focus` pairs when either theme passes those roles explicitly — core derives the auto values into the same pairs, so the switch interpolates between two real colours:
 
 ```css
 html {

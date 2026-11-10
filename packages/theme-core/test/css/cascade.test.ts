@@ -7,7 +7,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { compileSource, coreDir } from '../lib/sass.ts';
-import { declarationsFor, normalizeSelector, registeredProperties, rules } from '../lib/css.ts';
+import {
+  declarationsFor,
+  normalizeSelector,
+  registeredProperties,
+  rules,
+  themeSelector,
+} from '../lib/css.ts';
 import {
   CORE_PALETTE_NAMES,
   coreFixtureSheets,
@@ -173,7 +179,9 @@ test('a theme that passes one palette emits one rule with that palette and nothi
   );
   const all = rules(css);
   assert.equal(all.length, 1);
-  assert.equal(normalizeSelector(all[0].selector), '[theme=minimal]');
+  // (0,0,1): above every :where() rule, below an author's :root wherever it is placed.
+  assert.equal(normalizeSelector(all[0].selector), normalizeSelector(themeSelector('minimal')));
+  assert.equal(normalizeSelector(all[0].selector), ':where([theme=minimal]):not(cp-theming-none)');
   assert.deepEqual(all[0].declarations, [
     ['--color--primary--mode-light', 'oklch(40% 0.1 250deg)'],
     ['--color--primary--mode-dark', 'oklch(80% 0.1 250deg)'],
@@ -188,16 +196,31 @@ test('a theme that passes one palette emits one rule with that palette and nothi
 test('a default theme adds :where(:root) to its rule, never body', () => {
   for (const preset of presets) {
     const sel = rules(preset.css).map((r) => normalizeSelector(r.selector));
-    assert.ok(sel.includes(`[theme=${themeName(preset)}], :where(:root)`), preset.label);
+    assert.ok(
+      sel.includes(`${normalizeSelector(themeSelector(themeName(preset)))}, :where(:root)`),
+      preset.label,
+    );
   }
 });
 
 for (const sheet of themeSheets) {
   test(`${sheet.label}: the theme rule holds only what was passed — no derivation, default or mode variant`, () => {
-    const decls = declarationsFor(sheet.css, `[theme="${themeName(sheet)}"]`);
+    const decls = declarationsFor(sheet.css, themeSelector(themeName(sheet)));
     const names = [...decls.keys()];
+    assert.ok(names.length > 0, 'the theme rule was found');
+    // A default theme derives its custom palette names inside its own rule
+    // (the shared derivation rule does not match :root); nothing else derived.
+    const isDefault = rules(sheet.css).some((r) =>
+      normalizeSelector(r.selector).endsWith(', :where(:root)'),
+    );
+    const custom = new Set(
+      [...sheet.css.matchAll(/\[palette=["']?([\w-]+)["']?\]/g)]
+        .map((m) => m[1])
+        .filter((n) => !CORE_PALETTE_NAMES.includes(n)),
+    );
+    const derivedOf = (n: string) => /^--color--([\w]+(?:-[\w]+)*?)--/.exec(n)?.[1] ?? '';
     assert.deepEqual(
-      names.filter((n) => DERIVED.test(n)),
+      names.filter((n) => DERIVED.test(n) && !(isDefault && custom.has(derivedOf(n)))),
       [],
       'no derivation',
     );
@@ -238,10 +261,19 @@ for (const sheet of themeSheets) {
 
 test('fixtures/explicit-roles: explicit $bg/$stroke/$focus, weights, overlay, elevation, shape and focus land as passed', () => {
   const sheet = fixtures.find((f) => f.label.endsWith('explicit-roles.scss'))!;
-  const decls = declarationsFor(sheet.css, `[theme="${themeName(sheet)}"]`);
+  const decls = declarationsFor(sheet.css, themeSelector(themeName(sheet)));
   for (const role of ['--bg', '--stroke', '--focus'])
     assert.ok(decls.has(`--color--primary${role}--mode-light`), `primary${role}`);
   assert.ok(!decls.has('--color--secondary--bg--mode-light'), 'secondary bg not passed');
+  // background/surface always carry their bg pair: their base.
+  assert.equal(
+    decls.get('--color--background--bg--mode-light'),
+    decls.get('--color--background--mode-light'),
+  );
+  assert.equal(
+    decls.get('--color--surface--bg--mode-dark'),
+    decls.get('--color--surface--mode-dark'),
+  );
   assert.equal(
     decls.get('--color--secondary--mode-light'),
     'oklch(45% 0.14 300deg)',
@@ -266,11 +298,19 @@ test('fixtures/brand: a custom palette gets its registrations, derivations and [
     [...registeredProperties(sheet.css)].sort(),
     paletteRegistrations('accent').sort(),
   );
+  // On :where([theme]), not :root: a second, separately compiled stylesheet
+  // that uses the name repeats this rule later in the cascade, and on :root it
+  // would beat a default theme's explicit roles.
   const derive = rules(sheet.css).filter(
-    (r) => normalizeSelector(r.selector) === ':where(:root, [theme])',
+    (r) => normalizeSelector(r.selector) === ':where([theme])',
   );
   assert.equal(derive.length, 1);
   assert.ok(derive[0].declarations.some(([n]) => n === '--color--accent--contrast'));
+  assert.deepEqual(
+    rules(sheet.css).filter((r) => /:root/.test(r.selector)),
+    [],
+    'a non-default theme stylesheet never matches :root',
+  );
   const palette = rules(sheet.css).filter(
     (r) => normalizeSelector(r.selector) === '[palette=accent]',
   );
@@ -279,7 +319,94 @@ test('fixtures/brand: a custom palette gets its registrations, derivations and [
     palette[0].declarations.some(([n, v]) => n === '--palette-src' && v === 'var(--color--accent)'),
   );
   // *-from-brand palettes land as relative colours of --color--brand in the pair.
-  const decls = declarationsFor(sheet.css, `[theme="${themeName(sheet)}"]`);
+  const decls = declarationsFor(sheet.css, themeSelector(themeName(sheet)));
   assert.match(decls.get('--color--primary--mode-light')!, /^oklch\(from var\(--color--brand\)/);
   assert.match(decls.get('--color--background--mode-dark')!, /^oklch\(from var\(--color--brand\)/);
+});
+
+test('a default theme with a custom palette derives it inside its own rule, ahead of its explicit roles', () => {
+  const { css } = compileSource(
+    `@use "../../scss/theme" as t;
+@include t.define-theme("info-a", t.theme($palettes: (
+  info: t.light-dark(
+    t.palette(oklch(0.5 0.15 200), $bg: oklch(0.85 0.1 120)),
+    t.palette(oklch(0.75 0.12 200), $bg: oklch(0.35 0.1 120))),
+)), $default: true);`,
+    path.join(coreDir, 'test/fixtures/__info-a.scss'),
+  );
+  const rule = rules(css).find((r) => normalizeSelector(r.selector).endsWith(', :where(:root)'))!;
+  const names = rule.declarations.map(([n]) => n);
+  const derivedBg = names.indexOf('--color--info--bg--mode-light');
+  const explicitBg = names.lastIndexOf('--color--info--bg--mode-light');
+  assert.ok(derivedBg >= 0 && explicitBg > derivedBg, 'derived first, explicit last');
+  assert.equal(rule.declarations[explicitBg][1], 'oklch(85% 0.1 120deg)');
+  assert.ok(names.includes('--color--info--contrast'));
+  const shared = rules(css).filter((r) => normalizeSelector(r.selector) === ':where([theme])');
+  assert.equal(shared.length, 1);
+});
+
+test('core derives the auto bg, stroke and focus into their registered pairs, from the colour pair', () => {
+  const sharedRule = rules(core.css).find(
+    (r) => normalizeSelector(r.selector) === ':where(:root, [theme])' && !r.context.length,
+  )!;
+  const shared = new Map(sharedRule.declarations);
+  for (const name of CORE_PALETTE_NAMES) {
+    for (const role of ['--bg', '--stroke', '--focus']) {
+      const token = `--color--${name}${role}`;
+      assert.equal(
+        shared.get(token),
+        `light-dark(var(${token}--mode-light), var(${token}--mode-dark))`,
+        `${token} is the join of its pair`,
+      );
+    }
+    // background/surface: the pair is the theme's base (emit-palette), only joined here.
+    if (name === 'background' || name === 'surface') {
+      assert.ok(!shared.has(`--color--${name}--bg--mode-light`), `${name} bg pair not derived`);
+    } else {
+      assert.match(
+        shared.get(`--color--${name}--bg--mode-light`)!,
+        new RegExp(`^oklch\\(from var\\(--color--${name}--mode-light\\) 0\\.92 `),
+      );
+      assert.match(
+        shared.get(`--color--${name}--bg--mode-dark`)!,
+        new RegExp(`^oklch\\(from var\\(--color--${name}--mode-dark\\) 0\\.24 `),
+      );
+    }
+    for (const mode of ['light', 'dark']) {
+      assert.match(
+        shared.get(`--color--${name}--stroke--mode-${mode}`)!,
+        new RegExp(
+          `^oklch\\(from var\\(--color--${name}--mode-${mode}\\) clamp\\(0\\.42, l, 0\\.6\\)`,
+        ),
+      );
+      assert.match(
+        shared.get(`--color--${name}--focus--mode-${mode}`)!,
+        new RegExp(
+          // Sass simplifies calc(1 - l) inside clamp() to a bare calc-sum.
+          `^oklch\\(from var\\(--color--${name}--mode-${mode}\\) clamp\\(0\\.1, (calc\\()?1 - l\\)?, 0\\.9\\)`,
+        ),
+      );
+    }
+    // Tints read each mode's weight inside light-dark(), never the picked weight.
+    for (let i = 1; i <= 5; i++) {
+      const tint = shared.get(`--color--${name}--tint-${i}`)!;
+      assert.match(
+        tint,
+        /^light-dark\(oklch\(from var\(--color--[\w-]+\) l c h\s*\/\s*var\(--weight--tint-\d--mode-light, \d+%\)\), oklch\(.*--mode-dark, \d+%\)\)\)$/,
+      );
+      assert.doesNotMatch(tint, /var\(--weight--tint-\d[,)]/, 'no picked weight');
+    }
+  }
+  // The [filled] layer mixes its de-emphasis text with each mode's weight.
+  const filled = rules(core.css).find((r) =>
+    r.declarations.some(([n]) => n === '--container--text-deemphasis'),
+  )!;
+  const deemphasis = filled.declarations
+    .find(([n]) => n === '--container--text-deemphasis')![1]
+    .replace(/\s+/g, ' ');
+  assert.match(
+    deemphasis,
+    /^light-dark\( ?color-mix\(.*--mode-light.*\), color-mix\(.*--mode-dark.*\) ?\)$/,
+  );
+  assert.doesNotMatch(deemphasis, /var\(--weight--text-deemphasis-blend[,)]/);
 });

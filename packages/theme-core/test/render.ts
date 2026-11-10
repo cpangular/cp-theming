@@ -15,7 +15,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { chromium, firefox, webkit, type BrowserType } from 'playwright';
 import { compileFile, compileSource, coreDir, materialDir } from './lib/sass.ts';
-import { declarationsFor, registeredInitialValues, rules } from './lib/css.ts';
+import { declarationsFor, registeredInitialValues, rules, themeSelector } from './lib/css.ts';
 import {
   Color,
   contextFor,
@@ -37,6 +37,9 @@ const COLOR = {
   outerBgDark: 'oklch(0.3 0.2 250)',
   user: 'oklch(0.5 0.2 120)',
   brand: 'oklch(0.44 0.22 253)',
+  outerBaseBgLight: 'oklch(0.96 0.02 80)',
+  accentBLight: 'oklch(0.45 0.18 300)',
+  infoBgLight: 'oklch(0.85 0.1 120)',
 };
 
 interface ThemeSpec {
@@ -69,11 +72,16 @@ ${variable}: t.theme(
     caution: p.$default-caution,
     warn: p.$default-warn,
   ),
-  $weights: t.light-dark(t.weights($text-blend: 82%), t.weights($text-blend: 78%)),
+  $weights: t.light-dark(
+    t.weights($text-blend: 82%, $text-deemphasis-blend: 55%, $state-hover: 8%, $tints: (10%, 20%, 38%, 60%, 80%)),
+    t.weights($text-blend: 78%, $text-deemphasis-blend: 30%, $state-hover: 20%, $tints: (30%, 45%, 55%, 75%, 95%))
+  ),
 );
 @include t.define-theme("${spec.name}", ${variable}${spec.default ? ', $default: true' : ''});
 `;
 }
+// Every weight a derivative embeds differs by mode above, so a derivative that
+// froze its weight at the declaring element would show.
 
 const THEMES: Record<string, ThemeSpec> = {
   alpha: { name: 'alpha', light: COLOR.alphaLight, dark: COLOR.alphaDark },
@@ -111,6 +119,15 @@ for (const [key, spec] of Object.entries(THEMES)) {
 // The transition list an author puts on the element whose `theme` changes.
 const CROSSFADE =
   'transition: --color--primary--mode-light 1s linear, --color--primary--mode-dark 1s linear';
+// The same for every registered primary pair, so explicit $bg/$stroke/$focus crossfade too.
+const CROSSFADE_ROLES =
+  'transition: ' +
+  ['', '--bg', '--stroke', '--focus']
+    .flatMap((r) => [
+      `--color--primary${r}--mode-light 1s linear`,
+      `--color--primary${r}--mode-dark 1s linear`,
+    ])
+    .join(', ');
 
 /**
  * Evaluates a token the way the browser should: core's root rules (defaults,
@@ -128,7 +145,7 @@ function expectFrom(
   for (const rule of rules(sheets.core))
     if (!rule.context.length && rule.selector.includes(':root'))
       for (const [n, v] of rule.declarations) decls.set(n, v);
-  for (const [n, v] of declarationsFor(sheets[sheet], `[theme="${theme}"]`)) decls.set(n, v);
+  for (const [n, v] of declarationsFor(sheets[sheet], themeSelector(theme))) decls.set(n, v);
   const ctx = contextFor(decls, mode, overrides ? new Map(Object.entries(overrides)) : undefined);
   return evaluateColor(`var(${token})`, ctx).toString();
 }
@@ -582,6 +599,152 @@ const rows: Row[] = [
     token: '--color--primary',
     expect: 'oklch(0.2 0 0)',
   },
+  {
+    id: 'no-theme/background-bg-is-base',
+    sheets: ['core'],
+    html: '',
+    body: P,
+    probe: 'body',
+    token: '--color--background--bg',
+    expect: 'oklch(0.97 0 0)',
+  },
+  // ── Phase 9 critique (2026-11-10): one row per confirmed defect ─────────
+  // A derivative that embeds a mode-varying weight must resolve the weight
+  // where it is used, like its colour, or a themeMode subtree mixes flipped
+  // colours at the outer weight.
+  {
+    id: 'mode-on-plain-element/tint',
+    sheets: ['core', 'alphaDefault'],
+    html: 'theme="alpha-default"',
+    body: '<div id="p" themeMode="dark">x</div>',
+    probe: '#p',
+    token: '--color--primary--tint-1',
+    expect: `${COLOR.alphaDark.slice(0, -1)} / 0.3)`,
+  },
+  {
+    id: 'mode-in-palette-scope/tint',
+    sheets: ['core', 'alphaDefault'],
+    html: 'theme="alpha-default"',
+    body: '<div palette="primary"><div id="p" themeMode="dark">x</div></div>',
+    probe: '#p',
+    token: '--palette-color--tint-1',
+    expect: `${COLOR.alphaDark.slice(0, -1)} / 0.3)`,
+  },
+  {
+    id: 'mode-in-filled-scope/deemphasis-weight',
+    sheets: ['core', 'alphaDefault'],
+    html: 'theme="alpha-default"',
+    body: '<div palette="primary" filled><div id="p" themeMode="dark">x</div></div>',
+    probe: '#p',
+    token: '--container--text-deemphasis',
+    // black (the contrast of the dark primary) mixed into the dark primary at
+    // the dark 30% weight, what the same page gives with themeMode on <html>.
+    expect: 'oklch(0.56 0.07 283)',
+  },
+  {
+    id: 'mat-sys/nested-mode-state-opacity',
+    sheets: ['core', 'alphaDefault', 'material'],
+    html: 'theme="alpha-default"',
+    body: '<div id="p" themeMode="dark">x</div>',
+    probe: '#p',
+    token: '--mat-sys-hover-state-layer-opacity',
+    read: 'raw',
+    expect: '20%',
+  },
+  // background/surface keep their base as the bg role; a nested theme that
+  // does not pass them inherits that base, not the outer's $color override.
+  {
+    id: 'nested-theme/inherits-background-base-as-bg',
+    sheets: ['core', 'outerBase', 'minimal'],
+    html: 'theme="outer-base"',
+    body: '<div id="p" theme="minimal">x</div>',
+    probe: '#p',
+    token: '--color--background--bg',
+    expect: COLOR.outerBaseBgLight,
+  },
+  // An author's :root rule wins wherever it is placed, also on the element
+  // that carries the theme attribute (the theme rule is (0,0,1), not (0,1,0)).
+  {
+    id: 'user-root-override/before-library-html-theme',
+    sheets: ['userRoot', 'core', 'alphaDefault'],
+    html: 'theme="alpha-default"',
+    body: P,
+    probe: 'body',
+    token: '--color--primary',
+    expect: COLOR.user,
+  },
+  {
+    id: 'user-root-override/before-presets-html-theme',
+    sheets: ['userRoot', 'core', 'azure', 'rose'],
+    html: 'theme="azure-blue"',
+    body: P,
+    probe: 'body',
+    token: '--color--primary',
+    expect: COLOR.user,
+  },
+  // The adaptor's [palette] remap beats the adapter's [theme] re-declaration
+  // on an element that carries both attributes.
+  {
+    id: 'mat-sys/palette-on-theme-element',
+    sheets: ['core', 'adaptorPair', 'material'],
+    html: '',
+    body: '<div id="p" theme="adaptor-b" palette="accent">x</div>',
+    probe: '#p',
+    token: '--mat-sys-primary',
+    expect: COLOR.accentBLight,
+  },
+  // Two separately compiled theme stylesheets share a custom palette name: the
+  // second one's derivations must not beat the default theme's explicit roles.
+  {
+    id: 'custom-palette/separate-stylesheets-keep-default-explicit-bg',
+    sheets: ['core', 'infoA', 'infoB'],
+    html: '',
+    body: P,
+    probe: 'body',
+    token: '--color--info--bg',
+    expect: COLOR.infoBgLight,
+  },
+  // Auto-derived bg/stroke/focus live in their registered pairs, so a switch
+  // between a theme that leaves them to core and one that passes them
+  // explicitly crossfades in both directions when the pairs are transitioned.
+  {
+    id: 'crossfade/theme-switch/auto-to-explicit-bg',
+    sheets: ['core', 'alpha', 'outer'],
+    html: `theme="alpha" style="${CROSSFADE_ROLES}"`,
+    body: '<div id="p" themeMode="dark">x</div>',
+    probe: '#p',
+    transitioned: 'html',
+    token: '--color--primary--bg',
+    act: "document.documentElement.setAttribute('theme', 'outer')",
+    animates: true,
+    tolerance: 0.04,
+    expect: midway(expectFrom('alpha', 'alpha', '--color--primary--bg', 'dark'), COLOR.outerBgDark),
+  },
+  {
+    id: 'crossfade/theme-switch/explicit-to-auto-bg',
+    sheets: ['core', 'alpha', 'outer'],
+    html: `theme="outer" style="${CROSSFADE_ROLES}"`,
+    body: '<div id="p" themeMode="dark">x</div>',
+    probe: '#p',
+    transitioned: 'html',
+    token: '--color--primary--bg',
+    act: "document.documentElement.setAttribute('theme', 'alpha')",
+    animates: true,
+    tolerance: 0.04,
+    expect: midway(COLOR.outerBgDark, expectFrom('alpha', 'alpha', '--color--primary--bg', 'dark')),
+  },
+  // A hand-written override of the registered pair re-derives every role.
+  {
+    id: 'inline-pair-rederives/bg',
+    sheets: ['core', 'alpha'],
+    html: 'theme="alpha"',
+    body: `<div id="p" theme="custom" style="--color--primary--mode-light: ${COLOR.user}; --color--primary--mode-dark: ${COLOR.user}">x</div>`,
+    probe: '#p',
+    token: '--color--primary--bg',
+    expect: expectFrom('alpha', 'alpha', '--color--primary--bg', 'light', {
+      '--color--primary--mode-light': COLOR.user,
+    }),
+  },
 ];
 
 // A theme that passes one palette and nothing else, for the inheritance rows.
@@ -591,6 +754,54 @@ sheets.minimal = compileSource(
   primary: t.light-dark(t.palette(${COLOR.betaLight}), t.palette(${COLOR.betaDark})),
 )));`,
   path.join(coreDir, 'test/fixtures/__render-minimal.scss'),
+).css;
+
+// An outer theme whose background palette has a $color override: its bg role
+// stays the base, and a nested theme must inherit that base.
+sheets.outerBase = compileSource(
+  `@use "../../scss/theme" as t;
+@include t.define-theme("outer-base", t.theme($palettes: (
+  background: t.light-dark(
+    t.palette(${COLOR.outerBaseBgLight}, $color: oklch(0.88 0.06 80)),
+    t.palette(oklch(0.2 0.02 80), $color: oklch(0.32 0.06 80))),
+)));`,
+  path.join(coreDir, 'test/fixtures/__render-outer-base.scss'),
+).css;
+
+// Two separately compiled stylesheets that both use the custom palette "info";
+// the first is the default theme and passes an explicit $bg.
+sheets.infoA = compileSource(
+  `@use "../../scss/theme" as t;
+@include t.define-theme("info-a", t.theme($palettes: (
+  info: t.light-dark(
+    t.palette(oklch(0.5 0.15 200), $bg: ${COLOR.infoBgLight}),
+    t.palette(oklch(0.75 0.12 200), $bg: oklch(0.35 0.1 120))),
+)), $default: true);`,
+  path.join(coreDir, 'test/fixtures/__render-info-a.scss'),
+).css;
+sheets.infoB = compileSource(
+  `@use "../../scss/theme" as t;
+@include t.define-theme("info-b", t.theme($palettes: (
+  info: t.light-dark(t.palette(oklch(0.45 0.1 60)), t.palette(oklch(0.8 0.1 60))),
+)));`,
+  path.join(coreDir, 'test/fixtures/__render-info-b.scss'),
+).css;
+
+// Two themes defined with the Material adaptor, sharing the custom palette "accent".
+sheets.adaptorPair = compileSource(
+  `@use "../../../theme-core/scss/theme" as t;
+@use "../../scss/material" as mat;
+$a: t.theme($palettes: (
+  primary: t.light-dark(t.palette(${COLOR.alphaLight}), t.palette(${COLOR.alphaDark})),
+  accent: t.light-dark(t.palette(oklch(0.5 0.2 150)), t.palette(oklch(0.75 0.15 150))),
+));
+$b: t.theme($palettes: (
+  primary: t.light-dark(t.palette(${COLOR.betaLight}), t.palette(${COLOR.betaDark})),
+  accent: t.light-dark(t.palette(${COLOR.accentBLight}), t.palette(oklch(0.78 0.12 300))),
+));
+@include t.define-theme("adaptor-a", $a, $default: true, $adaptor: mat.adaptor());
+@include t.define-theme("adaptor-b", $b, $adaptor: mat.adaptor());`,
+  path.join(materialDir, 'test/fixtures/__render-adaptor-pair.scss'),
 ).css;
 
 // ─── Runner ──────────────────────────────────────────────────────────────────
@@ -655,8 +866,11 @@ function judge(row: Row, value: string, animations: number | undefined): Outcome
     };
   try {
     const got = cssColor(value);
+    // Channels and alpha: a tint whose colour flipped but whose alpha did not must fail.
+    const diff = (a: Color, b: Color) =>
+      Math.max(maxChannelDiff(a, b), Math.abs((a.alpha ?? 1) - (b.alpha ?? 1)));
     const scored = expected
-      .map(([label, v]) => ({ label, v, diff: maxChannelDiff(got, cssColor(v)) }))
+      .map(([label, v]) => ({ label, v, diff: diff(got, cssColor(v)) }))
       .sort((a, b) => a.diff - b.diff);
     const best = scored[0];
     const ok = best.diff < (row.tolerance ?? 0.02);

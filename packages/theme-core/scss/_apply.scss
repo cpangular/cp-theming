@@ -340,12 +340,22 @@
   isolation: isolate;
 
   // Pure contrast (on-color) text, with a deemphasis tier for secondary text.
+  // The blend weight varies by mode; substituted here it would freeze at this
+  // element and a themeMode subtree would mix the flipped colours at the
+  // outer weight, so each side of the light-dark() reads its own mode's weight.
   --container--text: var(#{$contrast});
   --container--text-emphasis: var(#{$contrast});
-  --container--text-deemphasis: color-mix(
-    in oklch,
-    var(#{$contrast}) var(--weight--text-deemphasis-blend, 55%),
-    var(#{$bg})
+  --container--text-deemphasis: light-dark(
+    color-mix(
+      in oklch,
+      var(#{$contrast}) var(--weight--text-deemphasis-blend--mode-light, 55%),
+      var(#{$bg})
+    ),
+    color-mix(
+      in oklch,
+      var(#{$contrast}) var(--weight--text-deemphasis-blend--mode-dark, 55%),
+      var(#{$bg})
+    )
   );
   // When composed with outlined(), the border uses the palette's solid bg role —
   // the same tonal tint bg() paints (color blended toward surface).

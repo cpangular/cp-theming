@@ -306,13 +306,15 @@ $my-theme: t.theme(
   a private 0/1 flag), every derivation for the core names on `:where(:root, [theme])`, the
   percentage pick on `:where(:root, [theme], [themeMode])`, the `[palette="name"]` rules, apply layers
   and density scopes.
-- `t.define-theme()` emits one rule, `[theme="name"]` (+ `:where(:root)` when `$default`), holding
-  only what was passed. Custom palette names and `$adaptor` hooks are emitted once at root level.
-  Sub-config builders and `t.theme()` return only passed keys.
+- `t.define-theme()` emits one rule, `:where([theme="name"]):not(cp-theming-none)` — specificity
+  (0,0,1), so an author's `:root` rule wins even on `<html theme="…">` — (+ `:where(:root)` when
+  `$default`), holding only what was passed. Custom palette names and `$adaptor` hooks are emitted
+  once at root level. Sub-config builders and `t.theme()` return only passed keys.
 - Each preset went from 124 KB (9.9 KB gzipped) to 2.5 KB; core.css from 29 KB to 159 KB
   (12 KB gzipped) because it now carries the derivations once instead of eight times.
-- Harness check 5 (cascade shape) written; render.ts has 40 rows including the theme-switch
-  crossfade (base, ladder step, nested theme, dark subtree) and all pass in Chromium and Firefox.
+- Harness check 5 (cascade shape) written; render.ts has 53 rows including the theme-switch
+  crossfade (base, ladder step, nested theme, dark subtree, auto ↔ explicit bg) and the eight
+  defects the Phase 9 critique confirmed (PORT-PLAN.md), all passing in Chromium and Firefox.
 - Consumers: the docs workaround block is deleted; demo-core loads core first via
   `t.define-core-theme()`.
 

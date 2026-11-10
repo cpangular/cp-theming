@@ -26,15 +26,16 @@ $roles: color, bg, stroke, focus;
 // Greyscale initial values per palette role (colour, bg, stroke, focus).
 // Designed as a legible black-on-white print fallback.
 $_core-grayscale: (
+  // background/surface: bg is the base (core joins the pair, no theme → initial).
   background: (
-    color: oklch(0.97 0 0),
-    bg: oklch(1 0 0),
-    stroke: oklch(0.65 0 0),
-    focus: oklch(0.2 0 0),
-  ),
+      color: oklch(0.97 0 0),
+      bg: oklch(0.97 0 0),
+      stroke: oklch(0.65 0 0),
+      focus: oklch(0.2 0 0),
+    ),
   surface: (
     color: oklch(0.93 0 0),
-    bg: oklch(0.95 0 0),
+    bg: oklch(0.93 0 0),
     stroke: oklch(0.6 0 0),
     focus: oklch(0.2 0 0),
   ),
@@ -73,7 +74,7 @@ $_core-grayscale: (
     bg: oklch(0.92 0 0),
     stroke: oklch(0.35 0 0),
     focus: oklch(0.6 0 0),
-  ),
+  )
 );
 
 // Custom palette names cannot carry their real colour as an initial value
@@ -194,6 +195,16 @@ $_registered-palette-names: ();
 // selector :where(:root, [theme]) so a nested theme re-derives from its own
 // colour role and does not inherit an outer theme's explicit $bg / $stroke / $focus
 // (a theme rule's explicit role beats these zero-specificity declarations).
+//
+// The auto bg, stroke and focus are derived INTO their registered pairs, from
+// the colour role's pair, and then joined like every other role. So a theme
+// switch between a theme that leaves a role to core and one that passes it
+// explicitly interpolates between two real colours (the pair never sits at its
+// greyscale initial value), and the auto value still follows a transition of
+// the colour pair. The cost: a hand-written `--color--x: …` on the joined
+// token re-derives the ladder, contrasts and tints, but not bg, stroke or
+// focus. Set the pair (`--color--x--mode-light` / `--mode-dark`) to re-derive
+// everything.
 @mixin derive-palette($name) {
   $c: token($name, color);
   @include _join($name, color);
@@ -201,36 +212,54 @@ $_registered-palette-names: ();
   // bg role — the solid tonal background for this palette: an opaque same-hue
   // tint of the colour role, high lightness in light mode / low in dark mode,
   // with reduced chroma. This is the fill bg() paints and the stroke filled()
-  // outlines with. background/surface ARE backgrounds, so their bg is the base.
-  @if $name == background or $name == surface {
-    #{token($name, bg)}: var(#{$c});
-  } @else {
-    #{token($name, bg)}: light-dark(
-      oklch(from var(#{$c}) 0.92 calc(c * var(--bg-chroma, 0.4)) h),
-      oklch(from var(#{$c}) 0.24 calc(c * var(--bg-chroma, 0.4)) h)
-    );
+  // outlines with. background/surface ARE backgrounds, so their bg is the base:
+  // their pair is written by the theme rule (emit-palette) and only joined
+  // here, so a nested theme that does not pass them inherits the outer base
+  // rather than re-deriving from an outer `$color` override.
+  $bg: token($name, bg);
+  @if $name != background and $name != surface {
+    #{$bg}--mode-light: oklch(from var(#{$c}--mode-light) 0.92 calc(c * var(--bg-chroma, 0.4)) h);
+    #{$bg}--mode-dark: oklch(from var(#{$c}--mode-dark) 0.24 calc(c * var(--bg-chroma, 0.4)) h);
   }
+  @include _join($name, bg);
 
   // Stroke — the colour role's lightness clamped into the visible mid-tone band
   // (0.42–0.60), so it shows against its palette surface:
   //   light surfaces (L≈0.93) → L≈0.60, dark surfaces (L≈0.24) → L≈0.42,
   //   mid-tone accents (L≈0.43) → unchanged.
   // _role-derivatives adds --stroke--low (subtle divider) and --stroke--high.
-  #{token($name, stroke)}: oklch(from var(#{$c}) clamp(0.42, l, 0.6) c h);
-
   // Focus ring — per palette: inverted lightness + 60° hue shift, always distinct.
-  #{token($name, focus)}: oklch(from var(#{$c}) clamp(0.1, calc(1 - l), 0.9) c calc(h + 60));
+  @each $mode in light, dark {
+    #{token($name, stroke)}--mode-#{$mode}: oklch(
+      from var(#{$c}--mode-#{$mode}) clamp(0.42, l, 0.6) c h
+    );
+    #{token($name, focus)}--mode-#{$mode}: oklch(
+      from var(#{$c}--mode-#{$mode}) clamp(0.1, calc(1 - l), 0.9) c calc(h + 60)
+    );
+  }
+  @include _join($name, stroke);
+  @include _join($name, focus);
 
   @include _role-derivatives($name, color);
   @include _role-derivatives($name, bg);
   @include _role-derivatives($name, stroke);
 
-  // Palette tints — transparent versions of the colour role
-  #{$c}--tint-1: oklch(from var(#{$c}) l c h / var(--weight--tint-1, 10%));
-  #{$c}--tint-2: oklch(from var(#{$c}) l c h / var(--weight--tint-2, 20%));
-  #{$c}--tint-3: oklch(from var(#{$c}) l c h / var(--weight--tint-3, 38%));
-  #{$c}--tint-4: oklch(from var(#{$c}) l c h / var(--weight--tint-4, 60%));
-  #{$c}--tint-5: oklch(from var(#{$c}) l c h / var(--weight--tint-5, 80%));
+  // Palette tints — transparent versions of the colour role. The alpha is a
+  // mode-varying weight; a percentage substituted here would freeze at this
+  // element, so each side of the light-dark() reads its own mode's weight and
+  // the tint resolves where it is used, like every other derivative.
+  @include _tint($c, 1, 10%);
+  @include _tint($c, 2, 20%);
+  @include _tint($c, 3, 38%);
+  @include _tint($c, 4, 60%);
+  @include _tint($c, 5, 80%);
+}
+
+@mixin _tint($c, $n, $fallback) {
+  #{$c}--tint-#{$n}: light-dark(
+    oklch(from var(#{$c}) l c h / var(--weight--tint-#{$n}--mode-light, #{$fallback})),
+    oklch(from var(#{$c}) l c h / var(--weight--tint-#{$n}--mode-dark, #{$fallback}))
+  );
 }
 
 @mixin derive-core-palettes() {
@@ -240,13 +269,20 @@ $_registered-palette-names: ();
 }
 
 // Public: the root-level pieces of a custom palette name, once per compilation:
-// its eight registrations and its derivations on the shared selector. Core
-// names already have both from define-core-theme(). Call at root level.
+// its eight registrations and its derivations on :where([theme]). Core names
+// already have both from define-core-theme(). Call at root level.
+//
+// The derivations deliberately do not match :root. The dedup only lasts for
+// one compilation, so a second, separately compiled theme stylesheet that uses
+// the same name emits them again, later in the cascade; on :where(:root) that
+// copy would beat a default theme's explicit $bg / $stroke / $focus (both are
+// zero specificity, so order decides). define-theme() instead derives a custom
+// name inside the default theme's own rule, ahead of the explicit roles.
 @mixin define-custom-palette($name) {
   @if not is-core($name) and not list.index($_registered-palette-names, $name) {
     $_registered-palette-names: list.append($_registered-palette-names, $name) !global;
     @include _register-palette-properties($name, $_custom-initial);
-    :where(:root, [theme]) {
+    :where([theme]) {
       @include derive-palette($name);
     }
   }
@@ -307,11 +343,11 @@ $_registered-palette-names: ();
   $d-bg: map.get($dark, bg);
   @if $l-bg != null or $d-bg != null {
     @include _explicit-pair($name, bg, $l-bg, $d-bg);
-  } @else if
-    ($name == background or $name == surface) and
-    (map.get($light, color) != null or map.get($dark, color) != null)
-  {
-    // background/surface with a $color override keep their base as the bg role.
+  } @else if $name == background or $name == surface {
+    // background/surface ARE backgrounds: their bg role is their base, even
+    // under a $color override. Core only joins this pair (derive-palette), so
+    // it is written whenever the palette is passed and inherited by nested
+    // themes that do not pass it.
     @include _pair($name, bg, map.get($light, base), map.get($dark, base));
   }
 

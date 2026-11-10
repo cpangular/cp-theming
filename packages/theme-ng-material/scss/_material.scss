@@ -169,11 +169,23 @@
     }
   }
 
-  // Re-declare color tokens at every [theme] element.
-  // This forces Chromium to re-evaluate the var() references at each scoped
-  // element, picking up the correct --color--* values for nested themes.
-  [theme] {
+  // Re-declare the colour tokens at every [theme] element, so each nested
+  // theme re-evaluates the var() references against its own --color--* values.
+  // Zero specificity: the adaptor's [palette="name"] remap must beat this on an
+  // element that carries both attributes (PORT-PLAN.md Phase 9, Specificity).
+  :where([theme]) {
     @include _color-tokens();
+  }
+
+  // The state-layer opacities alias registered, already-picked weights. A var()
+  // is substituted where it is declared, so the :root alias would carry the root
+  // weight into a nested theme or a themeMode subtree; re-declare them wherever
+  // the weight is re-picked.
+  :where([theme], [themeMode]) {
+    --mat-sys-hover-state-layer-opacity: var(--weight--state-hover);
+    --mat-sys-focus-state-layer-opacity: var(--weight--state-focus);
+    --mat-sys-pressed-state-layer-opacity: var(--weight--state-press);
+    --mat-sys-dragged-state-layer-opacity: var(--weight--state-drag);
   }
 }
 

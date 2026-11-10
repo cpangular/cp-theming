@@ -163,6 +163,15 @@ export function undefinedReads(cssSet: string[]): string[] {
   return [...missing].sort();
 }
 
+/**
+ * The selector `define-theme()` emits for a theme rule: specificity (0,0,1),
+ * above every `:where()` rule of core and of other themes' defaults, below an
+ * author's own `:root` or attribute rule wherever that is placed.
+ */
+export function themeSelector(name: string): string {
+  return `:where([theme="${name}"]):not(cp-theming-none)`;
+}
+
 /** Sass drops the quotes of attribute values that do not need them; compare without. */
 export function normalizeSelector(selector: string): string {
   return selector

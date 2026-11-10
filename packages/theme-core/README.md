@@ -144,7 +144,7 @@ primary: t.palette(
 
 ### Core palette names
 
-These names are registered and derived once by `define-core-theme()`: `primary`, `secondary`, `error`, `warn`, `caution`, `pass`, `surface`, `background`. Any additional name in your `$palettes` map gets its registrations, derivations and `[palette]` rule once, at root level, from the first `define-theme()` that uses it.
+These names are registered and derived once by `define-core-theme()`: `primary`, `secondary`, `error`, `warn`, `caution`, `pass`, `surface`, `background`. Any additional name in your `$palettes` map gets its registrations, derivations (on `:where([theme])`) and `[palette]` rule once per compiled stylesheet, at root level, from the first `define-theme()` that uses it; a `$default` theme also derives the name inside its own rule.
 
 ### Emitted CSS variables (per palette)
 

@@ -263,12 +263,14 @@ $_palette-hooks-emitted: ();
 
 // ─── Public: define-theme ─────────────────────────────────────────────────────
 //
-// Emits one rule, [theme="name"] (plus :where(:root) when $default), holding
-// only what the author passed to t.theme(): for each palette the light and
-// dark colour of the colour role and of any explicit $bg / $stroke / $focus,
-// each followed by its joined token; --color--brand; the passed keys of each
-// sub-config; and the light and dark values of mode-varying percentages.
-// No color-scheme, no body, no mode variants: define-core-theme() has those.
+// Emits one rule, :where([theme="name"]):not(cp-theming-none) (plus
+// :where(:root) when $default), holding only what the author passed to
+// t.theme(): for each palette the light and dark colour of the colour role and
+// of any explicit $bg / $stroke / $focus (background and surface always carry
+// their bg pair: their base), each followed by its joined token; --color--brand;
+// the passed keys of each sub-config; and the light and dark values of
+// mode-varying percentages. A default theme also derives its custom palette
+// names. No color-scheme, no body, no mode variants: define-core-theme() has those.
 //
 // $default — also apply on :where(:root), so any theme attribute beats it.
 // $dedupe  — accepted for compatibility; nothing is left to dedupe.
@@ -293,12 +295,29 @@ $_palette-hooks-emitted: ();
     }
   }
 
-  $selectors: '[theme="#{$name}"]';
+  // Specificity (0,0,1): `:not()` of a type selector no element has. The rule
+  // beats every zero-specificity rule of core and of other themes' defaults in
+  // any load order, and loses to an author's own `:root` or attribute rule
+  // wherever that is placed — including on the element that carries the theme
+  // attribute, where a plain `[theme="name"]` (0,1,0) would tie with `:root`
+  // and win on source order.
+  $selectors: ':where([theme="#{$name}"]):not(cp-theming-none)';
   @if $default {
     $selectors: "#{$selectors}, :where(:root)";
   }
 
   #{$selectors} {
+    // A default theme derives its custom palette names here, ahead of its
+    // explicit roles, because the shared derivation rule does not match :root
+    // (see _palette.scss define-custom-palette).
+    @if $default and $palettes {
+      @each $pal-name, $pal-config in $palettes {
+        @if not _pal.is-core($pal-name) {
+          @include _pal.derive-palette($pal-name);
+        }
+      }
+    }
+
     @if $palettes {
       @each $pal-name, $pal-config in $palettes {
         $l-resolved: $pal-config;

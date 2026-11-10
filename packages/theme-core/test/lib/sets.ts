@@ -1,7 +1,7 @@
 // The stylesheet sets the checks run on: the build entries of both packages,
 // the fixture themes, and the docs app's style list. Compiled once per import.
 import path from 'node:path';
-import { declarationsFor, registeredInitialValues, rules } from './css.ts';
+import { declarationsFor, registeredInitialValues, rules, themeSelector } from './css.ts';
 import {
   buildEntries,
   compileFile,
@@ -96,13 +96,13 @@ export function themeDeclarations(core: Stylesheet, theme: Stylesheet, name: str
       if (rule.context.length || !rule.selector.includes(':root')) continue;
       for (const [n, v] of rule.declarations) map.set(n, v);
     }
-  for (const [n, v] of declarationsFor(theme.css, `[theme="${name}"]`)) map.set(n, v);
+  for (const [n, v] of declarationsFor(theme.css, themeSelector(name))) map.set(n, v);
   return map;
 }
 
 /** Palette names a theme rule itself declares (its colour-role pairs). */
 export function themePalettes(theme: Stylesheet, name: string): string[] {
-  return [...declarationsFor(theme.css, `[theme="${name}"]`).keys()]
+  return [...declarationsFor(theme.css, themeSelector(name)).keys()]
     .map((k) => /^--color--([\w-]+)--mode-light$/.exec(k)?.[1] ?? '')
     .filter((n) => n && !n.includes('--'));
 }
