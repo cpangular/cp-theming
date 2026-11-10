@@ -4,7 +4,7 @@
 //
 //   node test/render.ts                 # chromium + firefox
 //   node test/render.ts firefox         # one browser
-//   node test/render.ts webkit          # Playwright's WebKit build, when installed
+//   node test/render.ts webkit          # Playwright's WebKit build (the Safari engine), when installed
 //   node test/render.ts --grep mode     # rows whose id contains "mode"
 //   node test/render.ts --html out.html # also write a self-contained page that runs
 //                                       # every row in whatever browser opens it (Safari)
@@ -684,9 +684,13 @@ async function runBrowser(type: BrowserType, selected: Row[]): Promise<Map<strin
     return results;
   }
   const page = await browser.newPage();
+  // WebKit under Playwright's emulated dark scheme resolves light-dark() to dark
+  // whatever color-scheme says (even on html), which real Safari does not do. So
+  // WebKit gets the OS scheme pinned into the CSS instead, like the --html page.
+  const pinScheme = type.name() === 'webkit';
   for (const row of selected) {
-    await page.emulateMedia({ colorScheme: row.scheme ?? 'light' });
-    await page.setContent(pageHtml(row));
+    if (!pinScheme) await page.emulateMedia({ colorScheme: row.scheme ?? 'light' });
+    await page.setContent(pageHtml(row, pinScheme ? (row.scheme ?? 'light') : undefined));
     const input = {
       probe: row.probe,
       token: row.token,

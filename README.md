@@ -51,16 +51,16 @@ Phases 8–13 are specified in [PORT-PLAN.md](PORT-PLAN.md).
 ### Browser baseline
 
 `packages/theme-core/test/render.ts` (40 rows: `themeMode` on any element, nested themes, coexisting
-presets, user overrides, the theme-switch crossfade) passes in the Playwright builds installed here:
-**Chromium 158** and **Firefox 159** (40 of 40) and **WebKit 27.2** (39 of 40). The one WebKit
-miss is `mode-invert/os-dark-nested-theme`: with Playwright's emulated dark OS preference, WebKit
-resolves `light-dark()` to dark whatever `color-scheme` says, even `html { color-scheme: light }` or a
-`<meta name="color-scheme" content="light">`, which real Safari does honour — so that row needs the
-hand check below under a dark macOS appearance. The newest features the cascade needs are `light-dark()` (Chrome 123, Firefox 120, Safari 17.5), `@property` (Chrome 85,
-Firefox 128, Safari 16.4) and relative colour syntax (Chrome 119, Firefox 128, Safari 16.4), so the
-expected floor is Chrome 123, Firefox 128 and Safari 17.5. Safari is checked by hand: run
-`node test/render.ts --html` in `packages/theme-core` and open `dist/render.html` in Safari; it runs
-every row and prints a pass count.
+presets, user overrides, the theme-switch crossfade) passes 40 of 40 in the Playwright builds
+installed here: **Chromium 158**, **Firefox 159** and **WebKit 27.2** (the Safari engine; run with
+`node test/render.ts webkit`). WebKit gets the OS colour scheme pinned into the CSS rather than
+emulated, because Playwright's emulated dark scheme makes WebKit resolve `light-dark()` to dark
+whatever `color-scheme` says, which real Safari does not do. No Mac is available, so Safari itself is
+unverified; `node test/render.ts --html` writes `dist/render.html`, a self-contained page that runs
+every row in whatever browser opens it and prints a pass count, for whenever one is. The newest
+features the cascade needs are `light-dark()` (Chrome 123, Firefox 120, Safari 17.5), `@property`
+(Chrome 85, Firefox 128, Safari 16.4) and relative colour syntax (Chrome 119, Firefox 128, Safari
+16.4), so the expected floor is Chrome 123, Firefox 128 and Safari 17.5.
 
 ---
 

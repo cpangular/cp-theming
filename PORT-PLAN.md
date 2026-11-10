@@ -244,7 +244,8 @@ Consequences to state in the docs:
 Done when: `pnpm test` passes with no Phase 9 `todo`; every `render.ts` row passes in Chromium and
 Firefox, including the crossfade row; each preset's size before and after is in the commit message; the docs app builds and shows
 the four themes in both modes with the workaround block gone; the oldest Chrome, Firefox and Safari
-versions that pass `render.ts` are recorded in README.md (Safari checked by hand).
+versions that pass `render.ts` are recorded in README.md (Safari: Playwright's WebKit build stands in,
+no Mac being available; `render.ts --html` writes a page for a hand check later).
 
 ### Phase 10 — Contrast and alpha
 
