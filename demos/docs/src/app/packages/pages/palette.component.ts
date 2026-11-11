@@ -66,7 +66,9 @@ const TOC = [
           <strong>The brand colour is kept exact.</strong> <code>$brand</code> is the colour from
           your guidelines. It becomes the <code>brand</code> palette, a palette like any other
           (<code>palette="brand"</code>, <code>--color--brand</code>,
-          <code>--color--brand--contrast</code>, …), and nothing ever adjusts it.
+          <code>--color--brand--contrast</code>, …), and nothing ever adjusts it. A theme that
+          passes a <code>primary</code> and no brand has that primary as its brand palette, exactly
+          as passed; one that passes neither inherits the brand of the theme around it.
         </p>
         <p>
           <strong>The primary made from it is adjusted.</strong> A brand colour is often too light,

@@ -62,7 +62,10 @@ demos/demo-brand-material/                                 — Example brand+mat
   brand → primary → secondary, tertiary → background, surface. A theme passes
   whichever it has (one, two or three accents, with or without `$brand`) and
   core generates each one it left out, at runtime, on the shared derivation
-  selector: primary from the brand with
+  selector. A theme that passes a primary and no `$brand` has that primary as
+  its brand palette (its rule points the brand pair at the primary pair, Phase
+  14d); the root never does, so with no theme the brand is grey. Generated:
+  primary from the brand with
   `palette-from-brand()`'s readability clamps (lightness 0.35–0.45 light /
   0.65–0.82 dark, chroma 0.22 at most), secondary (primary's hue, a third of
   its chroma, 0.04 at least) and tertiary (hue + 60°, half its chroma, 0.08 at

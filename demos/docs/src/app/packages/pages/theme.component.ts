@@ -279,7 +279,8 @@ setMode(ThemeMode.AUTO);</code></pre>
                   The brand color, exactly as given: the <code>brand</code> palette,
                   <code>--color--brand</code>. Never adjusted. A primary, background and surface the
                   theme does not pass are generated from it. The same as passing
-                  <code>brand: t.palette(…)</code> in <code>$palettes</code>.
+                  <code>brand: t.palette(…)</code> in <code>$palettes</code>. Left out, the theme's
+                  <code>primary</code> is its brand palette.
                 </div>
               </div>
               <div class="api-param-row">

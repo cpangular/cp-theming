@@ -201,7 +201,9 @@ $_type-scales:
   //     surface-variant: 2.3–3.5:1 in dark mode, and the invalid one is under
   //     4.5:1 in light mode as well;
   //   - every one of them under palette="brand" in dark mode, with a brand that
-  //     is dark (the presets leave it at core's default): 1.04–1.11:1.
+  //     is dark: 1.04–1.11:1 (measured with core's grey default as the brand;
+  //     since Phase 14d a preset's brand is its primary, but a brand a theme
+  //     passes is still one colour in both modes).
   // So the accent in a label is held to a lightness: no lighter than 0.40 in
   // light mode, no darker than 0.82 in dark mode. M3's tone 40 is about 0.44,
   // on a surface at tone 98; the presets' light surface is near tone 91, and at
@@ -300,7 +302,7 @@ $_type-scales:
   // itself). In a [palette] scope the inherited colour is the palette's own,
   // which no rule holds to a lightness: 4.49:1 for the content of a step under
   // palette="error" in cyan-orange, light mode, and 1.04–1.11:1 for all four
-  // under palette="brand" in dark mode in every preset. They get the role M3
+  // under palette="brand" in dark mode with a dark brand. They get the role M3
   // gives them. Plain class selectors, after core's [palette] rule in load
   // order, so this also holds with the attribute on the stepper itself.
   .mat-mdc-form-field-hint-wrapper,

@@ -206,7 +206,8 @@
 //
 // $brand — the brand colour exactly as the guidelines give it. It becomes the
 // `brand` palette (--color--brand) and is never adjusted; the same as passing
-// `brand: t.palette(…)` in $palettes.
+// `brand: t.palette(…)` in $palettes. A theme that passes `primary` and no
+// brand gets that primary as its brand palette.
 @function theme(
   $palettes: (),
   $weights: null,
@@ -279,7 +280,8 @@ $_palette-hooks-emitted: ();
 // t.theme(): for each palette the light and dark colour of the colour role and
 // of any explicit $bg / $stroke / $focus (background and surface always carry
 // their bg pair: their base), each followed by its joined token; the brand
-// palette's pair when $brand was passed; for each palette of the chain the
+// palette's pair when $brand was passed, or pointed at the primary's pair
+// when `primary` was passed and no brand; for each palette of the chain the
 // theme left out that follows from one it passed, the pair pointed at the
 // colour core generates (_palette.scss, "Generated palettes");
 // the passed keys of each sub-config; and the light and dark values of
@@ -360,6 +362,19 @@ $_palette-hooks-emitted: ();
           $d-resolved: map.get($pal-config, dark);
         }
         @include _pal.emit-palette($pal-name, $l-resolved, $d-resolved);
+      }
+      // No brand of its own: the theme's brand palette is its primary.
+      @if map.has-key($palettes, primary) and not map.has-key($palettes, brand) {
+        $primary: map.get($palettes, primary);
+        $l-primary: $primary;
+        @if map.has-key($primary, light) {
+          $l-primary: map.get($primary, light);
+        }
+        $d-primary: $primary;
+        @if map.has-key($primary, dark) {
+          $d-primary: map.get($primary, dark);
+        }
+        @include _pal.emit-brand-from-primary($l-primary, $d-primary);
       }
       @include _pal.emit-generated(map.keys($palettes));
     }

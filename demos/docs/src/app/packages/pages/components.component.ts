@@ -56,9 +56,8 @@ const ACCENTS = ['secondary', 'tertiary', 'error', 'brand'];
           still legible in dark mode while the filled one beside it stays the brand colour.
         </p>
         <p>
-          The preset themes pass no brand, so <code>brand</code> on this page is the core default, a
-          near-black, in both modes. In dark mode its fills are dark on a dark page: a brand is one
-          colour and is never adjusted.
+          The preset themes pass no brand, so their <code>brand</code> palette is their primary:
+          <code>palette="brand"</code> on this page paints each preset's primary, in both modes.
         </p>
         <div class="gallery-demo">
           <ng-container [ngComponentOutlet]="accent.component" />

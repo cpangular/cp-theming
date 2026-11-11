@@ -43,7 +43,7 @@ $typography: t.typography($plain-family: system-ui)
 $motion:     t.motion()
 ```
 
-All four pass: `background`, `surface`, `primary`, `secondary`, `error`, `pass`, `caution`, `warn`. None passes `tertiary` or `brand`, so each preset's tertiary is the one core generates from its primary (the same lightness, half the chroma, hue + 60°).
+All four pass: `background`, `surface`, `primary`, `secondary`, `error`, `pass`, `caution`, `warn`. None passes `tertiary` or `brand`, so each preset's tertiary is the one core generates from its primary (the same lightness, half the chroma, hue + 60°), and each preset's `brand` palette is its primary.
 
 ---
 

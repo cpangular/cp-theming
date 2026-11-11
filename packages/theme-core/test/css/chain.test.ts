@@ -9,6 +9,9 @@
 //     and fixture, as numbers (the expressions are evaluated, not compared);
 //   • that the brand colour is never adjusted and the primary made from it is
 //     readable on the generated background, over a grid of brand colours;
+//   • that a theme without a brand has its primary as its brand palette
+//     (Phase 14d), a theme with both keeps both, and the root never points
+//     the brand at the primary;
 //   • that the semantic palettes default to the colours the presets pass;
 //   • that every generated accent is inside sRGB, or close enough that the
 //     painted hue is the hue asked for (Phase 14c), for every preset, every
@@ -233,7 +236,8 @@ const themes: Theme[] = themeSheets.map((s) => {
     own,
     passed: new Set(
       [...own]
-        .filter(([, v]) => !v.includes('--theme--_generated--'))
+        // Not a reference: to a generated colour, or the brand to the primary.
+        .filter(([, v]) => !v.includes('--theme--_generated--') && !v.startsWith('var('))
         .map(([k]) => /^--color--([\w-]+)--mode-light$/.exec(k)?.[1] ?? '')
         // A role pair has a second `--` (primary--bg).
         .filter((n) => n && !n.includes('--')),
@@ -286,6 +290,117 @@ test('$brand is the brand palette: its pair and join, the same colour in both mo
   assert.deepEqual([...theme.own].slice(3), GENERATED_PALETTE_NAMES.flatMap(inTheme));
 });
 
+// ─── A theme without a brand: its primary is its brand (Phase 14d) ───────────
+
+/** The brand pair of one role taking the primary's by reference, and its join. */
+const brandFromPrimary = (role = ''): [string, string][] => [
+  ...MODES.map((mode): [string, string] => [
+    `--color--brand${role}--mode-${mode}`,
+    `var(--color--primary${role}--mode-${mode})`,
+  ]),
+  [
+    `--color--brand${role}`,
+    `light-dark(var(--color--brand${role}--mode-light), var(--color--brand${role}--mode-dark))`,
+  ],
+];
+const brandEntries = (own: Map<string, string>) =>
+  [...own].filter(([n]) => n.startsWith('--color--brand'));
+
+for (const theme of themes) {
+  test(`${theme.label}: the brand palette is the brand it passed, or else the primary it passed`, (t) => {
+    const brand = theme.passed.has('brand');
+    const primary = theme.passed.has('primary');
+    t.diagnostic(
+      brand ? 'passes a brand' : primary ? 'no brand: its primary' : 'neither: inherits the brand',
+    );
+    if (brand) {
+      // Its own colour; nothing in the rule reads the primary for it.
+      for (const [name, value] of brandEntries(theme.own))
+        assert.ok(!value.includes('--color--primary'), name);
+      return;
+    }
+    if (!primary) {
+      assert.deepEqual(brandEntries(theme.own), []);
+      return;
+    }
+    // The colour pair, and the pair of each role the primary carries explicitly.
+    const explicit = ['--bg', '--stroke', '--focus'].filter((role) =>
+      theme.own.has(`--color--primary${role}--mode-light`),
+    );
+    assert.deepEqual(
+      brandEntries(theme.own),
+      ['', ...explicit].flatMap((role) => brandFromPrimary(role)),
+    );
+    // As numbers: every role of the brand palette is the primary's, in both modes.
+    for (const mode of MODES) {
+      const ctx = contextFor(theme.decls, mode);
+      for (const role of ['', '--contrast', '--bg', '--stroke', '--focus', '--high', '--tint-3'])
+        assert.equal(
+          maxChannelDiff(
+            evaluateColor(`var(--color--brand${role})`, ctx),
+            evaluateColor(`var(--color--primary${role})`, ctx),
+          ),
+          0,
+          `${mode} --color--brand${role}`,
+        );
+    }
+  });
+}
+
+test('every preset passes a primary and no brand, so palette="brand" is its primary', () => {
+  for (const theme of themes.filter((t) => t.label.includes('/presets/'))) {
+    assert.ok(theme.passed.has('primary') && !theme.passed.has('brand'), theme.label);
+    for (const mode of MODES)
+      assert.equal(
+        theme.decls.get(`--color--brand--mode-${mode}`),
+        `var(--color--primary--mode-${mode})`,
+        `${theme.label} ${mode}`,
+      );
+  }
+});
+
+test('a theme with a brand and a primary keeps both; an explicit role of the primary is the brand palette’s too', () => {
+  const { css } = compileSource(
+    `@use "../../scss/theme" as t;
+@include t.define-theme("both", t.theme($brand: #ff6a00, $palettes: (primary: t.palette(teal))));
+@include t.define-theme("roles", t.theme($palettes: (
+  primary: t.light-dark(t.palette(teal, $bg: white), t.palette(aqua, $focus: red)),
+)));`,
+    path.join(coreDir, 'test/fixtures/__brand-and-primary.scss'),
+  );
+  const both = declarationsFor(css, themeSelector('both'));
+  assert.equal(both.get('--color--brand--mode-light'), '#ff6a00');
+  assert.equal(both.get('--color--brand--mode-dark'), '#ff6a00');
+  assert.equal(both.get('--color--primary--mode-light'), 'teal');
+  assert.equal(both.get('--color--primary--mode-dark'), 'teal');
+  // The accents follow the primary and the neutrals the brand, by reference.
+  assert.deepEqual(
+    [...both.keys()].filter((n) => both.get(n)!.includes('--theme--_generated--')).length,
+    2 * 2 + 2 * 4,
+  );
+  // A role given in one mode applies to both, for the primary and so for the brand.
+  const roles = declarationsFor(css, themeSelector('roles'));
+  assert.deepEqual(
+    brandEntries(roles),
+    ['', '--bg', '--focus'].flatMap((role) => brandFromPrimary(role)),
+  );
+});
+
+test('the root never points the brand at the primary: with no theme the chain starts at the grey brand', () => {
+  // Only primary → generated-from-brand on the root; a brand → primary pointer
+  // there would close a circle.
+  for (const rule of coreRules)
+    for (const [name, value] of rule.declarations)
+      if (/^--color--brand(--(bg|stroke|focus))?--mode-(light|dark)$/.test(name))
+        assert.ok(!value.includes('--color--primary'), `${rule.selector} ${name}`);
+  const initial = registeredInitialValues(core.css);
+  for (const mode of MODES) {
+    assert.ok(!root.has(`--color--brand--mode-${mode}`), `root brand ${mode}`);
+    const grey = oklch(cssColor(initial.get(`--color--brand--mode-${mode}`)!));
+    assert.ok(close(grey.l, 0.2) && close(grey.c, 0), `initial brand ${mode}`);
+  }
+});
+
 test('passing the brand as $brand and as the `brand` palette is an error', () => {
   assert.throws(
     () =>
@@ -306,6 +421,7 @@ test('a theme that passes no colour takes no generated colour, so every pair inh
     path.join(coreDir, 'test/fixtures/__plain.scss'),
   );
   assert.deepEqual([...declarationsFor(css, themeSelector('plain'))], [['--shape--md', '7px']]);
+  // …the brand among them: only-secondary inherits the brand around it.
   assert.deepEqual(
     [...declarationsFor(css, themeSelector('only-secondary')).keys()],
     ['--color--secondary--mode-light', '--color--secondary--mode-dark', '--color--secondary'],

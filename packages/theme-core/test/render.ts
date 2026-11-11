@@ -309,6 +309,8 @@ function alphaRows(): Row[] {
 //               neither floor lifts an accent above the primary's own C
 //   background  brand's H at L 0.97 / 0.17, C 0.006 at most
 //   surface     brand's H at L 0.93 / 0.22, C 0.01 at most
+//   brand       as passed; not passed, the theme's primary as passed (Phase
+//               14d); neither passed, inherited (the grey oklch(0.2 0 0) at the root)
 // The brand is too light for a light page, too dark for a dark one and above
 // the chroma cap, so every clamp shows. Its light primary, oklch(0.45 0.22 30),
 // is outside sRGB, so the gamut correction of Phase 14c shows too: it lowers
@@ -328,6 +330,7 @@ const CHAIN = {
   outerSecondaryDark: 'oklch(0.8 0.1 100)',
   outerErrorLight: 'oklch(0.5 0.2 320)',
   ownSecondaryLight: 'oklch(0.5 0.15 180)',
+  primaryBg: 'oklch(0.8 0.1 120)',
 };
 
 function chainTheme(name: string, args: string, isDefault = false): string {
@@ -347,6 +350,16 @@ sheets.brandOnlyC = chainTheme('brand-only-c', `$brand: ${CHAIN.brandC}`);
 sheets.primaryOnly = chainTheme(
   'primary-only',
   `$palettes: (primary: t.light-dark(t.palette(${CHAIN.purpleLight}), t.palette(${CHAIN.purpleDark})))`,
+);
+// A theme with a brand and a primary of its own (Phase 14d), and one whose
+// primary has an explicit bg role.
+sheets.brandAndPrimary = chainTheme(
+  'brand-and-primary',
+  `$brand: ${CHAIN.brand}, $palettes: (primary: t.light-dark(t.palette(${CHAIN.purpleLight}), t.palette(${CHAIN.purpleDark})))`,
+);
+sheets.primaryWithBg = chainTheme(
+  'primary-with-bg',
+  `$palettes: (primary: t.palette(${CHAIN.purpleLight}, $bg: ${CHAIN.primaryBg}))`,
 );
 // A theme with only secondary, and one that passes no colour at all.
 sheets.secondaryOnly = chainTheme(
@@ -374,6 +387,8 @@ function chainRows(): Row[] {
     'brandOnlyB',
     'brandOnlyC',
     'primaryOnly',
+    'brandAndPrimary',
+    'primaryWithBg',
     'secondaryOnly',
     'plain',
     'minimal',
@@ -455,7 +470,7 @@ function chainRows(): Row[] {
     sheets: ['core', 'brandOnlyDefault'],
   });
 
-  // ── Only primary: the accents follow it; with no brand the neutrals are grey ──
+  // ── Only primary: the accents follow it, and it is the theme's brand (Phase 14d) ──
   const primaryOnly = 'theme="primary-only"';
   const primaryDark = 'theme="primary-only" themeMode="dark"';
   row('primary-only/primary-as-passed', primaryOnly, '--color--primary', CHAIN.purpleLight);
@@ -467,25 +482,95 @@ function chainRows(): Row[] {
   row('primary-only/tertiary/nested-mode', primaryOnly, '--color--tertiary', 'oklch(0.75 0.08 0)', {
     body: '<div id="p" themeMode="dark">x</div>',
   });
+  // No brand passed: the brand palette is the primary, exactly, in both modes…
+  row('primary-only/brand-is-the-primary/light', primaryOnly, '--color--brand', CHAIN.purpleLight);
+  row('primary-only/brand-is-the-primary/dark', primaryDark, '--color--brand', CHAIN.purpleDark);
   row(
-    'primary-only/background-is-grey/light',
+    'primary-only/brand-is-the-primary/nested-mode',
+    primaryOnly,
+    '--color--brand',
+    CHAIN.purpleDark,
+    { body: '<div id="p" themeMode="dark">x</div>' },
+  );
+  // …palette="brand" paints it, and its derived roles are the primary's
+  // (bg role: L 0.92, 40% of 0.18; contrast: white on L 0.45).
+  row(
+    'primary-only/palette-brand-paints-it/light',
+    primaryOnly,
+    '--palette-color',
+    CHAIN.purpleLight,
+    {
+      body: '<div id="p" palette="brand">x</div>',
+    },
+  );
+  row(
+    'primary-only/palette-brand-paints-it/dark',
+    primaryDark,
+    '--palette-color',
+    CHAIN.purpleDark,
+    {
+      body: '<div id="p" palette="brand">x</div>',
+    },
+  );
+  row('primary-only/brand-bg-role', primaryOnly, '--color--brand--bg', 'oklch(0.92 0.072 300)');
+  row('primary-only/brand-text=white', primaryOnly, '--color--brand--contrast', 'oklch(1 0 0)');
+  // An explicit role of the primary is the brand palette's too.
+  row(
+    'primary-only/explicit-bg-is-the-brand-bg',
+    'theme="primary-with-bg"',
+    '--color--brand--bg',
+    CHAIN.primaryBg,
+  );
+  row(
+    'primary-only/explicit-bg/brand-colour',
+    'theme="primary-with-bg" themeMode="dark"',
+    '--color--brand',
+    CHAIN.purpleLight,
+  );
+  // On <html> the root generates the neutrals from the brand in force there,
+  // which is now the primary: a trace of its hue (C 0.006), not grey.
+  row(
+    'primary-only/root-background-takes-its-hue/light',
     primaryOnly,
     '--color--background',
-    'oklch(0.97 0 0)',
-    {
-      tolerance: 0.003,
-    },
+    'oklch(0.97 0.006 300)',
   );
   row(
-    'primary-only/background-is-grey/dark',
+    'primary-only/root-background-takes-its-hue/dark',
     primaryDark,
     '--color--background',
-    'oklch(0.17 0 0)',
-    {
-      tolerance: 0.003,
-    },
+    'oklch(0.17 0.006 300)',
   );
-  row('primary-only/brand-is-the-grey-default', primaryOnly, '--color--brand', 'oklch(0.2 0 0)');
+  row(
+    'primary-only/root-surface-takes-its-hue',
+    primaryOnly,
+    '--color--surface',
+    'oklch(0.93 0.01 300)',
+  );
+
+  // ── Brand and primary both passed: both kept (Phase 14d) ──
+  const both = 'theme="brand-and-primary"';
+  const bothDark = 'theme="brand-and-primary" themeMode="dark"';
+  row('brand-and-primary/brand-kept/light', both, '--color--brand', CHAIN.brand);
+  row('brand-and-primary/brand-kept/dark', bothDark, '--color--brand', CHAIN.brand);
+  row('brand-and-primary/primary-kept/light', both, '--color--primary', CHAIN.purpleLight);
+  row('brand-and-primary/primary-kept/dark', bothDark, '--color--primary', CHAIN.purpleDark);
+  row('brand-and-primary/palette-brand-is-the-brand', bothDark, '--palette-color', CHAIN.brand, {
+    body: '<div id="p" palette="brand">x</div>',
+  });
+  // The accents follow the primary, the neutrals the brand.
+  row(
+    'brand-and-primary/secondary-from-primary',
+    both,
+    '--color--secondary',
+    'oklch(0.45 0.06 300)',
+  );
+  row(
+    'brand-and-primary/background-from-brand',
+    both,
+    '--color--background',
+    'oklch(0.97 0.006 30)',
+  );
 
   // ── A theme that passes secondary keeps it; tertiary still follows primary ──
   const outer = 'theme="chain-outer"';
@@ -623,6 +708,61 @@ function chainRows(): Row[] {
     '--color--tertiary',
     'oklch(0.4 0.08 310)',
     nested('secondary-only'),
+  );
+  // …and the outer brand (Phase 14d): the outer theme's primary, or the brand
+  // the outer theme passed.
+  row(
+    'nested/only-secondary/inherits-outer-brand',
+    outer,
+    '--color--brand',
+    COLOR.alphaLight,
+    nested('secondary-only'),
+  );
+  row(
+    'nested/only-secondary/inherits-outer-brand/dark',
+    `${outer} themeMode="dark"`,
+    '--color--brand',
+    COLOR.alphaDark,
+    nested('secondary-only'),
+  );
+  row(
+    'nested/only-secondary/inherits-outer-passed-brand',
+    brandOnly,
+    '--color--brand',
+    CHAIN.brand,
+    nested('secondary-only'),
+  );
+  // Only primary, inside a theme with a brand: its brand is its own primary;
+  // the background it has nothing to say about stays the outer one.
+  row(
+    'nested/only-primary/brand-is-its-primary',
+    brandOnly,
+    '--color--brand',
+    CHAIN.purpleLight,
+    nested('primary-only'),
+  );
+  row(
+    'nested/only-primary/keeps-outer-generated-background',
+    brandOnly,
+    '--color--background',
+    'oklch(0.97 0.006 30)',
+    nested('primary-only'),
+  );
+  // Only brand, inside a theme whose brand is its primary: nothing circular,
+  // the primary is generated from the nested brand.
+  row(
+    'nested/only-brand/inside-primary-only/primary',
+    primaryOnly,
+    '--color--primary',
+    'oklch(0.45 0.1509 30)',
+    nested('brand-only'),
+  );
+  row(
+    'nested/only-brand/inside-primary-only/brand',
+    primaryOnly,
+    '--color--brand',
+    CHAIN.brand,
+    nested('brand-only'),
   );
   // No colour passed (only a shape): every colour of the theme around it.
   row(
@@ -767,6 +907,36 @@ function chainRows(): Row[] {
   });
   row('no-theme/surface', '', '--color--surface', 'oklch(0.93 0 0)', none);
   row('no-theme/brand', '', '--color--brand', 'oklch(0.2 0 0)', none);
+  // The brand does not follow the primary at the root: the same grey under a dark OS scheme.
+  row('no-theme/brand/os-dark', '', '--color--brand', 'oklch(0.2 0 0)', {
+    ...none,
+    scheme: 'dark',
+  });
+  row('no-theme/palette-brand', '', '--palette-color', 'oklch(0.2 0 0)', {
+    ...none,
+    body: '<div id="p" palette="brand">x</div>',
+  });
+  // A theme on <html> that passes neither brand nor primary: still the grey chain.
+  row(
+    'root-theme-without-brand-or-primary/brand',
+    'theme="secondary-only"',
+    '--color--brand',
+    'oklch(0.2 0 0)',
+    {
+      sheets: ['core', 'secondaryOnly'],
+      tolerance: 0.003,
+    },
+  );
+  row(
+    'root-theme-without-brand-or-primary/primary',
+    'theme="secondary-only"',
+    '--color--primary',
+    'oklch(0.35 0 0)',
+    {
+      sheets: ['core', 'secondaryOnly'],
+      tolerance: 0.003,
+    },
+  );
   row('no-theme/error-is-the-default', '', '--color--error', 'oklch(0.52 0.22 27)', none);
 
   // ── Crossfade: the generated primary follows a switch between two brands ──
@@ -824,6 +994,10 @@ function chainRows(): Row[] {
     mat,
   );
   row('mat-sys/palette-brand', brandOnly, '--mat-sys-primary', CHAIN.brand, {
+    ...mat,
+    body: '<div id="p" palette="brand">x</div>',
+  });
+  row('mat-sys/palette-brand/primary-only', primaryDark, '--mat-sys-primary', CHAIN.purpleDark, {
     ...mat,
     body: '<div id="p" palette="brand">x</div>',
   });

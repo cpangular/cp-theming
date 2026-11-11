@@ -10,7 +10,7 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 
 | Package | npm | Status |
 |---|---|---|
-| `packages/theme-core` | `@cpangular/cp-theming-core` | 🟡 In Progress — SCSS real, TS API real (Phase 3 done), harness in `test/` (Phase 8 done), cascade: core derives once, a theme is one rule (Phase 9 done), contrast by luminance step (Phase 10 done), palette chain: `brand` and `tertiary` are core palettes and a theme passes only the colours it has (Phase 14 done), generated accents kept inside sRGB so their hue is the one painted (Phase 14c done) |
+| `packages/theme-core` | `@cpangular/cp-theming-core` | 🟡 In Progress — SCSS real, TS API real (Phase 3 done), harness in `test/` (Phase 8 done), cascade: core derives once, a theme is one rule (Phase 9 done), contrast by luminance step (Phase 10 done), palette chain: `brand` and `tertiary` are core palettes and a theme passes only the colours it has (Phase 14 done), generated accents kept inside sRGB so their hue is the one painted (Phase 14c done), a theme without a brand has its primary as its brand palette (Phase 14d done) |
 | `packages/theme-ng-core` | `@cpangular/cp-theming-ng-core` | ✅ Done — `ThemeService`, `ThemeDirective`, `ThemeModeDirective` |
 | `packages/theme-ng-material` | `@cpangular/cp-theming-ng-material` | ✅ Done — every `--mat-sys-*` token Angular Material 22 reads (186 declared), colour roles from Material's own role tables (Phase 11 done), tertiary roles from `--color--tertiary` (Phase 14 done), `[palette]` scopes for the eight accent palettes, six measured component patches in `apply-material-overrides()` (Phase 15 done), density scopes |
 | `packages/theme-material` | `@cpangular/cp-theming-material` | ⬛ Stub |
@@ -48,20 +48,22 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 | 14 | Brand and accent palettes: pass what you have, the rest are generated (`brand` and `tertiary` core palettes; the chain brand → primary → secondary, tertiary → background, surface; semantic defaults; Material tertiary from `--color--tertiary`) | ✅ Done |
 | 14b | Follow-ups from the Phase 14 review: chroma floors for the generated secondary and tertiary, the generated primary readable on the generated background in every hue, `bg` on `background` and `surface` with readable text, Showcase back in the ng-material sidebar | ✅ Done |
 | 14c | Generated colours stay inside the screen's gamut: the generated primary, secondary and tertiary and `palette-from-var()` / `palette-from-brand()` give up chroma until sRGB can show them, so an orange brand no longer gets a red primary | ✅ Done |
+| 14d | A theme without a brand uses its primary as the brand: the brand pair of such a theme points at its primary pair, so `palette="brand"` on a preset paints the preset's primary; with no theme the brand stays grey | ✅ Done |
 | 15 | Material component gallery in the ng-material docs (Components page, every family an example file, `render.ts` screenshots it per preset and mode with overlays open and fails a component label below 4.5:1) | ✅ Done |
 
-Phases 8–15 are specified in [PORT-PLAN.md](PORT-PLAN.md); 14, 14b, 14c and 15 were done before 13.
+Phases 8–15 are specified in [PORT-PLAN.md](PORT-PLAN.md); 14, 14b, 14c, 14d and 15 were done before 13.
 
 ### Browser baseline
 
-`packages/theme-core/test/render.ts` (230 rows: `themeMode` on any element, nested themes, coexisting
+`packages/theme-core/test/render.ts` (258 rows: `themeMode` on any element, nested themes, coexisting
 presets, user overrides, the theme-switch crossfade, the eight defects the Phase 9 critique
 confirmed, the browser-computed `--contrast` against the contrast sweep's prediction for a
 sample of colours, the Material roles, state layers and shadows of Phase 11, and the palette
 chain of Phase 14: what is generated for a theme with only a brand, only a primary, a nested
 theme, a theme beside a loaded default, and what a nested theme inherits; and the text colour of
 `bg` on the neutral palettes, Phase 14b; the painted hue of the primary generated from an orange,
-a yellow and a blue brand, Phase 14c) passes 230 of 230 in the Playwright builds
+a yellow and a blue brand, Phase 14c; the brand of a theme that passes only a primary, both, only
+a brand, a nested theme with only a secondary, and no theme, Phase 14d) passes 258 of 258 in the Playwright builds
 installed here: **Chromium 158**, **Firefox 159** and **WebKit 27.2** (the Safari engine; run with
 `node test/render.ts webkit`). WebKit gets the OS colour scheme pinned into the CSS rather than
 emulated, because Playwright's emulated dark scheme makes WebKit resolve `light-dark()` to dark
@@ -133,7 +135,7 @@ Colours follow the chain **brand → primary → secondary, tertiary → backgro
 passes whichever it has and the browser generates the rest from the nearest one it passed: above,
 primary is the brand moved into the lightness that reads on the page, tertiary is primary's hue
 turned 60° with half its chroma (0.08 at least), and background and surface are neutrals with a trace of the
-brand's hue. Pass one, two or three accents; `error`, `warn`, `caution` and `pass` have defaults.
+brand's hue. A theme that passes a primary and no brand has that primary as its brand palette. Pass one, two or three accents; `error`, `warn`, `caution` and `pass` have defaults.
 
 ---
 
@@ -142,7 +144,7 @@ brand's hue. Pass one, two or three accents; `error`, `warn`, `caution` and `pas
 - **Runtime derivatives** — `oklch(from var(--pal-primary--color) calc(l - 0.1) c h)`, not `darken($color, 10%)`
 - **Any colour in, oklch out** — pass palette colours in any CSS format (oklch, hex, `rgb()`, `hsl()`); every derivative is computed in oklch, so steps stay perceptually uniform
 - **Single SCSS import** — one `@use` gives the full authoring surface
-- **Pass what you have** — the brand colour is kept exact; the primary, accents and neutrals a theme leaves out are generated from the nearest colour it passed
+- **Pass what you have** — the brand colour is kept exact, and a theme that passes none uses its primary as the brand; the primary, accents and neutrals a theme leaves out are generated from the nearest colour it passed
 - **Per-palette focus color** — focus ring is derived per palette, not global
 - **Framework-agnostic core** — `theme-core` has zero Angular dependency
 - **M3 only** — `theme-material` targets Angular Material 17+ (M3). No M2 support.

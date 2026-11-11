@@ -872,6 +872,29 @@ Done when: the chain test and `render.ts` pass with the new rows; the gallery sc
 `palette="brand"` fills in each preset's primary in both modes, and the painted-contrast report
 stays at 0 component labels below 4.5:1.
 
+**Done 2026-11-11.** As landed:
+
+- `define-theme()` emits, for a theme that passes `primary` and no `brand`,
+  `--color--brand--mode-{light,dark}: var(--color--primary--mode-{light,dark})` and the join
+  (`emit-brand-from-primary`, `_palette.scss`). The root rule is untouched, so with no theme the
+  brand is `oklch(0.2 0 0)` and primary follows it.
+- Proved first as hand-written CSS over the built core.css in Chromium, Firefox and WebKit, then
+  in Sass.
+- Brand fill (a filled button under `palette="brand"`), light / dark, the same in Chromium and
+  Firefox and equal to the preset's primary: azure-blue `#004ab3` / `#4ca7ff`, rose-red
+  `#b20072` / `#fe69bb`, cyan-orange `#006360` / `#6ccac5`, magenta-violet `#9d00be` / `#e365ff`.
+  Before: near-black in every preset and mode.
+- Judgment calls, not in the text above:
+  1. Roles too. If the primary sets `bg`, `stroke` or `focus` itself, the brand's same role
+     points at it, so `palette="brand"` and no palette paint the same in every role. Roles the
+     primary leaves out are derived from the brand colour as before, which gives the same result.
+  2. Neutrals follow. A theme on `<html>` that passes only a primary and no background now gets
+     the root's generated background and surface in the primary's hue (they are generated from
+     the brand in force) instead of grey. The presets pass their own background and surface, so
+     they are unchanged. A nested primary-only theme keeps the outer background, as before.
+  3. A nested theme with only a primary takes its own primary as its brand, not the outer
+     theme's brand; one with only a secondary inherits the outer brand.
+
 ### Phase 13 — Release through cpdevtools/git-flow
 
 Goal: versions, tags and publishing run through git-flow.

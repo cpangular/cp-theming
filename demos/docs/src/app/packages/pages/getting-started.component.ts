@@ -124,8 +124,9 @@ pnpm add @cpangular/cp-theming-core</code></pre>
                 <tr>
                   <td><code>brand</code></td>
                   <td>
-                    Never generated and never adjusted: <code>palette="brand"</code> is the exact
-                    colour you passed, for a logo strip or a hero banner.
+                    Never adjusted: <code>palette="brand"</code> is the exact colour you passed, for
+                    a logo strip or a hero banner. A theme that passes a <code>primary</code> and no
+                    brand uses that primary as its brand.
                   </td>
                 </tr>
                 <tr>
@@ -173,8 +174,10 @@ pnpm add @cpangular/cp-theming-core</code></pre>
             </p>
             <cpa-code [code]="ex.accentsScss" lang="scss" />
             <p>
-              A theme without a brand colour and without <code>background</code> and
-              <code>surface</code> gets neutral grey ones. A nested theme generates only what
+              A theme that passes a <code>primary</code> and no brand colour has that primary as its
+              <code>brand</code> palette, so <code>palette="brand"</code> paints it; on
+              <code>&lt;html&gt;</code>, a <code>background</code> and <code>surface</code> it
+              leaves out are neutrals with a trace of its hue. A nested theme generates only what
               follows from what it passes: one that passes only <code>primary</code> gets its own
               secondary and tertiary and keeps the background of the theme around it; one that
               passes no colour keeps every colour.

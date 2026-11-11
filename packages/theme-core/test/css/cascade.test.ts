@@ -188,6 +188,13 @@ test('a theme that passes one palette emits one rule with that palette, what fol
       '--color--primary',
       'light-dark(var(--color--primary--mode-light), var(--color--primary--mode-dark))',
     ],
+    // No brand passed: the brand palette is this primary (Phase 14d).
+    ['--color--brand--mode-light', 'var(--color--primary--mode-light)'],
+    ['--color--brand--mode-dark', 'var(--color--primary--mode-dark)'],
+    [
+      '--color--brand',
+      'light-dark(var(--color--brand--mode-light), var(--color--brand--mode-dark))',
+    ],
     // The accents follow from primary: the theme takes the ones core generates.
     ['--color--secondary--mode-light', 'var(--theme--_generated--secondary--light)'],
     ['--color--secondary--mode-dark', 'var(--theme--_generated--secondary--dark)'],

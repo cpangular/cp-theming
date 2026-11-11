@@ -58,7 +58,7 @@ A theme passes whichever of these it has. Core generates each one it leaves out,
 
 | Palette | When the theme leaves it out |
 |---------|------------------------------|
-| `brand` | Never generated, never adjusted. `$brand` in `t.theme()` is the colour from your guidelines; it becomes the `brand` palette (`palette="brand"`, `--color--brand`, `--color--brand--contrast`, …) exactly as written. With no brand passed it is a dark grey. |
+| `brand` | Never generated, never adjusted. `$brand` in `t.theme()` is the colour from your guidelines; it becomes the `brand` palette (`palette="brand"`, `--color--brand`, `--color--brand--contrast`, …) exactly as written. A theme that passes `primary` and no brand has that primary as its brand palette, exactly as passed (its explicit `$bg`, `$stroke` and `$focus` included), so `palette="brand"` paints it. A theme that passes neither inherits the brand around it; with no theme at all it is a dark grey. |
 | `primary` | The brand, moved into the lightness that reads on the page: 0.35–0.50 in light mode, 0.65–0.82 in dark mode, chroma at most 0.22 (dark mode: 0.9 × chroma first). The same numbers as `t.palette-from-brand()`. |
 | `secondary` | Primary's hue and lightness, one third of its chroma. |
 | `tertiary` | Primary's lightness, hue + 60°, half its chroma. |
@@ -73,7 +73,8 @@ So:
 $a: t.theme($brand: #ff6a00);
 
 // Only primary: secondary and tertiary are generated from it. No brand was
-// passed, so background and surface are neutral greys.
+// passed, so the primary is the brand palette too; on <html>, background and
+// surface are neutrals with a trace of its hue.
 $b: t.theme($palettes: (
   primary: t.light-dark(t.palette(oklch(0.45 0.18 300)), t.palette(oklch(0.75 0.15 300))),
 ));
@@ -91,9 +92,9 @@ A palette you pass is used exactly as given. The brand colour is the only one th
 
 A nested theme generates what follows from what it passes and inherits the rest:
 
-- only `primary` → its own secondary and tertiary; the background, surface and semantic palettes of the theme around it;
+- only `primary` → its own secondary and tertiary, and itself as the brand palette; the background, surface and semantic palettes of the theme around it;
 - only `brand` → the whole chain;
-- only `secondary` → that secondary; everything else from the theme around it;
+- only `secondary` → that secondary; everything else, the brand included, from the theme around it;
 - no colour at all (a shape, a density) → every colour of the theme around it.
 
 On the root core generates every palette of the chain that no theme passes. With no theme at all the brand is its grey default and so is everything made from it.

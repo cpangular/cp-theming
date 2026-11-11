@@ -26,7 +26,7 @@ demos/
 The only package with real implementation initially. Contains:
 - **SCSS theme authoring API** — `t.palette()`, `t.theme()`, `@include t.define-theme()`, `@include t.define-core-theme()`, etc.
 - **CSS variable system** — all `--color--*`, `--weight--*`, `--space--*`, `--shape--*`, `--motion--*`, `--elevation-*` vars. Registered as typed `@property`: what animation needs (each core palette role's light and dark colour, and the scalars); the role tokens and every derivative are unregistered `light-dark()` / `oklch(from …)` expressions that resolve where they are used
-- **Palette chain** — brand → primary → secondary, tertiary → background, surface: a theme passes what it has (`$brand`, one, two or three accents) and core generates the rest at CSS runtime; the brand colour is kept exact, the primary made from it is adjusted for readability
+- **Palette chain** — brand → primary → secondary, tertiary → background, surface: a theme passes what it has (`$brand`, one, two or three accents) and core generates the rest at CSS runtime; the brand colour is kept exact, the primary made from it is adjusted for readability; a theme that passes a primary and no brand has that primary as its brand palette
 - **Brand color API** — `t.palette-from-brand()`, `t.background-from-brand()`, `t.surface-from-brand()` derive palettes from `--color--brand` at CSS runtime, for numbers other than the ones core generates with
 - **Preset palettes + themes** — azure-blue, rose-red, cyan-orange, magenta-violet (M3-inspired)
 - **Vanilla TS API** — `ThemeMode`, `setTheme()`, `setMode()`, `watchMode()`, `watchTheme()`, `getAvailableThemes()`, `configurePersistence()`, etc.
@@ -137,7 +137,7 @@ The `color` role is the palette's primary identity — it becomes the namespace 
 
 Core (`define-core-theme()`) declares every default and every derivation once, on `:where(:root)` and `:where(:root, [theme])`; a theme rule (`define-theme()`) holds only what its author passed, so nested themes inherit, presets coexist, and an author's `:root` rule wins. Load order: core, then themes, then the adapter.
 
-**Palette chain (Phase 14).** brand → primary → secondary, tertiary → background, surface. A theme passes whichever it has; core generates each one it left out, on the same shared selector, from the nearest thing the theme passed: primary is the brand with lightness held to 0.35–0.45 (light; 0.50 until Phase 14b) / 0.65–0.82 (dark) and chroma capped at 0.22; secondary is primary's hue with a third of its chroma, 0.04 at least; tertiary is primary's hue + 60° with half its chroma, 0.08 at least (neither floor lifts an accent above the primary's own chroma, so a grey primary gives grey accents); background and surface are neutrals of the brand hue (lightness 0.97 / 0.17 and 0.93 / 0.22, chroma 0.006 and 0.01 at most). The three accents then give up chroma until sRGB can show them, so the hue asked for is the hue painted (Phase 14c). The brand colour is never adjusted. `error`, `warn`, `caution` and `pass` have fixed defaults (the registered initial values). The root generates the whole chain; a nested theme generates what is downstream of what it passed and inherits the rest. Core holds each generated colour in a private variable (`--theme--_generated--{name}--{mode}`); `:where(:root)` points every pair of the chain at it and a theme rule does so for the palettes it left out that follow from one it passed, so nothing sets a pair where nothing upstream was passed.
+**Palette chain (Phase 14).** brand → primary → secondary, tertiary → background, surface. A theme passes whichever it has; core generates each one it left out, on the same shared selector, from the nearest thing the theme passed: primary is the brand with lightness held to 0.35–0.45 (light; 0.50 until Phase 14b) / 0.65–0.82 (dark) and chroma capped at 0.22; secondary is primary's hue with a third of its chroma, 0.04 at least; tertiary is primary's hue + 60° with half its chroma, 0.08 at least (neither floor lifts an accent above the primary's own chroma, so a grey primary gives grey accents); background and surface are neutrals of the brand hue (lightness 0.97 / 0.17 and 0.93 / 0.22, chroma 0.006 and 0.01 at most). The three accents then give up chroma until sRGB can show them, so the hue asked for is the hue painted (Phase 14c). The brand colour is never adjusted. `error`, `warn`, `caution` and `pass` have fixed defaults (the registered initial values). The root generates the whole chain; a nested theme generates what is downstream of what it passed and inherits the rest. Core holds each generated colour in a private variable (`--theme--_generated--{name}--{mode}`); `:where(:root)` points every pair of the chain at it and a theme rule does so for the palettes it left out that follow from one it passed, so nothing sets a pair where nothing upstream was passed. A theme rule that passes a primary and no brand points its brand pair at its primary pair (Phase 14d), so its brand palette is its primary; the root never does, so with no theme the brand is grey and primary follows it, without a cycle.
 
 ---
 
@@ -591,10 +591,32 @@ colour format is accepted and oklch is recommended.
   Firefox; lowest 4.73:1 (Chromium) and 4.68:1 (Firefox), a focused text button on the filled
   card in cyan-orange, light mode. 0 harness errors; every overlay resolved its opener's theme
   and mode.
-- Not changed, stated on the page: the presets pass no brand, so `palette="brand"` is core's
-  near-black in both modes and its fills (a filled button, a checked checkbox, a slider) are dark
-  on a dark page in dark mode. A brand is one colour and is never adjusted.
+- Left as found, then changed by Phase 14d: the presets pass no brand, so `palette="brand"` was
+  core's near-black in both modes. It is now each preset's primary.
 - `demo-material` stays as listed below: the gallery lives in the docs.
+
+### ✅ Phase 14d — A theme without a brand uses its primary as the brand (PORT-PLAN.md)
+- A theme rule that passes `primary` and no `brand` points its brand pair at its primary pair
+  (`emit-brand-from-primary` in `_palette.scss`, called by `define-theme()`), and likewise each
+  role the primary sets itself. A theme with both keeps both; one with only a brand is unchanged;
+  a nested theme with only a secondary inherits the outer brand; with no theme the brand is grey
+  (`oklch(0.2 0 0)`) and primary follows it. The root never points brand at primary, so there is
+  no cycle.
+- Follows from it: a primary-only theme on `<html>` that passes no background gets the root's
+  generated neutrals in the primary's hue rather than grey. Presets pass their own neutrals.
+- Brand fill under `palette="brand"`, light / dark, equal to each preset's primary in Chromium
+  and Firefox: azure-blue `#004ab3` / `#4ca7ff`, rose-red `#b20072` / `#fe69bb`, cyan-orange
+  `#006360` / `#6ccac5`, magenta-violet `#9d00be` / `#e365ff`. The Components page's paragraph
+  about near-black brand fills is replaced by one sentence saying so.
+- Harness: the chain test asserts, per preset and fixture, that the brand palette is the brand
+  passed or else the primary passed, that every preset passes a primary and no brand, and that
+  the root never points the brand at the primary. render.ts has 258 rows (28 new), all passing
+  in Chromium, Firefox and WebKit.
+- Gallery (`demos/docs/test/render.ts`, 2,392 labels per preset and mode, 19,136 per engine): no
+  component label below 4.5:1 in any preset in either mode, in Chromium and in Firefox; lowest
+  4.73:1 (Chromium) and 4.68:1 (Firefox), a focused text button on the filled card in
+  cyan-orange, light mode, as before. 0 harness errors; every overlay resolved its opener's
+  theme and mode.
 
 ### ⬛ Phase 13 — planned in PORT-PLAN.md
 - Phase 13 — Release through cpdevtools/git-flow

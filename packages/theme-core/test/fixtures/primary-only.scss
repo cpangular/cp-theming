@@ -1,6 +1,7 @@
 // Fixture: a theme that passes primary and nothing else. Core generates
-// secondary and tertiary from it; no brand is passed, so background and
-// surface are neutrals of the grey brand default.
+// secondary and tertiary from it; no brand is passed, so the primary is the
+// brand palette too (Phase 14d), and on the root background and surface are
+// neutrals of its hue.
 @use "../../scss/theme" as t;
 
 $theme: t.theme(

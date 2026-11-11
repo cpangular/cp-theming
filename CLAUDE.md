@@ -30,7 +30,11 @@ This is a CSS-variable-based theming system. Key facts:
   pair of the chain at it, and a theme rule does so for each palette it left out that is
   downstream of something it passed. So the root generates everything, a nested theme only what
   follows from what it passed, the rest inherits, and a theme on `<html>` beats a default theme
-  loaded beside it. Semantic palettes default to their registered initial values. Checks:
+  loaded beside it. A theme rule that passes a primary and no brand points its brand pair (and
+  each role the primary sets) at its primary pair (Phase 14d, `emit-brand-from-primary`), so its
+  brand palette is its primary and, on `<html>`, the root's neutrals take the primary's hue. The
+  root never points brand at primary: with no theme the brand is grey and primary follows it.
+  Semantic palettes default to their registered initial values. Checks:
   `test/css/chain.test.ts`, the `chain/` rows of `render.ts`, `demos/docs/test/chain.ts`.
 - Chain numbers (Phase 14b): generated primary is the brand with L in 0.35–0.45 light / 0.65–0.82
   dark, C 0.22 at most; secondary `min(c, max(c / 3, 0.04))`, tertiary `min(c, max(c / 2, 0.08))`

@@ -114,8 +114,9 @@ const TOC = [
               <td><code>--color--brand</code></td>
               <td>
                 The <code>brand</code> palette's color: the brand color exactly as
-                <code>$brand</code> gave it. <code>brand</code> is a palette like the others, so
-                every variable above exists for it (<code>--color--brand--contrast</code>,
+                <code>$brand</code> gave it, or the theme's primary when it passed a primary and no
+                brand. <code>brand</code> is a palette like the others, so every variable above
+                exists for it (<code>--color--brand--contrast</code>,
                 <code>--color--brand--bg</code>, …).
               </td>
             </tr>

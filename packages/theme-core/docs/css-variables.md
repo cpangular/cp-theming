@@ -81,7 +81,7 @@ Transparent versions of the identity color role. Opacity is the mode-varying `--
 
 | Variable | Description |
 |----------|-------------|
-| `--color--brand` | The `brand` palette's colour role: the brand colour exactly as `$brand` (or `brand: t.palette(…)`) gave it, never adjusted. `brand` is a core palette, so every variable in the tables above exists for it. It is the join of the registered pair `--color--brand--mode-light` / `--mode-dark`; set the pair at runtime to regenerate the primary, accents and neutrals a theme did not pass. The `*-from-brand()` helpers read `--color--brand` itself. |
+| `--color--brand` | The `brand` palette's colour role: the brand colour exactly as `$brand` (or `brand: t.palette(…)`) gave it, never adjusted; in a theme that passes `primary` and no brand, that primary. `brand` is a core palette, so every variable in the tables above exists for it. It is the join of the registered pair `--color--brand--mode-light` / `--mode-dark`; set the pair at runtime to regenerate the primary, accents and neutrals a theme did not pass. The `*-from-brand()` helpers read `--color--brand` itself. |
 
 ---
 

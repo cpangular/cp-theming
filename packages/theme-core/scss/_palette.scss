@@ -391,6 +391,10 @@ $_contrast-step: string.unquote("clamp(0, (0.179 - #{$_luminance}) * 1e6, 1)");
 //     primary and the neutrals, brand or primary for the accents. The rule has
 //     specificity (0,0,1), so on <html theme="…"> this beats the palettes of a
 //     default theme loaded beside it (every preset is one).
+//   • A theme rule that passes `primary` and no `brand` points the brand pair
+//     at its primary pair (emit-brand-from-primary(), Phase 14d): without a
+//     brand of its own, a theme's brand palette is its primary. On <html> the
+//     root's neutrals follow, as a trace of the primary's hue.
 //   • Nothing else declares the pair, so everywhere else it inherits. A nested
 //     theme that passes only `primary` gets its own secondary and tertiary and
 //     keeps the outer background and surface; one that passes no colour keeps
@@ -516,6 +520,31 @@ $_gamut-passes: 4;
     }
     @if $upstream and not list.index($passed, $name) {
       @include _use-generated($name, $join: true);
+    }
+  }
+}
+
+// Public: the brand palette of a theme that passes `primary` and no `brand`
+// (Phase 14d): its primary, exactly as that primary is, passed role by role.
+// The brand pair takes the primary pair by reference, and so does the pair of
+// each role the theme gave its primary explicitly ($bg, $stroke, $focus); the
+// roles it left to core are derived from the brand pair on the shared
+// selector, which is now the primary pair, so they agree too. $light and $dark
+// are the primary's config per mode.
+//
+// The other direction is emit-generated(): a theme with `brand` and no
+// `primary` points primary at the colour generated from the brand. A theme
+// with both points neither, one with neither inherits both, and :where(:root)
+// only ever points primary at the brand (root-defaults()), never the brand at
+// primary: with nothing loaded the brand is its grey initial value and
+// nothing reads in a circle.
+@mixin emit-brand-from-primary($light, $dark) {
+  @each $role in $roles {
+    @if $role == color or map.get($light, $role) != null or map.get($dark, $role) != null {
+      @each $mode in light, dark {
+        #{token(brand, $role)}--mode-#{$mode}: var(#{token(primary, $role)}--mode-#{$mode});
+      }
+      @include _join(brand, $role);
     }
   }
 }
