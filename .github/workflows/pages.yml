@@ -2,12 +2,14 @@ name: Deploy GitHub Pages
 
 # Manual trigger only until the repository is public: GitHub Pages is not
 # available on a private repository under GitHub Free, so every push run failed.
-# Phase 13 replaces this with git-flow's static-site artifact (PORT-PLAN.md).
+# Once it is public, git-flow's static-site artifact (gh-pages method) on
+# demos/docs replaces this file (PORT-PLAN.md, Phase 13).
 on:
   workflow_dispatch:
 
 permissions:
   contents: read
+  packages: read # the git-flow devDependencies install from GitHub Packages
   pages: write
   id-token: write
 
@@ -32,6 +34,8 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build theme-core CSS
         run: pnpm --filter @cpangular/cp-theming-core build

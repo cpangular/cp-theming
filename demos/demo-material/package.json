@@ -1,6 +1,6 @@
 {
   "name": "demo-material",
-  "version": "0.0.0",
+  "version": "0.0.0-MAIN",
   "private": true,
   "description": "Angular app demonstrating @cpangular/cp-theming-ng-material.",
   "scripts": {

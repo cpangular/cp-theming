@@ -1,0 +1,9 @@
+# Registries release artifacts are published to, referenced by ID from each
+# package's release-artifacts.yml. `auth` is the name of an environment
+# variable, never a token.
+registries:
+  github-npm:
+    type: npm
+    url: https://npm.pkg.github.com
+    auth: GITHUB_TOKEN
+    scope: '@cpangular'

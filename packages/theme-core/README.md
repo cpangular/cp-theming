@@ -6,6 +6,14 @@ A CSS-variable-based theming system. Themes are defined in SCSS and compile to C
 
 ## Getting Started
 
+The package is published to GitHub Packages, which needs the scope's registry line and a token in
+your `.npmrc`, even for a public package:
+
+```ini
+@cpangular:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
 ```bash
 npm install @cpangular/cp-theming-core
 ```

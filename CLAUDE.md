@@ -85,6 +85,12 @@ This is a CSS-variable-based theming system. Key facts:
   4.5:1 fails the run. The docs read the adapter's built CSS: after a change in
   `packages/theme-ng-material/scss/`, run `pnpm --filter @cpangular/cp-theming-ng-material build`
   before `npx ng build docs` (root `pnpm build` builds core only).
+- Releases (Phase 13): cpdevtools/git-flow. Every manifest carries `0.0.0-MAIN`; the version is
+  `.publish/versions.yml` (changed only by `pnpm gitflow version`, which the user runs). A push
+  updates a draft release PR into `release/<branch>`; merging it publishes to GitHub Packages.
+  Never merge it, never merge into `main`. theme-core packs with `publishConfig.exports`,
+  theme-ng-core with `publishConfig.directory` (ng-packagr output; its production tsconfig reads
+  core's built types, so build core first), theme-ng-material as plain Sass/CSS.
 - A box-shadow token cannot be wrapped in `light-dark()` (colours only): `--elevation-N--shadow`
   is `<geometry> light-dark(<colour>, <colour>)`; a harness check fails a list inside `light-dark()`.
 - Focus ring color is **per-palette**, auto-derived via CSS relative color.

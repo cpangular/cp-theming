@@ -1,7 +1,13 @@
 {
   "extends": "./tsconfig.lib.json",
   "compilerOptions": {
-    "declarationMap": false
+    "declarationMap": false,
+    // The packaged build reads core through its built types, not its source
+    // (the root tsconfig maps it to src/, which lies outside this library's
+    // rootDir). Core is a peer, so git-flow and wireit build it first.
+    "paths": {
+      "@cpangular/cp-theming-core": ["../theme-core/dist/index.d.ts"]
+    }
   },
   "angularCompilerOptions": {
     "compilationMode": "partial"

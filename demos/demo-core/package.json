@@ -1,6 +1,6 @@
 {
   "name": "demo-core",
-  "version": "0.0.0",
+  "version": "0.0.0-MAIN",
   "private": true,
   "description": "Demonstrates @cpangular/cp-theming-core with vanilla TS and Vite.",
   "type": "module",

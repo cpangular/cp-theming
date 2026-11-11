@@ -164,6 +164,14 @@ demos/demo-brand-material/                                 — Example brand+mat
 - Fixture themes live in `packages/theme-core/test/fixtures/` and `packages/theme-ng-material/test/fixtures/`.
 - CI: `.github/workflows/test.yml` (cpdevtools/git-flow) runs `github.actions.build` then
   `github.actions.test` in every package that defines them.
+- Releases (Phase 13) run through cpdevtools/git-flow. Every `package.json` carries the placeholder
+  `0.0.0-MAIN`; never write a real version into a manifest. The real version is
+  `.publish/versions.yml`, changed only by `pnpm gitflow version`, which the user runs. A push
+  updates a draft release PR into `release/<branch>`; merging it publishes the three packages to
+  GitHub Packages (`.publish/registries.yml`). Never merge a release PR or merge into `main`.
+  Each published package has `release-artifacts.yml` and `github.actions.pack`: theme-core packs
+  with `publishConfig.exports`, theme-ng-core with `publishConfig.directory` (the ng-packagr
+  output), theme-ng-material as plain Sass/CSS. Peers between them are `workspace:^`.
 
 ## CSS Variable Naming
 `--` = namespace separator (like `.` in OOP). `-` = word separator within a segment.

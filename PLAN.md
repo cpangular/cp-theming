@@ -256,7 +256,7 @@ $my-theme: t.theme(
 
 **docs** (`demos/docs`) — Angular 22 + Material 22 documentation / showcase app. Dev server:
 `ng serve docs --host 0.0.0.0 --port 4200`. Deploys to GitHub Pages at `/cp-theming/` through
-`.github/workflows/pages.yml` (manual trigger until the repo is public; Phase 13 replaces it).
+`.github/workflows/pages.yml` (manual trigger until the repo is public; git-flow's `static-site` artifact replaces it then).
 
 **Navigation, as the code has it** (`app.routes.ts`, `packages/packages.routes.ts`,
 `packages/packages-layout.component.ts`):
@@ -618,7 +618,19 @@ colour format is accepted and oklch is recommended.
   cyan-orange, light mode, as before. 0 harness errors; every overlay resolved its opener's
   theme and mode.
 
-### ⬛ Phase 13 — planned in PORT-PLAN.md
-- Phase 13 — Release through cpdevtools/git-flow
+### ✅ Phase 13 — Release through cpdevtools/git-flow (PORT-PLAN.md)
+- Every manifest carries `0.0.0-MAIN`; `.publish/versions.yml` holds `0.1.0-alpha.0`,
+  `.publish/registries.yml` the one registry (GitHub Packages, scope `@cpangular`).
+- Workflows from the template: `create-release-pr.yml`, `build-pack-publish.yml`,
+  `cleanup-scheduled.yml`, `cleanup-deleted-branch.yml`, beside `test.yml`. The wireit root scripts
+  stay; the template's `deps.yml`, syncpack and `devutil` scripts are not adopted.
+- Each of the three packages has a `release-artifacts.yml` (type `npm`) and
+  `github.actions.pack`. theme-core: `publishConfig.exports` + `files`. theme-ng-core:
+  `github.actions.build` runs ng-packagr and `publishConfig.directory` packs its output; its
+  production tsconfig reads core through `packages/theme-core/dist/index.d.ts`. theme-ng-material:
+  `files: [dist, scss]`, no `sideEffects: false` (it is CSS).
+- Peers between the three packages are `workspace:^`.
+- Docs deploy: the repo is still private, so `pages.yml` stays on manual trigger. Once it is
+  public, add a `static-site` artifact (`deploy: [gh-pages]`) for `demos/docs` and delete `pages.yml`.
 
 ---

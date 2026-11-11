@@ -6,6 +6,27 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 
 ---
 
+## Install
+
+The packages are published to GitHub Packages, not npmjs.com. GitHub Packages needs the scope's
+registry line and a token in the consumer's `.npmrc`, even for public packages (a classic personal
+access token with `read:packages`; in GitHub Actions, `GITHUB_TOKEN`):
+
+```ini
+# .npmrc
+@cpangular:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
+```bash
+npm install @cpangular/cp-theming-core                    # framework-agnostic core
+npm install @cpangular/cp-theming-ng-core                 # Angular wrapper (peer: core)
+npm install @cpangular/cp-theming-ng-material             # Angular Material adapter, Sass and CSS (peers: core, ng-core)
+```
+
+Until the first stable release every version is a pre-release, so install one by its dist-tag or
+exact version (see the repository's Releases).
+
 ## Packages
 
 | Package | npm | Status |
@@ -44,7 +65,7 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 | 10 | Contrast and alpha (`--contrast` by a luminance step; every derivation opaque except the tints) | ✅ Done |
 | 11 | Material adapter from Material's role tables (`--mat-sys-*` roles computed from Material's tables, checked against what its components read) | ✅ Done |
 | 12 | Startup: no flash, safe import (lazy guarded persistence, `themeHeadSnippet`, browser-only work skipped off-browser) | ✅ Done |
-| 13 | Release through cpdevtools/git-flow | ⬛ Not started |
+| 13 | Release through cpdevtools/git-flow (`0.0.0-MAIN` in every manifest, `.publish/`, the release workflows, `gitflow pack` for the three packages; GitHub Packages only; the docs deploy joins once the repo is public) | ✅ Done |
 | 14 | Brand and accent palettes: pass what you have, the rest are generated (`brand` and `tertiary` core palettes; the chain brand → primary → secondary, tertiary → background, surface; semantic defaults; Material tertiary from `--color--tertiary`) | ✅ Done |
 | 14b | Follow-ups from the Phase 14 review: chroma floors for the generated secondary and tertiary, the generated primary readable on the generated background in every hue, `bg` on `background` and `surface` with readable text, Showcase back in the ng-material sidebar | ✅ Done |
 | 14c | Generated colours stay inside the screen's gamut: the generated primary, secondary and tertiary and `palette-from-var()` / `palette-from-brand()` give up chroma until sRGB can show them, so an orange brand no longer gets a red primary | ✅ Done |
@@ -52,6 +73,27 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 | 15 | Material component gallery in the ng-material docs (Components page, every family an example file, `render.ts` screenshots it per preset and mode with overlays open and fails a component label below 4.5:1) | ✅ Done |
 
 Phases 8–15 are specified in [PORT-PLAN.md](PORT-PLAN.md); 14, 14b, 14c, 14d and 15 were done before 13.
+
+### Releases
+
+Versions, tags and publishing run through [cpdevtools/git-flow](https://github.com/cpdevtools/git-flow).
+Every manifest carries the placeholder `0.0.0-MAIN`; the real version is the one line in
+`.publish/versions.yml` (`0.1.0-alpha.0`). Every push keeps a draft release PR from the branch into
+`release/<branch>` up to date; merging that PR builds, packs and publishes the three packages to
+GitHub Packages. A branch with a slash publishes pre-releases that carry its name
+(`0.1.0-feature.<name>.alpha.0`); `main` publishes `0.1.0-alpha.0` itself. Merging a release PR,
+merging into `main` and `pnpm gitflow version` are done by hand.
+
+| Package | Packed from | Contents |
+|---|---|---|
+| `@cpangular/cp-theming-core` | its own directory; `publishConfig.exports` points `.` at the built JS and types | `dist/` (JS, types, CSS), `scss/` |
+| `@cpangular/cp-theming-ng-core` | its own directory with `publishConfig.directory` set to the ng-packagr output (`dist/theme-ng-core`), so the `workspace:^` peer is rewritten | `fesm2022/`, `types/` |
+| `@cpangular/cp-theming-ng-material` | its own directory, as a plain Sass/CSS package while its TypeScript API is empty | `dist/` (CSS), `scss/` |
+
+`theme-m3` and the demos are not published. To pack locally, set the version and build first, as the
+pipeline does: `pnpm exec gitflow apply-version <version>`, `pnpm run github.actions.build`, then
+`PROJECT_NAME=<name> PROJECT_VERSION=<version> pnpm run github.actions.pack` in each package, and
+restore the placeholder afterwards.
 
 ### Browser baseline
 
@@ -89,6 +131,7 @@ pnpm build.core    # the same, by name
 pnpm --filter @cpangular/cp-theming-ng-material build   # the adapter's CSS; the docs app reads it, so run it before `npx ng build docs` after a change in scss/
 pnpm test          # CSS checks (node --test) + TypeScript API tests (vitest) in both packages, and the docs examples
 pnpm fix           # format all files with prettier
+pnpm --filter @cpangular/cp-theming-ng-core build   # the Angular wrapper (ng-packagr → dist/theme-ng-core); needs core built
 
 # Browser check of the cascade (Playwright, Chromium + Firefox; local only)
 pnpm --filter @cpangular/cp-theming-core render

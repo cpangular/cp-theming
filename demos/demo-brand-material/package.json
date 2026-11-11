@@ -1,6 +1,6 @@
 {
   "name": "demo-brand-material",
-  "version": "0.0.0",
+  "version": "0.0.0-MAIN",
   "private": true,
   "description": "Example: how a company wires their brand theme pack into Angular Material.",
   "dependencies": {

@@ -925,6 +925,21 @@ Done when: a push to the feature branch opens a draft release PR with the test w
 `gitflow pack` produces three tarballs whose contents and `exports` are listed in the commit message.
 Merging a release PR, merging into `main` and `gitflow version` stay manual.
 
+As done (2026-11-11):
+
+- `0.1.0-alpha.0` is the value in `.publish/versions.yml`, and is the published version only on
+  `main`. git-flow inserts the name of any branch with a slash, so this branch resolves to
+  `0.1.0-feature.port-spike-findings.alpha.0`; no setting changes that.
+- theme-ng-core's ng-packagr build did not compile: the root tsconfig maps core to its source,
+  which lies outside the library's rootDir. Its production tsconfig now maps core to
+  `packages/theme-core/dist/index.d.ts`; core is a peer, so git-flow builds it first.
+- theme-core's `files` also excludes `dist/render.html` (the 6.6 MB page `render.ts --html`
+  writes). theme-ng-material lost `sideEffects: false`: it ships CSS, which a bundler may drop
+  from a package that declares no side effects.
+- The repo is still private, so there is no `static-site` artifact and `pages.yml` stays on
+  manual trigger. Its install step now passes `GITHUB_TOKEN`, which the `@cpdevtools` registry
+  lines in `.npmrc` need.
+
 ---
 
 ## Decisions already made

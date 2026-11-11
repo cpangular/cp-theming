@@ -1,7 +1,12 @@
 {
   "name": "@cpangular/cp-theming-core",
-  "version": "0.1.0-dev.0",
+  "version": "0.0.0-MAIN",
   "description": "CSS variable-based theming system. Framework-agnostic core.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cpangular/cp-theming.git",
+    "directory": "packages/theme-core"
+  },
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
@@ -12,6 +17,25 @@
     "./css/presets/cyan-orange": "./dist/presets/cyan-orange.css",
     "./css/presets/magenta-violet": "./dist/presets/magenta-violet.css"
   },
+  "files": [
+    "dist",
+    "scss",
+    "!dist/render.html"
+  ],
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./scss/*": "./scss/*",
+      "./css/core": "./dist/core.css",
+      "./css/presets/azure-blue": "./dist/presets/azure-blue.css",
+      "./css/presets/rose-red": "./dist/presets/rose-red.css",
+      "./css/presets/cyan-orange": "./dist/presets/cyan-orange.css",
+      "./css/presets/magenta-violet": "./dist/presets/magenta-violet.css"
+    }
+  },
   "scripts": {
     "build": "wireit",
     "dev": "wireit",
@@ -20,7 +44,8 @@
     "test.api": "wireit",
     "render": "node test/render.ts",
     "github.actions.build": "wireit",
-    "github.actions.test": "wireit"
+    "github.actions.test": "wireit",
+    "github.actions.pack": "gitflow pack"
   },
   "wireit": {
     "build": {
