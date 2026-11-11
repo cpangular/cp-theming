@@ -626,6 +626,10 @@ Done 2026-11-11.
    roles, not the palettes downstream of it.
 5. **Size ceiling.** Raise the `core.css` ceiling in the size check to 256 KiB and record the
    current size next to it; the gzipped size (15 KB) is the one that matters and is also printed.
+6. **Showcase back in the nav.** Commit `df8151e` (2026-06-29) rebuilt the sidebar and dropped the
+   Showcase entry; the route and the page survived. Add `{ path: 'showcase', label: 'Showcase' }`
+   to the ng-material section's nav in `packages-layout.component.ts` (the page has content for
+   ng-material only), and give ng-material its own nav list instead of sharing ng-core's.
 
 Done when: `pnpm test` passes with the chain test, sweep and render rows updated; the showcase
 screenshot shows a coloured tertiary on cyan-orange in both modes; the docs Getting Started surface
