@@ -473,19 +473,28 @@ Done 2026-11-11 (the pending demos are not part of this Done-when). Found on the
   `$levels`, `$dedupe`, `$default`). `variables.component.ts` and `api.component.ts` still state
   defaults nothing checks (shape, focus and weight values among them).
 
-### Phase 14 — Accent palettes: pass one, two or three, the rest are generated
+### Phase 14 — Brand and accent palettes: pass what you have, the rest are generated
 
-Goal: a theme passes `primary` and, if it wants, `secondary` and `tertiary`; whichever accents it
-leaves out are generated from `primary` (only `primary` passed → both `secondary` and `tertiary`
-are generated; `primary` and `secondary` passed → `tertiary` is generated). `background`,
-`surface` and the semantic palettes it leaves out are generated too. Added 2026-11-11: cp-theming had
+Goal: the chain **brand → primary → secondary, tertiary → background, surface**. A theme passes
+whichever of these it has; everything it leaves out is generated from the nearest thing it passed.
+The brand colour is the exact colour from the guidelines, kept unchanged and usable as a palette of
+its own; it is often too light, dark or saturated to be the primary, so the primary generated from
+it is adjusted for readability. Only `primary` passed → `secondary` and `tertiary` are generated;
+`primary` and `secondary` passed → `tertiary` is generated; only `brand` passed → all of them. Added 2026-11-11: cp-theming had
 decided in June that there is no third accent palette and that Material's tertiary maps to
 secondary; that contradicts the brand-colour idea and was never the intent. Depends on Phase 9
 (a theme declares only what it passes; core supplies the rest), so this is small now.
 
-- **`tertiary` is a core palette name**, with the same registered pair, derivations and
-  `[palette="tertiary"]` rule as the others (`$core-palette-names` in `_palette.scss`). Registered
-  count rises by 8; the harness list and docs follow.
+- **`brand` and `tertiary` are core palette names**, with the same registered pair, derivations
+  and `[palette="…"]` rule as the others (`$core-palette-names` in `_palette.scss`).
+  `--color--brand` stays the name of the brand palette's colour (the colour role has no suffix),
+  so `$brand` in `t.theme()`, the `*-from-brand()` helpers and an inline `--color--brand` keep
+  working; the single `--color--brand` registration becomes the palette's pair. The brand colour is
+  never adjusted. Registered count rises by 15; the harness list and docs follow.
+- **Generated primary.** `primary` not passed is derived from the brand pair with the readability
+  adjustment `palette-from-brand()` already applies (lightness clamped into 0.35–0.50 light /
+  0.65–0.82 dark, chroma capped at 0.22), declared on the shared derivation selector like the
+  accents below. A theme that passes `primary` uses it as given.
 - **Generated accents.** On the shared derivation selector, core declares the registered pair of
   each accent a theme did not pass, derived from the primary pair, so a nested theme that passes
   only `primary` re-derives its own accents (a theme that passes the accent beats these
@@ -494,28 +503,31 @@ secondary; that contradicts the brand-colour idea and was never the intent. Depe
   - `tertiary`: primary's hue + 60°, half its chroma, same lightness.
   Written as `oklch(from var(--color--primary--mode-light) l calc(c / 3) h / 1)` and the dark
   twin, like every other derivation; Sass does no colour maths.
-- **Generated neutrals.** `background` and `surface` not passed are tinted neutrals of primary's hue,
+- **Generated neutrals.** `background` and `surface` not passed are tinted neutrals of the brand hue,
   with the lightness and chroma the `background-from-var` / `surface-from-var` helpers already use
   (`_palette.scss`), so the two paths agree.
 - **Semantic palettes** (`error`, `warn`, `caution`, `pass`) not passed get the fixed colours the
   presets already share (`$default-error` and friends in `presets/_palettes.scss`) as core defaults;
-  they do not derive from primary. With no theme loaded at all, primary's greyscale initial value
-  still makes everything derived from it grey, so the print fallback holds for the accents and
-  neutrals.
+  they do not derive from brand or primary. With no theme loaded at all, the greyscale initial
+  values of the brand and primary pairs still make everything derived from them grey, so the print
+  fallback holds for the accents and neutrals.
 - **Material adapter:** `tertiary` roles read `--color--tertiary`; the "tertiary = secondary" rule
   and the docs paragraph that explains it go away. Presets pass no `tertiary`, so theirs is
   generated and visible in the showcase.
-- **Docs:** the Palette and Theme pages say "pass one, two or three accents"; an example theme with
-  only `primary` is one of the compiled example files. PLAN.md:239-245 and the README row are
+- **Docs:** the Palette and Theme pages explain the chain and that the brand colour is kept exact
+  while the primary made from it is adjusted; compiled example themes with only `brand`, and with
+  only `primary`, are among the example files. PLAN.md:239-245 and the README row are
   corrected.
-- **Harness:** `render.ts` rows for a theme with only `primary` (all four generated palettes have
-  the expected hue, chroma and lightness relation), a nested theme with only `primary` re-deriving
+- **Harness:** `render.ts` rows for a theme with only `brand` (primary is the brand hue inside the
+  readable band, the brand palette's own colour is unchanged, all generated palettes have the
+  expected relation), a theme with only `primary`, a nested theme with only `primary` re-deriving
   its accents, and a theme that passes `secondary` keeping it; the contrast sweep and the Material
   surface-order check run over the generated palettes of every preset and fixture.
 
 Done when: `pnpm test` passes with the new rows and checks; the showcase shows a distinct tertiary
 on every preset in both modes (Playwright screenshots in the commit message); the docs Getting
-Started theme passes only `primary` and `secondary` and the page looks right.
+Started theme passes only `brand` and the page looks right, with a `[palette="brand"]` element
+showing the exact brand colour.
 
 ### Phase 13 — Release through cpdevtools/git-flow
 
@@ -565,8 +577,10 @@ So they are not reopened. Tell me if you want any reversed.
 - Sass examples in the docs are compile-checked, not rendered live. Getting Started keeps its custom
   Sass section.
 - `themeMode="invert"` keeps today's selector semantics, emitted once.
-- Accent palettes a theme does not pass are generated from `primary` (Phase 14). The June decision
-  that cp-theming has no third accent palette is reversed on your instruction of 2026-11-11.
+- Palettes a theme does not pass are generated along the chain brand → primary → secondary,
+  tertiary → background, surface (Phase 14). The brand colour is kept exact; the primary made from
+  it is adjusted for readability. The June decision that cp-theming has no third accent palette is
+  reversed on your instruction of 2026-11-11.
 - Authors may write palette colours in any CSS colour format (your instruction of 2026-11-09, which
   withdraws the former "oklch only" rule for inputs). Derivation stays in oklch.
 - All port work is pushed to `feature/port-spike-findings`; nothing merges to `main` without you.
