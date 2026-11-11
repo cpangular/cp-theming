@@ -666,6 +666,30 @@ Done 2026-11-11.
 - The docs contrast report is unchanged in kind: 224 labels, 40 below 4.5:1 in each engine, all
   docs captions (swatch labels and `code` in section text), none on a component.
 
+### Phase 14c — Generated colours stay inside the screen's gamut (added 2026-11-11)
+
+Found by session 9: an orange brand (`#ff6a00`) gets a **red** primary in light mode. The
+generated primary asks for more colourfulness than sRGB can show at that lightness
+(`oklch(0.45 0.2 45)` is outside sRGB), and browsers clip each channel, which drags the hue from
+orange (45°) to red (29°). The same can happen to any generated colour and to the
+`*-from-brand()` helpers.
+
+- The generated primary, secondary, tertiary and the from-var/from-brand helpers get a gamut
+  correction, in CSS, after the lightness clamp and chroma cap: a pass reads the candidate's sRGB
+  channels, measures how far they overshoot 0–1, carries `1 − 2·overshoot` in the alpha channel of a
+  `color(from … srgb r g b / …)` and scales the chroma by it; four passes, nested. Verified as CSS
+  in Chromium 158, Firefox 159 and WebKit 27.2: the orange brand's light primary keeps hue 45° at
+  chroma 0.13 instead of clipping to red; a blue already inside sRGB is untouched; a grey stays grey.
+  Over the hue wheel at every band lightness the worst hue drift after clipping is under 6°
+  (46° before), mean painted chroma 0.114 against 0.167 clipped.
+- The chain test asserts the painted hue of every generated colour is within 6° of the hue asked
+  for, for every preset, fixture and a hue-wheel sweep; `render.ts` gets rows for the orange, a
+  yellow and a blue brand in both modes.
+- Phase 14's chain numbers (bands, caps, floors) stay; the correction runs after them.
+
+Done when: the chain test passes with the hue assertion; the docs Getting Started primary from
+`#ff6a00` is painted an orange-brown, not a red, in both modes (screenshot in the commit).
+
 ### Phase 15 — Material component gallery (added 2026-11-11)
 
 Goal: the ng-material docs show every Angular Material 22 component under the adapter, so a

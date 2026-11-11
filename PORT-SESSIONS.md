@@ -33,8 +33,9 @@ How to set things in the VS Code extension (Claude Code chat panel):
 | 7 | Phase 7 resumed: docs examples | Fable 5.1 | high | Auto |
 | 8 | Phase 14 brand and accent palettes | Fable 5.1 | high | Auto |
 | 9 | Phase 14b follow-ups | Fable 5.1 | medium | Auto |
-| 10 | Phase 15 Material component gallery | Fable 5.1 | high | Auto |
-| 11 | Phase 13 release | Fable 5.1 | medium | Auto |
+| 10 | Phase 14c generated colours in gamut | Fable 5.1 | medium | Auto |
+| 11 | Phase 15 Material component gallery | Fable 5.1 | high | Auto |
+| 12 | Phase 13 release | Fable 5.1 | medium | Auto |
 
 Subagent models are chosen inside the workflow prompts: Opus at high effort for critique, Sonnet at
 medium for reading and sweeps. You do not set these.
@@ -99,13 +100,19 @@ Work in /devcontainer/repos/cp-theming on branch feature/port-spike-findings. Re
 Work in /devcontainer/repos/cp-theming on branch feature/port-spike-findings. Read CLAUDE.md, .github/copilot-instructions.md and PORT-PLAN.md Phase 14b, then do its six items in order, running pnpm test after each: chroma floors for the generated secondary and tertiary; the light-mode band top for the generated primary from 0.50 to 0.45 in the chain and in palette-from-brand(); t.bg() on background and surface setting readable text from the bg role's contrast; the docs note that themes come from t.define-theme(), with the one-line caveat for a nested rule written directly in CSS; the core.css size ceiling raised to 256 KiB; the Showcase entry back in the ng-material sidebar (its own nav list, not ng-core's). Update the chain test, the sweep and the render rows to the new numbers rather than loosening them. Run render.ts in Chromium and Firefox and screenshot the showcase on cyan-orange in both modes and the Getting Started example. When the Done-when holds, update the README and PLAN.md status tables, commit with the screenshots' findings in the message, and push without asking.
 ```
 
-## Session 10 — Phase 15 Material component gallery
+## Session 10 — Phase 14c generated colours in gamut
+
+```
+Work in /devcontainer/repos/cp-theming on branch feature/port-spike-findings. Read CLAUDE.md, .github/copilot-instructions.md and PORT-PLAN.md Phase 14c, then execute it as written: after the lightness clamp and chroma cap, every generated colour (primary from brand, secondary, tertiary) and the palette-from-var / palette-from-brand helpers get the four-pass gamut correction described there, built in Sass as a function that wraps an expression so it is written once. Prove it in the browser before you trust the Sass: render.ts rows for an orange (#ff6a00), a yellow and a blue brand in both modes, asserting the painted hue is within 6° of the brand hue and that the blue is unchanged; then the chain test's hue assertion over every preset, fixture and a hue-wheel sweep with colorjs.io. Run pnpm test and render.ts in Chromium and Firefox, build the docs and screenshot Getting Started in both modes. When the Done-when holds, update the README and PLAN.md status tables, commit with the before/after colours of the three brands in the message, and push without asking.
+```
+
+## Session 11 — Phase 15 Material component gallery
 
 ```
 Work in /devcontainer/repos/cp-theming on branch feature/port-spike-findings. Read CLAUDE.md, .github/copilot-instructions.md, PLAN.md and PORT-PLAN.md Phase 15, then build the Components page in the ng-material section of demos/docs exactly as the phase lists: one live section per Angular Material 22 component family with the states that matter and the accent components repeated under palette="secondary", "tertiary", "error" and "brand"; every component as an example file under demos/docs/src/examples/components/ so the examples check covers it; an overlays section that shows menu, dialog, select, autocomplete, datepicker, snackbar, tooltip and bottom sheet inside a nested theme and a nested themeMode and states what each needs. Extend demos/docs/test/render.ts to screenshot the gallery per preset in light and dark with overlays open, and make a component label below 4.5:1 an error. Fix what the screenshots show is wrong, in the adapter or as a measured override patch, as Phase 11 did; never by hand-colouring the docs. Build the docs app and run render.ts in Chromium and Firefox. When the Done-when holds, update the README and PLAN.md status tables, commit with the per-preset findings in the message, and push without asking. Then tell me which components needed a fix and why.
 ```
 
-## Session 11 — Phase 13 release
+## Session 12 — Phase 13 release
 
 ```
 Work in /devcontainer/repos/cp-theming on branch feature/port-spike-findings. Read CLAUDE.md, .github/copilot-instructions.md and PORT-PLAN.md Phase 13, then the READMEs of https://github.com/cpdevtools/git-flow-template and https://github.com/cpdevtools/git-flow. Settings: publish to GitHub Packages only; first version 0.1.0-alpha.0 (work out from the git-flow docs how that maps onto .publish/versions.yml and a feature/ branch, and tell me if it cannot be expressed exactly); peers between the three packages use workspace:^; docs deploy to GitHub Pages. Add only what git-flow needs, as the phase lists; keep the wireit root scripts; do not adopt the template's deps.yml, syncpack or devutil root scripts. Set up packaging for the three packages exactly as the phase describes and run gitflow pack; show me each tarball's file list and its package.json exports and peerDependencies. Check with gh whether the repo is public yet: if it is, add the static-site artifact for demos/docs with the gh-pages method; if not, leave pages.yml on manual trigger and tell me. Commit and push without asking, then tell me whether git-flow opened the draft release PR and whether the test workflow is green, and fix anything red. Do not merge into main, do not run gitflow version, and do not merge the release PR.
