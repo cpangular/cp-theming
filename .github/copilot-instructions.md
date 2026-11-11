@@ -143,7 +143,21 @@ demos/demo-brand-material/                                 — Example brand+mat
   CSS selects on and is what `cpa-theme-example` renders; `*.display.*` marks a fragment that
   cannot be checked. Do not write such a sample in a page template.
 - Contrast report: `demos/docs/test/render.ts` (Playwright, Chromium by default, local only), run
-  after `npx ng build docs`: the painted contrast of every label on the showcase in light and dark.
+  after `npx ng build docs`: the painted contrast of every label on the showcase in light and dark,
+  and the component gallery (Phase 15) per preset and mode: every section screenshotted, as
+  loaded, hovered, focused and with every overlay open. A component label below 4.5:1 fails the
+  run; a disabled control and a docs caption are reported. `--only=gallery|showcase`,
+  `--preset=`, `--mode=`, `--section=a,b`, `--jobs=N`; engines as arguments (`chromium firefox`).
+- Component gallery examples: `demos/docs/src/examples/components/*.ng.html` are Angular
+  templates, each the `templateUrl` of a component in
+  `demos/docs/src/app/packages/pages/components/gallery.components.ts`. The examples check allows
+  HTML, Angular Material and library elements and attributes only, no `style`, and layout classes
+  only (`gallery-layout.scss` may not declare a colour). `*.ts.txt` is TypeScript the docs show,
+  verbatim from a source file of the docs app. Never colour a gallery example: fix the adapter or
+  add a measured patch to `apply-material-overrides()`.
+- The docs read the adapter's built CSS (`packages/theme-ng-material/dist/*.css`): after a change
+  in its `scss/`, run `pnpm --filter @cpangular/cp-theming-ng-material build` before
+  `npx ng build docs`. Root `pnpm build` builds core only.
 - Fixture themes live in `packages/theme-core/test/fixtures/` and `packages/theme-ng-material/test/fixtures/`.
 - CI: `.github/workflows/test.yml` (cpdevtools/git-flow) runs `github.actions.build` then
   `github.actions.test` in every package that defines them.

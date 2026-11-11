@@ -787,6 +787,67 @@ painted-contrast report has no component label below 4.5:1 in any preset in eith
 overlay section shows each overlay correct inside a nested theme and a nested `themeMode` (or
 says why it cannot be); the README row for `demos/docs` lists the gallery.
 
+- **As landed (2026-11-11).** The page is `demos/docs/src/app/packages/pages/components.component.ts`
+  (route `packages/ng-material/components`, in the ng-material sidebar): 27 family sections, an
+  overview and the overlays section. 34 `.ng.html` and 2 `.ts.txt` example files in
+  `demos/docs/src/examples/components/`; each template is the `templateUrl` of a component in
+  `pages/components/gallery.components.ts`. Two new kinds in the examples check: `name.ng.html`
+  (every element and static attribute is HTML's, Material's or the library's; no `style`; layout
+  classes only; no component stylesheet but `gallery-layout.scss`) and `name.ts.txt` (the text is
+  in a source file of the docs app, verbatim). 115 examples, 267 tests.
+- **Harness as landed.** `render.ts` takes engines and `--only=showcase|gallery`, `--preset=`,
+  `--mode=`, `--section=a,b`, `--jobs=N`, `--fonts`. Per preset and mode it measures 2,390 labels
+  (1,692 on components): as loaded, hovered, focused, and with each overlay open; it asserts that
+  an overlay resolves its opener's theme and mode. A full gallery run is about 14 minutes in
+  Chromium and 23 in Firefox with eight jobs. Output: `dist/docs-render/gallery-{engine}.txt|json`
+  and a PNG per section and per open overlay.
+- **Findings, per preset** (component labels below 4.5:1; Chromium unless said):
+  - As Material has it, in every preset: a focused text button on the filled card 3.3–4.4:1 in
+    all eight preset modes; every accent label, hint, list subheader, tab body and step content
+    under `palette="brand"` in dark mode 1.04–1.11:1; a grid tile header 3.2:1 over a light tile.
+  - After the first round of patches (labels held at 0.44 / 0.82): azure-blue light 1, dark 0;
+    rose-red light 6, dark 2; cyan-orange light 2, dark 0; magenta-violet light 2, dark 1. All
+    were the text button on the filled card, hovered or focused (3.87–4.45:1), except four in
+    rose-red light: the elevated button and the stepper's Back button with keyboard focus under
+    `palette="error"` (4.37:1) and `"secondary"` (4.44:1).
+  - As landed: 0 in every preset in both modes, in both engines. Lowest, light / dark, Chromium:
+    azure-blue 5.12 / 5.01, rose-red 4.80 / 4.77, cyan-orange 4.73 / 5.01, magenta-violet
+    4.74 / 5.01. Firefox: 5.16 / 5.01, 4.80 / 4.73, 4.68 / 5.01, 4.71 / 5.01.
+- **Patches as landed** (`apply-material-overrides()`, six with the slide-toggle icon):
+  - accents as labels held to lightness ≤ 0.40 (light) and ≥ 0.82 (dark), hue and chroma kept:
+    `--mat-button-text-label-text-color`, `--mat-button-outlined-label-text-color`,
+    `--mat-button-protected-label-text-color`, the stepper's error label and icon, and the form
+    field's focus and error tokens (filled and outlined). The Phase 11 limit of 0.44 for the
+    filled field became 0.40 for all of them: the presets' light surface is near tone 91, not
+    M3's 98;
+  - `--mat-card-filled-container-color: surface-container-high`. On
+    `surface-container-highest` the dark limit would have to be 0.89 for the theme's own primary
+    (rose-red: 4.46:1 at 0.88);
+  - `--mat-form-field-filled-container-color: surface-container-high` (Phase 11, unchanged);
+  - `.mat-mdc-form-field-hint-wrapper`, `.mat-mdc-subheader` → `on-surface-variant`;
+    `.mat-mdc-tab-body-content`, `.mat-stepper-horizontal`, `.mat-stepper-vertical` →
+    `on-surface`;
+  - grid tile header and footer scrim 38% → 60% black (Material writes it as a literal).
+- **Judgment calls, yours to revisit.**
+  1. The label limit changes how text, outlined and elevated button labels and focused field
+     labels look in every theme whose accent is lighter than 0.40 in light mode or darker than
+     0.82 in dark mode. Fills are untouched.
+  2. The button and field tokens are declared on the component element (`:where()`, no
+     specificity) so they resolve in the `[theme]` and `[palette]` the component is in. A value
+     for one of those tokens set on an ancestor no longer reaches the component; set on the
+     component it wins.
+  3. Hints, subheaders, tab bodies and step content no longer take a `[palette]` scope's identity
+     colour: they are surface text, as in M3.
+  4. The grid tile scrim is darker than Material's.
+  5. `cpaOverlayScope` is a directive of the docs app, shown as source. The adapter package has
+     no overlay helper; the phase did not ask for one.
+  6. Brand in dark mode: see "Found on the way".
+- **Corrected in the examples and the harness while reading the screenshots** (not adapter
+  changes): the list's activated item, the sidenav, the tree (a node needs
+  `isExpandable` before `isExpanded` does anything), the grid list header covering its tile's
+  label, badges covering the text beside them; the harness pressed Escape with focus inside the
+  sidenav and measured an autocomplete panel while it was opening.
+
 ### Phase 13 — Release through cpdevtools/git-flow
 
 Goal: versions, tags and publishing run through git-flow.
@@ -871,6 +932,20 @@ So they are not reopened. Tell me if you want any reversed.
   palettes in light mode (3.77–4.29: error ×3, caution, warn). The harness reports it.
 - `themeMode="invert"` inside an explicit light ancestor resolves to light today. Fixing it needs
   `@scope`, which would raise the Firefox baseline to 146.
+- Brand fills in dark mode (Phase 15). The presets pass no brand, so `--color--brand` is core's
+  default, a near-black, in both modes. Under `palette="brand"` in dark mode a filled button, a
+  checked checkbox, a radio, a slider and a progress bar are dark on a dark page. Labels are held
+  readable by the adapter; fills are the brand exactly, by design. A per-mode default brand, or
+  no default, would change it. The Components page says so.
+- A focused text button under `palette="error"` on `surface-container-high` (a dialog, the filled
+  card) is 4.0–4.4:1 in rose-red light and in dark mode in three presets (Phase 15, measured by
+  probe; the gallery has no such case). A light limit of 0.37 and a dark limit of 0.89 would
+  close it and make every held label visibly darker or paler.
+- Angular Material's components resolve their font to `system-ui` in the docs, not to the docs'
+  web font (seen in the Phase 15 screenshots; not looked into).
+- The root `pnpm build` builds core only. The docs app reads the adapter's built CSS, so an
+  adapter change needs `pnpm --filter @cpangular/cp-theming-ng-material build` first (README and
+  CLAUDE.md now say so).
 
 ---
 

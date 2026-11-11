@@ -182,45 +182,157 @@ $_type-scales:
     --mat-slide-toggle-selected-icon-color: var(--mat-sys-primary);
   }
 
-  // Filled form field.
+  // Accents as text.
   //
-  // Material paints the focused label, caret and active indicator in primary,
-  // and the error ones in error, on a container in surface-variant. In M3 those
-  // are tone 40 / 80 accents on a tone 90 / 30 neutral. A cp-theming accent is
-  // whatever the author chose, and the presets' are closer to the middle, so on
-  // that container they measure 2.3–3.5:1 in dark mode and the error label is
-  // under 4.5:1 in light mode as well. Two changes, on fill fields only:
-  //   - the container is surface-container-high, a step closer to the surface;
-  //   - the accents painted on it are held to the lightness M3 would give them:
-  //     no lighter than 0.44 in light mode, no darker than 0.82 in dark mode
-  //     (hue and chroma kept; a colour already past the limit is unchanged).
-  // With both, every preset is at 4.75:1 or better in both modes. The selector
-  // is the field itself so the accents resolve inside [theme] and [palette].
-  .mat-mdc-form-field.mat-form-field-appearance-fill {
-    $primary: _on-fill(var(--mat-sys-primary));
-    $error: _on-fill(var(--mat-sys-error));
+  // Material paints some labels in primary or in error, on the surface or on a
+  // container: the label of a text, outlined or elevated button, the focused
+  // and the invalid label of a form field, an error message, the label of a
+  // step in error. In M3 those are tone 40 / 80 accents, which read on every
+  // surface container with a state layer over it. A cp-theming accent is the
+  // colour its author wrote, and `brand` is one colour in both modes.
+  // Measured in the presets, as Material has it:
+  //   - a text button on a filled card: 3.8–4.4:1 in five of the eight preset
+  //     modes, and 3.3–4.4:1 with keyboard focus in all eight;
+  //   - a focused text, outlined or elevated button on the surface: 4.3:1 in
+  //     magenta-violet and rose-red, light mode;
+  //   - the label of a step in error, and anything under palette="error":
+  //     4.49:1 in cyan-orange, light mode;
+  //   - the focused or invalid label of a filled field, on its container in
+  //     surface-variant: 2.3–3.5:1 in dark mode, and the invalid one is under
+  //     4.5:1 in light mode as well;
+  //   - every one of them under palette="brand" in dark mode, with a brand that
+  //     is dark (the presets leave it at core's default): 1.04–1.11:1.
+  // So the accent in a label is held to a lightness: no lighter than 0.40 in
+  // light mode, no darker than 0.82 in dark mode. M3's tone 40 is about 0.44,
+  // on a surface at tone 98; the presets' light surface is near tone 91, and at
+  // 0.44 a focused button under palette="error" or "secondary" was 4.37:1 on
+  // it in rose-red. Hue and chroma are kept, and a colour already past the
+  // limit is unchanged. With the limits, a focused label in any palette is at
+  // 4.9:1 or better on the surface and 4.6:1 on surface-container-low in every
+  // preset in both modes. On surface-container-high (a dialog, the filled card
+  // below) the theme's primary is at 4.6:1 or better; a focused label there
+  // under palette="error" is still 4.0–4.4:1 in rose-red and in dark mode. A fill
+  // (a filled button, a checkbox, a slider) stays the author's colour, exactly.
+  // The lines and icons that belong to a held label (a field's outline,
+  // indicator, caret and arrow, the icon of a step in error) are held with it,
+  // so the two stay one colour.
+  //
+  // Each token is declared on the component itself, so the accent resolves in
+  // the [theme] and [palette] it is in. :where() keeps the rule at no
+  // specificity: Material's own rules for the same element (a button in a
+  // toolbar, the calendar's period button) and yours win, wherever they load.
+  // A value set on an ancestor does not: set these on the component.
+  $primary: _as-text(var(--mat-sys-primary));
+  $error: _as-text(var(--mat-sys-error));
 
-    --mat-form-field-filled-container-color: var(--mat-sys-surface-container-high);
+  :where(.mat-mdc-button) {
+    --mat-button-text-label-text-color: #{$primary};
+  }
+  :where(.mat-mdc-outlined-button) {
+    --mat-button-outlined-label-text-color: #{$primary};
+  }
+  :where(.mat-mdc-raised-button) {
+    --mat-button-protected-label-text-color: #{$primary};
+  }
+
+  :where(.mat-step-header) {
+    --mat-stepper-header-error-state-label-text-color: #{$error};
+    --mat-stepper-header-error-state-icon-foreground-color: #{$error};
+  }
+
+  :where(.mat-mdc-form-field) {
+    --mat-form-field-error-text-color: #{$error};
+    --mat-form-field-error-trailing-icon-color: #{$error};
+    --mat-form-field-error-focus-trailing-icon-color: #{$error};
+    --mat-form-field-focus-select-arrow-color: #{$primary};
+    --mat-select-focused-arrow-color: #{$primary};
+    --mat-select-invalid-arrow-color: #{$error};
 
     --mat-form-field-filled-caret-color: #{$primary};
     --mat-form-field-filled-focus-label-text-color: #{$primary};
     --mat-form-field-filled-focus-active-indicator-color: #{$primary};
-    --mat-form-field-focus-select-arrow-color: #{$primary};
-
     --mat-form-field-filled-error-caret-color: #{$error};
     --mat-form-field-filled-error-label-text-color: #{$error};
     --mat-form-field-filled-error-focus-label-text-color: #{$error};
     --mat-form-field-filled-error-active-indicator-color: #{$error};
     --mat-form-field-filled-error-focus-active-indicator-color: #{$error};
-    --mat-form-field-error-trailing-icon-color: #{$error};
-    --mat-form-field-error-focus-trailing-icon-color: #{$error};
+
+    --mat-form-field-outlined-caret-color: #{$primary};
+    --mat-form-field-outlined-focus-label-text-color: #{$primary};
+    --mat-form-field-outlined-focus-outline-color: #{$primary};
+    --mat-form-field-outlined-error-caret-color: #{$error};
+    --mat-form-field-outlined-error-label-text-color: #{$error};
+    --mat-form-field-outlined-error-focus-label-text-color: #{$error};
+    --mat-form-field-outlined-error-outline-color: #{$error};
+    --mat-form-field-outlined-error-focus-outline-color: #{$error};
+  }
+
+  // Filled card: the container.
+  //
+  // Material's is surface-container-highest, the furthest container from the
+  // surface, and a card holds text buttons. With the held label above, a
+  // hovered or focused one was still 3.9–4.5:1 on it in six of the eight
+  // preset modes; in dark mode the limit would have to be 0.89, close to
+  // white (rose-red: 4.46:1 at 0.88). One step closer to the surface, the same
+  // as a dialog, it is 4.6:1 or better in all eight.
+  // The elevated and the outlined card keep Material's containers.
+  :where(.mat-mdc-card-filled) {
+    --mat-card-filled-container-color: var(--mat-sys-surface-container-high);
+  }
+
+  // Filled form field: the container.
+  //
+  // Material's is surface-variant, tone 90 / 30 in M3: the furthest neutral
+  // from the surface that a label sits on. surface-container-high is a step
+  // closer to the surface. With it and the held accents above, the focused and
+  // the invalid label of a filled field are at 4.75:1 or better in every preset
+  // in both modes.
+  :where(.mat-mdc-form-field.mat-form-field-appearance-fill) {
+    --mat-form-field-filled-container-color: var(--mat-sys-surface-container-high);
+  }
+
+  // Text Material leaves to inherit.
+  //
+  // A hint, a list subheader, and the content of a tab and of a step have no
+  // colour of their own in Material: they take the page's, which M3 expects to
+  // be on-surface. Everything beside them is painted for a surface (the field's
+  // label, the list items, the tab labels; the stepper paints the surface
+  // itself). In a [palette] scope the inherited colour is the palette's own,
+  // which no rule holds to a lightness: 4.49:1 for the content of a step under
+  // palette="error" in cyan-orange, light mode, and 1.04–1.11:1 for all four
+  // under palette="brand" in dark mode in every preset. They get the role M3
+  // gives them. Plain class selectors, after core's [palette] rule in load
+  // order, so this also holds with the attribute on the stepper itself.
+  .mat-mdc-form-field-hint-wrapper,
+  .mat-mdc-subheader {
+    color: var(--mat-sys-on-surface-variant);
+  }
+  .mat-mdc-tab-body-content,
+  .mat-stepper-horizontal,
+  .mat-stepper-vertical {
+    color: var(--mat-sys-on-surface);
+  }
+
+  // Grid tile header and footer.
+  //
+  // Material writes white text on a 38% black scrim, as literals: there is no
+  // token to set. The scrim is meant for a photograph; over a tile in any light
+  // colour it is a mid grey, and the label measures 3.2:1 on a surface tile in
+  // the presets' light mode and 2.7:1 on white. At 60% the label is at 5.7:1
+  // on a white tile, the worst there is, and higher over anything darker. The
+  // text stays white in both modes, as Material has it. Three classes, to come
+  // after Material's own two wherever its component styles are inserted.
+  .mat-grid-list .mat-grid-tile .mat-grid-tile-header,
+  .mat-grid-list .mat-grid-tile .mat-grid-tile-footer {
+    background: rgb(0 0 0 / 0.6);
   }
 }
 
-// An accent as painted on a filled field's container (see the patch above).
-@function _on-fill($origin) {
+// An accent as a label: held to the lightness M3 gives the accents it paints
+// as text (see "Accents as text" above).
+@function _as-text($origin) {
   @return string.unquote(
-    "light-dark(oklch(from #{$origin} min(l, 0.44) c h / 1), oklch(from #{$origin} max(l, 0.82) c h / 1))"
+    "light-dark(oklch(from #{$origin} min(l, 0.4) c h / 1), oklch(from #{$origin} max(l, 0.82) c h / 1))"
   );
 }
 

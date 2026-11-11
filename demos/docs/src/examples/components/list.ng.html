@@ -1,0 +1,53 @@
+<div class="g-grid">
+  <mat-list>
+    <div mat-subheader>List</div>
+    <mat-list-item>
+      <mat-icon matListItemIcon>folder</mat-icon>
+      <span matListItemTitle>Title</span>
+      <span matListItemLine>Secondary line</span>
+    </mat-list-item>
+    <mat-list-item disabled>
+      <mat-icon matListItemIcon>folder_off</mat-icon>
+      <span matListItemTitle>Disabled</span>
+      <span matListItemLine>Secondary line</span>
+    </mat-list-item>
+  </mat-list>
+
+  <mat-action-list>
+    <div mat-subheader>Action list</div>
+    <button mat-list-item>
+      <mat-icon matListItemIcon>inbox</mat-icon>
+      <span matListItemTitle>Action</span>
+    </button>
+    <button mat-list-item disabled>
+      <mat-icon matListItemIcon>send</mat-icon>
+      <span matListItemTitle>Disabled</span>
+    </button>
+  </mat-action-list>
+
+  <!-- Material paints the activated state in a navigation list only -->
+  <mat-nav-list>
+    <div mat-subheader>Navigation list</div>
+    <a mat-list-item href="packages/ng-material/components#list" [activated]="true">
+      <mat-icon matListItemIcon>inbox</mat-icon>
+      <span matListItemTitle>Activated</span>
+    </a>
+    <a mat-list-item href="packages/ng-material/components#list">
+      <mat-icon matListItemIcon>send</mat-icon>
+      <span matListItemTitle>Link</span>
+    </a>
+  </mat-nav-list>
+
+  <mat-selection-list aria-label="Options">
+    <div mat-subheader>Selection list</div>
+    <mat-list-option selected>Selected</mat-list-option>
+    <mat-list-option>Unselected</mat-list-option>
+    <mat-list-option disabled>Disabled</mat-list-option>
+  </mat-selection-list>
+
+  <mat-selection-list [multiple]="false" aria-label="One option">
+    <div mat-subheader>Single selection</div>
+    <mat-list-option selected>Selected</mat-list-option>
+    <mat-list-option>Unselected</mat-list-option>
+  </mat-selection-list>
+</div>

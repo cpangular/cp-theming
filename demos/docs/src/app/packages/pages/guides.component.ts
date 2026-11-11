@@ -263,8 +263,8 @@ themeService.restorePersistedState();</code></pre>
             <p>
               A few Angular Material component defaults do not work with cp-theming's roles. Add
               patches in <code>apply-material-overrides()</code> in
-              <code>packages/theme-ng-material/scss/_material.scss</code>. The demo-material
-              application surfaces these gaps.
+              <code>packages/theme-ng-material/scss/_material.scss</code>. The Components page shows
+              every component family; its render check measures the labels and surfaces these gaps.
             </p>
           </section>
         }

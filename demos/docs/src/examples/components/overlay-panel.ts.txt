@@ -1,0 +1,18 @@
+@Component({
+  selector: 'cpa-g-overlay-panel',
+  imports: [MatButtonModule],
+  templateUrl: '../../../../examples/components/overlay-panel.ng.html',
+  styleUrl: LAYOUT,
+})
+export class GalleryOverlayPanel {
+  private readonly _dialog = inject(MatDialog);
+
+  open(scope: HTMLElement): void {
+    this._dialog.open(GalleryDialogContent, { panelClass: 'cpa-scoped-panel' });
+    // The pane exists as soon as open() returns. Material's panel class is a
+    // class; the adapter selects on the theme attribute, so set that.
+    document
+      .querySelector('.cpa-scoped-panel')
+      ?.setAttribute('theme', scope.getAttribute('theme') ?? '');
+  }
+}

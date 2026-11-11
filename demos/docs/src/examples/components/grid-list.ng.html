@@ -1,0 +1,17 @@
+<!-- A tile has no colour of its own; these take theirs from a palette scope. -->
+<mat-grid-list cols="4" rowHeight="88px" gutterSize="8px">
+  <mat-grid-tile colspan="2" rowspan="2">
+    <div class="g-fill" palette="surface" bg container>Two columns, two rows</div>
+    <mat-grid-tile-header>Header</mat-grid-tile-header>
+  </mat-grid-tile>
+  <mat-grid-tile>
+    <div class="g-fill" palette="primary" filled container>Tile</div>
+  </mat-grid-tile>
+  <mat-grid-tile rowspan="2">
+    <div class="g-fill" palette="tertiary" filled container>Two rows</div>
+    <mat-grid-tile-footer>Footer</mat-grid-tile-footer>
+  </mat-grid-tile>
+  <mat-grid-tile>
+    <div class="g-fill" palette="secondary" filled container>Tile</div>
+  </mat-grid-tile>
+</mat-grid-list>

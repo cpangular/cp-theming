@@ -1,0 +1,20 @@
+<div class="g-col">
+  <mat-slider>
+    <input matSliderThumb value="40" aria-label="Single value" />
+  </mat-slider>
+
+  <!-- Range -->
+  <mat-slider>
+    <input matSliderStartThumb value="20" aria-label="From" />
+    <input matSliderEndThumb value="70" aria-label="To" />
+  </mat-slider>
+
+  <!-- Discrete, with tick marks -->
+  <mat-slider discrete showTickMarks step="10">
+    <input matSliderThumb value="50" aria-label="Stepped value" />
+  </mat-slider>
+
+  <mat-slider disabled>
+    <input matSliderThumb value="60" aria-label="Disabled" />
+  </mat-slider>
+</div>

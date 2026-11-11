@@ -300,12 +300,21 @@ $my-theme: t.theme(
   - `name.html` uses only attributes and values the library's CSS selects on;
   - `name.display.*` is display-only (a listing of variable names, an Angular template) and the
     marker is refused on a file that would pass its check;
+  - `name.ng.html` (Phase 15) is an Angular template the docs render: the `templateUrl` of a
+    component, so what the page shows is what runs. Every element and static attribute is HTML's,
+    Angular Material's or the library's; it has no `style`, its classes are layout classes, and
+    its component has no other stylesheet;
+  - `name.ts.txt` (Phase 15) is TypeScript the docs show: the text is in a source file of the
+    docs app, verbatim;
   - every file names only custom properties the library declares or reads and `@cpangular/…`
     paths the packages export; every file is imported by a page; no `<pre>` or string field of a
     page holds a Sass, CSS or attribute sample.
-- TypeScript, shell and JSON samples stay in the page templates; nothing checks them.
+- The other TypeScript, shell and JSON samples stay in the page templates; nothing checks them.
 - `demos/docs/test/render.ts` (local, `pnpm --filter docs render` after `npx ng build docs`):
-  painted-contrast report over the built showcase in light and dark, measured from screenshots.
+  painted contrast measured from screenshots, over the built showcase in light and dark and
+  (Phase 15) over the component gallery in every preset and both modes: as loaded, hovered,
+  focused and with each overlay open. A component label below 4.5:1 fails the run; a docs caption
+  and the label of a disabled control are reported.
 
 **Corrections made with the move** (the prose a compile check cannot see): `define-core-theme()`
 takes no `$selector`; the "simplified output CSS" is now the compiled output itself;
@@ -539,10 +548,55 @@ colour format is accepted and oklch is recommended.
   and WebKit. `demos/docs/test/chain.ts` asserts the Getting Started primary's painted hue.
 - core.css: 221,168 → 224,536 bytes (15,211 → 15,316 gzipped).
 
+### ✅ Phase 15 — Material component gallery in the ng-material docs (PORT-PLAN.md)
+- **Components page** (`demos/docs`, `packages/ng-material/components`): 27 sections, one per
+  Angular Material 22 component family, live in the page's theme and mode. The 12 families that
+  read the primary roles (buttons, form field, select and autocomplete, checkbox, radio, slide
+  toggle, slider, datepicker, tabs, list, progress, stepper) are repeated under
+  `palette="secondary"`, `"tertiary"`, `"error"` and `"brand"`.
+- **Every component is an example file**: 34 `.ng.html` templates and 2 `.ts.txt` files in
+  `demos/docs/src/examples/components/`. A template is the `templateUrl` of the component the
+  page renders (`pages/components/gallery.components.ts`), so the source shown is what runs. The
+  examples check refuses a `style` attribute, a class that is not a layout class, and a component
+  stylesheet other than `gallery-layout.scss`: nothing in the gallery is coloured by the docs.
+- **Overlays section**: menu, dialog, select, autocomplete, datepicker, snackbar, tooltip and
+  bottom sheet opened from the page, from a nested `theme`, from a nested `themeMode`, and a
+  dialog themed through its panel. A table says where Material renders each and what it needs;
+  a list says what cannot follow a nested scope. Select and autocomplete need nothing (their
+  panel is inside the field's element). The others need an overlay container that carries the
+  scope's attributes: `cpaOverlayScope`, a directive of the docs app
+  (`src/app/shared/overlay-scope.directive.ts`), shown on the page as source. It is not part of
+  a package.
+- **Harness**: `demos/docs/test/render.ts` measures the gallery in the four presets, light and
+  dark: 2,390 labels per preset and mode (19,120 per engine), as loaded, with the pointer over
+  each control, with keyboard focus on it, and with each overlay open; a screenshot of every
+  section and every open overlay goes to `dist/docs-render/gallery/`. A component label below
+  4.5:1 is an error; a docs caption and the label of a disabled control are reported. It also
+  asserts that each overlay resolves the theme and mode of the scope that opened it.
+- **What the screenshots found, fixed in `apply-material-overrides()`** (now six patches, each
+  with its measured reason in the source):
+  - an accent painted as a label (text, outlined and elevated buttons; the focused and invalid
+    label, outline, indicator, caret and arrow of a form field; the label and icon of a step in
+    error) is held to lightness ≤ 0.40 in light mode and ≥ 0.82 in dark mode. Was 3.3–4.4:1 for a
+    focused text button on a filled card in all eight preset modes, 4.3:1 for a focused button on
+    the surface in two, and 1.04–1.11:1 for every such label under `palette="brand"` in dark
+    mode. The Phase 11 limit for the filled field (0.44) became 0.40 and now covers all of them;
+  - the filled card's container is `surface-container-high`, not `surface-container-highest`;
+  - a hint, a list subheader and the content of a tab and of a step have no colour in Material
+    and inherited the palette's identity colour inside a `[palette]` scope (1.04–1.11:1 under
+    `brand` in dark mode); they get `on-surface-variant` / `on-surface`;
+  - the scrim under a grid tile's header and footer is 60% black, not 38% (white text was 3.2:1
+    over a light tile).
+- **Result**: no component label below 4.5:1 in any preset in either mode, in Chromium and in
+  Firefox; lowest 4.73:1 (Chromium) and 4.68:1 (Firefox), a focused text button on the filled
+  card in cyan-orange, light mode. 0 harness errors; every overlay resolved its opener's theme
+  and mode.
+- Not changed, stated on the page: the presets pass no brand, so `palette="brand"` is core's
+  near-black in both modes and its fills (a filled button, a checked checkbox, a slider) are dark
+  on a dark page in dark mode. A brand is one colour and is never adjusted.
+- `demo-material` stays as listed below: the gallery lives in the docs.
+
 ### ⬛ Phase 13 — planned in PORT-PLAN.md
 - Phase 13 — Release through cpdevtools/git-flow
-
-### ⬛ Phase 15 — planned in PORT-PLAN.md
-- Phase 15 — Material component gallery in the ng-material docs
 
 ---

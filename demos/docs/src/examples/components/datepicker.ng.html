@@ -1,0 +1,26 @@
+<div class="g-row g-top">
+  <div class="g-col">
+    <mat-form-field appearance="fill">
+      <mat-label>Date</mat-label>
+      <input matInput [matDatepicker]="picker" [value]="date" />
+      <mat-hint>MM/DD/YYYY</mat-hint>
+      <mat-datepicker-toggle matIconSuffix [for]="picker" />
+      <mat-datepicker #picker />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Range</mat-label>
+      <mat-date-range-input [rangePicker]="range">
+        <input matStartDate placeholder="Start" [formControl]="start" />
+        <input matEndDate placeholder="End" [formControl]="end" />
+      </mat-date-range-input>
+      <mat-datepicker-toggle matIconSuffix [for]="range" />
+      <mat-date-range-picker #range />
+    </mat-form-field>
+  </div>
+
+  <!-- The calendar a datepicker opens, inline -->
+  <mat-card class="g-calendar" appearance="outlined">
+    <mat-calendar [selected]="date" [startAt]="date" />
+  </mat-card>
+</div>

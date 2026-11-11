@@ -15,3 +15,9 @@ declare module '*.html' {
   const text: string;
   export default text;
 }
+// TypeScript the docs app runs, shown as it is: a .ts.txt holds the text, and
+// examples.test.ts fails unless that text is in a source file under src/app.
+declare module '*.ts.txt' {
+  const text: string;
+  export default text;
+}

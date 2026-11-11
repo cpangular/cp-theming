@@ -1,0 +1,19 @@
+<mat-stepper [selectedIndex]="1">
+  <mat-step label="Done" completed>
+    <p>Content of the first step.</p>
+  </mat-step>
+  <mat-step label="Current">
+    <p>Content of the current step.</p>
+    <div class="g-row">
+      <button matButton matStepperPrevious>Back</button>
+      <button matButton="filled" matStepperNext>Next</button>
+    </div>
+  </mat-step>
+  <mat-step label="Optional" optional>
+    <p>Content of the optional step.</p>
+  </mat-step>
+  <!-- Shown as an error because the stepper is provided { showError: true } -->
+  <mat-step label="Error" hasError errorMessage="Needs attention">
+    <p>Content of the step with an error.</p>
+  </mat-step>
+</mat-stepper>

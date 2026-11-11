@@ -15,6 +15,15 @@
 //   name.display.*     display-only: a fragment that cannot be checked that way
 //                      (a listing of variable names, an Angular template). The
 //                      marker is refused on a file that would pass the check.
+//   name.ng.html       an Angular template the docs render: it is the
+//                      `templateUrl` of a component, so what the page shows is
+//                      what runs. Every element and static attribute is HTML's,
+//                      Angular Material's or the library's (with a value the
+//                      library's CSS selects on); it has no `style`, its
+//                      classes are layout classes, and its component has no
+//                      other stylesheet. Bindings are the Angular build's.
+//   name.ts.txt        TypeScript the docs show: the text is in a source file
+//                      of the docs app, verbatim
 //
 // Every file, display-only or not, may only name custom properties the library
 // declares or reads and `@cpangular/…` paths the packages export.
@@ -62,12 +71,14 @@ const isDisplay = (f: string) => /\.display\.[a-z]+$/.test(f);
 const scss = all.filter((f) => f.endsWith('.scss') && !isDisplay(f));
 const outputCss = all.filter((f) => f.endsWith('.output.css'));
 const plainCss = all.filter((f) => f.endsWith('.css') && !isDisplay(f) && !outputCss.includes(f));
-const html = all.filter((f) => f.endsWith('.html') && !isDisplay(f));
+const templates = all.filter((f) => f.endsWith('.ng.html'));
+const html = all.filter((f) => f.endsWith('.html') && !isDisplay(f) && !templates.includes(f));
+const code = all.filter((f) => f.endsWith('.ts.txt'));
 const display = all.filter(isDisplay);
 
-test('every example is a .scss, .css or .html file in a page folder', () => {
+test('every example is a .scss, .css, .html or .ts.txt file in a page folder', () => {
   assert.ok(all.length > 0, 'examples exist');
-  const odd = all.filter((f) => !/^[\w-]+[\\/][\w.-]+\.(scss|css|html)$/.test(rel(f)));
+  const odd = all.filter((f) => !/^[\w-]+[\\/][\w.-]+\.(scss|css|html|ts\.txt)$/.test(rel(f)));
   assert.deepEqual(odd.map(rel), []);
 });
 
@@ -246,6 +257,164 @@ for (const file of html) {
   });
 }
 
+// ── Angular templates ────────────────────────────────────────────────────────
+
+const appSources = walk(appDir)
+  .filter((f) => f.endsWith('.ts'))
+  .map((f) => ({
+    path: f,
+    file: path.relative(repoRoot, f),
+    dir: path.dirname(f),
+    text: readFileSync(f, 'utf8'),
+  }));
+
+/**
+ * Element names and attribute names Angular Material, the CDK and forms
+ * declare, and the selectors of the docs app's own components and directives.
+ */
+function angularVocabulary(): { tags: Set<string>; attributes: Set<string> } {
+  const tags = new Set<string>();
+  const attributes = new Set<string>();
+  const selector = (value: string) => {
+    for (const part of value.split(',')) {
+      const tag = /^\s*([a-zA-Z][\w-]*)/.exec(part)?.[1];
+      if (tag) tags.add(tag.toLowerCase());
+      for (const a of part.matchAll(/\[([\w-]+)/g)) attributes.add(a[1].toLowerCase());
+    }
+  };
+  for (const { text } of appSources)
+    for (const m of text.matchAll(/\bselector:\s*'([^']+)'/g)) selector(m[1]);
+  for (const pkg of ['material', 'cdk', 'forms']) {
+    const dir = path.join(repoRoot, 'node_modules', '@angular', pkg, 'fesm2022');
+    for (const name of readdirSync(dir).filter((f) => f.endsWith('.mjs'))) {
+      const text = readFileSync(path.join(dir, name), 'utf8');
+      for (const m of text.matchAll(/\bselector:\s*(["'])((?:(?!\1).)+)\1/g)) selector(m[2]);
+      // An input, in each form the compiler writes: `name: "public"`,
+      // `name: ["public", …]` and `name: { publicName: "public", … }`.
+      for (const m of text.matchAll(/\binputs:\s*\{/g)) {
+        let depth = 1;
+        let end = m.index + m[0].length;
+        for (; depth > 0 && end < text.length; end++)
+          depth += text[end] === '{' ? 1 : text[end] === '}' ? -1 : 0;
+        const body = text.slice(m.index, end);
+        for (const i of body.matchAll(/[\w$]+:\s*\[?\s*"([^"]+)"/g))
+          attributes.add(i[1].toLowerCase());
+      }
+    }
+  }
+  return { tags, attributes };
+}
+
+const TEMPLATE_TAGS = new Set([
+  ...HTML_TAGS,
+  ...'input textarea label form table thead tbody tr th td img ng-container ng-template ng-content'.split(
+    ' ',
+  ),
+]);
+const TEMPLATE_ATTRIBUTES = new Set(
+  'class id type href title value placeholder rows disabled checked name role for tabindex alt'.split(
+    ' ',
+  ),
+);
+
+// Layout: where a thing sits and how big it is. Nothing that paints.
+const LAYOUT_PROPERTY =
+  /^(display|box-sizing|flex(-[a-z]+)*|grid(-[a-z]+)*|gap|(row|column)-gap|(align|justify|place)-(items|content|self)|(min-|max-)?(width|height)|margin(-[a-z]+)*|padding(-[a-z]+)*)$/;
+
+const layoutSheet = path.join(appDir, 'packages/pages/components/gallery-layout.scss');
+const layoutRules = rules(compileFile(layoutSheet).css);
+const layoutClasses = new Set(
+  layoutRules.flatMap((r) => [...r.selector.matchAll(/\.([\w-]+)/g)].map((m) => m[1])),
+);
+
+test('gallery-layout.scss declares layout and nothing else', () => {
+  assert.ok(layoutRules.length > 0, 'has rules');
+  const other = layoutRules.flatMap((r) =>
+    r.declarations
+      .filter(([name]) => !LAYOUT_PROPERTY.test(name))
+      .map(([name, value]) => `${r.selector} { ${name}: ${value} }`),
+  );
+  assert.deepEqual(other, []);
+});
+
+const ng = angularVocabulary();
+
+/** What in a template is neither HTML's, Angular's nor the library's. */
+function unknownTemplate(source: string): string[] {
+  const unknown: string[] = [];
+  for (const { tag, name, value } of attributesOf(source)) {
+    const shown = value === null ? name : `${name}="${value}"`;
+    if (name === '') {
+      if (!TEMPLATE_TAGS.has(tag.toLowerCase()) && !ng.tags.has(tag.toLowerCase()))
+        unknown.push(`<${tag}>`);
+      continue;
+    }
+    // Colour comes from the adapter or a cp-theming attribute, never from here.
+    if (/^\[?(attr\.)?(style|ngStyle)\b/i.test(name)) {
+      unknown.push(`${shown} (a template has no styles of its own)`);
+      continue;
+    }
+    // A binding, a listener, a structural directive or a reference: the Angular
+    // build type-checks these against the components the template uses.
+    if (/^[[(*#@]/.test(name)) continue;
+    const lower = name.toLowerCase();
+    if (lower === 'class') {
+      for (const c of (value ?? '').split(/\s+/).filter(Boolean))
+        if (!layoutClasses.has(c)) unknown.push(`class="${c}" (not in gallery-layout.scss)`);
+      continue;
+    }
+    if (TEMPLATE_ATTRIBUTES.has(lower) || lower.startsWith('aria-')) continue;
+    // A name both vocabularies have (`mode`, `color`) is Material's if the
+    // value is not one the library selects on.
+    const entry = vocab.get(lower);
+    if (entry && (value === null ? entry.bare : entry.values.has(value))) continue;
+    if (ng.attributes.has(lower)) continue;
+    unknown.push(shown);
+  }
+  return unknown;
+}
+
+for (const file of templates) {
+  test(`${rel(file)}: every element and attribute is HTML's, Angular's or the library's`, () => {
+    const source = readFileSync(file, 'utf8');
+    assert.ok(attributesOf(source).length > 0, 'has markup');
+    assert.deepEqual(unknownTemplate(source), []);
+  });
+}
+
+test('every template example is the template of a component with the layout sheet only', () => {
+  assert.ok(ng.tags.has('mat-form-field') && ng.attributes.has('matbutton'), 'read Material');
+  const rendered = new Set<string>();
+  const styled: string[] = [];
+  for (const { path: file, dir, text } of appSources)
+    for (const block of text.split(/^@Component\(/m).slice(1)) {
+      const meta = block.slice(0, block.search(/^\}\)/m));
+      const url = /templateUrl:\s*'([^']+)'/.exec(meta)?.[1];
+      if (!url || !path.resolve(dir, url).startsWith(examplesDir)) continue;
+      rendered.add(path.resolve(dir, url));
+      const sheet = /styleUrl:\s*(?:'([^']+)'|(\w+))/.exec(meta);
+      const named =
+        sheet?.[1] ?? new RegExp(`const ${sheet?.[2]} = '([^']+)'`).exec(text)?.[1] ?? '';
+      if (/\bstyles:|styleUrls:/.test(meta) || path.resolve(dir, named) !== layoutSheet)
+        styled.push(`${path.relative(repoRoot, file)}: ${url}`);
+    }
+  assert.deepEqual(styled, [], 'components with a stylesheet other than gallery-layout.scss');
+  assert.deepEqual(templates.filter((f) => !rendered.has(f)).map(rel), [], 'not a templateUrl');
+});
+
+// ── TypeScript the docs show ─────────────────────────────────────────────────
+
+for (const file of code) {
+  test(`${rel(file)}: the text is in a source file of the docs app, verbatim`, () => {
+    const shown = readFileSync(file, 'utf8').trim();
+    assert.ok(shown.length > 0, 'has text');
+    assert.ok(
+      appSources.some((s) => s.text.includes(shown)),
+      'no .ts file under src/app contains this text',
+    );
+  });
+}
+
 // ── The example theme the docs app renders ───────────────────────────────────
 
 // Getting Started shows custom-theme.scss and renders brand-chain.html with
@@ -338,14 +507,6 @@ test('every @cpangular path an example names is in the package exports', () => {
 
 // ── The pages ────────────────────────────────────────────────────────────────
 
-const appSources = walk(appDir)
-  .filter((f) => f.endsWith('.ts'))
-  .map((f) => ({
-    file: path.relative(repoRoot, f),
-    dir: path.dirname(f),
-    text: readFileSync(f, 'utf8'),
-  }));
-
 test('every example is imported as text by a page, and every import exists', () => {
   const imported = new Set<string>();
   const broken: string[] = [];
@@ -379,7 +540,8 @@ test('no hand-written Sass, CSS or attribute sample remains in a page', () => {
 test('summary', (t) => {
   t.diagnostic(
     `${all.length} examples: ${scss.length} Sass compiled, ${plainCss.length} CSS, ` +
-      `${outputCss.length} output excerpt, ${html.length} attribute HTML, ${display.length} display-only`,
+      `${outputCss.length} output excerpt, ${html.length} attribute HTML, ` +
+      `${templates.length} Angular templates, ${code.length} TypeScript, ${display.length} display-only`,
   );
   // stripComments is what the readers above rely on; keep the import honest.
   assert.equal(stripComments('/* x */a'), 'a');

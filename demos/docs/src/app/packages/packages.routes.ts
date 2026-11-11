@@ -33,6 +33,11 @@ export const packagesChildRoutes: Routes = [
     path: 'showcase',
     loadComponent: () => import('./pages/showcase.component').then((m) => m.ShowcasePageComponent),
   },
+  {
+    path: 'components',
+    loadComponent: () =>
+      import('./pages/components.component').then((m) => m.ComponentsPageComponent),
+  },
   // core module pages
   {
     path: 'palette',

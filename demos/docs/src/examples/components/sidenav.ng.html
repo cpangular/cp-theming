@@ -1,0 +1,22 @@
+<!-- One block, so nothing separates the toolbar from the container -->
+<div>
+  <mat-toolbar>
+    <button matIconButton aria-label="Toggle the sidenav" (click)="nav.toggle()">
+      <mat-icon>menu</mat-icon>
+    </button>
+    <span>Toolbar</span>
+    <span class="g-spacer"></span>
+    <button matIconButton aria-label="Search"><mat-icon>search</mat-icon></button>
+  </mat-toolbar>
+  <mat-sidenav-container class="g-frame">
+    <mat-sidenav #nav mode="side" opened>
+      <mat-nav-list>
+        <a mat-list-item href="packages/ng-material/components#sidenav" [activated]="true">Inbox</a>
+        <a mat-list-item href="packages/ng-material/components#sidenav">Sent</a>
+      </mat-nav-list>
+    </mat-sidenav>
+    <mat-sidenav-content>
+      <p class="g-pad">Content beside the sidenav.</p>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+</div>

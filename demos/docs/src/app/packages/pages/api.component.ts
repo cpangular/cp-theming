@@ -1533,10 +1533,14 @@ const NG_MATERIAL_TOC = [
             <div class="api-symbol">
               <h3 class="api-symbol-name">apply-material-overrides</h3>
               <p class="api-symbol-desc">
-                Emit component-level token patches for the cases where a component's own default
-                does not work with cp-theming's roles (today: the slide toggle's selected icon and
-                the filled form field's container and accent colours). These are targeted fixes, not
-                a wholesale M2→M3 shim.
+                Emit component-level patches for the cases where a component's own default does not
+                work with cp-theming's roles. Today: the slide toggle's selected icon; the accent in
+                a label (text, outlined and elevated buttons, the focused and invalid states of a
+                form field, a step in error), held to a readable lightness; the container of the
+                filled form field and of the filled card; the text Material leaves to inherit
+                (hints, list subheaders, tab and step content), which gets a surface role; and the
+                scrim under a grid tile's header and footer. These are targeted fixes, each with its
+                measured reason in the source, not a wholesale M2→M3 shim.
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"

@@ -12,7 +12,7 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 |---|---|---|
 | `packages/theme-core` | `@cpangular/cp-theming-core` | 🟡 In Progress — SCSS real, TS API real (Phase 3 done), harness in `test/` (Phase 8 done), cascade: core derives once, a theme is one rule (Phase 9 done), contrast by luminance step (Phase 10 done), palette chain: `brand` and `tertiary` are core palettes and a theme passes only the colours it has (Phase 14 done), generated accents kept inside sRGB so their hue is the one painted (Phase 14c done) |
 | `packages/theme-ng-core` | `@cpangular/cp-theming-ng-core` | ✅ Done — `ThemeService`, `ThemeDirective`, `ThemeModeDirective` |
-| `packages/theme-ng-material` | `@cpangular/cp-theming-ng-material` | ✅ Done — every `--mat-sys-*` token Angular Material 22 reads (186 declared), colour roles from Material's own role tables (Phase 11 done), tertiary roles from `--color--tertiary` (Phase 14 done), `[palette]` scopes for the eight accent palettes, two component patches, density scopes |
+| `packages/theme-ng-material` | `@cpangular/cp-theming-ng-material` | ✅ Done — every `--mat-sys-*` token Angular Material 22 reads (186 declared), colour roles from Material's own role tables (Phase 11 done), tertiary roles from `--color--tertiary` (Phase 14 done), `[palette]` scopes for the eight accent palettes, six measured component patches in `apply-material-overrides()` (Phase 15 done), density scopes |
 | `packages/theme-material` | `@cpangular/cp-theming-material` | ⬛ Stub |
 | `packages/theme-m3` | `@cpangular/cp-theming-m3` | ⬛ Stub |
 
@@ -20,7 +20,7 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 
 | Demo | Description | Status |
 |---|---|---|
-| `demos/docs` | Angular 22 + Material 22 docs/showcase site | 🟡 In Progress — all pages built; every Sass, CSS and attribute sample is a real file under `demos/docs/src/examples/`, compiled and checked by `pnpm test` and rendered live from the same file; theme + mode switching working, saved theme and mode painted on the first frame (`node demos/docs/test/startup.ts`), painted-contrast report over the showcase (`node demos/docs/test/render.ts`), pixel check of the palette chain on Getting Started and the showcase (`node demos/docs/test/chain.ts`); TypeScript, shell and JSON samples are still hand-written; Pages deploy is manual-only until the repo is public |
+| `demos/docs` | Angular 22 + Material 22 docs/showcase site | 🟡 In Progress — all pages built; every Sass, CSS and attribute sample is a real file under `demos/docs/src/examples/`, compiled and checked by `pnpm test` and rendered live from the same file; theme + mode switching working, saved theme and mode painted on the first frame (`node demos/docs/test/startup.ts`), a Components page in the ng-material section with every Angular Material 22 component family live (27 sections, the accent families repeated under `palette="secondary"`, `"tertiary"`, `"error"` and `"brand"`, and the overlays inside a nested `theme` and a nested `themeMode`; Phase 15 done), painted-contrast report over the showcase and the component gallery, where a component label below 4.5:1 is an error (`node demos/docs/test/render.ts`), pixel check of the palette chain on Getting Started and the showcase (`node demos/docs/test/chain.ts`); TypeScript, shell and JSON samples are still hand-written; Pages deploy is manual-only until the repo is public |
 | `demos/demo-core` | Vanilla TS + Vite | 🔴 Broken — POC reimplemented, loads core first via `t.define-core-theme()`, but `pnpm build` fails: `src/scss/components.scss` calls `a.container(high)` and the mixin takes no argument |
 | `demos/demo-material` | Angular + Material adapter | ⬛ Stub |
 | `demos/demo-brand-core` | Example brand theme pack | ⬛ Stub |
@@ -48,9 +48,9 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 | 14 | Brand and accent palettes: pass what you have, the rest are generated (`brand` and `tertiary` core palettes; the chain brand → primary → secondary, tertiary → background, surface; semantic defaults; Material tertiary from `--color--tertiary`) | ✅ Done |
 | 14b | Follow-ups from the Phase 14 review: chroma floors for the generated secondary and tertiary, the generated primary readable on the generated background in every hue, `bg` on `background` and `surface` with readable text, Showcase back in the ng-material sidebar | ✅ Done |
 | 14c | Generated colours stay inside the screen's gamut: the generated primary, secondary and tertiary and `palette-from-var()` / `palette-from-brand()` give up chroma until sRGB can show them, so an orange brand no longer gets a red primary | ✅ Done |
-| 15 | Material component gallery in the ng-material docs | ⬛ Not started |
+| 15 | Material component gallery in the ng-material docs (Components page, every family an example file, `render.ts` screenshots it per preset and mode with overlays open and fails a component label below 4.5:1) | ✅ Done |
 
-Phases 8–15 are specified in [PORT-PLAN.md](PORT-PLAN.md); 14, 14b and 14c were done before 13.
+Phases 8–15 are specified in [PORT-PLAN.md](PORT-PLAN.md); 14, 14b, 14c and 15 were done before 13.
 
 ### Browser baseline
 
@@ -82,8 +82,9 @@ shows Material components without hover, focus and press layers.
 
 ```bash
 pnpm install
-pnpm build         # builds all packages
-pnpm build.core    # builds @cpangular/cp-theming-core only
+pnpm build         # builds @cpangular/cp-theming-core (the wireit root build depends on core only)
+pnpm build.core    # the same, by name
+pnpm --filter @cpangular/cp-theming-ng-material build   # the adapter's CSS; the docs app reads it, so run it before `npx ng build docs` after a change in scss/
 pnpm test          # CSS checks (node --test) + TypeScript API tests (vitest) in both packages, and the docs examples
 pnpm fix           # format all files with prettier
 
@@ -93,8 +94,11 @@ pnpm --filter @cpangular/cp-theming-core render
 # Browser check of startup: saved theme and mode painted before the docs bundle runs (local only)
 npx ng build docs && node demos/docs/test/startup.ts
 
-# Painted-contrast report over the built showcase, light and dark (local only)
-npx ng build docs && node demos/docs/test/render.ts
+# Painted contrast over the built showcase and the component gallery: every preset, light and dark,
+# as loaded, hovered, focused and with overlays open; screenshots in dist/docs-render/ (local only).
+# A component label below 4.5:1 fails the run. About 14 minutes per engine for the gallery.
+npx ng build docs && node demos/docs/test/render.ts chromium firefox --jobs=8
+# One part of it: --only=gallery|showcase --preset=rose-red --mode=dark --section=card,buttons
 
 # Pixel check of the palette chain on the built docs: the brand swatch, three accents per preset (local only)
 npx ng build docs && node demos/docs/test/chain.ts

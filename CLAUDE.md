@@ -69,6 +69,18 @@ This is a CSS-variable-based theming system. Key facts:
   fragment that cannot be checked is named `*.display.*`. Never write such a sample in a page
   template (a check fails). The examples are in `.prettierignore`: their layout is part of the
   sample. Contrast report over the built showcase: `node demos/docs/test/render.ts`.
+- Component gallery (Phase 15): the ng-material **Components** page renders every Angular
+  Material family from `demos/docs/src/examples/components/*.ng.html`, each the `templateUrl`
+  of a component in `pages/components/gallery.components.ts`, so what the page shows is what
+  runs. The check allows HTML, Material and library elements and attributes only, no `style`,
+  layout classes only (`gallery-layout.scss`, which may not declare a colour). Never colour a
+  gallery example: a wrong colour is fixed in the adapter or as a measured patch in
+  `apply-material-overrides()`. `*.ts.txt` is TypeScript the docs show, verbatim from a source
+  file. `node demos/docs/test/render.ts` screenshots the gallery per preset and mode with every
+  overlay open (`--only=gallery`, `--preset=`, `--mode=`, `--section=`); a component label below
+  4.5:1 fails the run. The docs read the adapter's built CSS: after a change in
+  `packages/theme-ng-material/scss/`, run `pnpm --filter @cpangular/cp-theming-ng-material build`
+  before `npx ng build docs` (root `pnpm build` builds core only).
 - A box-shadow token cannot be wrapped in `light-dark()` (colours only): `--elevation-N--shadow`
   is `<geometry> light-dark(<colour>, <colour>)`; a harness check fails a list inside `light-dark()`.
 - Focus ring color is **per-palette**, auto-derived via CSS relative color.
