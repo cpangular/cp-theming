@@ -337,8 +337,45 @@ $my-theme: t.theme(
   derivatives. All pass in Chromium, Firefox and WebKit.
 - core.css went from 165 KB to 178 KB (12.2 KB to 12.4 KB gzipped).
 
-### ⬛ Phases 11–13 — planned in PORT-PLAN.md
-- Phase 11 — Material adapter from Material's role tables
+### ✅ Phase 11 — Material adapter from Material's role tables (PORT-PLAN.md)
+- `scss/_roles.scss` computes the `--mat-sys-*` colour roles from Angular Material's own tables
+  (`md-sys-color-values-light` / `-dark`): the roles cp-theming has a token for map to it
+  (`primary`, `on-primary`, the container pair for primary / secondary / tertiary (= secondary) /
+  error, `surface`, `on-surface`, `background`, `on-background`, `outline-variant`, `scrim`,
+  `shadow`); every other accent role is the theme colour at the M3 tone the table names
+  (`scss/_m3-tone.scss`, `m3-tone()`); the neutral roles (surface containers, dim, bright,
+  `surface-variant`, `on-surface-variant`, `inverse-*`, `outline`) are offsets from
+  `--color--surface` by the tone's distance from M3's own surface tone (98 light, 6 dark). A
+  container is `--bg`, one ladder step lighter in dark mode.
+- `--mat-sys-neutral10` and `--mat-sys-neutral-variant20` are declared; typography reads `--text--*`
+  and the font shorthand tokens (`--mat-sys-body-large` …) are emitted; the state-layer opacities
+  are numbers (`calc(var(--weight--state-*) / 100%)`), which is what Material's `color-mix()`
+  expressions need.
+- Selectors: every token that reads a cp-theming variable is on `:root, :where([theme])`; the two
+  literal constants on `:root` only; state layers again on `:where([themeMode])`.
+- `material-palette()` is generated from the same tables with `--color--{name}` as the origin. The
+  adapter's core mixin emits `[palette="name"]` for the six core accent palettes; `mat.adaptor()`
+  emits it for custom names only.
+- `apply-material-overrides()` went from five patches to two: the slide-toggle selected icon and
+  the filled form field (container `surface-container-high`, primary and error accents held to
+  M3's lightness on it). Removed: the select option checkmark, the slide-toggle track outline,
+  unselected track and icon, the selected handle tints, and nine declarations for tokens
+  Material 22 never reads.
+- Core fix found by the critique: `--elevation-N--shadow` was `light-dark()` around a whole
+  box-shadow (invalid, computed to `none`); it is `<geometry> light-dark(<colour>, <colour>)`.
+- Harness (`packages/theme-ng-material/test/css/material-roles.test.ts` and core): every
+  `--mat-sys-*` name read by the installed Material component styles is declared (94 read, 186
+  declared); every role of Material's tables is declared; the surface roles keep M3's lightness
+  order in both modes for every preset and fixture; the state-layer opacities are the weight
+  divided by 100%; every component token the adapter sets is one Material reads; every
+  `light-dark()` argument is a single value. No `todo` is left in either package.
+- render.ts has 104 rows (table roles in a nested theme, nested mode and `[palette]` scope, the
+  state layer inside Material's own `color-mix()`, shadow tokens as `box-shadow`), all passing in
+  Chromium, Firefox and WebKit. The docs showcase was screenshotted in light and dark for the four
+  themes and nested themes; an Opus critique (three critics, eight verifiers) confirmed five
+  defects, all fixed (PORT-PLAN.md, "Amended after the Phase 11 critique").
+
+### ⬛ Phases 12–13 — planned in PORT-PLAN.md
 - Phase 12 — Startup: no flash, safe import
 - Phase 13 — Release through cpdevtools/git-flow
 

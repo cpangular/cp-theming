@@ -1,7 +1,8 @@
-// Check 4 (adapter) — the adapter registers nothing; the adaptor fixture registers
-// eight names (four roles × light and dark) for its custom palette, once at root
-// level, and its [palette] hooks emit the Material remap for every non-neutral
-// palette, once per palette name.
+// Check 4 (adapter) — the adapter registers nothing and remaps --mat-sys-primary
+// for the six core accent palettes itself; the adaptor fixture registers eight
+// names (four roles × light and dark) for its custom palette, once at root
+// level, and its [palette] hooks emit the Material remap for the custom
+// palette names only, once per name.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -14,6 +15,20 @@ import {
   materialFixtureSheets,
   materialSheets,
 } from '../../../theme-core/test/lib/sets.ts';
+
+/** Palette names with a `[palette="name"]` rule that points --mat-sys-primary at that palette. */
+function remapped(css: string): string[] {
+  const names = new Set<string>();
+  for (const rule of rules(css)) {
+    const m = /^\[palette=([\w-]+)\]$/.exec(normalizeSelector(rule.selector));
+    if (
+      m &&
+      rule.declarations.some(([n, v]) => n === '--mat-sys-primary' && v === `var(--color--${m[1]})`)
+    )
+      names.add(m[1]);
+  }
+  return [...names].sort();
+}
 
 for (const sheet of materialSheets()) {
   test(`${sheet.label} registers no @property`, () => {
@@ -36,23 +51,8 @@ for (const fixture of materialFixtureSheets()) {
     assert.deepEqual([...registeredProperties(fixture.css)].sort(), expected.sort());
   });
 
-  test(`${fixture.label}: mat.adaptor() remaps --mat-sys-primary for every palette except surface and background`, () => {
-    const remapped = new Set<string>();
-    for (const rule of rules(fixture.css)) {
-      const sel = normalizeSelector(rule.selector);
-      const m = /\[palette=([\w-]+)\]$/.exec(sel.split(',')[0].trim());
-      if (
-        m &&
-        rule.declarations.some(
-          ([n, v]) => n === '--mat-sys-primary' && v === `var(--color--${m[1]})`,
-        )
-      )
-        remapped.add(m[1]);
-    }
-    assert.deepEqual(
-      [...remapped].sort(),
-      palettes.filter((n) => n !== 'surface' && n !== 'background').sort(),
-    );
+  test(`${fixture.label}: mat.adaptor() remaps --mat-sys-primary for the custom palette names only`, () => {
+    assert.deepEqual(remapped(fixture.css), custom.sort());
     // Once per palette name, at root level (no [theme] ancestor).
     const hookRules = rules(fixture.css).filter((r) =>
       r.declarations.some(([n]) => n === '--mat-sys-primary'),
@@ -65,3 +65,11 @@ for (const fixture of materialFixtureSheets()) {
     );
   });
 }
+
+test('material-core.css remaps --mat-sys-primary for every core palette except surface and background', () => {
+  const adapterCore = materialSheets().find((s) => s.label.endsWith('material-core.scss'))!;
+  assert.deepEqual(
+    remapped(adapterCore.css),
+    CORE_PALETTE_NAMES.filter((n) => n !== 'surface' && n !== 'background').sort(),
+  );
+});

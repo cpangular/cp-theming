@@ -284,7 +284,7 @@ test('fixtures/explicit-roles: explicit $bg/$stroke/$focus, weights, overlay, el
   assert.ok(!decls.has('--weight--text-emphasis-blend--mode-light'), 'unpassed weight absent');
   assert.match(decls.get('--overlay--scrim')!, /^light-dark\(/);
   assert.ok(!decls.has('--overlay--shadow'), 'unpassed overlay key absent');
-  assert.match(decls.get('--elevation-1--shadow')!, /^light-dark\(.*0\.6\)\)$/);
+  assert.match(decls.get('--elevation-1--shadow')!, /^0 1px 2px light-dark\(.*0\.6\)\)$/);
   assert.ok(!decls.has('--elevation-0--shadow'), 'level 0 untouched by $shadow-color');
   assert.equal(decls.get('--shape--md'), '10px');
   assert.ok(!decls.has('--shape--xs'), 'unpassed shape absent');

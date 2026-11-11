@@ -185,3 +185,67 @@ test('every relative-colour derivation pins alpha to 1, except the tints', (t) =
   assert.ok(pinned > 0 && tints > 0, 'the check found derivations and tints');
   assert.deepEqual(unpinned, []);
 });
+
+// ─── light-dark() ────────────────────────────────────────────────────────────
+// light-dark() accepts two colours and nothing else. Around a whole box-shadow
+// (`light-dark(0 1px 2px black, …)`) the declaration is invalid wherever it is
+// used and the shadow computes to `none`, so each argument has to be a single
+// value: one colour function, one var(), one keyword.
+test('every light-dark() argument is a single value, never a list', (t) => {
+  const offenders: string[] = [];
+  let seen = 0;
+  for (const sheet of [core, ...presets, ...fixtures, ...materialSheets()]) {
+    for (const rule of rules(sheet.css)) {
+      for (const [name, value] of rule.declarations) {
+        for (const args of lightDarkArguments(value)) {
+          seen++;
+          if (args.length !== 2 || args.some((a) => topLevelWords(a) !== 1))
+            offenders.push(`${sheet.label} ${rule.selector} { ${name}: ${value} }`);
+        }
+      }
+    }
+  }
+  t.diagnostic(`${seen} light-dark() calls`);
+  assert.ok(seen > 0, 'the check found light-dark() calls');
+  assert.deepEqual(offenders, []);
+});
+
+/** The top-level, comma-separated arguments of every light-dark() in a value, nested ones included. */
+function lightDarkArguments(value: string): string[][] {
+  const out: string[][] = [];
+  const re = /\blight-dark\(/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(value))) {
+    const args: string[] = [];
+    let depth = 1;
+    let current = '';
+    let i = m.index + m[0].length;
+    for (; i < value.length && depth > 0; i++) {
+      const ch = value[i];
+      if (ch === '(') depth++;
+      else if (ch === ')' && --depth === 0) break;
+      if (ch === ',' && depth === 1) {
+        args.push(current.trim());
+        current = '';
+      } else current += ch;
+    }
+    args.push(current.trim());
+    out.push(args);
+  }
+  return out;
+}
+
+/** How many whitespace-separated components a value has outside any parentheses. */
+function topLevelWords(value: string): number {
+  let depth = 0;
+  let words = 0;
+  let inWord = false;
+  for (const ch of value) {
+    if (ch === '(') depth++;
+    else if (ch === ')') depth--;
+    const space = /\s/.test(ch) && depth === 0;
+    if (!space && !inWord) words++;
+    inWord = !space;
+  }
+  return words;
+}

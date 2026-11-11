@@ -22,28 +22,14 @@ for (const fixture of coreFixtureSheets()) {
   });
 }
 
-const PHASE_11 = 'Phase 11 — the Material adapter reads --typescale--* while core emits --text--*';
-
 for (const preset of presets) {
-  test(
-    `core + ${preset.label} + adapter: every var() read is declared`,
-    { todo: PHASE_11 },
-    (t) => {
-      const missing = undefinedReads([core.css, preset.css, ...adapter.map((s) => s.css)]);
-      t.diagnostic(`${missing.length} undefined reads, e.g. ${missing.slice(0, 3).join(', ')}`);
-      assert.deepEqual(missing, []);
-    },
-  );
+  test(`core + ${preset.label} + adapter: every var() read is declared`, () => {
+    assert.deepEqual(undefinedReads([core.css, preset.css, ...adapter.map((s) => s.css)]), []);
+  });
 }
 
-test(
-  'docs app full style list (angular.json): every var() read is declared',
-  { todo: PHASE_11 },
-  (t) => {
-    const list = docsStyleList();
-    t.diagnostic(`styles: ${list.map((s) => s.entry).join(', ')}`);
-    const missing = undefinedReads(list.map((s) => s.compiled.css));
-    t.diagnostic(`${missing.length} undefined reads`);
-    assert.deepEqual(missing, []);
-  },
-);
+test('docs app full style list (angular.json): every var() read is declared', (t) => {
+  const list = docsStyleList();
+  t.diagnostic(`styles: ${list.map((s) => s.entry).join(', ')}`);
+  assert.deepEqual(undefinedReads(list.map((s) => s.compiled.css)), []);
+});

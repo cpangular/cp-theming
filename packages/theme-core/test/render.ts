@@ -305,8 +305,11 @@ interface Row {
   scheme?: 'light' | 'dark';
   probe: string;
   token: string;
-  /** paint: read through `color: var(token)` on a probe child. raw: getPropertyValue. */
-  read?: 'paint' | 'raw';
+  /**
+   * paint: read through `color: var(token)` on a probe child. raw: getPropertyValue.
+   * shadow: the colour of the computed `box-shadow: var(token)` on a probe child, or `none`.
+   */
+  read?: 'paint' | 'raw' | 'shadow';
   /** The value, or labelled candidates of which one must match (crossfade rows). */
   expect: string | Record<string, string>;
   /** Tolerance for a colour comparison (sRGB channel, 0–1). */
@@ -477,6 +480,90 @@ const rows: Row[] = [
     probe: '#p',
     token: '--mat-sys-primary',
     expect: COLOR.alphaDark,
+  },
+  // ── Material roles from Material's tables (Phase 11). Each expectation is
+  //    worked out by hand from the fixture's surface (0.93 light, 0.23 dark)
+  //    and the M3 tone numbers, not read back through the evaluator. ──
+  {
+    // surface-container-high is neutral 92 in light: 6 tones below M3's surface (98).
+    id: 'mat-sys/surface-container-high/light',
+    sheets: ['core', 'alpha', 'material'],
+    html: 'theme="alpha"',
+    body: P,
+    probe: '#p',
+    token: '--mat-sys-surface-container-high',
+    expect: 'oklch(0.8783 0.003 0)',
+  },
+  {
+    // …and neutral 17 in dark: 11 tones above M3's dark surface (6).
+    id: 'mat-sys/surface-container-high/nested-mode',
+    sheets: ['core', 'alpha', 'material'],
+    html: 'theme="alpha"',
+    body: '<div id="p" themeMode="dark">x</div>',
+    probe: '#p',
+    token: '--mat-sys-surface-container-high',
+    expect: 'oklch(0.3265 0.005 0)',
+  },
+  {
+    // outline is neutral-variant 60 in dark: surface 0.23 + 0.4672.
+    id: 'mat-sys/outline/nested-mode',
+    sheets: ['core', 'alpha', 'material'],
+    html: 'theme="alpha"',
+    body: '<div id="p" themeMode="dark">x</div>',
+    probe: '#p',
+    token: '--mat-sys-outline',
+    expect: 'oklch(0.6972 0.005 0)',
+  },
+  {
+    // The container is the bg role (L 0.24, 40% chroma in dark), one ladder
+    // step (0.12) lighter in dark mode so it shows on a dark surface.
+    id: 'mat-sys/primary-container/nested-mode',
+    sheets: ['core', 'alpha', 'material'],
+    html: 'theme="alpha"',
+    body: '<div id="p" themeMode="dark">x</div>',
+    probe: '#p',
+    token: '--mat-sys-primary-container',
+    expect: 'oklch(0.36 0.04 250)',
+  },
+  {
+    // A tone role re-derives from a nested theme's own primary: tone 90 is
+    // L 0.9138 with the chroma scaled by 4L(1 − L) = 0.3151.
+    id: 'mat-sys/primary-fixed/nested-theme',
+    sheets: ['core', 'alpha', 'beta', 'material'],
+    html: 'theme="alpha"',
+    body: '<div id="p" theme="beta">x</div>',
+    probe: '#p',
+    token: '--mat-sys-primary-fixed',
+    expect: 'oklch(0.9138 0.03151 20)',
+  },
+  {
+    // The adapter itself remaps the core palette names; no adaptor hook involved.
+    id: 'mat-sys/palette-core-name',
+    sheets: ['core', 'alpha', 'material'],
+    html: 'theme="alpha"',
+    body: '<div id="p" palette="warn">x</div>',
+    probe: '#p',
+    token: '--mat-sys-primary',
+    expect: 'oklch(0.55 0.18 55)',
+  },
+  {
+    id: 'mat-sys/palette-core-name/tone-follows',
+    sheets: ['core', 'alpha', 'material'],
+    html: 'theme="alpha"',
+    body: '<div id="p" palette="warn">x</div>',
+    probe: '#p',
+    token: '--mat-sys-primary-fixed',
+    expect: 'oklch(0.9138 0.05672 55)',
+  },
+  {
+    id: 'mat-sys/typography-reads-text-tokens',
+    sheets: ['core', 'alpha', 'material'],
+    html: 'theme="alpha"',
+    body: '<div id="p" style="font: var(--mat-sys-body-large)">x</div>',
+    probe: '#p',
+    token: '--mat-sys-body-large-size',
+    read: 'raw',
+    expect: '16px',
   },
   // ── Crossfade: a theme switch with a transition on the registered colours
   //    is mid-way at half time; a mode flip is instant at the variable level ──
@@ -787,7 +874,51 @@ const rows: Row[] = [
     probe: '#p',
     token: '--mat-sys-hover-state-layer-opacity',
     read: 'raw',
-    expect: '20%',
+    // A number for Material: the registered 20% weight divided by 100%.
+    expect: 'calc(20% / 100%)',
+  },
+  {
+    // Material's own expression for a state layer (option hover), verbatim
+    // but for the colour. A percentage in the token would make it invalid.
+    id: 'mat-sys/state-layer-opacity-in-color-mix',
+    sheets: ['core', 'alphaDefault', 'material'],
+    html: 'theme="alpha-default"',
+    body: '<div id="p" themeMode="dark" style="--probe: color-mix(in srgb, #000 calc(var(--mat-sys-hover-state-layer-opacity) * 100%), transparent)">x</div>',
+    probe: '#p',
+    token: '--probe',
+    expect: 'rgb(0 0 0 / 0.2)',
+  },
+  // A shadow token is a box-shadow whose colour varies by mode; light-dark()
+  // around the whole value would be invalid and compute to `none`.
+  {
+    id: 'elevation/shadow-is-a-box-shadow/light',
+    sheets: ['core', 'alpha'],
+    html: 'theme="alpha"',
+    body: P,
+    probe: '#p',
+    token: '--elevation-2--shadow',
+    read: 'shadow',
+    expect: 'oklch(0 0 0 / 0.3)',
+  },
+  {
+    id: 'elevation/shadow-is-a-box-shadow/nested-mode',
+    sheets: ['core', 'alpha'],
+    html: 'theme="alpha"',
+    body: '<div id="p" themeMode="dark">x</div>',
+    probe: '#p',
+    token: '--elevation-2--shadow',
+    read: 'shadow',
+    expect: 'oklch(0 0 0 / 0.5)',
+  },
+  {
+    id: 'mat-sys/level-is-a-box-shadow/nested-mode',
+    sheets: ['core', 'alpha', 'material'],
+    html: 'theme="alpha"',
+    body: '<div id="p" themeMode="dark">x</div>',
+    probe: '#p',
+    token: '--mat-sys-level2',
+    read: 'shadow',
+    expect: 'oklch(0 0 0 / 0.5)',
   },
   // background/surface keep their base as the bg role; a nested theme that
   // does not pass them inherits that base, not the outer's $color override.
@@ -974,9 +1105,12 @@ const probeScript = `(({ probe, token, read, act, transitioned, animates }) => {
   const readValue = () => {
     if (read === 'raw') return getComputedStyle(el).getPropertyValue(token).trim();
     const span = document.createElement('span');
-    span.style.color = 'var(' + token + ')';
+    if (read === 'shadow') span.style.boxShadow = 'var(' + token + ')';
+    else span.style.color = 'var(' + token + ')';
     el.appendChild(span);
-    const v = getComputedStyle(span).color;
+    const v = read === 'shadow'
+      ? getComputedStyle(span).boxShadow.replace(/(^|\\s)-?[\\d.]+px/g, '').trim()
+      : getComputedStyle(span).color;
     span.remove();
     return v;
   };

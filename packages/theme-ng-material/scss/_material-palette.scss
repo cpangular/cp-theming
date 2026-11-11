@@ -1,17 +1,21 @@
 @use "sass:meta";
 @use "sass:list";
+@use "roles";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // material-palette($name)
 //
-// Scopes --mat-sys-primary* tokens to a cp-theming named palette.
+// Scopes the --mat-sys-primary* tokens to a cp-theming named palette.
 // Apply to any selector that wraps the components you want recolored.
 //
 // All Material components inside that selector inherit the overridden tokens.
 // Scope tightly (a single wrapper element) to avoid coloring unintended siblings.
 //
-// NOTE: --mat-sys-* are unregistered vars — safe to override in local scope.
-// No eager-resolution issue (that only affects @property-registered vars like --color--*).
+// The roles are the ones Angular Material's own role tables derive from the
+// primary palette (primary, on-primary, the container pair, the fixed roles,
+// inverse-primary, surface-tint), computed from the same tables as the root
+// mapping with --color--{name} as the origin, so a scope agrees with what the
+// root would show for that colour.
 //
 // ── Usage examples ────────────────────────────────────────────────────────────
 //
@@ -31,24 +35,18 @@
 //   <span class="cp-caution"><mat-slide-toggle>Enable</mat-slide-toggle></span>
 //   .cp-caution { @include material-palette('caution'); }
 //
-// If mat.adaptor() is passed to t.define-theme(), the [palette] attribute works
-// directly without a class wrapper — core and material tokens are both applied:
+// The [palette] attribute works directly, without a class wrapper, for the core
+// palette names (define-ng-material-core-theme() emits their rules) and for a
+// custom name when mat.adaptor() is passed to t.define-theme():
 //   <button mat-flat-button palette="warn">Delete</button>
 //   <mat-checkbox palette="pass">Confirmed</mat-checkbox>
 //   <mat-slide-toggle palette="caution">Beta feature</mat-slide-toggle>
 // ─────────────────────────────────────────────────────────────────────────────
 
 @mixin material-palette($name) {
-  --mat-sys-primary: var(--color--#{$name});
-  --mat-sys-on-primary: var(--color--#{$name}--contrast);
-  --mat-sys-primary-container: var(--color--#{$name}--bg);
-  --mat-sys-on-primary-container: var(--color--#{$name}--bg--contrast);
-  --mat-sys-primary-fixed: var(--color--#{$name}--bg);
-  --mat-sys-primary-fixed-dim: var(--color--#{$name}--bg--low);
-  --mat-sys-on-primary-fixed: var(--color--#{$name}--bg--contrast);
-  --mat-sys-on-primary-fixed-variant: var(--color--#{$name}--bg--contrast);
-  --mat-sys-inverse-primary: var(--color--#{$name}--contrast);
-  --mat-sys-surface-tint: var(--color--#{$name}--tint-1);
+  @each $role, $value in roles.palette-roles($name) {
+    --mat-sys-#{$role}: #{$value};
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -68,9 +66,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // adaptor() — Returns a hooks map for use with t.define-theme($adaptor: mat.adaptor()).
 //
-// Wires Angular Material --mat-sys-primary* tokens to each cp-theming palette
-// as it is registered, so [palette="warn"] etc. automatically recolor all
-// Material components inside that scope.
+// Wires the Angular Material --mat-sys-primary* tokens to each custom palette
+// name a theme defines, so [palette="accent"] etc. recolors the Material
+// components inside that scope. The core palette names need no hook:
+// define-ng-material-core-theme() emits their rules.
 //
 // Usage:
 //   @use '@cpangular/cp-theming-core/scss/theme' as t;
@@ -79,14 +78,10 @@
 //   @include t.define-theme('my-theme', $config, $adaptor: mat.adaptor());
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Hook: emits [palette="$name"] { @include material-palette($name) } after
-// core has already emitted its own [palette="$name"] rules, ensuring the
-// --mat-sys-* overrides come later in the cascade and win.
+// Hook: emits [palette="$name"] { @include material-palette($name) } for a
+// custom palette name, after core has emitted its own [palette="$name"] rule.
 @mixin _on-define-palette-after($name) {
-  // Surface and background palettes are neutral — remapping --mat-sys-primary
-  // to them would break Material's surface hierarchy. Skip them.
-  $skip: surface, background;
-  @if not list.index($skip, $name) {
+  @if not list.index(roles.$accent-names, $name) and not list.index(roles.$neutral-names, $name) {
     [palette="#{$name}"] {
       @include material-palette($name);
     }

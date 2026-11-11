@@ -270,10 +270,11 @@ $shape: t.shape($xs: 4px, $sm: 8px, $md: 12px, $lg: 16px, $xl: 28px)
 &#64;include t.define-theme('my-theme', $my-theme, $adaptor: mat.adaptor());</code></pre>
             <p>The adaptor receives four optional hook mixins:</p>
             <pre><code>// define-palette-after($palette-name) is called after each palette is registered.
-// mat.adaptor() uses it to emit:
-//   [palette="warn"]  &#123; --mat-sys-primary: var(--color--warn); … &#125;
-//   [palette="pass"]  &#123; --mat-sys-primary: var(--color--pass); … &#125;
-// so Material components respond to [palette] attributes automatically.</code></pre>
+// mat.adaptor() uses it to emit, for each custom palette name of the theme:
+//   [palette="accent"]  &#123; --mat-sys-primary: var(--color--accent); … &#125;
+// so Material components respond to that [palette] attribute too. The core
+// names (primary, secondary, error, warn, caution, pass) get the same rule
+// from mat.define-ng-material-core-theme().</code></pre>
           </section>
         }
 
@@ -337,8 +338,8 @@ themeService.restorePersistedState();</code></pre>
           <section id="component-overrides" class="page-section">
             <h2>Adding component overrides</h2>
             <p>
-              Some Angular Material components bypass <code>--mat-sys-*</code> and hardcode values.
-              Add patches in <code>apply-material-overrides()</code> in
+              A few Angular Material component defaults do not work with cp-theming's roles. Add
+              patches in <code>apply-material-overrides()</code> in
               <code>packages/theme-ng-material/scss/_material.scss</code>. The demo-material
               application surfaces these gaps.
             </p>

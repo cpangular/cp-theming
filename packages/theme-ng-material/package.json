@@ -16,9 +16,10 @@
   },
   "wireit": {
     "build": {
-      "command": "sass --style=expanded scss/material-core.scss:dist/material-core.css scss/material-overrides.scss:dist/material-overrides.css",
+      "command": "sass --style=expanded --load-path=node_modules scss/material-core.scss:dist/material-core.css scss/material-overrides.scss:dist/material-overrides.css",
       "files": [
-        "scss/**/*.scss"
+        "scss/**/*.scss",
+        "../../pnpm-lock.yaml"
       ],
       "output": [
         "dist/**/*.css",
@@ -32,6 +33,7 @@
         "test/**",
         "../theme-core/scss/**/*.scss",
         "../theme-core/test/lib/**",
+        "../../pnpm-lock.yaml",
         "package.json"
       ],
       "output": []

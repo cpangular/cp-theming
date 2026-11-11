@@ -198,6 +198,8 @@ $elevation: t.light-dark(
 )
 ```
 
+A level's light and dark shadow may differ in their colours only: `light-dark()` switches a colour, not an offset or a blur, so each shadow is emitted as `<geometry> light-dark(<light colour>, <dark colour>)`. A `$levels` shadow passed for one mode with its own geometry applies to both modes; different geometries for the two modes are a compile error.
+
 ---
 
 ## `@include t.define-theme($name, $theme, $default?, $dedupe?)`

@@ -26,6 +26,16 @@ This is a CSS-variable-based theming system. Key facts:
 - Contrast (Phase 10): `--contrast` is black or white by a step at relative luminance 0.179 in
   clamped linear sRGB; the step is declared once as `--theme--_contrast-step`. Every relative-colour
   derivation ends `/ 1` (only the tints carry an alpha); a harness check enforces it.
+- Material adapter (Phase 11): the `--mat-sys-*` colour roles come from Angular Material's own
+  role tables (`theme-ng-material/scss/_roles.scss`); roles cp-theming has a token for map to it
+  (containers are `--bg`, one ladder step lighter in dark mode), the rest are `m3-tone()` of the
+  theme colour, and the neutral roles (surface containers, dim, bright, `outline`) are offsets
+  from `--color--surface`. Tokens that read a cp-theming variable sit on `:root, :where([theme])`.
+  State-layer opacities are numbers (`calc(weight / 100%)`), as Material expects. Harness checks
+  fail any `--mat-sys-*` name the installed Material reads that the adapter does not declare, and
+  any component token the adapter sets that Material does not read.
+- A box-shadow token cannot be wrapped in `light-dark()` (colours only): `--elevation-N--shadow`
+  is `<geometry> light-dark(<colour>, <colour>)`; a harness check fails a list inside `light-dark()`.
 - Focus ring color is **per-palette**, auto-derived via CSS relative color.
 - `cp-theming-core` has **zero Angular dependency**.
 - Most packages are currently **stubs** — implement with `// TODO(phase-N):` comments.

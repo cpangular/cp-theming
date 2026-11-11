@@ -10,9 +10,9 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 
 | Package | npm | Status |
 |---|---|---|
-| `packages/theme-core` | `@cpangular/cp-theming-core` | 🟡 In Progress — SCSS real, TS API real (Phase 3 done), harness in `test/` (Phase 8 done), cascade: core derives once, a theme is one rule (Phase 9 done) |
+| `packages/theme-core` | `@cpangular/cp-theming-core` | 🟡 In Progress — SCSS real, TS API real (Phase 3 done), harness in `test/` (Phase 8 done), cascade: core derives once, a theme is one rule (Phase 9 done), contrast by luminance step (Phase 10 done) |
 | `packages/theme-ng-core` | `@cpangular/cp-theming-ng-core` | ✅ Done — `ThemeService`, `ThemeDirective`, `ThemeModeDirective` |
-| `packages/theme-ng-material` | `@cpangular/cp-theming-ng-material` | ✅ Done — 166 `--mat-sys-*` token mappings, density scopes |
+| `packages/theme-ng-material` | `@cpangular/cp-theming-ng-material` | ✅ Done — every `--mat-sys-*` token Angular Material 22 reads (186 declared), colour roles from Material's own role tables (Phase 11 done), `[palette]` scopes, two component patches, density scopes |
 | `packages/theme-material` | `@cpangular/cp-theming-material` | ⬛ Stub |
 | `packages/theme-m3` | `@cpangular/cp-theming-m3` | ⬛ Stub |
 
@@ -20,8 +20,8 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 
 | Demo | Description | Status |
 |---|---|---|
-| `demos/docs` | Angular 22 + Material 22 docs/showcase site | 🟡 In Progress — all pages scaffolded, theme + mode switching working without the Phase 7 workaround block; Pages deploy is manual-only until the repo is public |
-| `demos/demo-core` | Vanilla TS + Vite | 🟡 In Progress — POC reimplemented; loads core first via `t.define-core-theme()` |
+| `demos/docs` | Angular 22 + Material 22 docs/showcase site | 🟡 In Progress — all pages scaffolded, theme + mode switching working without the Phase 7 workaround block, showcase checked in light and dark for the four themes and nested themes (Phase 11); Pages deploy is manual-only until the repo is public |
+| `demos/demo-core` | Vanilla TS + Vite | 🔴 Broken — POC reimplemented, loads core first via `t.define-core-theme()`, but `pnpm build` fails: `src/scss/components.scss` calls `a.container(high)` and the mixin takes no argument |
 | `demos/demo-material` | Angular + Material adapter | ⬛ Stub |
 | `demos/demo-brand-core` | Example brand theme pack | ⬛ Stub |
 | `demos/demo-brand-material` | Example brand + Material | ⬛ Stub |
@@ -38,11 +38,11 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 | 4 | Precompiled CSS per preset theme | ✅ Done |
 | 5 | `theme-ng-core` — Angular signals wrapper | ✅ Done |
 | 6 | `theme-ng-material` — Angular Material M3 adapter + density scopes | ✅ Done |
-| 7 | `demos/docs` — Documentation + showcase site | 🟡 In Progress — paused until Phase 9 |
+| 7 | `demos/docs` — Documentation + showcase site | 🟡 In Progress — unblocked by Phase 11; next after Phase 12 in PORT-PLAN.md's order |
 | 8 | Test harness and CI (`node --test` CSS checks, vitest API tests, Playwright `render.ts`, git-flow `test.yml`) | ✅ Done |
 | 9 | Cascade: a theme is one rule; core derives once | ✅ Done |
 | 10 | Contrast and alpha (`--contrast` by a luminance step; every derivation opaque except the tints) | ✅ Done |
-| 11 | Material adapter from Material's role tables | ⬛ Not started |
+| 11 | Material adapter from Material's role tables (`--mat-sys-*` roles computed from Material's tables, checked against what its components read) | ✅ Done |
 | 12 | Startup: no flash, safe import | ⬛ Not started |
 | 13 | Release through cpdevtools/git-flow | ⬛ Not started |
 
@@ -50,10 +50,10 @@ Phases 8–13 are specified in [PORT-PLAN.md](PORT-PLAN.md).
 
 ### Browser baseline
 
-`packages/theme-core/test/render.ts` (92 rows: `themeMode` on any element, nested themes, coexisting
+`packages/theme-core/test/render.ts` (104 rows: `themeMode` on any element, nested themes, coexisting
 presets, user overrides, the theme-switch crossfade, the eight defects the Phase 9 critique
-confirmed, and the browser-computed `--contrast` against the contrast sweep's prediction for a
-sample of colours) passes 92 of 92 in the Playwright builds
+confirmed, the browser-computed `--contrast` against the contrast sweep's prediction for a
+sample of colours, and the Material roles, state layers and shadows of Phase 11) passes 104 of 104 in the Playwright builds
 installed here: **Chromium 158**, **Firefox 159** and **WebKit 27.2** (the Safari engine; run with
 `node test/render.ts webkit`). WebKit gets the OS colour scheme pinned into the CSS rather than
 emulated, because Playwright's emulated dark scheme makes WebKit resolve `light-dark()` to dark
@@ -62,7 +62,10 @@ unverified; `node test/render.ts --html` writes `dist/render.html`, a self-conta
 every row in whatever browser opens it and prints a pass count, for whenever one is. The newest
 features the cascade needs are `light-dark()` (Chrome 123, Firefox 120, Safari 17.5), `@property`
 (Chrome 85, Firefox 128, Safari 16.4) and relative colour syntax (Chrome 119, Firefox 128, Safari
-16.4), so the expected floor is Chrome 123, Firefox 128 and Safari 17.5.
+16.4), so the expected floor is Chrome 123, Firefox 128 and Safari 17.5. The Material adapter's
+state layers also need typed `calc()` division (a percentage divided by `100%`), which the three
+builds above evaluate; the oldest versions that do have not been checked, and a browser without it
+shows Material components without hover, focus and press layers.
 
 ---
 

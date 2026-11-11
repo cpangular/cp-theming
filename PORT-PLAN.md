@@ -335,6 +335,68 @@ components read. Depends on Phase 9.
 - Harness: every `--mat-sys-*` name read by the installed Material component styles is declared; the
   surface roles keep M3's lightness order in both modes; remove the Phase 11 `todo`.
 
+- **As landed (2026-11-11).** The tables live in the new internal `scss/_roles.scss`; it passes
+  them every whole tone 0–100 of each palette, so a role Material adds later resolves without a
+  change here, and a role or tone it cannot resolve is a Sass `@error`. A role whose light and dark
+  value are the same expression is emitted once, without `light-dark()`. `neutral-variant` uses the
+  same surface offsets as `neutral` (cp-theming has one surface colour), and `--mat-sys-neutral10`
+  / `--mat-sys-neutral-variant20` are those tones of the two palette maps in `light-dark()`.
+  Everything that reads a cp-theming variable (colours, state layers, shape, elevation, motion,
+  typography) is on `:root, :where([theme])`; only `corner-none` and `easing-linear` are on `:root`
+  alone. `mat.adaptor()` now emits `[palette]` rules for custom names only; the adapter's core mixin
+  emits the six core accent names. The build command gained `--load-path=node_modules` for the
+  Material import. Override patches removed: the select-panel option checkmark (Material's default
+  is 14–17:1; the patch fell to 1.2–1.7:1 on a theme with one primary for both modes), the
+  slide-toggle track outline (the patch was the token `--mat-sys-outline` already maps to), the
+  selected hover/focus/pressed handle tints (`primary-container` is now the same colour), and nine
+  declarations for tokens Material 22 never reads (`*-hover/focus/pressed-icon-color`,
+  `*-hover/focus/pressed-track-outline-color`), and, once `outline` came from the tables (below),
+  the unselected track and icon (the handle on Material's own track is then 3.7:1 light and 2.9:1
+  dark, Material's stock 2.9:1). Kept: the selected icon, now `--mat-sys-primary` so it follows a
+  `[palette]` scope (Material's default is the same black or white as the handle on a theme whose
+  primary is light in light mode or dark in dark mode).
+- **Amended after the Phase 11 critique (2026-11-11).** Three Opus critics (painted pixels in the
+  built showcase, undeclared or invalid reads, the showcase components' token maps in every state)
+  reported six findings and two known weak spots were put to verifiers directly; each of the eight
+  went to its own Opus skeptic, all were confirmed, and they are five defects. What changed from
+  the text above:
+  - **State-layer opacities are numbers.** `--mat-sys-*-state-layer-opacity` is
+    `calc(var(--weight--state-*) / 100%)`. Material builds `calc(x * 100%)` from it for
+    `color-mix()`; with a percentage that was invalid, so options and menu items had no hover or
+    keyboard-focus layer and buttons no ripple, in every theme.
+  - **`outline` comes from the tables** (neutral-variant 50 / 60 as an offset from
+    `--color--surface`), no longer `--color--surface--stroke`: 2:1 on the surface in dark mode
+    became 6.2:1, and 3.2:1 in light became 4.6:1 (Material's stock: 5.8 and 4.3).
+    `outline-variant` still maps to `--color--surface--stroke--low`.
+  - **Containers are one ladder step lighter in dark mode.** `{primary,secondary,tertiary,error}-container`
+    is `light-dark(--bg, --bg--light)` and the on-role its contrast. The dark `--bg` tint sits at
+    the lightness of a dark surface, so a selected or activated fill was 1.00–1.07:1 on it; now 1.5:1
+    (Material's stock 2.0:1). Light mode is unchanged.
+  - **Filled form field patch** in `apply-material-overrides()`: container
+    `surface-container-high`, and the primary and error accents painted on it held to lightness
+    ≤ 0.44 in light mode and ≥ 0.82 in dark mode. Focused and error labels were 2.3–3.5:1 in dark
+    mode and the error label under 4.5:1 in light; every preset is now at 4.75:1 or better.
+  - **`--elevation-N--shadow` (core) is a valid box-shadow.** It was `light-dark()` around the whole
+    shadow, which is invalid, so core's `[elevated]` rules and every Material elevation computed to
+    `none`. It is now `<geometry> light-dark(<light colour>, <dark colour>)`. A level's light and
+    dark shadow may differ in their colours only; a `$levels` shadow passed for one mode with its
+    own geometry applies to both, and two different geometries are a Sass `@error`.
+  - The docs toolbar's theme select set six token names Material 22 does not read (the pre-v19
+    `--mdc-*` names), so its outline and arrow were primary on the primary toolbar when focused;
+    they are the v22 names now.
+  - Harness: the state-layer opacities must be the weight divided by 100%; every component token
+    the adapter sets must be one the installed Material reads; every `light-dark()` argument must
+    be a single value. `render.ts` has 104 rows (state layer inside Material's own `color-mix()`,
+    shadow tokens as `box-shadow`, `outline`, a dark-mode container), all passing in Chromium,
+    Firefox and WebKit.
+  - Noticed by the critics, not verified and not changed: `outline-variant` (dividers) is about
+    1.2:1 on the surface in dark mode (Material's stock 2.0:1); text in the `warn` and `caution`
+    preset colours on the surface in light mode is 3.8–4.2:1, and cyan-orange `error` 4.49:1; a
+    theme whose primary is light in light mode or dark in dark mode gets unreadable primary text
+    and outlines, because `--mat-sys-primary` is the author's colour as written; the typed
+    `calc(% / 100%)` division needs a current browser (Chromium 158, Firefox 159 and WebKit 27.2
+    evaluate it; an older engine shows no state layers, as before the fix).
+
 Risk: the Sass path is not in Material's `exports` map. It resolves under load paths and under Sass's
 package importer; the risk is the file moving in a later Material major, which the harness catches.
 Fallback: the public `mat.theme()` accepts a palette map of the same strings.

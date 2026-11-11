@@ -272,11 +272,11 @@ Use with `--palette-color--focus` (set by `apply-palette`):
 
 ## Elevation
 
-6 levels (0–5). Each level has a shadow var and a tint var. Shadows use `light-dark()` — values adjust automatically with `color-scheme`. Tints are percentages and cannot use `light-dark()`.
+6 levels (0–5). Each level has a shadow var and a tint var. A shadow's colour uses `light-dark()` — it adjusts automatically with `color-scheme`; its offsets and blur are the same in both modes. Tints are percentages and cannot use `light-dark()`.
 
 | Variable | Level 0 | Level 1 | Level 5 |
 |----------|---------|---------|---------|
-| `--elevation-{N}--shadow` | none | 0 1px 2px … | 0 8px 16px … |
+| `--elevation-{N}--shadow` | none | 0 1px 2px light-dark(…) | 0 8px 16px light-dark(…) |
 | `--elevation-{N}--tint` | 0% | 5% | 14% |
 
 Use in component CSS:

@@ -285,7 +285,7 @@ $typography: t.typography(
 )
 ```
 
-Emits `--typescale--{role}-{size}--{font|size|line-height|weight|tracking}` for all 15 M3 scales (`display-large` … `label-small`).
+Emits `--text--{role}-{size}--{font|size|line-height|weight|tracking}` for all 15 M3 scales (`display-large` … `label-small`).
 
 ### `t.density()`
 

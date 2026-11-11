@@ -1456,11 +1456,18 @@ const NG_MATERIAL_TOC = [
             <div class="api-symbol">
               <h3 class="api-symbol-name">define-ng-material-core-theme</h3>
               <p class="api-symbol-desc">
-                Emit 166 <code>--mat-sys-*</code> → <code>var(--color--*)</code> mappings at
-                <code>:root</code>, wiring Angular Material's entire M3 token system to cp-theming
-                palettes. Also re-emits color tokens at the <code>[theme]</code>
-                level to work around Chromium's eager-resolution of
-                <code>&#64;property</code>-registered variables in nested theme scopes.
+                Declare every <code>--mat-sys-*</code> token Angular Material reads, on
+                <code>:root</code> and on every <code>[theme]</code> element, so a nested theme
+                re-evaluates them. The colour roles come from Angular Material's own role tables:
+                roles cp-theming has a token for (<code>primary</code>, <code>on-primary</code>,
+                <code>surface</code>, <code>on-surface</code>, …) point at it, the other accent
+                roles are the theme's colour at the M3 tone the table names, and the surface
+                containers, <code>surface-dim</code> and <code>surface-bright</code> are offsets
+                from <code>--color--surface</code>. Typography reads <code>--text--*</code>. Also
+                emits <code>[palette="name"]</code> rules for the core accent palettes
+                (<code>primary</code>, <code>secondary</code>, <code>error</code>,
+                <code>warn</code>, <code>caution</code>, <code>pass</code>), so the
+                <code>palette</code> attribute recolors the Material components inside it.
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"
@@ -1470,8 +1477,8 @@ const NG_MATERIAL_TOC = [
                 >
                 <div class="api-member-body">
                   <p class="api-member-desc">
-                    No parameters. Call once after <code>t.define-core-theme()</code> and before any
-                    <code>t.define-theme()</code> calls.
+                    No parameters. Call once, after <code>t.define-core-theme()</code> and your
+                    <code>t.define-theme()</code> calls: the load order is core, themes, adapter.
                   </p>
                 </div>
               </div>
@@ -1480,9 +1487,12 @@ const NG_MATERIAL_TOC = [
             <div class="api-symbol">
               <h3 class="api-symbol-name">material-palette</h3>
               <p class="api-symbol-desc">
-                Override <code>--mat-sys-primary*</code> tokens to point at a cp-theming named
-                palette, recoloring all Angular Material components inside that CSS scope. Scope
-                tightly — the override inherits to all descendants via the normal CSS cascade.
+                Override the roles Angular Material derives from its primary palette
+                (<code>--mat-sys-primary</code>, <code>on-primary</code>, the container pair, the
+                fixed roles, <code>inverse-primary</code>, <code>surface-tint</code>) to come from a
+                cp-theming named palette, recoloring all Angular Material components inside that CSS
+                scope. Scope tightly — the override inherits to all descendants via the normal CSS
+                cascade.
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"
@@ -1510,8 +1520,10 @@ const NG_MATERIAL_TOC = [
             <div class="api-symbol">
               <h3 class="api-symbol-name">apply-material-overrides</h3>
               <p class="api-symbol-desc">
-                Emit surgical component-level token patches for cases where <code>--mat-sys-*</code>
-                tokens are insufficient. These are targeted fixes, not a wholesale M2→M3 shim.
+                Emit component-level token patches for the cases where a component's own default
+                does not work with cp-theming's roles (today: the slide toggle's selected icon and
+                the filled form field's container and accent colours). These are targeted fixes, not
+                a wholesale M2→M3 shim.
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"
@@ -1553,14 +1565,15 @@ const NG_MATERIAL_TOC = [
               <h3 class="api-symbol-name">adaptor</h3>
               <p class="api-symbol-desc">
                 Returns a hooks map for <code>t.define-theme($adaptor: mat.adaptor())</code>. Causes
-                every palette defined in your theme to automatically emit
-                <code>[palette="name"] &#123; --mat-sys-primary: ... &#125;</code> override rules —
-                so the <code>palette</code> attribute on any HTML element recolors all Material
-                components inside it without wrapper classes.
+                every custom palette name defined in your theme to emit a
+                <code>[palette="name"] &#123; --mat-sys-primary: ... &#125;</code> override rule —
+                so the <code>palette</code> attribute recolors the Material components inside it
+                without wrapper classes. The core accent palettes need no adaptor:
+                <code>define-ng-material-core-theme()</code> emits their rules.
               </p>
               <p class="api-symbol-desc">
-                <code>surface</code> and <code>background</code> palettes are automatically skipped
-                — they are neutral and must not remap Material's primary color role.
+                <code>surface</code> and <code>background</code> get no rule — they are neutral and
+                must not remap Material's primary color role.
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"
@@ -1578,9 +1591,9 @@ const NG_MATERIAL_TOC = [
   $adaptor: mat.adaptor(),
 );
 
-// In templates — no wrappers needed:
-// &lt;button mat-flat-button palette="warn"&gt;Delete&lt;/button&gt;
-// &lt;mat-checkbox palette="pass"&gt;Confirmed&lt;/mat-checkbox&gt;</code></pre>
+// In templates — no wrappers needed. "accent" is a custom palette of $config:
+// &lt;button mat-flat-button palette="accent"&gt;Share&lt;/button&gt;
+// &lt;mat-checkbox palette="accent"&gt;Subscribed&lt;/mat-checkbox&gt;</code></pre>
                 </div>
               </div>
             </div>
