@@ -475,8 +475,10 @@ Done 2026-11-11 (the pending demos are not part of this Done-when). Found on the
 
 ### Phase 14 — Accent palettes: pass one, two or three, the rest are generated
 
-Goal: a theme can pass only `primary`; `secondary`, `tertiary`, `background`, `surface` and the
-semantic palettes it leaves out are generated from what it passed. Added 2026-11-11: cp-theming had
+Goal: a theme passes `primary` and, if it wants, `secondary` and `tertiary`; whichever accents it
+leaves out are generated from `primary` (only `primary` passed → both `secondary` and `tertiary`
+are generated; `primary` and `secondary` passed → `tertiary` is generated). `background`,
+`surface` and the semantic palettes it leaves out are generated too. Added 2026-11-11: cp-theming had
 decided in June that there is no third accent palette and that Material's tertiary maps to
 secondary; that contradicts the brand-colour idea and was never the intent. Depends on Phase 9
 (a theme declares only what it passes; core supplies the rest), so this is small now.
