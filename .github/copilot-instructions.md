@@ -92,6 +92,8 @@ demos/demo-brand-material/                                 — Example brand+mat
 - Browser check: `packages/theme-core/test/render.ts` (Playwright, Chromium + Firefox; `webkit`
   as an argument), local only: `pnpm --filter @cpangular/cp-theming-core render`. Every row passes
   in Chromium and Firefox since Phase 9; `--html` writes a self-contained page for Safari.
+- Startup check: `demos/docs/test/startup.ts` (Playwright, all three engines, local only), run
+  after `npx ng build docs`: the saved theme and mode are painted before the bundle runs.
 - Fixture themes live in `packages/theme-core/test/fixtures/` and `packages/theme-ng-material/test/fixtures/`.
 - CI: `.github/workflows/test.yml` (cpdevtools/git-flow) runs `github.actions.build` then
   `github.actions.test` in every package that defines them.
@@ -116,7 +118,13 @@ The `color` role is the palette's primary identity — it becomes the namespace 
 - `ThemeMode` enum: `AUTO`, `LIGHT`, `DARK`
 - All DOM interaction goes through explicit element parameters (no global `document` assumptions)
 - Use `MutationObserver` for reactive watching, not polling
-- Public API: `getTheme`, `setTheme`, `getMode`, `setMode`, `getPreferredMode`, `watchMode`
+- Public API: `getTheme`, `setTheme`, `getMode`, `setMode`, `getPreferredMode`, `watchMode`,
+  `themeHeadSnippet` (the one place that reads the global `document`: it is pasted into `<head>`)
+- Nothing runs at import. Storage is read on first use and every access is guarded with
+  try/catch, so the package imports on a server and works where storage is blocked
+- Storage keys and attribute names live in `storage-keys.ts`; `theme.ts` and `head-snippet.ts`
+  both import them. Change `demos/docs/src/index.html` when the snippet changes (a test fails
+  until you do)
 
 ## TypeScript Conventions (cp-theming-angular/src)
 - Angular 19+, standalone components/directives/services

@@ -375,8 +375,36 @@ $my-theme: t.theme(
   themes and nested themes; an Opus critique (three critics, eight verifiers) confirmed five
   defects, all fixed (PORT-PLAN.md, "Amended after the Phase 11 critique").
 
-### ⬛ Phases 12–13 — planned in PORT-PLAN.md
-- Phase 12 — Startup: no flash, safe import
+### ✅ Phase 12 — Startup: no flash, safe import (PORT-PLAN.md)
+- `src/theme.ts` touches no storage when the module loads. The persist config is read on first
+  use; every storage read, write and removal is guarded, so the package imports where there is no
+  `localStorage` and keeps working where storage is blocked or full (the attributes are still set,
+  the selection is just not saved). An unknown persist config reads as `NONE`; `restoreMode()`
+  ignores a saved value that is not a `ThemeMode`.
+- `getPreferredMode(element?)` and `watchMode()` read `prefers-color-scheme` from the element's own
+  window and answer `LIGHT` where there is none; `getAvailableThemes(doc = document)` takes the
+  document to scan.
+- `themeHeadSnippet` (`src/head-snippet.ts`) is the JavaScript text for an inline `<script>` in
+  `<head>`. It is built from `src/storage-keys.ts`, the same constants `theme.ts` uses (also
+  exported: `PERSIST_CONFIG_KEY`, `PERSIST_THEME_KEY`, `PERSIST_MODE_KEY`, `ATTR_THEME`,
+  `ATTR_MODE`). It reads the persist config, and for `local` or `session` sets `theme` and
+  `themeMode` on `<html>`, accepting only `auto` / `light` / `dark` / `invert` as a mode.
+- theme-ng-core: `provideTheme()` does nothing outside a browser; `ThemeService` there skips the
+  stylesheet scan, the observers and storage. `themeHeadSnippet` is re-exported.
+- Docs: `demos/docs/src/index.html` carries the snippet (a vitest check fails if it differs from
+  the export by one character); Getting Started has "No flash on reload" for all three packages,
+  with the CSP nonce / hash note. The docs production build no longer inlines critical CSS:
+  with it, the first frame had no theme rules at all, snippet or not.
+- Tests: 33 vitest tests (were 12): import in a Node environment with no DOM and no storage, and with
+  storage whose getter throws; the snippet restores from both storages, round-trips what
+  `setTheme()` / `setMode()` save, and ignores bad modes, unknown configs and blocked storage.
+- Browser check `demos/docs/test/startup.ts` (local): the production docs build, reloaded with
+  saved `rose-red` / `dark` under a light OS scheme and every script request held open, paints the
+  same colours as the running app; with the snippet stripped the same frame is `azure-blue` /
+  `light`. Passes in Chromium, Firefox and WebKit. WebKit paints no frame while the module script
+  is pending, so its first frame is taken after the load is abandoned, still without the bundle.
+
+### ⬛ Phase 13 — planned in PORT-PLAN.md
 - Phase 13 — Release through cpdevtools/git-flow
 
 ---

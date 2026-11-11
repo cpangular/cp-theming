@@ -18,6 +18,16 @@ export {
   restoreMode,
 } from './theme.js';
 
+export { themeHeadSnippet } from './head-snippet.js';
+
+export {
+  ATTR_THEME,
+  ATTR_MODE,
+  PERSIST_CONFIG_KEY,
+  PERSIST_THEME_KEY,
+  PERSIST_MODE_KEY,
+} from './storage-keys.js';
+
 export type { ThemeDef, WatchOptions } from './types.js';
 
 export { enableRelativeDensity } from './density.js';

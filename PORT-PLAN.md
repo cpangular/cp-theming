@@ -425,6 +425,12 @@ not throw. Independent of Phases 9–11.
 Done when: the vitest tests pass and the docs app, reloaded with a saved dark non-default theme,
 paints it on the first frame (checked with a Playwright screenshot taken before the bundle runs).
 
+Found while checking (2026-11-11): Angular's production default inlines critical CSS and loads the
+full stylesheet without blocking rendering. The inlined rules contain no theme rule, so the first
+frame had no theme at all, with or without the snippet. The docs production build sets
+`optimization.styles.inlineCritical: false`, and Getting Started tells Angular users to do the same.
+The check is `demos/docs/test/startup.ts`.
+
 ### Phase 7 (resumed) — Docs examples are real files
 
 Goal: a code sample in the docs cannot disagree with the library. Depends on Phases 9–11.

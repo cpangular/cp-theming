@@ -12,8 +12,16 @@
 //   - Use takeUntilDestroyed() for cleanup
 //   - Expose setTheme() and setMode() as methods (delegate to core functions)
 
-import { DOCUMENT } from '@angular/common';
-import { DestroyRef, Injectable, Signal, computed, inject, signal } from '@angular/core';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
+import {
+  DestroyRef,
+  Injectable,
+  PLATFORM_ID,
+  Signal,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import {
   ThemeDef,
   ThemeMode,
@@ -38,6 +46,11 @@ export class ThemeService {
   private readonly _doc = inject<Document>(DOCUMENT);
   private readonly _destroyRef = inject(DestroyRef);
 
+  // Outside a browser (server rendering) the service reads and writes the
+  // attributes of the document it is given and does nothing else: no stylesheet
+  // scan, no observers, no media query, no storage.
+  private readonly _isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+
   private get _root(): Element {
     return this._doc.documentElement;
   }
@@ -46,7 +59,9 @@ export class ThemeService {
 
   private readonly _theme = signal<string | null>(getTheme(this._root));
   private readonly _mode = signal<ThemeMode>(getMode(this._root));
-  private readonly _availableThemes = signal<ThemeDef[]>(getAvailableThemes());
+  private readonly _availableThemes = signal<ThemeDef[]>(
+    this._isBrowser ? getAvailableThemes(this._doc) : [],
+  );
 
   // ─── Public readonly signals ───────────────────────────────────────────────
 
@@ -61,6 +76,7 @@ export class ThemeService {
    * Derived from `mode`; also reacts to prefers-color-scheme via watchMode.
    * Reading `_mode()` establishes a reactive dependency so this computed
    * re-evaluates whenever the mode signal changes.
+   * Outside a browser there is no system preference: AUTO and INVERT read as LIGHT.
    */
   readonly effectiveMode: Signal<ThemeMode.LIGHT | ThemeMode.DARK> = computed(() => {
     this._mode(); // reactive dependency — triggers recompute when mode changes
@@ -73,6 +89,8 @@ export class ThemeService {
   // ─── Init ─────────────────────────────────────────────────────────────────
 
   constructor() {
+    if (!this._isBrowser) return;
+
     const stopWatchMode = watchMode(
       (mode) => {
         this._mode.set(mode);
@@ -119,6 +137,7 @@ export class ThemeService {
 
   /** Configures where theme and mode are persisted across sessions. */
   configurePersistence(storage: ThemeStorage): void {
+    if (!this._isBrowser) return;
     configurePersistence(storage);
   }
 
@@ -132,6 +151,7 @@ export class ThemeService {
    * Call once at app startup after configurePersistence().
    */
   restorePersistedState(): void {
+    if (!this._isBrowser) return;
     restoreTheme(this._root);
     restoreMode(this._root);
   }
@@ -140,6 +160,7 @@ export class ThemeService {
 
   /** Re-scans loaded stylesheets and updates the availableThemes signal. */
   refreshAvailableThemes(): void {
-    this._availableThemes.set(getAvailableThemes());
+    if (!this._isBrowser) return;
+    this._availableThemes.set(getAvailableThemes(this._doc));
   }
 }

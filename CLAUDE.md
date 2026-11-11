@@ -34,6 +34,12 @@ This is a CSS-variable-based theming system. Key facts:
   State-layer opacities are numbers (`calc(weight / 100%)`), as Material expects. Harness checks
   fail any `--mat-sys-*` name the installed Material reads that the adapter does not declare, and
   any component token the adapter sets that Material does not read.
+- Startup (Phase 12): `theme-core/src` touches no storage at import; every storage access is
+  guarded. `themeHeadSnippet` (inline `<head>` script, built from `src/storage-keys.ts`) applies the
+  saved theme and mode before first paint; `demos/docs/src/index.html` carries a copy that a vitest
+  check compares with the export. Browser check: `node demos/docs/test/startup.ts` (needs
+  `npx ng build docs`). The docs build keeps critical-CSS inlining off: it drops the theme rules
+  from the first frame.
 - A box-shadow token cannot be wrapped in `light-dark()` (colours only): `--elevation-N--shadow`
   is `<geometry> light-dark(<colour>, <colour>)`; a harness check fails a list inside `light-dark()`.
 - Focus ring color is **per-palette**, auto-derived via CSS relative color.

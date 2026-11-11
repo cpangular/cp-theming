@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Storage keys are the persistence contract (Phase 12 exports them for the head snippet).
+// Storage keys are the persistence contract, pinned here as literals. The package
+// exports them and builds the head snippet from them (head-snippet.spec.ts).
 const KEY_PERSIST = 'cp-theming--persist';
 const KEY_THEME = 'cp-theming--theme';
 const KEY_MODE = 'cp-theming--mode';
 
-// The module reads the persist config when it loads, so every test gets a fresh copy.
+// The module caches the persist config on first use, so every test gets a fresh copy.
 async function load() {
   vi.resetModules();
   return await import('../../src/index.ts');
@@ -107,5 +108,58 @@ describe('persistence', () => {
     localStorage.setItem(KEY_THEME, 'ocean');
     expect(api.restoreTheme(panel)).toBe('ocean');
     expect(panel.getAttribute('theme')).toBe('ocean');
+  });
+
+  it('does not touch storage when the module loads, only on first use', async () => {
+    const getItem = vi.spyOn(Storage.prototype, 'getItem');
+    try {
+      const api = await load();
+      expect(getItem).not.toHaveBeenCalled();
+      api.getPersistence();
+      expect(getItem).toHaveBeenCalledWith(KEY_PERSIST);
+    } finally {
+      getItem.mockRestore();
+    }
+  });
+
+  it('exports the storage keys it uses', async () => {
+    const api = await load();
+    expect(api.PERSIST_CONFIG_KEY).toBe(KEY_PERSIST);
+    expect(api.PERSIST_THEME_KEY).toBe(KEY_THEME);
+    expect(api.PERSIST_MODE_KEY).toBe(KEY_MODE);
+  });
+
+  it('treats an unknown persist config as NONE', async () => {
+    localStorage.setItem(KEY_PERSIST, 'cookie');
+    localStorage.setItem(KEY_THEME, 'ocean');
+    const api = await load();
+    expect(api.getPersistence()).toBe(api.ThemeStorage.NONE);
+    expect(api.restoreTheme()).toBeNull();
+  });
+
+  it('does not restore a saved mode that is not a ThemeMode', async () => {
+    localStorage.setItem(KEY_PERSIST, 'local');
+    localStorage.setItem(KEY_MODE, 'dim');
+    const api = await load();
+    expect(api.restoreMode()).toBeNull();
+    expect(document.documentElement.hasAttribute('themeMode')).toBe(false);
+  });
+
+  it('still sets the attributes when storage refuses the write', async () => {
+    const api = await load();
+    api.configurePersistence(api.ThemeStorage.LOCAL);
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+    });
+    try {
+      expect(() => api.setTheme('ocean')).not.toThrow();
+      expect(() => api.setMode(api.ThemeMode.DARK)).not.toThrow();
+      expect(() => api.configurePersistence(api.ThemeStorage.SESSION)).not.toThrow();
+    } finally {
+      setItem.mockRestore();
+    }
+    expect(document.documentElement.getAttribute('theme')).toBe('ocean');
+    expect(document.documentElement.getAttribute('themeMode')).toBe('dark');
+    expect(api.getPersistence()).toBe(api.ThemeStorage.SESSION);
   });
 });

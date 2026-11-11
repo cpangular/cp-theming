@@ -198,6 +198,20 @@ const TOC = [
               </p>
             </div>
           </div>
+          <div class="api-member-card">
+            <span class="api-signature-row"
+              ><span class="api-sig-name">themeHeadSnippet</span
+              ><span class="api-sig-punct">: </span><span class="api-sig-return">string</span></span
+            >
+            <div class="api-member-body">
+              <p class="api-member-desc">
+                JavaScript text for an inline <code>&lt;script&gt;</code> in
+                <code>&lt;head&gt;</code>: applies the saved theme and mode to
+                <code>&lt;html&gt;</code> before first paint. See Getting Started, "No flash on
+                reload".
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 

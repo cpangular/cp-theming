@@ -96,6 +96,7 @@
         "test/lib/**",
         "scss/**/*.scss",
         "vitest.config.ts",
+        "../../demos/docs/src/index.html",
         "package.json"
       ],
       "output": []
