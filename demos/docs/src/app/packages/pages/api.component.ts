@@ -55,9 +55,9 @@ const NG_MATERIAL_TOC = [
               <p class="api-symbol-desc">
                 Emit everything that does not depend on a theme, once: the
                 <code>&#64;property</code> registrations (each core palette role's light and dark
-                color, <code>--color--brand</code>, and the weight, density, space and shape
-                scalars), every default, the <code>themeMode</code> rules, every derivation, and the
-                attribute rules (<code>[palette]</code>, the surface layers,
+                color, and the weight, density, space and shape scalars), every default, the
+                <code>themeMode</code> rules, every derivation, the palettes a theme left out, and
+                the attribute rules (<code>[palette]</code>, the surface layers,
                 <code>[elevated]</code>, <code>[themeDensity]</code>). Call it once, at the top
                 level of a stylesheet, before any theme.
               </p>
@@ -165,8 +165,9 @@ const NG_MATERIAL_TOC = [
             <div class="api-symbol">
               <h3 class="api-symbol-name">theme</h3>
               <p class="api-symbol-desc">
-                Assemble a theme config map from typed sub-configs. Only <code>$palettes</code>
-                is required — all other parameters have well-considered defaults.
+                Assemble a theme config map from typed sub-configs. Nothing is required: pass
+                <code>$brand</code>, some palettes, or both, and core generates the palettes you
+                leave out.
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"
@@ -191,7 +192,11 @@ const NG_MATERIAL_TOC = [
                     </div>
                     <div class="api-param-desc">
                       Map of palette name → <code>t.palette()</code> or
-                      <code>t.light-dark()</code> pair. Required.
+                      <code>t.light-dark()</code> pair. Optional; a palette left out is generated
+                      (<code>primary</code>, <code>secondary</code>, <code>tertiary</code>,
+                      <code>background</code>, <code>surface</code>) or a fixed default
+                      (<code>error</code>, <code>warn</code>, <code>caution</code>,
+                      <code>pass</code>).
                     </div>
                   </div>
                   <div class="api-param-row">
@@ -201,8 +206,9 @@ const NG_MATERIAL_TOC = [
                       ><span class="api-param-default">default null</span>
                     </div>
                     <div class="api-param-desc">
-                      Brand color emitted as <code>--color--brand</code>. Required for
-                      <code>t.palette-from-brand()</code>.
+                      The brand color, exactly as given: the <code>brand</code> palette,
+                      <code>--color--brand</code>. Never adjusted. A primary, background and surface
+                      the theme does not pass are generated from it.
                     </div>
                   </div>
                   <div class="api-param-row">
@@ -439,9 +445,10 @@ const NG_MATERIAL_TOC = [
               <p class="api-symbol-desc">
                 Derive a palette from the theme's <code>$brand</code> color at runtime using CSS
                 relative color. Returns a <code>t.light-dark()</code> pair with lightness clamped to
-                appropriate ranges per mode. Requires <code>$brand</code> to be set on
-                <code>t.theme()</code>. See also <code>t.palette-from-var($var)</code> for an
-                explicit CSS variable name.
+                appropriate ranges per mode. Core generates <code>primary</code> this way when a
+                theme leaves it out, so the function is for other numbers or another palette name.
+                Requires <code>$brand</code> to be set on <code>t.theme()</code>. See also
+                <code>t.palette-from-var($var)</code> for an explicit CSS variable name.
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"

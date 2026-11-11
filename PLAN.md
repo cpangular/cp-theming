@@ -25,8 +25,9 @@ demos/
 ### @cpangular/cp-theming-core
 The only package with real implementation initially. Contains:
 - **SCSS theme authoring API** — `t.palette()`, `t.theme()`, `@include t.define-theme()`, `@include t.define-core-theme()`, etc.
-- **CSS variable system** — all `--color--*`, `--weight--*`, `--space--*`, `--shape--*`, `--motion--*`, `--elevation-*` vars. Registered as typed `@property`: what animation needs (each core palette role's light and dark colour, `--color--brand`, and the scalars); the role tokens and every derivative are unregistered `light-dark()` / `oklch(from …)` expressions that resolve where they are used
-- **Brand color API** — `t.palette-from-brand()`, `t.background-from-brand()`, `t.surface-from-brand()` derive palettes from `--color--brand` at CSS runtime
+- **CSS variable system** — all `--color--*`, `--weight--*`, `--space--*`, `--shape--*`, `--motion--*`, `--elevation-*` vars. Registered as typed `@property`: what animation needs (each core palette role's light and dark colour, and the scalars); the role tokens and every derivative are unregistered `light-dark()` / `oklch(from …)` expressions that resolve where they are used
+- **Palette chain** — brand → primary → secondary, tertiary → background, surface: a theme passes what it has (`$brand`, one, two or three accents) and core generates the rest at CSS runtime; the brand colour is kept exact, the primary made from it is adjusted for readability
+- **Brand color API** — `t.palette-from-brand()`, `t.background-from-brand()`, `t.surface-from-brand()` derive palettes from `--color--brand` at CSS runtime, for numbers other than the ones core generates with
 - **Preset palettes + themes** — azure-blue, rose-red, cyan-orange, magenta-violet (M3-inspired)
 - **Vanilla TS API** — `ThemeMode`, `setTheme()`, `setMode()`, `watchMode()`, `watchTheme()`, `getAvailableThemes()`, `configurePersistence()`, etc.
 - **Precompiled CSS** — `dist/core.css` (shared), `dist/presets/{theme}.css` (one per preset), for users without Sass
@@ -102,7 +103,8 @@ The `color` role is the palette's primary identity — it becomes the namespace 
 --color--{name}--stroke              stroke/border role (same full derivative set)
 --color--{name}--focus               focus ring color (auto-derived or explicit)
 --color--{name}--tint-1..5           transparent tints at 10%/20%/38%/60%/80%
---color--brand                       runtime brand seed color (optional)
+--color--brand                       the brand palette's color: the brand colour as given, never adjusted
+--color--{brand|tertiary}--…         brand and tertiary are core palettes: the full set above
 
 --weight--text-blend                 blend percentages for text/state overlays
 --weight--text-emphasis-blend
@@ -131,9 +133,11 @@ The `color` role is the palette's primary identity — it becomes the namespace 
 --container--text / --text-emphasis / --text-deemphasis / --stroke
 ```
 
-`dist/core.css` registers 94 typed `@property` declarations: `--color--{name}[--bg|--stroke|--focus]--mode-light` / `--mode-dark` for the eight core palettes (64), `--color--brand`, and the 29 scalars (`--weight--*`, `--density-scale`, `--space--*`, `--shape--*`). The role tokens (`--color--{name}` …) are `light-dark()` joins of their registered pair and every derivative is an `oklch(from …)` expression; neither is registered, so they resolve on the element that uses them and `themeMode` works anywhere. A theme switch crossfades when the author transitions the registered pair; a mode flip is instant at the variable level.
+`dist/core.css` registers 109 typed `@property` declarations: `--color--{name}[--bg|--stroke|--focus]--mode-light` / `--mode-dark` for the ten core palettes (80: `background`, `surface`, `brand`, `primary`, `secondary`, `tertiary`, `error`, `warn`, `caution`, `pass`), and the 29 scalars (`--weight--*`, `--density-scale`, `--space--*`, `--shape--*`). The role tokens (`--color--{name}` …) are `light-dark()` joins of their registered pair and every derivative is an `oklch(from …)` expression; neither is registered, so they resolve on the element that uses them and `themeMode` works anywhere. A theme switch crossfades when the author transitions the registered pair; a mode flip is instant at the variable level.
 
 Core (`define-core-theme()`) declares every default and every derivation once, on `:where(:root)` and `:where(:root, [theme])`; a theme rule (`define-theme()`) holds only what its author passed, so nested themes inherit, presets coexist, and an author's `:root` rule wins. Load order: core, then themes, then the adapter.
+
+**Palette chain (Phase 14).** brand → primary → secondary, tertiary → background, surface. A theme passes whichever it has; core generates each one it left out, on the same shared selector, from the nearest thing the theme passed: primary is the brand with lightness held to 0.35–0.50 (light) / 0.65–0.82 (dark) and chroma capped at 0.22; secondary is primary's hue with a third of its chroma; tertiary is primary's hue + 60° with half its chroma; background and surface are neutrals of the brand hue (lightness 0.97 / 0.17 and 0.93 / 0.22, chroma 0.006 and 0.01 at most). The brand colour is never adjusted. `error`, `warn`, `caution` and `pass` have fixed defaults (the registered initial values). The root generates the whole chain; a nested theme generates what is downstream of what it passed and inherits the rest. Core holds each generated colour in a private variable (`--theme--_generated--{name}--{mode}`); `:where(:root)` points every pair of the chain at it and a theme rule does so for the palettes it left out that follow from one it passed, so nothing sets a pair where nothing upstream was passed.
 
 ---
 
@@ -144,7 +148,7 @@ Core (`define-core-theme()`) declares every default and every derivation once, o
   <body theme="ocean">                <!-- scopes ocean vars to subtree -->
     <div themeMode="invert">...</div> <!-- flips mode in subtree -->
     <div themeMode="dark">...</div>   <!-- forces dark in subtree -->
-    <div theme="ember">...</div>      <!-- nested theme: inherits what ember does not pass -->
+    <div theme="ember">...</div>      <!-- nested theme: generates what follows from what ember passes, inherits the rest -->
   </body>
 </html>
 ```
@@ -159,11 +163,10 @@ Core (`define-core-theme()`) declares every default and every derivation once, o
 @use '@cpangular/cp-theming-core/scss/theme' as t;
 
 $my-theme: t.theme(
-  $brand: oklch(0.44 0.22 253),          // emits --color--brand; enables *-from-brand() helpers
+  $brand: oklch(0.44 0.22 253),          // the brand palette (--color--brand), kept exact
   $palettes: (
-    background: t.background-from-brand(),
-    surface:    t.surface-from-brand(),
-    primary:    t.palette-from-brand(),
+    // Everything here is optional. Left out: primary, tertiary, background and
+    // surface, which core generates from the brand.
     secondary:  t.light-dark(
       t.palette(oklch(0.46 0.27 264)),
       t.palette(oklch(0.71 0.21 264)),
@@ -183,8 +186,8 @@ $my-theme: t.theme(
   $motion:     t.motion(),
 );
 
+@include t.define-core-theme();                                  // once, first
 @include t.define-theme('my-theme', $my-theme, $default: true);
-@include t.define-core-theme();
 ```
 
 ---
@@ -242,7 +245,7 @@ $my-theme: t.theme(
 - `scss/_material.scss` — two mixins:
   - `define-ng-material-core-theme()` — single unscoped `:root {}` block; 166 `--mat-sys-*` → `var(--color--*)` assignments covering color, surface tones, overlays, state layers, shape, elevation, motion, typography
   - `apply-material-overrides()` — component patches (initially empty; grows during demo-material development)
-- Tertiary palette maps to secondary (documented; no 3rd palette in our system)
+- Tertiary palette mapped to secondary (reversed by Phase 14: `tertiary` is a core palette and the tertiary roles read `--color--tertiary`)
 - CSS cascade handles nested `[theme]` elements automatically — no per-theme repetition needed
 - `scss/material-core.scss` + `scss/material-overrides.scss` — precompiled entry points
 - `dist/material-core.css` (166 token mappings) + `dist/material-overrides.css` ✅
@@ -393,8 +396,8 @@ colour format is accepted and oklch is recommended.
 ### ✅ Phase 11 — Material adapter from Material's role tables (PORT-PLAN.md)
 - `scss/_roles.scss` computes the `--mat-sys-*` colour roles from Angular Material's own tables
   (`md-sys-color-values-light` / `-dark`): the roles cp-theming has a token for map to it
-  (`primary`, `on-primary`, the container pair for primary / secondary / tertiary (= secondary) /
-  error, `surface`, `on-surface`, `background`, `on-background`, `outline-variant`, `scrim`,
+  (`primary`, `on-primary`, the container pair for primary / secondary / tertiary (= secondary
+  until Phase 14, its own palette since) / error, `surface`, `on-surface`, `background`, `on-background`, `outline-variant`, `scrim`,
   `shadow`); every other accent role is the theme colour at the M3 tone the table names
   (`scss/_m3-tone.scss`, `m3-tone()`); the neutral roles (surface containers, dim, bright,
   `surface-variant`, `on-surface-variant`, `inverse-*`, `outline`) are offsets from
@@ -456,6 +459,44 @@ colour format is accepted and oklch is recommended.
   same colours as the running app; with the snippet stripped the same frame is `azure-blue` /
   `light`. Passes in Chromium, Firefox and WebKit. WebKit paints no frame while the module script
   is pending, so its first frame is taken after the load is abandoned, still without the bundle.
+
+### ✅ Phase 14 — Brand and accent palettes: pass what you have, the rest are generated (PORT-PLAN.md)
+- `brand` and `tertiary` are core palette names: ten palettes, 109 registered properties.
+  `--color--brand` is the brand palette's colour (the join of its registered pair) and is never
+  adjusted; `$brand` in `t.theme()` is that palette, and `$palettes` is optional, so
+  `t.theme($brand: #ff6a00)` is a complete theme.
+- The chain brand → primary → secondary, tertiary → background, surface. Core declares the
+  registered pair of each palette a theme did not pass on `:where(:root, [theme])`: primary from
+  the brand pair with `palette-from-brand()`'s clamps, secondary and tertiary from the primary
+  pair (same hue, C / 3; hue + 60°, C / 2), background and surface as neutrals of the brand hue
+  with the `*-from-var` helpers' numbers. Pass one, two or three accents.
+- `error`, `warn`, `caution` and `pass` default to the colours the presets share (the registered
+  initial values of their pairs, one per mode; one map in `_palette.scss` feeds both).
+- Nesting: the root generates the whole chain; a nested theme generates what is downstream of what
+  it passed and inherits the rest. Core declares each generated colour once on the shared selector
+  as a private variable and sets no pair there; `:where(:root)` points every pair of the chain at
+  its variable, and a theme rule does the same, at its own specificity, for each palette it left
+  out that follows from one it passed. This is the one change from the plan's text, which declared
+  the generated pairs themselves on every `[theme]` element: that gave a nested theme without a
+  primary a grey one, dropped the outer theme's explicit secondary, background and surface in any
+  nested theme, and lost to a default theme loaded beside the theme on `<html>`, which is every
+  preset (PORT-PLAN.md, "As landed").
+- Material adapter: the tertiary roles read `--color--tertiary`; `palette="brand"` and
+  `palette="tertiary"` remap `--mat-sys-primary` like the other accents. The presets pass no
+  tertiary, so theirs is generated and the showcase shows it.
+- Docs: Getting Started is a theme with only `$brand`, rendered live with a `palette="brand"`
+  swatch; the Palette and Theme pages explain the chain; the "tertiary = secondary" guide section
+  is gone; example themes with only `brand`, only `primary`, and one, two and three accents are
+  compiled by the harness.
+- Harness: `test/css/chain.test.ts` (the generated expressions, what the root and each theme rule
+  take by reference, each palette's relation
+  to its origin for every preset and fixture, the brand never adjusted); the contrast sweep and
+  the Material surface-order check cover all ten palettes (0 of 1680 preset role/step colours
+  below 4.5:1); two fixtures (only `brand`, only `primary`). render.ts has 190 rows, 84 of them
+  `chain/`, all passing in Chromium, Firefox and WebKit. `demos/docs/test/chain.ts` (local) reads
+  pixels on the built docs: the `brand` swatch is the example's colour in both modes, and every
+  preset column shows three different accents.
+- core.css: 178 KB → 221 KB (12.4 KB → 15.2 KB gzipped).
 
 ### ⬛ Phase 13 — planned in PORT-PLAN.md
 - Phase 13 — Release through cpdevtools/git-flow

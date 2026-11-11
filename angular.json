@@ -23,7 +23,7 @@
             "assets": [],
             "inlineStyleLanguage": "scss",
             "stylePreprocessorOptions": {
-              "includePaths": ["demos/docs/src/app/packages/pages"]
+              "includePaths": ["demos/docs/src/app/packages/pages", "demos/docs/node_modules"]
             },
             "styles": [
               "highlight.js/styles/github.min.css",

@@ -24,13 +24,26 @@ function sheet(file: string): Stylesheet {
 export const CORE_PALETTE_NAMES = [
   'background',
   'surface',
+  'brand',
   'primary',
   'secondary',
+  'tertiary',
   'error',
   'warn',
   'caution',
   'pass',
 ];
+
+/** The chain palettes core generates when a theme leaves them out (Phase 14). */
+export const GENERATED_PALETTE_NAMES = [
+  'primary',
+  'secondary',
+  'tertiary',
+  'background',
+  'surface',
+];
+/** The palettes with a fixed default colour, the registered initial value of their pair. */
+export const SEMANTIC_PALETTE_NAMES = ['error', 'warn', 'caution', 'pass'];
 
 let coreCache: { core: Stylesheet; presets: Stylesheet[]; others: Stylesheet[] } | undefined;
 /** core.scss, the preset themes, and any other core build entry (theme-vars). */

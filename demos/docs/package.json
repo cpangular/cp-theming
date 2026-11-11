@@ -11,6 +11,7 @@
     "build:dev": "ng build docs --configuration development",
     "test": "node --test \"test/*.test.ts\"",
     "render": "node test/render.ts",
+    "chain": "node test/chain.ts",
     "github.actions.test": "node --test \"test/*.test.ts\""
   },
   "dependencies": {

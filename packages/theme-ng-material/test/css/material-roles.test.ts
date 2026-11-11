@@ -123,7 +123,7 @@ const accent = (role: string, name: string): [string, string][] => [
 const DIRECT: [string, string][] = [
   ...accent('primary', 'primary'),
   ...accent('secondary', 'secondary'),
-  ...accent('tertiary', 'secondary'),
+  ...accent('tertiary', 'tertiary'),
   ...accent('error', 'error'),
   ['surface', 'var(--color--surface)'],
   ['on-surface', 'var(--color--surface--contrast)'],

@@ -29,10 +29,13 @@ const STEPS = ['', '--dark', '--darker', '--darkest', '--light', '--lighter', '-
 const { core, presets } = coreSheets();
 const fixtures = coreFixtureSheets();
 // Core derives once, so a token is read from core's root rules + the theme rule.
+// Every core palette is swept for every theme, whether the theme passed it,
+// core generated it (primary, the accents, the neutrals) or it is a semantic
+// default, plus the theme's own custom names.
 const themes = [...presets, ...fixtures].map((s) => ({
   label: s.label,
   decls: themeDeclarations(core, s, themeName(s)),
-  names: themePalettes(s, themeName(s)),
+  names: [...new Set([...CORE_PALETTE_NAMES, ...themePalettes(s, themeName(s))])],
 }));
 
 interface Measured {
@@ -100,8 +103,8 @@ test('ladder steps move lightness by $theme-step-1..3 (evaluator reads the CSS c
 const presetMeasured: Measured[] = [];
 for (const theme of themes) {
   test(`${theme.label}: every role and ladder step reaches ${MIN_RATIO}:1 against its --contrast`, (t) => {
-    // Every palette the theme declares, core or custom.
-    assert.ok(theme.names.length > 0, 'the theme declares palettes');
+    // Every core palette, passed or not, and every custom one the theme declares.
+    assert.ok(theme.names.length >= CORE_PALETTE_NAMES.length, 'every core palette is swept');
     const measured = MODES.flatMap((mode) => sweep(theme.decls, mode, theme.names));
     if (presets.some((p) => p.label === theme.label)) presetMeasured.push(...measured);
     t.diagnostic(summarize(measured));

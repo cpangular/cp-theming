@@ -118,7 +118,7 @@ cp-theming's own phases 1–6 are done and phase 7 (docs and demos) is in progre
 until Phase 9 has landed, because the cascade change deletes the docs workarounds and changes what the
 examples show. New phases continue the numbering.
 
-Order: **8 → 9 → 10 → 11 → 12 → 7 (resumed) → 14 → 13.** Phase 12 does not depend on 9–11 and can run any
+Order: **8 → 9 → 10 → 11 → 12 → 7 (resumed) → 14 → 13.** Everything but 13 is done. Phase 12 does not depend on 9–11 and can run any
 time after 8. Your answers of 2026-11-09 are folded into the phases; see
 [Your answers](#your-answers-2026-11-09) for what is still open.
 
@@ -529,6 +529,84 @@ on every preset in both modes (Playwright screenshots in the commit message); th
 Started theme passes only `brand` and the page looks right, with a `[palette="brand"]` element
 showing the exact brand colour.
 
+Done 2026-11-11.
+
+- **As landed.** Ten core palette names; 109 registered properties (80 colour pairs + 29 scalars;
+  `--color--brand` is now the unregistered join of the brand palette's pair). core.css went from
+  178 KB to 221 KB (12.4 KB to 15.2 KB gzipped; the size check's ceiling is 224 KiB): two more
+  names at about 20 KB each. A preset is 3.3 KB. `t.theme()` takes `$palettes` as optional, so
+  `t.theme($brand: #ff6a00)` is a theme; `$brand` is the `brand` palette, and passing it both ways
+  is a Sass `@error`. The semantic defaults are the registered initial values of their colour
+  pairs (one per mode); `presets/_palettes.scss` builds `$default-error` and friends from the same
+  map in `_palette.scss`. The adapter's accent names are `brand`, `primary`, `secondary`,
+  `tertiary`, `error`, `warn`, `caution`, `pass`, so `palette="brand"` and `palette="tertiary"`
+  recolour Material components too.
+- **Changed from the text above: the shared selector holds the generated colours, not the pairs.**
+  The text declares the generated *pair* of every palette a theme did not pass on the shared
+  selector. Tried in the browser first, that fails in three ways:
+  - a nested theme that passes no `primary`, inside a theme that passes no `brand` (every preset),
+    gets a grey primary, generated from the brand's initial value;
+  - every nested theme, even one that passes only a shape, re-derives secondary, tertiary,
+    background and surface and so loses the outer theme's explicit ones, which contradicts "a
+    nested theme inherits the rest" (Decisions already made) and the Phase 9 critique row for the
+    inherited background base;
+  - on `<html theme="my-brand">`, with a preset loaded beside it, the preset's own primary,
+    secondary and background win: a default theme is `:where(:root)`, the same zero specificity as
+    the shared selector, and loads later. A theme with only a brand showed azure-blue.
+  What landed: core declares each generated *colour* once on the shared selector, as a private
+  variable (`--theme--_generated--{name}--light` / `--dark`), and sets no pair there.
+  `:where(:root)` points every pair of the chain at its variable. A theme rule points a pair at it
+  for each palette the theme left out that is downstream of something it passed (brand → primary,
+  background, surface; brand or primary → secondary, tertiary), followed by the joined token like
+  every pair a theme declares. So:
+  - the root generates the whole chain, and a theme on `<html>` takes what it generates at its own
+    specificity (0,0,1), above every loaded default;
+  - a nested theme generates what is downstream of what it passed (only `primary` → secondary and
+    tertiary; only `brand` → all of it); nothing else declares a pair, so the rest inherits, and a
+    nested theme that passes no colour keeps every colour;
+  - beside a loaded default, what a root theme has nothing upstream of comes from that default
+    (a theme with only `primary` shows the default's background), as in a nested theme.
+  The four cases the text asks for behave as it says. A theme rule therefore holds what was
+  passed plus one reference per generated pair: a preset gained three lines for tertiary. A first
+  attempt kept the pairs on the shared selector behind a private flag the theme rule set
+  (an invalid declaration on a registered pair inherits, in all three engines); it fixed nesting
+  and not the loaded default, and was replaced. The cost of what landed: a hand-written pair on a
+  nested `[theme]` element (no `define-theme()`) re-derives that palette's own roles and not the
+  palettes downstream of it. On `:root` a hand-written brand pair regenerates everything.
+- **Also decided on the way.**
+  - The generated palettes read the brand's registered *pair*, as the text says. The
+    `*-from-brand()` helpers still read `--color--brand` (the join), so an inline `--color--brand`
+    re-derives what a helper made, and the pair is what a brand picker sets.
+  - The neutrals' chroma is a ceiling, `min(c, 0.006)` / `min(c, 0.01)`, in the helpers and in the
+    generated pairs (one function). With the fixed number a grey brand gave a tint of whatever hue
+    the browser reports for grey; now a grey brand gives grey neutrals, which is what makes the
+    no-theme fallback grey. Any brand with more chroma than the tint is unchanged.
+  - With no theme at all the root still generates from the grey brand default (`oklch(0.2 0 0)`):
+    primary, secondary and tertiary are `oklch(0.35 0 0)` (`0.65` under a dark OS scheme),
+    background `0.97` / `0.17`, surface `0.93` / `0.22`. Before, primary was `oklch(0.2 0 0)` and
+    the fallback was the same in both modes (a white page under a dark OS scheme). The semantic
+    palettes are their default colours, not grey.
+  - Docs: the Getting Started theme is `t.theme($brand: #ff6a00)` and the page renders it
+    (`examples/getting-started/brand-chain.html`). The docs app cannot load the example file
+    itself (it includes core and is a default theme), so `demos/docs/src/styles.scss` defines the
+    same theme and a check fails if the two theme rules differ; `angular.json` names the app's
+    `node_modules` as a Sass include path so the stylesheet can name the package.
+- **Harness.** `test/css/chain.test.ts` (new): the exact generated expressions; the root takes
+  every one and a theme rule exactly the ones downstream of what it passed; the relation of every
+  palette a preset or fixture did not pass to its origin, as numbers; the brand
+  never adjusted over a 1680-case grid; the semantic defaults equal the presets'. The contrast
+  sweep and the Material surface-order check now cover all ten palettes of every preset and
+  fixture (1680 preset role/step colours, 0 below 4.5:1), with two new fixtures (only `brand`,
+  only `primary`). `render.ts` has 190 rows, 84 of them `chain/`, all passing in Chromium, Firefox
+  and WebKit; the expectations are worked out by hand from the numbers above. Replaced:
+  `nested-theme/inherits-unpassed-palette` (a nested theme with only `primary` now re-derives
+  secondary) and `no-theme/greyscale-fallback` (primary is `0.35`, not `0.2`).
+  `demos/docs/test/chain.ts` (new, local) reads pixels on the built docs.
+- **Measured.** The primary generated from a brand reaches 3.73:1 or better on the generated
+  background and surface over the grid, and 4.5:1 for 3244 of 3360 cases. The 116 below are
+  brands whose primary lands on the light edge of the light-mode band (L 0.5) in cyan and green
+  hues outside sRGB, on the surface. The band is `palette-from-brand()`'s, unchanged.
+
 ### Phase 13 — Release through cpdevtools/git-flow
 
 Goal: versions, tags and publishing run through git-flow.
@@ -603,6 +681,11 @@ So they are not reopened. Tell me if you want any reversed.
 - **Template `deps.yml`, syncpack, `devutil`: not adopted.** Packing from `dist/`: replaced.
 
 ## Found on the way, not fixed by this plan
+
+- The readable band `palette-from-brand()` and the generated primary share (lightness 0.35–0.50 in
+  light mode) leaves some cyan and green brands at 3.7–4.5:1 on the generated surface (Phase 14,
+  "Measured"). Tightening the light band to about 0.46 would close it and darken every generated
+  primary a little.
 
 - Identity text on the auto `--bg` role (what `t.bg()` paints) is below 4.5:1 for five preset
   palettes in light mode (3.77–4.29: error ×3, caution, warn). The harness reports it.

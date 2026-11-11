@@ -1,3 +1,13 @@
+// The Getting Started example theme, so that page can render it live in
+// examples/getting-started/brand-chain.html. It is examples/getting-started/
+// custom-theme.scss without core (angular.json loads core.css) and without
+// $default (the docs' own themes are the presets); test/examples.test.ts fails
+// if the two theme rules differ. The package path resolves through this app's
+// node_modules, which angular.json names as a Sass include path.
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+@include t.define-theme("my-brand", t.theme($brand: #ff6a00));
+
 html,
 body {
   height: 100%;

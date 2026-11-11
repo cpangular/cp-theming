@@ -112,7 +112,12 @@ const TOC = [
             </tr>
             <tr>
               <td><code>--color--brand</code></td>
-              <td>Theme brand seed color (emitted when <code>$brand</code> is set).</td>
+              <td>
+                The <code>brand</code> palette's color: the brand color exactly as
+                <code>$brand</code> gave it. <code>brand</code> is a palette like the others, so
+                every variable above exists for it (<code>--color--brand--contrast</code>,
+                <code>--color--brand--bg</code>, …).
+              </td>
             </tr>
           </tbody>
         </table>

@@ -1,6 +1,6 @@
 # CSS custom property reference
 
-All CSS custom properties emitted by `@cpangular/cp-theming-core`. A theme rule (`:where([theme="name"]):not(cp-theming-none)`, specificity (0,0,1), plus `:where(:root)` when `$default: true`) declares only what its author passed: the registered light and dark colour of each role (`--color--{name}[--role]--mode-light` / `--mode-dark`) with its joined token, `--color--brand`, the passed sub-config keys and the light/dark pairs of mode-varying percentages. Every derivation below is declared once by `define-core-theme()` on `:where(:root, [theme])`; the defaults on `:where(:root)`.
+All CSS custom properties emitted by `@cpangular/cp-theming-core`. A theme rule (`:where([theme="name"]):not(cp-theming-none)`, specificity (0,0,1), plus `:where(:root)` when `$default: true`) declares only what its author passed: the registered light and dark colour of each role (`--color--{name}[--role]--mode-light` / `--mode-dark`) with its joined token (`$brand` is the `brand` palette), a reference to core's generated colour for each chain palette the theme left out that follows from one it passed, the passed sub-config keys and the light/dark pairs of mode-varying percentages. Every derivation below, and the generated colour of each chain palette (primary, secondary, tertiary, background, surface), is declared once by `define-core-theme()` on `:where(:root, [theme])`; the defaults on `:where(:root)`.
 
 ---
 
@@ -81,7 +81,7 @@ Transparent versions of the identity color role. Opacity is the mode-varying `--
 
 | Variable | Description |
 |----------|-------------|
-| `--color--brand` | Emitted when `$brand` is passed to `t.theme()`. Used as source hue for `*-from-brand()` helpers. Can be overridden at runtime via JavaScript. |
+| `--color--brand` | The `brand` palette's colour role: the brand colour exactly as `$brand` (or `brand: t.palette(…)`) gave it, never adjusted. `brand` is a core palette, so every variable in the tables above exists for it. It is the join of the registered pair `--color--brand--mode-light` / `--mode-dark`; set the pair at runtime to regenerate the primary, accents and neutrals a theme did not pass. The `*-from-brand()` helpers read `--color--brand` itself. |
 
 ---
 
@@ -295,7 +295,7 @@ Or use the HTML attribute emitted by `define-core-theme()`:
 
 ## Animation and CSS transitions
 
-`define-core-theme()` registers what animation needs and nothing derived: the light and dark colour of each core palette role (`--color--{name}[--bg|--stroke|--focus]--mode-light` / `--mode-dark`), `--color--brand`, and the scalars `--weight--*`, `--density-scale`, `--space--*`, `--shape--*` — 94 properties. The role tokens and every derivative are plain custom properties holding `light-dark()` and `oklch(from …)` expressions that resolve where they are used.
+`define-core-theme()` registers what animation needs and nothing derived: the light and dark colour of each core palette role (`--color--{name}[--bg|--stroke|--focus]--mode-light` / `--mode-dark`), for the ten core palettes (`brand` and `tertiary` included), and the scalars `--weight--*`, `--density-scale`, `--space--*`, `--shape--*` — 109 properties. The role tokens and every derivative are plain custom properties holding `light-dark()` and `oklch(from …)` expressions that resolve where they are used.
 
 ### Crossfading a theme switch
 

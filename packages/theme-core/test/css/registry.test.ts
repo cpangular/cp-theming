@@ -1,7 +1,9 @@
 // Check 4 — core.css: size, @property count and the exact registered list:
-// each core palette role's light and dark colour, --color--brand and the 29
-// scalars. Theme stylesheets register nothing for core palette names; a custom
-// palette name gets its eight registrations at root level in its theme stylesheet.
+// each core palette role's light and dark colour (ten palettes since Phase 14:
+// brand and tertiary are core names, and --color--brand is the brand palette's
+// pair) and the 29 scalars. Theme stylesheets register nothing for core palette
+// names; a custom palette name gets its eight registrations at root level in
+// its theme stylesheet.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { gzipSync } from 'node:zlib';
@@ -43,7 +45,6 @@ export const scalarRegistrations = [
 
 export const expectedRegistrations = [
   ...CORE_PALETTE_NAMES.flatMap(paletteRegistrations),
-  '--color--brand',
   ...scalarRegistrations,
 ];
 
@@ -51,19 +52,22 @@ test('the scalar list is the 29 the plan names', () => {
   assert.equal(scalarRegistrations.length, 29);
 });
 
-test('core.css registers exactly the expected 94 properties, each once', () => {
+test('core.css registers exactly the expected 109 properties, each once', () => {
   const registered = registeredProperties(core.css);
-  assert.equal(registered.length, 94);
+  // 10 palettes × 4 roles × 2 modes + 29 scalars.
+  assert.equal(registered.length, 109);
+  assert.ok(!registered.includes('--color--brand'), '--color--brand is a join, not registered');
   assert.equal(new Set(registered).size, registered.length, 'no duplicate registrations');
   assert.deepEqual([...registered].sort(), [...expectedRegistrations].sort());
 });
 
-// Core now carries every derivation once (the presets carried eight copies).
-test('core.css stays under 192 KiB expanded and 16 KiB gzipped', (t) => {
+// Core carries every derivation once (the presets carried eight copies), for
+// ten palette names since Phase 14 (about 20 KB expanded per name).
+test('core.css stays under 224 KiB expanded and 16 KiB gzipped', (t) => {
   const bytes = Buffer.byteLength(core.css);
   const gz = gzipSync(core.css).length;
   t.diagnostic(`core.css: ${bytes} bytes, ${gz} gzipped`);
-  assert.ok(bytes <= 192 * 1024, `${bytes} bytes`);
+  assert.ok(bytes <= 224 * 1024, `${bytes} bytes`);
   assert.ok(gz <= 16 * 1024, `${gz} bytes gzipped`);
 });
 

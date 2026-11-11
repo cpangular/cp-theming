@@ -48,9 +48,100 @@ $palettes: (
 );
 ```
 
+## Brand, accents and neutrals: pass what you have
+
+Colours follow one chain:
+
+**brand → primary → secondary, tertiary → background, surface**
+
+A theme passes whichever of these it has. Core generates each one it leaves out, in the browser, from the nearest one it passed.
+
+| Palette | When the theme leaves it out |
+|---------|------------------------------|
+| `brand` | Never generated, never adjusted. `$brand` in `t.theme()` is the colour from your guidelines; it becomes the `brand` palette (`palette="brand"`, `--color--brand`, `--color--brand--contrast`, …) exactly as written. With no brand passed it is a dark grey. |
+| `primary` | The brand, moved into the lightness that reads on the page: 0.35–0.50 in light mode, 0.65–0.82 in dark mode, chroma at most 0.22 (dark mode: 0.9 × chroma first). The same numbers as `t.palette-from-brand()`. |
+| `secondary` | Primary's hue and lightness, one third of its chroma. |
+| `tertiary` | Primary's lightness, hue + 60°, half its chroma. |
+| `background` | The brand's hue at lightness 0.97 / 0.17, chroma 0.006 at most. The same numbers as `t.background-from-brand()`. |
+| `surface` | The brand's hue at lightness 0.93 / 0.22, chroma 0.01 at most. The same numbers as `t.surface-from-brand()`. |
+| `error`, `warn`, `caution`, `pass` | Not part of the chain. Fixed defaults, the ones the presets pass: `oklch(0.52 0.22 27)` / `oklch(0.70 0.20 27)`, `oklch(0.55 0.18 55)` / `oklch(0.76 0.16 55)`, `oklch(0.55 0.16 103)` / `oklch(0.82 0.15 103)`, `oklch(0.48 0.18 145)` / `oklch(0.72 0.16 145)`. |
+
+So:
+
+```scss
+// Only the brand: everything else is generated.
+$a: t.theme($brand: #ff6a00);
+
+// Only primary: secondary and tertiary are generated from it. No brand was
+// passed, so background and surface are neutral greys.
+$b: t.theme($palettes: (
+  primary: t.light-dark(t.palette(oklch(0.45 0.18 300)), t.palette(oklch(0.75 0.15 300))),
+));
+
+// Primary and secondary: tertiary is generated. Pass all three and none is.
+$c: t.theme($palettes: (
+  primary:   t.light-dark(t.palette(oklch(0.45 0.18 300)), t.palette(oklch(0.75 0.15 300))),
+  secondary: t.light-dark(t.palette(#00796b), t.palette(hsl(174 42% 65%))),
+));
+```
+
+A palette you pass is used exactly as given. The brand colour is the only one that is both kept exact and the origin of others: a brand colour is often too light, too dark or too saturated to carry buttons and text, so the primary made from it is adjusted and the brand palette is not.
+
+### Nested themes
+
+A nested theme generates what follows from what it passes and inherits the rest:
+
+- only `primary` → its own secondary and tertiary; the background, surface and semantic palettes of the theme around it;
+- only `brand` → the whole chain;
+- only `secondary` → that secondary; everything else from the theme around it;
+- no colour at all (a shape, a density) → every colour of the theme around it.
+
+On the root core generates every palette of the chain that no theme passes. With no theme at all the brand is its grey default and so is everything made from it.
+
+### Beside a default theme
+
+A default theme (`$default: true`, every preset) applies on `:where(:root)`. A theme on `<html theme="…">` beats it for everything the theme passes and everything generated from that. What the theme has nothing upstream of comes from the default, as it would from a theme around it: a theme with only `primary`, loaded beside a preset, shows the preset's background and surface.
+
+### How it works
+
+`define-core-theme()` declares each generated colour once, on the shared derivation selector, as a private variable, so it is worked out again on every `[theme]` element from the brand and primary in force there:
+
+```css
+:where(:root, [theme]) {
+  --theme--_generated--primary--light: oklch(from var(--color--brand--mode-light) clamp(0.35,l,0.5) clamp(0,c,0.22) h / 1);
+  --theme--_generated--secondary--light: oklch(from var(--color--primary--mode-light) l calc(c / 3) h / 1);
+  /* … ten in all: primary, secondary, tertiary, background, surface × light, dark */
+}
+```
+
+It sets no pair there. The pairs take a generated colour by reference, in two places:
+
+```css
+/* core: the root generates the whole chain */
+:where(:root) {
+  --color--primary--mode-light: var(--theme--_generated--primary--light);
+  /* … every pair of the chain */
+}
+
+/* a theme that passes only primary: the two accents that follow from it */
+:where([theme="my-theme"]):not(cp-theming-none) {
+  --color--primary--mode-light: oklch(45% 0.18 300deg);
+  --color--primary--mode-dark: oklch(75% 0.15 300deg);
+  --color--secondary--mode-light: var(--theme--_generated--secondary--light);
+  --color--secondary--mode-dark: var(--theme--_generated--secondary--dark);
+  --color--tertiary--mode-light: var(--theme--_generated--tertiary--light);
+  --color--tertiary--mode-dark: var(--theme--_generated--tertiary--dark);
+  /* … and the joined tokens */
+}
+```
+
+Nothing else declares a pair, so anywhere else it inherits: that is the "inherits the rest". A theme that passes the palette declares the pair itself.
+
+A hand-written rule follows the same rules. On `:root`, setting a pair (`--color--brand--mode-light` / `--mode-dark`) regenerates everything made from it, because every pair of the chain is a reference there. On a nested `[theme]` element a hand-written pair re-derives that palette's own roles, ladder and contrasts, and not the palettes generated from it: set those pairs too, or define a theme with `define-theme()`.
+
 ## Runtime-derived palettes
 
-These helpers derive palette configs from a CSS custom property at runtime, using CSS relative color syntax. The hue of the source variable is preserved; lightness and chroma are adjusted.
+These helpers derive palette configs from a CSS custom property at runtime, using CSS relative color syntax. The hue of the source variable is preserved; lightness and chroma are adjusted. Core uses the same expressions for the primary, background and surface it generates from the brand, so call a helper only to change the numbers, to read another variable, or to make another palette name follow the brand.
 
 ### `t.palette-from-var($var, $light-l-min?, $light-l-max?, $dark-l-min?, $dark-l-max?, $c-max?)`
 
@@ -71,7 +162,7 @@ tertiary: t.palette-from-var('--color--brand', $c-max: 0.14)
 
 ### `t.palette-from-brand(...)`
 
-Convenience wrapper for `t.palette-from-var('--color--brand', …)`. Derives a palette from the `--color--brand` CSS variable, which is emitted when you pass `$brand` to `t.theme()`.
+Convenience wrapper for `t.palette-from-var('--color--brand', …)`. Derives a palette from `--color--brand`, the brand palette's colour, which a theme sets by passing `$brand` to `t.theme()`. A theme that passes `$brand` and no `primary` gets this palette as its primary without calling it.
 
 ```scss
 primary: t.palette-from-brand()
@@ -93,6 +184,8 @@ Very near white/black — subtle warmth only.
 |------|-----------|----------------|
 | Light | 0.97 | 0.006 |
 | Dark | 0.17 | 0.006 |
+
+`$c-tint` is a ceiling (`min(c, $c-tint)`): a grey source has no hue to take, so it gives a grey neutral.
 
 ```scss
 background: t.background-from-brand()
@@ -122,16 +215,18 @@ surface: t.surface-from-brand()
 | `0.015` | Clearly tinted but still reads as a neutral |
 | `> 0.020` | Noticeably colored — no longer a neutral |
 
-## Semantic palette names
+## Core palette names
 
-The following palette names have well-established semantic meaning. Use them consistently so components and utilities can target them predictably.
+The following ten names are registered and derived by `define-core-theme()`. Use them consistently so components and utilities can target them predictably. A theme does not have to pass all of them (see [pass what you have](#brand-accents-and-neutrals-pass-what-you-have)).
 
 | Name | Meaning | Suggested hue |
 |------|---------|---------------|
 | `background` | Page/app background | Achromatic or brand-tinted |
 | `surface` | Card/panel surfaces | Slightly elevated over background |
-| `primary` | Brand identity, primary actions | Brand hue |
+| `brand` | The brand colour exactly as given: logo strips, hero areas | The colour from the guidelines |
+| `primary` | Primary actions, links | Brand hue, readable on the page |
 | `secondary` | Secondary actions | Complementary or analogous hue |
+| `tertiary` | A third accent | A neighbouring hue |
 | `error` | Failure, destructive actions | Red (~27°) |
 | `warn` | Warning, degraded state | Orange (~55°) |
 | `caution` | Advisory, needs attention | Amber-gold (~103°) |

@@ -3,10 +3,14 @@ import { TocService } from '../../shell/toc.service';
 import { CodeComponent } from '../../shared/code.component';
 import palettesScss from '../../../examples/palette/palettes.scss' with { loader: 'text' };
 import rolesScss from '../../../examples/palette/roles.scss' with { loader: 'text' };
+import brandOnlyScss from '../../../examples/palette/brand-only.scss' with { loader: 'text' };
+import primaryOnlyScss from '../../../examples/palette/primary-only.scss' with { loader: 'text' };
+import fromBrandScss from '../../../examples/palette/from-brand.scss' with { loader: 'text' };
 import derivedOutputCss from '../../../examples/palette/derived.output.css' with { loader: 'text' };
 
 const TOC = [
   { label: 'Overview', anchor: 'overview' },
+  { label: 'Brand, accents and neutrals', anchor: 'chain' },
   { label: 'Runtime derivatives', anchor: 'runtime-derivatives' },
   { label: 'Color variables', anchor: 'color-variables' },
   { label: 'API Reference', anchor: 'api' },
@@ -42,12 +46,63 @@ const TOC = [
         </p>
         <p>
           Palettes are defined inside <code>t.theme($palettes: (...))</code>. Core palette names —
-          <code>primary</code>, <code>secondary</code>, <code>error</code>, <code>warn</code>,
-          <code>caution</code>, <code>pass</code>, <code>surface</code>, <code>background</code> —
-          are pre-registered. Any additional names in your <code>$palettes</code> map are registered
-          on demand.
+          <code>brand</code>, <code>primary</code>, <code>secondary</code>, <code>tertiary</code>,
+          <code>error</code>, <code>warn</code>, <code>caution</code>, <code>pass</code>,
+          <code>surface</code>, <code>background</code> — are pre-registered, and a theme does not
+          have to pass all of them. Any additional names in your <code>$palettes</code> map are
+          registered on demand.
         </p>
         <cpa-code [code]="ex.palettesScss" lang="scss" />
+      </section>
+
+      <section id="chain" class="page-section">
+        <h2>Brand, accents and neutrals</h2>
+        <p>Pass the colours you have. The others are generated, in the browser, along one chain:</p>
+        <p>
+          <code>brand</code> → <code>primary</code> → <code>secondary</code>,
+          <code>tertiary</code> → <code>background</code>, <code>surface</code>
+        </p>
+        <p>
+          <strong>The brand colour is kept exact.</strong> <code>$brand</code> is the colour from
+          your guidelines. It becomes the <code>brand</code> palette, a palette like any other
+          (<code>palette="brand"</code>, <code>--color--brand</code>,
+          <code>--color--brand--contrast</code>, …), and nothing ever adjusts it.
+        </p>
+        <p>
+          <strong>The primary made from it is adjusted.</strong> A brand colour is often too light,
+          too dark or too saturated to carry buttons, links and text. When a theme passes no
+          <code>primary</code>, core makes one from the brand: the same hue, with the lightness held
+          between 0.35 and 0.50 in light mode and between 0.65 and 0.82 in dark mode, and the chroma
+          capped at 0.22. A <code>primary</code> you pass yourself is used exactly as given.
+        </p>
+        <cpa-code [code]="ex.brandOnlyScss" lang="scss" />
+        <p>
+          <strong>Pass one, two or three accents.</strong> Only <code>primary</code>: secondary and
+          tertiary are generated from it. <code>primary</code> and <code>secondary</code>: tertiary
+          is generated. All three: none is. Only <code>brand</code>: all of them are.
+        </p>
+        <cpa-code [code]="ex.primaryOnlyScss" lang="scss" />
+        <p>
+          <code>error</code>, <code>warn</code>, <code>caution</code> and <code>pass</code> are not
+          part of the chain. A theme that leaves one out gets a fixed default (red, orange, amber,
+          green), the same ones the presets use.
+        </p>
+        <p>
+          <strong>Nested themes.</strong> A nested theme generates what follows from what it passes
+          and inherits the rest. One that passes only <code>primary</code> gets its own secondary
+          and tertiary and keeps the background and surface around it; one that passes only
+          <code>brand</code> gets the whole chain; one that passes no colour keeps every colour of
+          the theme around it. A default theme loaded beside yours (every preset is one) counts as
+          the theme around it: on <code>&lt;html&gt;</code> your theme beats it for what you pass
+          and what is generated from that, and the rest comes from the default.
+        </p>
+        <p>
+          <strong>Changing a colour by hand.</strong> Each palette colour is a registered pair,
+          <code>--color--primary--mode-light</code> and <code>--color--primary--mode-dark</code>.
+          Set the pair on <code>:root</code> and everything generated from it follows. On a nested
+          <code>[theme]</code> element a hand-written pair changes that palette and its own shades,
+          not the palettes generated from it: set those pairs too, or define a theme.
+        </p>
       </section>
 
       <section id="runtime-derivatives" class="page-section">
@@ -214,6 +269,12 @@ const TOC = [
             appropriate ranges per mode. Requires <code>$brand</code> to be set on
             <code>t.theme()</code>.
           </p>
+          <p class="api-symbol-desc">
+            A theme that passes <code>$brand</code> and no <code>primary</code> already gets this
+            palette as its primary, with the default numbers. Call the function to change the
+            numbers, or to make another palette follow the brand:
+          </p>
+          <cpa-code [code]="ex.fromBrandScss" lang="scss" />
           <div class="api-member-card">
             <span class="api-signature-row"
               ><span class="api-sig-kw">t.</span><span class="api-sig-name">palette-from-brand</span
@@ -267,7 +328,9 @@ const TOC = [
           <p class="api-symbol-desc">
             Derive a barely-chromatic neutral background palette from the brand color — a
             near-neutral with a whisper of the brand hue, ideal for page backgrounds. Uses a lower
-            chroma tint than <code>t.surface-from-brand()</code>.
+            chroma tint than <code>t.surface-from-brand()</code>. A theme that passes
+            <code>$brand</code> and no <code>background</code> gets this palette, with the default
+            tint; a grey brand gives a grey background.
           </p>
           <div class="api-member-card">
             <span class="api-signature-row"
@@ -456,8 +519,24 @@ const TOC = [
   ],
 })
 export class PalettePageComponent {
-  protected readonly ex = { palettesScss, rolesScss, derivedOutputCss };
-  readonly paletteOptions = ['primary', 'secondary', 'error', 'warn', 'caution', 'pass'];
+  protected readonly ex = {
+    palettesScss,
+    rolesScss,
+    derivedOutputCss,
+    brandOnlyScss,
+    primaryOnlyScss,
+    fromBrandScss,
+  };
+  readonly paletteOptions = [
+    'brand',
+    'primary',
+    'secondary',
+    'tertiary',
+    'error',
+    'warn',
+    'caution',
+    'pass',
+  ];
   readonly selectedPalette = signal('primary');
 
   readonly colorGroups = [

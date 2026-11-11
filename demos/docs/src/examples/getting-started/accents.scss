@@ -1,0 +1,31 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+// One accent: secondary and tertiary are generated from primary.
+$one: t.theme(
+  $palettes: (
+    primary: t.light-dark(t.palette(oklch(0.40 0.22 270)), t.palette(oklch(0.78 0.18 270))),
+  )
+);
+
+// Two accents: secondary is used as passed, tertiary is generated from primary.
+$two: t.theme(
+  $palettes: (
+    primary:   t.light-dark(t.palette(oklch(0.40 0.22 270)), t.palette(oklch(0.78 0.18 270))),
+    secondary: t.light-dark(t.palette(#00796b), t.palette(hsl(174 42% 65%))),
+  )
+);
+
+// Three accents and the brand colour: nothing is generated but the page
+// background and the surface, which take the brand's hue.
+$three: t.theme(
+  $brand: #ff6a00,
+  $palettes: (
+    primary:   t.light-dark(t.palette(oklch(0.40 0.22 270)), t.palette(oklch(0.78 0.18 270))),
+    secondary: t.light-dark(t.palette(#00796b), t.palette(hsl(174 42% 65%))),
+    tertiary:  t.light-dark(t.palette(oklch(0.45 0.16 20)), t.palette(oklch(0.80 0.12 20))),
+  )
+);
+
+@include t.define-theme("one-accent", $one);
+@include t.define-theme("two-accents", $two);
+@include t.define-theme("three-accents", $three);

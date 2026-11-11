@@ -4,7 +4,7 @@ See [.github/copilot-instructions.md](.github/copilot-instructions.md) for the f
 project context, conventions, non-negotiable design decisions, and what is stub vs real.
 
 See [PLAN.md](PLAN.md) for the full architecture, current status, and development phases, and
-[PORT-PLAN.md](PORT-PLAN.md) for phases 8–13.
+[PORT-PLAN.md](PORT-PLAN.md) for phases 8–14.
 
 ## Quick Context
 
@@ -21,8 +21,17 @@ This is a CSS-variable-based theming system. Key facts:
 - SCSS public API lives in `packages/theme-core/scss/_theme.scss` (`@cpangular/cp-theming-core`) — single `@use '@cpangular/cp-theming-core/scss/theme' as t;` import.
 - Mode variation uses `t.light-dark($light, $dark)` wrapper — not CSS `light-dark()` for percentages.
 - Cascade (Phase 9): core (`define-core-theme()`) derives once on `:where(:root, [theme])`; a theme
-  rule holds only what was passed. Registered: the role colour pairs `--mode-light`/`--mode-dark`,
-  `--color--brand`, the scalars. Load order: core, themes, adapter.
+  rule holds only what was passed. Registered: the role colour pairs `--mode-light`/`--mode-dark`
+  of the ten core palettes, the scalars. Load order: core, themes, adapter.
+- Palette chain (Phase 14): brand → primary → secondary, tertiary → background, surface. `brand`
+  and `tertiary` are core palettes; `--color--brand` is the brand palette's colour and is never
+  adjusted. Core declares the generated colour of each chain palette once, on the shared selector,
+  as a private variable (`--theme--_generated--{name}--{light|dark}`); `:where(:root)` points every
+  pair of the chain at it, and a theme rule does so for each palette it left out that is
+  downstream of something it passed. So the root generates everything, a nested theme only what
+  follows from what it passed, the rest inherits, and a theme on `<html>` beats a default theme
+  loaded beside it. Semantic palettes default to their registered initial values. Checks:
+  `test/css/chain.test.ts`, the `chain/` rows of `render.ts`, `demos/docs/test/chain.ts`.
 - Contrast (Phase 10): `--contrast` is black or white by a step at relative luminance 0.179 in
   clamped linear sRGB; the step is declared once as `--theme--_contrast-step`. Every relative-colour
   derivation ends `/ 1` (only the tints carry an alpha); a harness check enforces it.

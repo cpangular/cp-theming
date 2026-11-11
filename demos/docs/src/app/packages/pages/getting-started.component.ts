@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { themeHeadSnippet } from '@cpangular/cp-theming-core';
 import { TocService } from '../../shell/toc.service';
 import { CodeComponent } from '../../shared/code.component';
+import { ThemeExampleComponent } from '../../shared/theme-example.component';
 import presetCss from '../../../examples/getting-started/preset.css' with { loader: 'text' };
 import presetScss from '../../../examples/getting-started/preset.scss' with { loader: 'text' };
 import presetMaterialScss from '../../../examples/getting-started/preset-material.scss' with {
@@ -13,6 +14,10 @@ import materialSassScss from '../../../examples/getting-started/material-sass.sc
   loader: 'text',
 };
 import customThemeScss from '../../../examples/getting-started/custom-theme.scss' with {
+  loader: 'text',
+};
+import accentsScss from '../../../examples/getting-started/accents.scss' with { loader: 'text' };
+import brandChainHtml from '../../../examples/getting-started/brand-chain.html' with {
   loader: 'text',
 };
 import htmlRootHtml from '../../../examples/getting-started/html-root.html' with { loader: 'text' };
@@ -55,7 +60,7 @@ const NG_MATERIAL_TOC = [
 @Component({
   selector: 'cpa-getting-started-page',
   standalone: true,
-  imports: [RouterLink, CodeComponent],
+  imports: [RouterLink, CodeComponent, ThemeExampleComponent],
   template: `
     <article class="doc-page">
       <header class="page-header">
@@ -98,22 +103,82 @@ pnpm add @cpangular/cp-theming-core</code></pre>
           <section id="option-b" class="page-section">
             <h2>Option B — Custom theme (Sass)</h2>
             <p>
-              Define your own palette colours. Any CSS colour format is accepted:
+              Pass the colours you have; the rest are generated. The smallest theme is one colour,
+              the brand colour from your guidelines. Any CSS colour format is accepted:
               <code>oklch()</code>, hex, <code>rgb()</code>, <code>hsl()</code>, a named colour.
-              <a href="https://oklch.com" target="_blank" rel="noopener">oklch</a> is recommended
-              for predictable lightness steps, because the library derives every shade (contrast,
-              tints, the focus ring) in oklch, in the browser. Give each palette a light-mode and a
-              dark-mode colour.
             </p>
             <cpa-code [code]="ex.customThemeScss" lang="scss" />
-            <p>
-              A theme declares only the palettes it is given. A palette you leave out of a root
-              theme falls back to core's greyscale default, which is the same in light and dark
-              mode; in a nested theme it is inherited from the theme around it. So a root theme
-              passes at least <code>background</code>, <code>surface</code> and the palettes it
-              uses.
-            </p>
             <cpa-code [code]="ex.htmlRootCustomHtml" lang="html" />
+            <p>
+              That is a complete theme, in light and dark mode. The colours follow a chain, and each
+              one you leave out is generated in the browser from the nearest one you passed:
+            </p>
+            <table class="api-props-table">
+              <thead>
+                <tr>
+                  <th>Palette</th>
+                  <th>When you leave it out</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>brand</code></td>
+                  <td>
+                    Never generated and never adjusted: <code>palette="brand"</code> is the exact
+                    colour you passed, for a logo strip or a hero banner.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>primary</code></td>
+                  <td>
+                    The brand colour, moved into the lightness that reads on the page in each mode.
+                    A brand colour is often too light, too dark or too saturated for buttons and
+                    links; the primary made from it is not.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>secondary</code></td>
+                  <td>The primary's hue with a third of its chroma.</td>
+                </tr>
+                <tr>
+                  <td><code>tertiary</code></td>
+                  <td>The primary's hue turned 60°, with half its chroma.</td>
+                </tr>
+                <tr>
+                  <td><code>background</code>, <code>surface</code></td>
+                  <td>Near-white and near-black neutrals with a trace of the brand's hue.</td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>error</code>, <code>warn</code>, <code>caution</code>, <code>pass</code>
+                  </td>
+                  <td>Fixed defaults: red, orange, amber and green. They follow nothing.</td>
+                </tr>
+              </tbody>
+            </table>
+            <p>
+              This is the theme above, rendered by this page. The first swatch is the brand colour
+              as written, <code>#ff6a00</code>; the others were generated from it. Switch the page
+              to dark mode to see the other half.
+            </p>
+            <cpa-theme-example title="One brand colour" [attrsHtml]="ex.brandChainHtml" />
+            <p>
+              Pass one, two or three accents. With only <code>primary</code>, secondary and tertiary
+              are generated from it; with <code>primary</code> and <code>secondary</code>, tertiary
+              is generated; pass all three and none is. A palette you pass is used exactly as given.
+              Give it a light-mode and a dark-mode colour with <code>t.light-dark()</code>.
+              <a href="https://oklch.com" target="_blank" rel="noopener">oklch</a> is recommended
+              for predictable lightness steps, because the library derives every shade (contrast,
+              tints, the focus ring) in oklch.
+            </p>
+            <cpa-code [code]="ex.accentsScss" lang="scss" />
+            <p>
+              A theme without a brand colour and without <code>background</code> and
+              <code>surface</code> gets neutral grey ones. A nested theme generates only what
+              follows from what it passes: one that passes only <code>primary</code> gets its own
+              secondary and tertiary and keeps the background of the theme around it; one that
+              passes no colour keeps every colour.
+            </p>
             <p>
               See the <a routerLink="../api">API reference</a> for the full
               <code>t.theme()</code> options — typography, density, shape, motion, and more.
@@ -490,6 +555,8 @@ export class GettingStartedPageComponent {
     presetMaterialScss,
     materialSassScss,
     customThemeScss,
+    accentsScss,
+    brandChainHtml,
     htmlRootHtml,
     htmlRootCustomHtml,
     materialComponentsDisplayHtml,

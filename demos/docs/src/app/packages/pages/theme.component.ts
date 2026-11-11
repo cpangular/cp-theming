@@ -45,6 +45,16 @@ const TOC = [
           <code>t.theme()</code>.
         </p>
         <cpa-code [code]="ex.basicScss" lang="scss" />
+        <p>
+          A theme does not have to pass every palette. Colours follow the chain
+          <code>brand</code> → <code>primary</code> → <code>secondary</code>,
+          <code>tertiary</code> → <code>background</code>, <code>surface</code>: pass whichever you
+          have, and core generates each one you leave out from the nearest one you passed. The brand
+          colour is kept exactly as written; the primary generated from it is moved into the
+          lightness that reads on the page. <code>error</code>, <code>warn</code>,
+          <code>caution</code> and <code>pass</code> have fixed defaults. The Palette page has the
+          numbers.
+        </p>
       </section>
 
       <section id="light-dark" class="page-section">
@@ -76,7 +86,10 @@ setMode(ThemeMode.AUTO);</code></pre>
         <p>
           Place the <code>theme</code> attribute on any element to apply a different theme to that
           subtree. A nested theme declares only what its author passed and inherits everything else
-          from the theme around it.
+          from the theme around it. The palettes that are generated follow what the nested theme
+          passes: one that passes only <code>primary</code> gets its own secondary and tertiary, one
+          that passes only <code>brand</code> gets a whole new set, and one that passes no colour
+          (only a shape, say) keeps every colour of the theme around it.
         </p>
         <cpa-theme-example title="A theme inside a theme" [attrsHtml]="ex.nestedHtml" />
       </section>
@@ -116,9 +129,9 @@ setMode(ThemeMode.AUTO);</code></pre>
           <p class="api-symbol-desc">
             Emit everything that does not depend on a theme, once: the
             <code>&#64;property</code> registrations (each core palette role's light and dark color,
-            <code>--color--brand</code>, and the weight, density, space and shape scalars), every
-            default, the <code>themeMode</code> rules, every derivation, and the attribute rules
-            (<code>[palette]</code>, the surface layers, <code>[elevated]</code>,
+            and the weight, density, space and shape scalars), every default, the
+            <code>themeMode</code> rules, every derivation, the palettes a theme left out, and the
+            attribute rules (<code>[palette]</code>, the surface layers, <code>[elevated]</code>,
             <code>[themeDensity]</code>). Call it once, at the top level of a stylesheet, before any
             theme.
           </p>
@@ -217,14 +230,15 @@ setMode(ThemeMode.AUTO);</code></pre>
         <div id="theme-fn" class="api-symbol">
           <h3 class="api-symbol-name">theme</h3>
           <p class="api-symbol-desc">
-            Assemble a theme config map from typed sub-configs. Only <code>$palettes</code> is
-            required. The map holds only what was passed; core supplies the default of everything
-            else.
+            Assemble a theme config map from typed sub-configs. Nothing is required: pass
+            <code>$brand</code>, some palettes, or both. The map holds only what was passed; core
+            generates the palettes that were left out and supplies the default of everything else.
           </p>
           <div class="api-member-card">
             <span class="api-signature-row"
               ><span class="api-sig-kw">t.</span><span class="api-sig-name">theme</span
               ><span class="api-sig-punct">(</span><span class="api-sig-param">$palettes</span
+              ><span class="api-sig-punct">: </span><span class="api-sig-default">()</span
               ><span class="api-sig-punct">, </span><span class="api-sig-param">$brand</span
               ><span class="api-sig-punct">: </span><span class="api-sig-default">null</span
               ><span class="api-sig-punct">, </span><span class="api-sig-param">$weights</span
@@ -243,7 +257,10 @@ setMode(ThemeMode.AUTO);</code></pre>
                 </div>
                 <div class="api-param-desc">
                   Map of palette name → <code>t.palette()</code> or
-                  <code>t.light-dark()</code> pair. Required.
+                  <code>t.light-dark()</code> pair. A palette left out is generated
+                  (<code>primary</code>, <code>secondary</code>, <code>tertiary</code>,
+                  <code>background</code>, <code>surface</code>) or a fixed default
+                  (<code>error</code>, <code>warn</code>, <code>caution</code>, <code>pass</code>).
                 </div>
               </div>
               <div class="api-param-row">
@@ -253,8 +270,10 @@ setMode(ThemeMode.AUTO);</code></pre>
                   ><span class="api-param-default">default null</span>
                 </div>
                 <div class="api-param-desc">
-                  Brand color emitted as <code>--color--brand</code>. Required for
-                  <code>t.palette-from-brand()</code>.
+                  The brand color, exactly as given: the <code>brand</code> palette,
+                  <code>--color--brand</code>. Never adjusted. A primary, background and surface the
+                  theme does not pass are generated from it. The same as passing
+                  <code>brand: t.palette(…)</code> in <code>$palettes</code>.
                 </div>
               </div>
               <div class="api-param-row">

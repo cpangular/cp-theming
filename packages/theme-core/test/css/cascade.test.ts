@@ -1,8 +1,9 @@
 // Check 5 — cascade shape (Phase 9). Variable-only rules are :where() so an
 // author's own rule wins; a theme rule holds only what was passed; nothing
-// selects `body`; the registered list is exactly the role colour pairs,
-// --color--brand and the 29 scalars, and nothing derived; core derives every
-// core palette once and picks every mode-varying percentage once.
+// selects `body`; the registered list is exactly the role colour pairs and the
+// 29 scalars, and nothing derived; core derives every core palette once and
+// picks every mode-varying percentage once. The chain of Phase 14 (what core
+// generates for a palette a theme did not pass) is chain.test.ts.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
@@ -98,9 +99,7 @@ test('nothing derived is registered, in core or in any theme stylesheet', () => 
     const derived = registeredProperties(sheet.css).filter(
       (n) =>
         DERIVED.test(n) ||
-        !/^--color--[\w-]+--mode-(light|dark)$|^--color--brand$|^--(weight|space|shape)--|^--density-scale$/.test(
-          n,
-        ),
+        !/^--color--[\w-]+--mode-(light|dark)$|^--(weight|space|shape)--|^--density-scale$/.test(n),
     );
     assert.deepEqual(derived, [], sheet.label);
   }
@@ -169,7 +168,7 @@ test('core picks every mode-varying percentage once, on :where(:root, [theme], [
   }
 });
 
-test('a theme that passes one palette emits one rule with that palette and nothing else', () => {
+test('a theme that passes one palette emits one rule with that palette, what follows from it and nothing else', () => {
   const { css } = compileSource(
     `@use "../../scss/theme" as t;
 @include t.define-theme("minimal", t.theme($palettes: (
@@ -188,6 +187,19 @@ test('a theme that passes one palette emits one rule with that palette and nothi
     [
       '--color--primary',
       'light-dark(var(--color--primary--mode-light), var(--color--primary--mode-dark))',
+    ],
+    // The accents follow from primary: the theme takes the ones core generates.
+    ['--color--secondary--mode-light', 'var(--theme--_generated--secondary--light)'],
+    ['--color--secondary--mode-dark', 'var(--theme--_generated--secondary--dark)'],
+    [
+      '--color--secondary',
+      'light-dark(var(--color--secondary--mode-light), var(--color--secondary--mode-dark))',
+    ],
+    ['--color--tertiary--mode-light', 'var(--theme--_generated--tertiary--light)'],
+    ['--color--tertiary--mode-dark', 'var(--theme--_generated--tertiary--dark)'],
+    [
+      '--color--tertiary',
+      'light-dark(var(--color--tertiary--mode-light), var(--color--tertiary--mode-dark))',
     ],
   ]);
   assert.deepEqual(registeredProperties(css), []);
@@ -359,7 +371,9 @@ test('core derives the auto bg, stroke and focus into their registered pairs, fr
         `${token} is the join of its pair`,
       );
     }
-    // background/surface: the pair is the theme's base (emit-palette), only joined here.
+    // background/surface: the pair is the theme's base (emit-palette), or the
+    // generated colour when the theme left the palette out (chain.test.ts),
+    // and only joined here. Never the tint the other palettes get.
     if (name === 'background' || name === 'surface') {
       assert.ok(!shared.has(`--color--${name}--bg--mode-light`), `${name} bg pair not derived`);
     } else {

@@ -1,5 +1,5 @@
 // Check 4 (adapter) — the adapter registers nothing and remaps --mat-sys-primary
-// for the six core accent palettes itself; the adaptor fixture registers eight
+// for the eight core accent palettes itself (brand and tertiary among them); the adaptor fixture registers eight
 // names (four roles × light and dark) for its custom palette, once at root
 // level, and its [palette] hooks emit the Material remap for the custom
 // palette names only, once per name.

@@ -1,0 +1,20 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+// Core already generates primary, background and surface from $brand.
+// The helpers are for different numbers, or for another palette name.
+$my-theme: t.theme(
+  $brand: #0b57d0,
+  $palettes: (
+    // a darker light-mode primary than the default band gives
+    primary: t.palette-from-brand($light-l-max: 0.42),
+
+    // a more noticeable tint
+    background: t.background-from-brand($c-tint: 0.012),
+    surface:    t.surface-from-brand($c-tint: 0.02),
+
+    // a custom palette that follows the brand
+    accent: t.palette-from-brand($c-max: 0.12),
+  )
+);
+
+@include t.define-theme("my-theme", $my-theme);

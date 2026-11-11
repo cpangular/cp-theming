@@ -25,6 +25,7 @@ import path from 'node:path';
 import {
   compileFile,
   docsDir,
+  docsStyleList,
   exportsImporters,
   repoRoot,
   resolveExport,
@@ -244,6 +245,44 @@ for (const file of html) {
     assert.deepEqual(unknownMarkup(source), []);
   });
 }
+
+// ── The example theme the docs app renders ───────────────────────────────────
+
+// Getting Started shows custom-theme.scss and renders brand-chain.html with
+// it, live. The docs app cannot load that file as it is (it includes core and
+// is a default theme), so src/styles.scss defines the same theme again; the two
+// theme rules have to stay the same, or the page shows one theme and renders
+// another.
+test('the docs app defines the Getting Started theme exactly as the example shows it', () => {
+  const themeRule = (css: string) =>
+    rules(css)
+      .filter((r) => /\[theme=["']?my-brand["']?\]/.test(r.selector))
+      .map((r) => r.declarations);
+  const example = compiled.get(path.join(examplesDir, 'getting-started', 'custom-theme.scss'));
+  assert.ok(example, 'custom-theme.scss compiles');
+  // Compiled the way the docs build compiles it (angular.json's include paths).
+  const app = docsStyleList().find((s) => s.entry.endsWith('docs/src/styles.scss'));
+  assert.ok(app, 'angular.json lists the docs stylesheet');
+  assert.equal(themeRule(example.css).length, 1, 'the example defines my-brand');
+  assert.deepEqual(themeRule(app.compiled.css), themeRule(example.css));
+  // …and that theme passes the brand colour and nothing else: the rest of its
+  // rule points at the colours core generates.
+  const [declarations] = themeRule(example.css);
+  assert.deepEqual(
+    declarations.slice(0, 3).map(([n]) => n),
+    ['--color--brand--mode-light', '--color--brand--mode-dark', '--color--brand'],
+  );
+  assert.deepEqual(
+    declarations
+      .slice(3)
+      .filter(([, v]) => !v.includes('--theme--_generated--') && !v.startsWith('light-dark(')),
+    [],
+  );
+  // The live example has an element in the brand palette inside that theme.
+  const live = readFileSync(path.join(examplesDir, 'getting-started', 'brand-chain.html'), 'utf8');
+  assert.match(live, /theme="my-brand"/);
+  assert.match(live, /palette="brand"/);
+});
 
 // ── Display-only fragments ───────────────────────────────────────────────────
 

@@ -1,0 +1,11 @@
+// Fixture: a theme that passes the brand colour and nothing else. Core
+// generates primary (the brand moved into the readable band), secondary,
+// tertiary, background and surface from it; the brand palette keeps the exact
+// colour. This brand is too light and too saturated to be a primary itself.
+@use "../../scss/theme" as t;
+
+$theme: t.theme(
+  $brand: oklch(0.8 0.3 150),
+);
+
+@include t.define-theme("fixture-brand-only", $theme);

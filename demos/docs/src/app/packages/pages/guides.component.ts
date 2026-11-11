@@ -54,7 +54,6 @@ const NG_CORE_TOC = [
 
 const NG_MATERIAL_TOC = [
   { label: 'How the cascade works', anchor: 'cascade' },
-  { label: 'Tertiary palette', anchor: 'tertiary' },
   { label: 'Component overrides', anchor: 'component-overrides' },
 ];
 
@@ -256,16 +255,6 @@ themeService.restorePersistedState();</code></pre>
               inside a <code>[theme="rose-red"]</code> subtree receive rose-red's values. The
               cp-theming color tokens are themselves <code>light-dark()</code> expressions, so a
               nested <code>themeMode</code> flips the Material colors with no rule of its own.
-            </p>
-          </section>
-
-          <section id="tertiary" class="page-section">
-            <h2>Tertiary palette</h2>
-            <p>
-              Angular Material M3 defines three accent palettes: primary, secondary, and tertiary.
-              cp-theming only has two accent palettes. Tertiary is intentionally mapped to
-              secondary. If you need a distinct tertiary, override
-              <code>--mat-sys-tertiary*</code> after including <code>material-core.css</code>.
             </p>
           </section>
 

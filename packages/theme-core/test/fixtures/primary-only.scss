@@ -1,0 +1,12 @@
+// Fixture: a theme that passes primary and nothing else. Core generates
+// secondary and tertiary from it; no brand is passed, so background and
+// surface are neutrals of the grey brand default.
+@use "../../scss/theme" as t;
+
+$theme: t.theme(
+  $palettes: (
+    primary: t.light-dark(t.palette(oklch(0.45 0.18 300)), t.palette(oklch(0.75 0.15 300))),
+  ),
+);
+
+@include t.define-theme("fixture-primary-only", $theme);

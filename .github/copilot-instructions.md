@@ -46,14 +46,37 @@ demos/demo-brand-material/                                 — Example brand+mat
 
 - **Register what animation needs, nothing derived.** `@property` is for each
   core palette role's light and dark colour (`--color--{name}[--role]--mode-light`
-  / `--mode-dark`), `--color--brand` and the scalars. The role tokens and every
+  / `--mode-dark`, ten palettes) and the scalars. `--color--brand` is the join
+  of the brand palette's pair, not a registration of its own. The role tokens and every
   derivative stay unregistered `light-dark()` / `oklch(from …)` expressions so
   they resolve where they are used and `themeMode` works on any element.
 
 - **Core derives once; a theme is one rule.** `define-core-theme()` declares
   every default and derivation on `:where(:root)` / `:where(:root, [theme])`;
-  `define-theme()` emits `[theme="name"]` holding only what was passed. Load
+  `define-theme()` emits `[theme="name"]` holding only what was passed (plus,
+  for a palette of the chain the theme left out, a reference to the colour
+  core generates). Load
   order is core, then themes, then the adapter. Variable-only rules are `:where()`.
+
+- **Pass what you have; the rest is generated.** Colours follow the chain
+  brand → primary → secondary, tertiary → background, surface. A theme passes
+  whichever it has (one, two or three accents, with or without `$brand`) and
+  core generates each one it left out, at runtime, on the shared derivation
+  selector: primary from the brand with
+  `palette-from-brand()`'s readability clamps, secondary (primary's hue, a
+  third of its chroma) and tertiary (hue + 60°, half its chroma) from primary,
+  background and surface as neutrals of the brand hue. The brand colour is
+  never adjusted: `--color--brand` is exactly what was passed. `error`, `warn`,
+  `caution` and `pass` are fixed defaults, not derived. The root generates the
+  whole chain; a nested theme generates only what is downstream of what it
+  passed and inherits the rest. The mechanism: core declares each generated
+  colour as a private variable (`--theme--_generated--{name}--{mode}`) on the
+  shared selector and never sets a pair there; `:where(:root)` and each theme
+  rule point the pairs at those variables. Do not declare a generated pair on
+  the shared selector itself: a nested theme that passed no colour would then
+  re-derive from inherited inputs and lose the colours around it, and a
+  default theme loaded beside the theme on `<html>` would beat it. Do not go
+  back to "tertiary = secondary" in the Material adapter.
 
 - **Contrast is automatic, by luminance.** Every `--contrast` is black or white, chosen by a
   step at WCAG relative luminance 0.179 read from linear sRGB with each channel clamped to 0–1
@@ -91,7 +114,11 @@ demos/demo-brand-material/                                 — Example brand+mat
 - TypeScript API tests: `packages/theme-core/test/api/*.spec.ts`, run by vitest with jsdom.
 - Browser check: `packages/theme-core/test/render.ts` (Playwright, Chromium + Firefox; `webkit`
   as an argument), local only: `pnpm --filter @cpangular/cp-theming-core render`. Every row passes
-  in Chromium and Firefox since Phase 9; `--html` writes a self-contained page for Safari.
+  in Chromium and Firefox since Phase 9; `--html` writes a self-contained page for Safari. The
+  `chain/` rows (Phase 14) carry expectations worked out by hand; keep them that way.
+- Chain check on the built docs: `demos/docs/test/chain.ts` (Playwright, local only), after
+  `npx ng build docs`: the Getting Started `palette="brand"` swatch is the example's `$brand` in
+  both modes, and every preset column of the showcase shows three different accents.
 - Startup check: `demos/docs/test/startup.ts` (Playwright, all three engines, local only), run
   after `npx ng build docs`: the saved theme and mode are painted before the bundle runs.
 - Docs examples: `demos/docs/test/examples.test.ts` (`pnpm --filter docs test`, part of
@@ -170,7 +197,7 @@ pnpm --filter @cpangular/cp-theming-core render   # browser check, local only
 
 ## Key Files
 - [PLAN.md](../PLAN.md) — full plan, status, phases
-- [PORT-PLAN.md](../PORT-PLAN.md) — phases 8–13 (harness, cascade, contrast, Material adapter, startup, release)
+- [PORT-PLAN.md](../PORT-PLAN.md) — phases 8–14 (harness, cascade, contrast, Material adapter, startup, release, palette chain)
 - [packages/theme-core/scss/_theme.scss](../packages/theme-core/scss/_theme.scss) — public SCSS API (`@cpangular/cp-theming-core`)
 - [packages/theme-core/scss/_palette.scss](../packages/theme-core/scss/_palette.scss) — palette system
 

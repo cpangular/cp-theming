@@ -33,7 +33,7 @@
 // define-ng-material-core-theme()), and the neutral ones no remap is emitted
 // for: pointing --mat-sys-primary at a neutral would break Material's surface
 // hierarchy.
-$accent-names: primary, secondary, error, warn, caution, pass;
+$accent-names: brand, primary, secondary, tertiary, error, warn, caution, pass;
 $neutral-names: surface, background;
 
 // M3's own surface tone in each table.
@@ -63,11 +63,13 @@ $_surface-tone: (
   );
 }
 
-// Tertiary: cp-theming has no third accent, so it follows secondary.
+// The three accents and error map to the cp-theming palette of the same name.
+// A theme that passes no `tertiary` (or no `secondary`) still has one: core
+// generates it from primary.
 $_direct: map.merge(
   map.merge(
     map.merge(_accent(primary, primary), _accent(secondary, secondary)),
-    map.merge(_accent(tertiary, secondary), _accent(error, error))
+    map.merge(_accent(tertiary, tertiary), _accent(error, error))
   ),
   (
     surface: var(--color--surface),
@@ -149,6 +151,7 @@ $_direct: map.merge(
 @function system-roles() {
   $primary: _accent-tones(var(--color--primary));
   $secondary: _accent-tones(var(--color--secondary));
+  $tertiary: _accent-tones(var(--color--tertiary));
   $error: _accent-tones(var(--color--error));
   $light: _neutral-tones(light);
   $dark: _neutral-tones(dark);
@@ -156,7 +159,7 @@ $_direct: map.merge(
   $accents: (
     primary: $primary,
     secondary: $secondary,
-    tertiary: $secondary,
+    tertiary: $tertiary,
     error: $error,
   );
   $roles: _zip(

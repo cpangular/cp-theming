@@ -33,7 +33,9 @@
 // palette-from-var($var) — derives a palette from any CSS custom property at runtime.
 // palette-from-brand()   — convenience wrapper for --color--brand.
 // Both return a light-dark config pair using oklch relative color syntax.
-// The --color--brand var is emitted when $brand is passed to t.theme().
+// --color--brand is the brand palette's colour: $brand in t.theme().
+// A theme that passes $brand and no `primary` gets the same primary from core,
+// so palette-from-brand() is only needed to change the clamp numbers.
 @function palette-from-var(
   $var,
   $light-l-min: 0.35,
@@ -196,8 +198,17 @@
 
 // ─── Public: t.theme() ───────────────────────────────────────────────────────
 // Holds only what was passed. Core supplies every default.
+//
+// Colours follow the chain brand → primary → secondary, tertiary → background,
+// surface: pass whichever you have, and core generates the rest from the
+// nearest thing you passed (_palette.scss, "Generated palettes"). error, warn,
+// caution and pass have fixed defaults.
+//
+// $brand — the brand colour exactly as the guidelines give it. It becomes the
+// `brand` palette (--color--brand) and is never adjusted; the same as passing
+// `brand: t.palette(…)` in $palettes.
 @function theme(
-  $palettes,
+  $palettes: (),
   $weights: null,
   $overlay: null,
   $typography: null,
@@ -267,7 +278,10 @@ $_palette-hooks-emitted: ();
 // :where(:root) when $default), holding only what the author passed to
 // t.theme(): for each palette the light and dark colour of the colour role and
 // of any explicit $bg / $stroke / $focus (background and surface always carry
-// their bg pair: their base), each followed by its joined token; --color--brand;
+// their bg pair: their base), each followed by its joined token; the brand
+// palette's pair when $brand was passed; for each palette of the chain the
+// theme left out that follows from one it passed, the pair pointed at the
+// colour core generates (_palette.scss, "Generated palettes");
 // the passed keys of each sub-config; and the light and dark values of
 // mode-varying percentages. A default theme also derives its custom palette
 // names. No color-scheme, no body, no mode variants: define-core-theme() has those.
@@ -284,6 +298,23 @@ $_palette-hooks-emitted: ();
   $light: map.get($theme, light);
   $dark: map.get($theme, dark);
   $palettes: map.get($light, palettes);
+  @if $palettes == null {
+    $palettes: ();
+  }
+
+  // $brand is the brand palette: one colour, the same in both modes.
+  $brand: map.get($theme, brand);
+  @if $brand != null {
+    @if map.has-key($palettes, brand) {
+      @error "Theme `#{$name}` passes the brand colour twice: as $brand and as the `brand` palette.";
+    }
+    $palettes: map.merge(
+      (
+        brand: _pal.config($brand),
+      ),
+      $palettes
+    );
+  }
 
   @if map.has-key($adaptor, define-theme-before) {
     @include meta.apply(map.get($adaptor, define-theme-before), $name);
@@ -330,11 +361,7 @@ $_palette-hooks-emitted: ();
         }
         @include _pal.emit-palette($pal-name, $l-resolved, $d-resolved);
       }
-    }
-
-    $brand: map.get($theme, brand);
-    @if $brand != null {
-      --color--brand: #{$brand};
+      @include _pal.emit-generated(map.keys($palettes));
     }
 
     @include _w.emit-theme(map.get($light, weights), map.get($dark, weights));
@@ -356,13 +383,19 @@ $_palette-hooks-emitted: ();
 // Everything theme-independent, emitted once. Call at the top level of a
 // stylesheet (the @property rules must be at root level), before any theme.
 //   1. @property registrations: each core palette role's light and dark
-//      colour, --color--brand, and the scalars (weights, density, space, shape).
-//   2. :where(:root): color-scheme, the mode flag, the contrast step, and the
-//      default of every unregistered group (weights and elevation pairs,
+//      colour (brand and tertiary included), and the scalars (weights,
+//      density, space, shape).
+//   2. :where(:root): color-scheme, the mode flag, the contrast step, the
+//      generated palettes as the default of the chain, and the default of
+//      every unregistered group (weights and elevation pairs,
 //      overlay, elevation, typography, focus geometry, motion).
 //   3. The themeMode rules.
-//   4. :where(:root, [theme]): every derivation for the core palette names and
-//      the typography role fonts.
+//   4. :where(:root, [theme]): the colour core generates for each palette of
+//      the chain (brand → primary → secondary, tertiary → background,
+//      surface), every derivation for the core palette names and the
+//      typography role fonts. :where(:root) in (2) points every pair of the
+//      chain at its generated colour; a theme rule does so for what it left
+//      out.
 //   5. :where(:root, [theme], [themeMode]): the mode-varying percentages picked
 //      from their pairs.
 //   6. The [palette="name"] rules for the core names, the apply layers, the

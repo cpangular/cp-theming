@@ -1,13 +1,11 @@
 @use "@cpangular/cp-theming-core/scss/theme" as t;
 
 $my-theme: t.theme(
-  // the seed the *-from-brand() helpers read, emitted as --color--brand
+  // the brand colour: the `brand` palette, --color--brand, never adjusted
   $brand: #0b57d0,
   $palettes: (
-    // derived from $brand in the browser
-    background: t.background-from-brand(),
-    surface:    t.surface-from-brand(),
-    primary:    t.palette-from-brand(),
+    // primary, tertiary, background and surface are left out:
+    // core generates them from the brand
 
     // a separate colour for light and for dark mode
     secondary: t.light-dark(

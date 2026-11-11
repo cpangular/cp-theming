@@ -58,11 +58,10 @@ Every theme is built with `t.theme()` and emitted with `t.define-theme()`.
 @use '@cpangular/cp-theming-core/scss/theme' as t;
 
 $my-theme: t.theme(
-  $brand:   oklch(0.44 0.22 253),        // optional — used by *-from-brand() helpers
+  $brand:   oklch(0.44 0.22 253),        // the brand colour, kept exact: the `brand` palette
   $palettes: (
-    background: t.background-from-brand(),
-    surface:    t.surface-from-brand(),
-    primary:    t.palette-from-brand(),
+    // primary, tertiary, background and surface are left out: core generates
+    // them from the brand. Everything below is optional too.
     secondary:  t.light-dark(
                   t.palette(oklch(0.46 0.27 264)),
                   t.palette(oklch(0.71 0.21 264)),
@@ -122,11 +121,22 @@ primary: t.light-dark(
   t.palette(oklch(0.72 0.16 240)),   // dark mode
 ),
 
-// Brand-derived (auto-generates palette from --color--brand)
-primary:    t.palette-from-brand(),
-background: t.background-from-brand(),
-surface:    t.surface-from-brand(),
+// Brand-derived with your own numbers (core generates these three from
+// $brand by itself when the theme leaves them out)
+primary:    t.palette-from-brand($light-l-max: 0.42),
+background: t.background-from-brand($c-tint: 0.012),
+surface:    t.surface-from-brand($c-tint: 0.02),
 ```
+
+### Pass what you have
+
+Colours follow the chain **brand → primary → secondary, tertiary → background, surface**. A theme passes whichever it has and core generates the rest, in the browser, from the nearest one it passed:
+
+- only `$brand` → primary (the brand, moved into the lightness that reads on the page), secondary, tertiary, background and surface are all generated; the `brand` palette stays the exact colour;
+- only `primary` → secondary (same hue, a third of the chroma) and tertiary (hue + 60°, half the chroma) are generated;
+- `primary` and `secondary` → tertiary is generated; pass all three and none is.
+
+`error`, `warn`, `caution` and `pass` have fixed defaults. A nested theme generates what follows from what it passes and inherits the rest. Details: [docs/palettes.md](docs/palettes.md#brand-accents-and-neutrals-pass-what-you-have).
 
 ### Custom palette roles
 
@@ -144,7 +154,7 @@ primary: t.palette(
 
 ### Core palette names
 
-These names are registered and derived once by `define-core-theme()`: `primary`, `secondary`, `error`, `warn`, `caution`, `pass`, `surface`, `background`. Any additional name in your `$palettes` map gets its registrations, derivations (on `:where([theme])`) and `[palette]` rule once per compiled stylesheet, at root level, from the first `define-theme()` that uses it; a `$default` theme also derives the name inside its own rule.
+These names are registered and derived once by `define-core-theme()`: `brand`, `primary`, `secondary`, `tertiary`, `error`, `warn`, `caution`, `pass`, `surface`, `background`. Any additional name in your `$palettes` map gets its registrations, derivations (on `:where([theme])`) and `[palette]` rule once per compiled stylesheet, at root level, from the first `define-theme()` that uses it; a `$default` theme also derives the name inside its own rule.
 
 ### Emitted CSS variables (per palette)
 

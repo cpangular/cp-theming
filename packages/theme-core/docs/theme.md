@@ -4,12 +4,12 @@ A theme is a compiled SCSS configuration object that bundles palette colors, wei
 
 ## `t.theme(…)`
 
-Assembles all sub-configs into a theme object. Every parameter is optional except `$palettes`.
+Assembles all sub-configs into a theme object. Every parameter is optional: pass `$brand`, some palettes, or both, and core generates the palettes you leave out.
 
 ```scss
 $my-theme: t.theme(
-  $palettes:   (...),           // required — named palette map
-  $brand:      null,            // optional oklch color — emits --color--brand
+  $palettes:   (),              // named palette map — pass what you have
+  $brand:      null,            // the brand colour, kept exactly as written
   $weights:    null,            // t.weights() or t.light-dark(t.weights(), t.weights())
   $overlay:    null,            // t.overlays() or t.light-dark(...)
   $typography: null,            // t.typography()
@@ -21,9 +21,9 @@ $my-theme: t.theme(
 );
 ```
 
-### `$palettes` — required
+### `$palettes`
 
-A map of palette name → palette config. Values can be:
+A map of palette name → palette config. Colours follow the chain **brand → primary → secondary, tertiary → background, surface**: a palette the theme leaves out is generated from the nearest one it passed, and `error`, `warn`, `caution` and `pass` have fixed defaults. [palettes.md](palettes.md#brand-accents-and-neutrals-pass-what-you-have) has the numbers and what a nested theme inherits. Values can be:
 
 - A single `t.palette(…)` call (same in light and dark)
 - A `t.light-dark(t.palette(…), t.palette(…))` pair
@@ -47,7 +47,7 @@ $palettes: (
 
 ### `$brand` — optional
 
-An `oklch` color that is emitted as `--color--brand`. Used by `t.palette-from-brand()`, `t.background-from-brand()`, and `t.surface-from-brand()` to derive palettes at runtime from the brand hue. Setting `--color--brand` via JavaScript at runtime updates all derived palettes live.
+The brand colour, in any CSS colour format, exactly as the guidelines give it. It becomes the `brand` palette (`--color--brand`, `palette="brand"`) and is never adjusted; passing `brand: t.palette(…)` in `$palettes` is the same thing, and passing both is an error. A `primary`, `background` and `surface` the theme leaves out are generated from it, and `t.palette-from-brand()`, `t.background-from-brand()` and `t.surface-from-brand()` read it. To change the brand at runtime set the registered pair, `--color--brand--mode-light` and `--color--brand--mode-dark`: everything generated from it follows. (`--color--brand` itself is the join of that pair; the three helpers read it, the generated palettes read the pair.)
 
 ```scss
 $brand: oklch(0.44 0.22 253)
@@ -213,7 +213,7 @@ Emits all CSS custom property declarations for a theme.
 | `$default` | `false` | Also apply on `:where(:root)` so the theme is active without a `theme` attribute. Zero specificity: any `theme` attribute and any author `:root` rule beat it, so several default themes can be loaded at once. |
 | `$dedupe` | `true` | Accepted for compatibility; nothing is left to dedupe. |
 
-The rule holds **only what the author passed** to `t.theme()`: for each palette the light and dark colour of the colour role and of any explicit `$bg` / `$stroke` / `$focus` (`--color--{name}[--role]--mode-light` / `--mode-dark`, each followed by its joined token), `--color--brand`, the passed keys of each sub-config, and the light and dark values of the mode-varying percentages (`--weight--*--mode-light` / `--mode-dark`, `--elevation-N--tint--mode-light` / `--mode-dark`). `background` and `surface` always carry their bg pair, which is their base (even under a `$color` override): core only joins it. Everything else — every derivation, every default, the mode rules — is declared once by `define-core-theme()`. A theme nested inside another therefore inherits whatever it did not pass, including an outer `background` / `surface` base as those palettes' bg role, and does not inherit the outer theme's explicit `$bg` / `$stroke` / `$focus` on any other palette (core re-derives those on every `[theme]` element). A `$default` theme that uses a custom palette name also derives that name inside its own rule, ahead of its explicit roles (see [custom palette names](#core-palette-initial-values)).
+The rule holds **only what the author passed** to `t.theme()`: for each palette the light and dark colour of the colour role and of any explicit `$bg` / `$stroke` / `$focus` (`--color--{name}[--role]--mode-light` / `--mode-dark`, each followed by its joined token; `$brand` is the `brand` palette), for each palette of the chain the theme left out that follows from one it passed, the pair pointed at the colour core generates (`var(--theme--_generated--{name}--{mode})`, see [palettes.md](palettes.md#how-it-works)), the passed keys of each sub-config, and the light and dark values of the mode-varying percentages (`--weight--*--mode-light` / `--mode-dark`, `--elevation-N--tint--mode-light` / `--mode-dark`). `background` and `surface` always carry their bg pair, which is their base (even under a `$color` override): core only joins it. Everything else — every derivation, every default, the mode rules — is declared once by `define-core-theme()`. A theme nested inside another therefore inherits whatever it did not pass and nothing upstream of it generates (a nested theme that passes only `primary` gets its own secondary and tertiary; see [palettes.md](palettes.md#nested-themes)), including an outer `background` / `surface` base as those palettes' bg role, and does not inherit the outer theme's explicit `$bg` / `$stroke` / `$focus` on any other palette (core re-derives those on every `[theme]` element). A `$default` theme that uses a custom palette name also derives that name inside its own rule, ahead of its explicit roles (see [custom palette names](#core-palette-initial-values)).
 
 ```scss
 @include t.define-theme('ocean', $ocean-theme, $default: true);
@@ -257,9 +257,9 @@ Emits everything that is theme-independent and shared across all themes. Call on
 **What it emits, once:**
 
 - **`@property` registrations** for the typed custom properties (see below)
-- **`:where(:root)`** — `color-scheme: light dark`, the mode flag, the contrast step (a private variable every `--contrast` reads), and the default of every unregistered group (weight and elevation-tint pairs, overlay, elevation shadows, typography, focus geometry, motion). The greyscale palette fallback lives in the registered colours' `initial-value`s.
+- **`:where(:root)`** — `color-scheme: light dark`, the mode flag, the contrast step (a private variable every `--contrast` reads), every pair of the palette chain pointed at its generated colour (so the root generates the whole chain), and the default of every unregistered group (weight and elevation-tint pairs, overlay, elevation shadows, typography, focus geometry, motion). The palette fallback lives in the registered colours' `initial-value`s: a grey brand, from which the root generates grey accents and neutrals, and the semantic palettes' default colours.
 - **The `themeMode` rules** for `light`, `dark`, `auto` and `invert`, each wrapped in `:where()`, setting `color-scheme` and a private 0/1 mode flag. They match the `[themeMode]` element itself, so a mode works on any element.
-- **`:where(:root, [theme])`** — every derivation for the eight core palette names (the auto `--bg`, `--stroke` and `--focus` roles, derived into their registered pairs from the colour pair and then joined; the 7-step ladders, contrasts, mode-relative aliases and tints) and the typography role fonts.
+- **`:where(:root, [theme])`** — the generated colour of each palette of the chain, as a private variable (primary from the brand; secondary and tertiary from primary; background and surface from the brand), which the root and each theme rule take by reference for the palettes a theme left out, and every derivation for the ten core palette names (the auto `--bg`, `--stroke` and `--focus` roles, derived into their registered pairs from the colour pair and then joined; the 7-step ladders, contrasts, mode-relative aliases and tints) and the typography role fonts.
 - **`:where(:root, [theme], [themeMode])`** — every mode-varying percentage (weights, elevation tints) picked arithmetically from its light and dark value and the mode flag. CSS `light-dark()` is never used for a percentage.
 - **`[palette="name"]`** selection rules for the core names, and the **`[container]`, `[filled]`, `[outlined]`, `[tone="…"]`, `[elevated="N"]`** attribute rules
 - **`[themeDensity="N"]`** density scope selectors (−5 to +5)
@@ -299,13 +299,12 @@ The pre-built `dist/core.css` is identical to calling `@include t.define-core-th
 
 | Group | Count | Type | Why registration is needed |
 |-------|-------|------|---------------------------|
-| `--color--{name}--mode-light` / `--mode-dark`, and the same for `--bg`, `--stroke`, `--focus` | 4 roles × 2 modes × 8 core palettes = 64 | `<color>` | The light and dark colour of each role. These are what a theme switch transitions. Core derives the auto `--bg`, `--stroke` and `--focus` into these pairs, so a switch between an auto and an explicit role crossfades too |
-| `--color--brand` | 1 | `<color>` | Runtime brand seed |
+| `--color--{name}--mode-light` / `--mode-dark`, and the same for `--bg`, `--stroke`, `--focus` | 4 roles × 2 modes × 10 core palettes = 80 | `<color>` | The light and dark colour of each role, `brand` and `tertiary` included. These are what a theme switch transitions. Core derives the auto `--bg`, `--stroke` and `--focus` into these pairs, and generates the colour pair of a palette the theme did not pass into them, so a switch between an auto or generated colour and an explicit one crossfades too |
 | `--weight--*` | 13 | `<percentage>` | Used as `color-mix()` blend amount — browser can't interpolate without a type |
 | `--density-scale` | 1 | `<number>` | Drives `calc()` in space tokens |
 | `--space--*` | 7 | `<length>` | Density/spacing transitions |
 | `--shape--*` | 8 | `<length>` | Radius transitions |
-| **Total** | **94** | | |
+| **Total** | **109** | | |
 
 Not registered: the role tokens themselves (`--color--{name}`, `--bg`, `--stroke`, `--focus`), every derivative (`--contrast`, `--dark`, `--high`, `--tint-*`, …), the `--palette-color*` scope vars and the `--container--*` surface vars. A role token is declared as `light-dark(var(--…--mode-light), var(--…--mode-dark))` and a derivative as `oklch(from var(--…) …)`, so they resolve **where they are used**, against the `color-scheme` of that element. That is what makes `themeMode` work on a plain element, inside a `[palette]` scope and inside a nested theme. A derivative that embeds a mode-varying weight — the tints, and the `[filled]` layer's `--container--text-deemphasis` — reads that weight's `--mode-light` / `--mode-dark` pair inside `light-dark()` for the same reason: a percentage substituted at the declaring element would not follow a nested `themeMode`.
 
@@ -323,10 +322,12 @@ html {
     --color--secondary--mode-light, --color--secondary--mode-dark,
     --color--background--mode-light, --color--background--mode-dark,
     --color--surface--mode-light, --color--surface--mode-dark;
-  /* …and the same for error, warn, caution and pass if the themes differ there */
+  /* …and the same for brand, tertiary, error, warn, caution and pass if the themes differ there */
   transition-duration: 400ms;
 }
 ```
+
+A generated palette is an expression of the pair it comes from, so it follows that pair's transition without being listed: a tertiary generated in both themes is mid-way whenever primary is. List its own pair when one of the two themes passes it and the other leaves it to core.
 
 Every derivative follows: the ladder steps, the contrasts, nested themes and dark subtrees are all mid-way at half time, because each is an expression of the registered pairs. Chromium interpolates the pair in Oklab, Firefox in sRGB.
 
@@ -341,20 +342,24 @@ Consequences:
 
 ### Core palette initial values
 
-The 8 core palettes' registered colours use print-suitable greyscale `initial-value`s — a safe, legible fallback when no theme is loaded. Light and dark share the value:
+A registered colour's `initial-value` is what the pair holds when nothing declares it. On the root core always generates primary, the accents and the neutrals from the brand pair, so with no theme loaded the grey brand below makes all of them grey: primary, secondary and tertiary `oklch(0.35 0 0)` (`oklch(0.65 0 0)` in dark mode), background `oklch(0.97 0 0)` / `oklch(0.17 0 0)`, surface `oklch(0.93 0 0)` / `oklch(0.22 0 0)`. A legible black-on-white fallback for print, and a readable page under a dark OS scheme. The semantic palettes are the exception: their initial value is their default colour, one per mode.
 
-| Palette | colour role | bg | stroke | focus |
-|---------|-------------|----|--------|-------|
+| Palette | colour role (light / dark) | bg | stroke | focus |
+|---------|----------------------------|----|--------|-------|
 | `background` | `oklch(0.97 0 0)` | `oklch(0.97 0 0)` | `oklch(0.65 0 0)` | `oklch(0.20 0 0)` |
 | `surface` | `oklch(0.93 0 0)` | `oklch(0.93 0 0)` | `oklch(0.60 0 0)` | `oklch(0.20 0 0)` |
+| `brand` | `oklch(0.20 0 0)` | `oklch(0.92 0 0)` | `oklch(0.20 0 0)` | `oklch(0.50 0 0)` |
 | `primary` | `oklch(0.20 0 0)` | `oklch(0.92 0 0)` | `oklch(0.20 0 0)` | `oklch(0.50 0 0)` |
 | `secondary` | `oklch(0.40 0 0)` | `oklch(0.92 0 0)` | `oklch(0.40 0 0)` | `oklch(0.65 0 0)` |
-| `error` | `oklch(0.15 0 0)` | `oklch(0.92 0 0)` | `oklch(0.15 0 0)` | `oklch(0.45 0 0)` |
-| `warn` | `oklch(0.30 0 0)` | `oklch(0.92 0 0)` | `oklch(0.30 0 0)` | `oklch(0.55 0 0)` |
-| `caution` | `oklch(0.50 0 0)` | `oklch(0.92 0 0)` | `oklch(0.50 0 0)` | `oklch(0.68 0 0)` |
-| `pass` | `oklch(0.35 0 0)` | `oklch(0.92 0 0)` | `oklch(0.35 0 0)` | `oklch(0.60 0 0)` |
+| `tertiary` | `oklch(0.45 0 0)` | `oklch(0.92 0 0)` | `oklch(0.45 0 0)` | `oklch(0.68 0 0)` |
+| `error` | `oklch(0.52 0.22 27)` / `oklch(0.70 0.20 27)` | `oklch(0.92 0 0)` | `oklch(0.15 0 0)` | `oklch(0.45 0 0)` |
+| `warn` | `oklch(0.55 0.18 55)` / `oklch(0.76 0.16 55)` | `oklch(0.92 0 0)` | `oklch(0.30 0 0)` | `oklch(0.55 0 0)` |
+| `caution` | `oklch(0.55 0.16 103)` / `oklch(0.82 0.15 103)` | `oklch(0.92 0 0)` | `oklch(0.50 0 0)` | `oklch(0.68 0 0)` |
+| `pass` | `oklch(0.48 0.18 145)` / `oklch(0.72 0.16 145)` | `oklch(0.92 0 0)` | `oklch(0.35 0 0)` | `oklch(0.60 0 0)` |
 
-A custom palette name (any name beyond the 8 above) gets its eight registrations, its derivations on `:where([theme])` and its `[palette="name"]` rule once per compiled stylesheet, at root level, from the first `define-theme()` that uses it, with `initial-value: transparent` (focus: `oklch(0.3 0 0)`). The derivations do not match `:root`: a second, separately compiled stylesheet that uses the same name repeats them later in the cascade, and on `:root` that copy would beat a default theme's explicit `$bg` / `$stroke` / `$focus`. A `$default` theme therefore derives its custom names inside its own rule, ahead of its explicit roles.
+Only the colour roles of `brand` and of the semantic palettes are ever seen: every other value in the table is replaced on the root, by the generated pair or by the bg, stroke and focus core derives from the colour role.
+
+A custom palette name (any name beyond the 10 above) gets its eight registrations, its derivations on `:where([theme])` and its `[palette="name"]` rule once per compiled stylesheet, at root level, from the first `define-theme()` that uses it, with `initial-value: transparent` (focus: `oklch(0.3 0 0)`). The derivations do not match `:root`: a second, separately compiled stylesheet that uses the same name repeats them later in the cascade, and on `:root` that copy would beat a default theme's explicit `$bg` / `$stroke` / `$focus`. A `$default` theme therefore derives its custom names inside its own rule, ahead of its explicit roles.
 
 ### `initial-value` constraint
 
