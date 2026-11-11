@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { ThemeExampleComponent } from '../../shared/theme-example.component';
 import { TocService } from '../../shell/toc.service';
 import scopesHtml from '../../../examples/apply-palette/scopes.html' with { loader: 'text' };
@@ -13,7 +14,7 @@ import varsScss from '../../../examples/apply-palette/vars.scss' with { loader: 
 @Component({
   selector: 'cpa-apply-palette-page',
   standalone: true,
-  imports: [ThemeExampleComponent],
+  imports: [ThemeExampleComponent, RouterLink],
   template: `
     <article class="doc-page">
       <header class="page-header">
@@ -31,7 +32,7 @@ import varsScss from '../../../examples/apply-palette/vars.scss' with { loader: 
         <p>
           On its own the attribute sets the palette's identity color as the text color for the
           element and its descendants. Pair it with a
-          <a href="apply-surfaces">surface layer</a> to add backgrounds and borders.
+          <a routerLink="../apply-surfaces">surface layer</a> to add backgrounds and borders.
         </p>
       </section>
 

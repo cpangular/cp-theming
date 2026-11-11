@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { ThemeExampleComponent } from '../../shared/theme-example.component';
 import { TocService } from '../../shell/toc.service';
 import bgHtml from '../../../examples/apply-surfaces/bg.html' with { loader: 'text' };
@@ -25,7 +26,7 @@ import composeScss from '../../../examples/apply-surfaces/compose.scss' with { l
 @Component({
   selector: 'cpa-apply-surfaces-page',
   standalone: true,
-  imports: [ThemeExampleComponent],
+  imports: [ThemeExampleComponent, RouterLink],
   template: `
     <article class="doc-page">
       <header class="page-header">
@@ -36,9 +37,9 @@ import composeScss from '../../../examples/apply-surfaces/compose.scss' with { l
       <section id="overview" class="page-section">
         <p class="intro">
           Surfaces are built from <strong>atomic, composable layers</strong>. Each attribute does
-          one thing, and they stack on top of a <a href="apply-palette">palette scope</a>. Start
-          with a palette (which colors the text), then add a fill — <code>bg</code> for a subtle
-          tonal surface or <code>filled</code> for an intense one — and optionally
+          one thing, and they stack on top of a <a routerLink="../apply-palette">palette scope</a>.
+          Start with a palette (which colors the text), then add a fill — <code>bg</code> for a
+          subtle tonal surface or <code>filled</code> for an intense one — and optionally
           <code>outlined</code> for a border, <code>shape</code> for corners, and
           <code>container</code> for padding.
         </p>

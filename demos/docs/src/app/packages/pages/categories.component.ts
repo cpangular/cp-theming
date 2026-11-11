@@ -167,7 +167,7 @@ const LIB_META: Record<
         <p class="categories-intro">{{ meta().intro }}</p>
         <div class="categories-grid">
           @for (cat of meta().categories; track cat.route + cat.title) {
-            <a class="category-card" [routerLink]="cat.route">
+            <a class="category-card" [routerLink]="['..', cat.route]">
               <span class="category-name">{{ cat.title }}</span>
               <span class="category-desc">{{ cat.description }}</span>
             </a>
