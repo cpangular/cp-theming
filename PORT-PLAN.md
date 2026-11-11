@@ -631,6 +631,41 @@ Done when: `pnpm test` passes with the chain test, sweep and render rows updated
 screenshot shows a coloured tertiary on cyan-orange in both modes; the docs Getting Started surface
 swatch uses `bg` with readable text.
 
+### Phase 15 — Material component gallery (added 2026-11-11)
+
+Goal: the ng-material docs show every Angular Material 22 component under the adapter, so a
+wrong colour is seen, not inferred. Today the showcase has buttons, chips, one form field and one
+slide toggle.
+
+- A **Components** page in the ng-material section (`demos/docs`), one section per Material
+  component family, each rendered live in the page's current theme and mode: buttons (all five
+  variants, icon, FAB, extended FAB, toggle group), chips (input, filter, selected, disabled),
+  form field (filled and outlined; label, hint, error, disabled, prefix/suffix icons, textarea),
+  select and autocomplete, checkbox, radio, slide toggle, slider (single and range), datepicker,
+  tabs, card (elevated, outlined, filled), list and selection list, menu, dialog, bottom sheet,
+  snackbar, tooltip, badge, progress bar and spinner, table with sort and paginator, expansion
+  panel, stepper, sidenav and toolbar, tree, grid list, divider, ripple. Each section shows the
+  states that matter (hover, focus, selected, disabled, error) and, for the accent components, the
+  same component under `palette="secondary"`, `"tertiary"`, `"error"` and `"brand"`.
+- **Overlays.** Menu, dialog, select panel, autocomplete, datepicker, snackbar, tooltip and bottom
+  sheet render outside the themed subtree. The page states what the adapter needs for each (a
+  `theme` / `themeMode` attribute on the overlay panel, how to set it through the component's
+  panel class or the overlay container) and shows it working in a nested theme and a nested
+  `themeMode`. What cannot follow a nested scope is said plainly.
+- Every component in the gallery is an example file like the others (`demos/docs/src/examples/
+  components/…`), so the examples check covers it.
+- **Harness.** `demos/docs/test/render.ts` runs over the gallery too: screenshots per preset in
+  light and dark and the painted-contrast report; a failing label on a component (not a docs
+  caption) is an error, not a report. Overlays are opened for the screenshot.
+- Anything a component paints wrongly becomes either an adapter fix or an `apply-material-overrides()`
+  patch with the measured reason, the way Phase 11 did it.
+- PLAN.md's `demo-material` (a separate app) stays as listed; this gallery lives in the docs.
+
+Done when: every component family listed is on the page and in the examples check; the
+painted-contrast report has no component label below 4.5:1 in any preset in either mode; the
+overlay section shows each overlay correct inside a nested theme and a nested `themeMode` (or
+says why it cannot be); the README row for `demos/docs` lists the gallery.
+
 ### Phase 13 — Release through cpdevtools/git-flow
 
 Goal: versions, tags and publishing run through git-flow.
