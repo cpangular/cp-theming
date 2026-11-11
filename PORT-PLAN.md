@@ -607,6 +607,30 @@ Done 2026-11-11.
   brands whose primary lands on the light edge of the light-mode band (L 0.5) in cyan and green
   hues outside sRGB, on the surface. The band is `palette-from-brand()`'s, unchanged.
 
+### Phase 14b — Follow-ups from the Phase 14 review (decided 2026-11-11)
+
+1. **Chroma floors for generated accents.** A ratio of the primary's chroma vanishes on a
+   low-chroma primary (cyan-orange's generated tertiary is a slate grey). Generated secondary
+   chroma becomes `max(c / 3, 0.04)` and tertiary `max(c / 2, 0.08)`, hue rules unchanged. The
+   chain test's expected relations and the render rows follow.
+2. **Generated primary stays readable on the generated background.** The light-mode band's top
+   moves from 0.50 to 0.45 (dark band unchanged) in the chain and in `palette-from-brand()`, which
+   share the numbers. Done when the "116 of 3360" cases in "Found on the way" are 0.
+3. **`t.bg()` on `background` and `surface` gets readable text.** The `bg` layer keeps the
+   palette's own colour as text; for the two neutral palettes that colour is the fill. For those
+   two, `bg()` sets `color` to the bg role's `--contrast` (blended through `--weight--text-blend`
+   like `filled()` does). The Getting Started example goes back to `bg` where it meant `bg`.
+4. **Docs: nested themes written by hand.** Wherever a `[theme="x"]` rule typed directly in CSS is
+   described (Theme page, TypeScript API page), add that on a nested element such a rule
+   regenerates only that palette's own roles, and show the pointer lines `define-theme` emits for
+   the palettes downstream, to copy.
+5. **Size ceiling.** Raise the `core.css` ceiling in the size check to 256 KiB and record the
+   current size next to it; the gzipped size (15 KB) is the one that matters and is also printed.
+
+Done when: `pnpm test` passes with the chain test, sweep and render rows updated; the showcase
+screenshot shows a coloured tertiary on cyan-orange in both modes; the docs Getting Started surface
+swatch uses `bg` with readable text.
+
 ### Phase 13 — Release through cpdevtools/git-flow
 
 Goal: versions, tags and publishing run through git-flow.
