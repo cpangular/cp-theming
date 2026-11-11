@@ -67,7 +67,11 @@ demos/demo-brand-material/                                 — Example brand+mat
   0.65–0.82 dark, chroma 0.22 at most), secondary (primary's hue, a third of
   its chroma, 0.04 at least) and tertiary (hue + 60°, half its chroma, 0.08 at
   least; neither floor exceeds the primary's own chroma) from primary,
-  background and surface as neutrals of the brand hue. The brand colour is
+  background and surface as neutrals of the brand hue. The three accents and
+  `palette-from-var()` / `palette-from-brand()` then give up chroma until sRGB
+  can show them (`_in-gamut()`, four nested passes, the expression written
+  once), so the browser paints the hue that was asked for instead of clipping
+  to another one; keep new generated accents inside that wrapper. The brand colour is
   never adjusted: `--color--brand` is exactly what was passed. `error`, `warn`,
   `caution` and `pass` are fixed defaults, not derived. The root generates the
   whole chain; a nested theme generates only what is downstream of what it
@@ -124,7 +128,8 @@ demos/demo-brand-material/                                 — Example brand+mat
 - Browser check: `packages/theme-core/test/render.ts` (Playwright, Chromium + Firefox; `webkit`
   as an argument), local only: `pnpm --filter @cpangular/cp-theming-core render`. Every row passes
   in Chromium and Firefox since Phase 9; `--html` writes a self-contained page for Safari. The
-  `chain/` rows (Phase 14) carry expectations worked out by hand; keep them that way.
+  `chain/` rows (Phase 14) and `gamut/` rows (Phase 14c) carry expectations worked out by hand;
+  keep them that way. A row with `hue` also asserts the hue of the colour as painted.
 - Chain check on the built docs: `demos/docs/test/chain.ts` (Playwright, local only), after
   `npx ng build docs`: the Getting Started `palette="brand"` swatch is the example's `$brand` in
   both modes, and every preset column of the showcase shows three different accents.

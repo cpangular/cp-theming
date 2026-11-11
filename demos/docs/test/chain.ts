@@ -10,7 +10,9 @@
 //      colour (examples/getting-started/custom-theme.scss) and renders it. The
 //      element in the `brand` palette is painted in exactly that colour in both
 //      modes; the primary generated from it is a different colour, and so are
-//      the secondary and the tertiary.
+//      the secondary and the tertiary. The primary is painted in the brand's
+//      hue, within 6° (Phase 14c: before the gamut correction the orange
+//      brand's light primary was clipped to #a60000, a red 15° away).
 //   2. The ng-material showcase, with each of the four presets selected. In
 //      every preset column the Primary, Secondary and Tertiary buttons are
 //      three different colours: a preset passes no tertiary, so the one shown
@@ -30,6 +32,20 @@ const ENGINES: Record<string, BrowserType> = { chromium, firefox, webkit };
 type Rgb = [number, number, number];
 const hex = (c: Rgb) => `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 const distance = (a: Rgb, b: Rgb) => Math.max(...a.map((v, i) => Math.abs(v - b[i])));
+/** The oklch hue of an sRGB pixel, in degrees. */
+function hue(c: Rgb): number {
+  const [r, g, b] = c.map((v) => {
+    const s = v / 255;
+    return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  });
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  const A = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
+  const B = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+  return ((Math.atan2(B, A) * 180) / Math.PI + 360) % 360;
+}
+const hueDiff = (a: number, b: number) => Math.abs(((a - b + 540) % 360) - 180);
 
 /** The brand colour the Getting Started example passes, read from the example itself. */
 function exampleBrand(): Rgb {
@@ -125,6 +141,12 @@ for (const name of wanted.length ? wanted : ['chromium']) {
         names.slice(i + 1).every((b) => distance(colours.get(a)!, colours.get(b)!) > 12),
       );
       check(distinct, `${name} ${mode} Getting Started: four different colours (${shown})`);
+      const primary = colours.get('primary')!;
+      const off = hueDiff(hue(primary), hue(brand));
+      check(
+        off < 6,
+        `${name} ${mode} Getting Started: the primary ${hex(primary)} is painted at hue ${hue(primary).toFixed(1)}°, ${off.toFixed(1)}° from the brand's ${hue(brand).toFixed(1)}°`,
+      );
       await page
         .locator('.tex-wrap', { has: example })
         .screenshot({ path: path.join(outDir, `${name}-getting-started-${mode}.png`) });

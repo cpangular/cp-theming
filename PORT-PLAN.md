@@ -118,7 +118,7 @@ cp-theming's own phases 1–6 are done and phase 7 (docs and demos) is in progre
 until Phase 9 has landed, because the cascade change deletes the docs workarounds and changes what the
 examples show. New phases continue the numbering.
 
-Order: **8 → 9 → 10 → 11 → 12 → 7 (resumed) → 14 → 13.** Everything but 13 is done. Phase 12 does not depend on 9–11 and can run any
+Order: **8 → 9 → 10 → 11 → 12 → 7 (resumed) → 14 → 13.** Everything but 13 is done (14b and 14c followed 14). Phase 12 does not depend on 9–11 and can run any
 time after 8. Your answers of 2026-11-09 are folded into the phases; see
 [Your answers](#your-answers-2026-11-09) for what is still open.
 
@@ -689,6 +689,68 @@ orange (45°) to red (29°). The same can happen to any generated colour and to 
 
 Done when: the chain test passes with the hue assertion; the docs Getting Started primary from
 `#ff6a00` is painted an orange-brown, not a red, in both modes (screenshot in the commit).
+
+Done 2026-11-11.
+
+- **As landed.** `_in-gamut($colour)` in `_palette.scss` wraps a colour expression in four nested
+  passes; one pass is
+  `oklch(from color(from <colour> srgb r g b / <factor>) l calc(c * alpha) h / 1)`, so the
+  expression is written once however many passes there are. It wraps the generated primary (both
+  modes), secondary and tertiary, and what `palette-from-var()` / `palette-from-brand()` return
+  (the helpers and the generated primary share `_readable-light()` / `_readable-dark()`). The
+  neutrals are not wrapped: at lightness 0.97 / 0.17 and 0.93 / 0.22 sRGB holds their 0.006 /
+  0.01 of chroma at every hue. core.css went from 221,168 to 224,536 bytes (15,211 to 15,316
+  gzipped).
+- **Changed from the text above: the overshoot counts up to 0.25.** The factor is
+  `1 − 2 × clamp(0, overshoot, 0.25)`, so one pass halves the chroma at most. As written
+  (`1 − 2·overshoot`, which the alpha channel clamps at 0) a colour whose worst channel is 0.5 or
+  more outside sRGB loses all of its chroma in the first pass and stays grey: a teal brand,
+  `oklch(0.65 0.3 181)`, got a grey dark-mode primary where sRGB holds chroma 0.117. Over the hue
+  wheel at the band lightnesses and chroma 0.22, 489 of 2520 colours kept less than half of the
+  chroma sRGB holds. With the limit none do (lowest 55%), the mean painted chroma is 0.132
+  instead of 0.114 (0.146 is the edge of sRGB, 0.169 what clipping paints), and the worst hue
+  drift is the same, 0.7°. Four passes and the factor 2 are as written.
+- **Before and after**, as painted (Chromium, Firefox and WebKit agree):
+
+  | Brand | Light primary | Dark primary |
+  | --- | --- | --- |
+  | `#ff6a00` | `#a60000` (hue 29°, 15.5° off) → `#8d3700` (hue 45°) | `#f7722b`, unchanged |
+  | `#ffd400` | `#764d00` (hue 74°, 20° off) → `#65540a` (hue 94°) | `#e7c11e`, unchanged |
+  | `#1a56c4` | `#0e4bb8`, unchanged | `#538cf2`, unchanged |
+
+  The orange's light primary is `oklch(0.45 0.129 45)`, as the text above predicts. The blue of
+  the rows is `#1a56c4` and not a more saturated one because the "unchanged" assertion needs a
+  primary inside sRGB in both modes: `#1d4ed8` gives a dark primary just outside it, which the
+  correction moves from `#5186ff` to `#5487ff`.
+- **Harness.** Proved as hand-written CSS in the three engines before the Sass was written.
+  `render.ts` has 230 rows, 23 of them `gamut/`: the primary from the orange, the yellow and the
+  blue brand in both modes (generated, and through `palette-from-brand()`), each with the brand
+  palette's own colour unchanged; a teal that keeps its colour; a grey that stays grey; the
+  secondary and tertiary of a passed primary that is itself outside sRGB (used as given). A row
+  can now carry `hue`: the colour as painted must be within that many degrees of a hue. The
+  expectations are the four passes worked out apart from the Sass. All 230 pass in Chromium 158,
+  Firefox 159 and WebKit 27.2. `chain.test.ts` asserts the exact wrapped expressions, the
+  corrected chroma of every palette a preset or fixture did not pass (the passes as plain
+  arithmetic), and the painted hue within 6° of the hue asked for: 24 generated colours of the
+  presets and fixtures, and a hue-wheel sweep of 10,800 (worst 0.70°; 46.7° uncorrected), where
+  it also asserts that more than half of the chroma sRGB holds is left. The test evaluator now
+  clamps an alpha to 0–1, as the browsers do. `demos/docs/test/chain.ts` asserts the Getting
+  Started primary's painted hue: 0.1° from the brand's in light mode, 0.0° in dark, both engines.
+- **Seen on the way, not fixed.**
+  - Four passes reach the edge of sRGB between lightness 0.35 and 0.85, which covers both bands.
+    Outside that the overshoot of a colour near black or white is small, the steps are short and
+    four are not enough: at chroma up to 0.22 the worst painted drift is 8° at lightness 0.30,
+    26° at 0.25 and 19° at 0.95 (53°, 59° and 49° uncorrected). Only the secondary and tertiary
+    of a very dark or very light primary of one's own, or a helper called with other lightness
+    limits, can land there. A factor of 4 instead of 2 would cover 0.25–0.90 and cost chroma in
+    the bands.
+  - Chromium reports no hue (`none`, read as 0) for an origin colour that is not already in
+    oklch when its chroma is below about 0.02; Firefox and WebKit keep it. That was already so
+    for a near-grey hex brand. Every pass goes through sRGB, so in Chromium a corrected colour
+    that faint is painted at hue 0. With the 0.25 limit a colour only gets that faint where sRGB
+    holds almost no chroma at all.
+  - The contrast of the generated primary on its page rose a little with the lower chroma: the
+    lowest over the 3360-case grid is 4.79:1 (was 4.60:1).
 
 ### Phase 15 — Material component gallery (added 2026-11-11)
 

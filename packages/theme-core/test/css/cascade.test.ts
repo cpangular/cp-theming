@@ -332,7 +332,11 @@ test('fixtures/brand: a custom palette gets its registrations, derivations and [
   );
   // *-from-brand palettes land as relative colours of --color--brand in the pair.
   const decls = declarationsFor(sheet.css, themeSelector(themeName(sheet)));
-  assert.match(decls.get('--color--primary--mode-light')!, /^oklch\(from var\(--color--brand\)/);
+  // The accent is wrapped by the gamut correction (Phase 14c), which names its origin once.
+  const primary = decls.get('--color--primary--mode-light')!;
+  assert.match(primary, /^oklch\(from color\(from oklch\(/);
+  assert.deepEqual(primary.match(/var\([\w-]+\)/g), ['var(--color--brand)']);
+  assert.match(primary, /oklch\(from var\(--color--brand\) clamp\(/);
   assert.match(decls.get('--color--background--mode-dark')!, /^oklch\(from var\(--color--brand\)/);
 });
 

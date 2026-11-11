@@ -13,8 +13,9 @@
 // contrast/ and alpha/ rows that of Phase 10 (the browser's --contrast is the
 // one the contrast sweep, test/css/contrast.test.ts, predicts), and the chain/
 // rows that of Phase 14 (palettes a theme did not pass are generated from the
-// nearest thing it passed). Stylesheets load in the order core, themes,
-// adapter, user CSS.
+// nearest thing it passed), the gamut/ rows that of Phase 14c (a generated
+// colour is painted in the hue that was asked for). Stylesheets load in the
+// order core, themes, adapter, user CSS.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { chromium, firefox, webkit, type BrowserType } from 'playwright';
@@ -26,6 +27,7 @@ import {
   cssColor,
   evaluateColor,
   maxChannelDiff,
+  painted,
   type Mode,
 } from './lib/color.ts';
 
@@ -308,7 +310,10 @@ function alphaRows(): Row[] {
 //   background  brand's H at L 0.97 / 0.17, C 0.006 at most
 //   surface     brand's H at L 0.93 / 0.22, C 0.01 at most
 // The brand is too light for a light page, too dark for a dark one and above
-// the chroma cap, so every clamp shows.
+// the chroma cap, so every clamp shows. Its light primary, oklch(0.45 0.22 30),
+// is outside sRGB, so the gamut correction of Phase 14c shows too: it lowers
+// the chroma to 0.1509 (see the gamut/ rows), and the light secondary and
+// tertiary follow from that (0.1509 / 3, and the 0.08 floor).
 const CHAIN = {
   brand: 'oklch(0.6 0.24 30)',
   // Two brands whose generated primaries are inside sRGB, for the crossfade row:
@@ -397,7 +402,12 @@ function chainRows(): Row[] {
   row('brand-only/palette-brand-is-exact', brandOnly, '--palette-color', CHAIN.brand, {
     body: '<div id="p" palette="brand">x</div>',
   });
-  row('brand-only/primary-is-readable/light', brandOnly, '--color--primary', 'oklch(0.45 0.22 30)');
+  row(
+    'brand-only/primary-is-readable/light',
+    brandOnly,
+    '--color--primary',
+    'oklch(0.45 0.1509 30)',
+  );
   row('brand-only/primary-is-readable/dark', brandDark, '--color--primary', 'oklch(0.65 0.216 30)');
   // White text on it, black on the lighter dark-mode one: what the sweep predicts.
   for (const [mode, attrs] of [
@@ -412,9 +422,9 @@ function chainRows(): Row[] {
       text,
     );
   }
-  row('brand-only/secondary/light', brandOnly, '--color--secondary', 'oklch(0.45 0.07333 30)');
+  row('brand-only/secondary/light', brandOnly, '--color--secondary', 'oklch(0.45 0.0503 30)');
   row('brand-only/secondary/dark', brandDark, '--color--secondary', 'oklch(0.65 0.072 30)');
-  row('brand-only/tertiary/light', brandOnly, '--color--tertiary', 'oklch(0.45 0.11 90)');
+  row('brand-only/tertiary/light', brandOnly, '--color--tertiary', 'oklch(0.45 0.08 90)');
   row('brand-only/tertiary/dark', brandDark, '--color--tertiary', 'oklch(0.65 0.108 90)');
   row('brand-only/background/light', brandOnly, '--color--background', 'oklch(0.97 0.006 30)');
   row('brand-only/background/dark', brandDark, '--color--background', 'oklch(0.17 0.006 30)');
@@ -433,15 +443,15 @@ function chainRows(): Row[] {
   row('brand-only/muted/tertiary-capped', brandB, '--color--tertiary', 'oklch(0.45 0.06 260)');
   // The generated palettes get every role and derivative: the bg role is the
   // tint of the generated colour (L 0.92, 40% of its chroma).
-  row('brand-only/tertiary-bg-role', brandOnly, '--color--tertiary--bg', 'oklch(0.92 0.044 90)');
+  row('brand-only/tertiary-bg-role', brandOnly, '--color--tertiary--bg', 'oklch(0.92 0.032 90)');
   // The semantic palettes are fixed defaults, not generated.
   row('brand-only/error-is-the-default/light', brandOnly, '--color--error', 'oklch(0.52 0.22 27)');
   row('brand-only/pass-is-the-default/dark', brandDark, '--color--pass', 'oklch(0.72 0.16 145)');
   // A default theme: the same on the root without a theme attribute.
-  row('brand-only/default-theme/primary', '', '--color--primary', 'oklch(0.45 0.22 30)', {
+  row('brand-only/default-theme/primary', '', '--color--primary', 'oklch(0.45 0.1509 30)', {
     sheets: ['core', 'brandOnlyDefault'],
   });
-  row('brand-only/default-theme/tertiary', '', '--color--tertiary', 'oklch(0.45 0.11 90)', {
+  row('brand-only/default-theme/tertiary', '', '--color--tertiary', 'oklch(0.45 0.08 90)', {
     sheets: ['core', 'brandOnlyDefault'],
   });
 
@@ -540,14 +550,14 @@ function chainRows(): Row[] {
     'nested/only-brand/primary',
     outer,
     '--color--primary',
-    'oklch(0.45 0.22 30)',
+    'oklch(0.45 0.1509 30)',
     nested('brand-only'),
   );
   row(
     'nested/only-brand/secondary',
     outer,
     '--color--secondary',
-    'oklch(0.45 0.07333 30)',
+    'oklch(0.45 0.0503 30)',
     nested('brand-only'),
   );
   row(
@@ -648,14 +658,14 @@ function chainRows(): Row[] {
     'nested/no-colour/keeps-outer-generated-primary',
     brandOnly,
     '--color--primary',
-    'oklch(0.45 0.22 30)',
+    'oklch(0.45 0.1509 30)',
     nested('plain'),
   );
   row(
     'nested/no-colour/keeps-outer-generated-tertiary',
     brandOnly,
     '--color--tertiary',
-    'oklch(0.45 0.11 90)',
+    'oklch(0.45 0.08 90)',
     nested('plain'),
   );
   // Three deep: outer → only-brand → only-primary. The innermost has its own
@@ -686,7 +696,7 @@ function chainRows(): Row[] {
 
   // ── The root always generates: a hand-written brand pair on :root is a theme ──
   sheets.userBrand = `:root { --color--brand--mode-light: ${CHAIN.brand}; --color--brand--mode-dark: ${CHAIN.brand}; }`;
-  row('user-root-brand-pair/primary', '', '--color--primary', 'oklch(0.45 0.22 30)', {
+  row('user-root-brand-pair/primary', '', '--color--primary', 'oklch(0.45 0.1509 30)', {
     sheets: ['core', 'userBrand'],
   });
   row('user-root-brand-pair/surface', '', '--color--surface', 'oklch(0.93 0.01 30)', {
@@ -697,7 +707,7 @@ function chainRows(): Row[] {
     'root-theme-without-colour/still-generates',
     'theme="plain"',
     '--color--primary',
-    'oklch(0.45 0.22 30)',
+    'oklch(0.45 0.1509 30)',
     { sheets: ['core', 'brandOnlyDefault', 'plain'] },
   );
 
@@ -708,14 +718,14 @@ function chainRows(): Row[] {
     'beside-a-default/only-brand/primary',
     brandOnly,
     '--color--primary',
-    'oklch(0.45 0.22 30)',
+    'oklch(0.45 0.1509 30)',
     beside,
   );
   row(
     'beside-a-default/only-brand/secondary',
     brandOnly,
     '--color--secondary',
-    'oklch(0.45 0.07333 30)',
+    'oklch(0.45 0.0503 30)',
     beside,
   );
   row(
@@ -817,7 +827,7 @@ function chainRows(): Row[] {
     ...mat,
     body: '<div id="p" palette="brand">x</div>',
   });
-  row('mat-sys/palette-tertiary', brandOnly, '--mat-sys-primary', 'oklch(0.45 0.11 90)', {
+  row('mat-sys/palette-tertiary', brandOnly, '--mat-sys-primary', 'oklch(0.45 0.08 90)', {
     ...mat,
     body: '<div id="p" palette="tertiary">x</div>',
   });
@@ -884,7 +894,7 @@ function bgTextRows(): Row[] {
     'oklch(0.93 0.01 30)',
   );
   // Every other palette keeps its identity colour on bg.
-  row('primary/bg-is-identity', light, el('palette="primary" bg'), 'oklch(0.45 0.22 30)');
+  row('primary/bg-is-identity', light, el('palette="primary" bg'), 'oklch(0.45 0.1509 30)');
   row('brand/bg-is-identity', light, el('palette="brand" bg'), CHAIN.brand);
   // filled wins over bg on the same element (its own contrast text).
   row('surface/filled-and-bg', dark, el('palette="surface" bg filled'), WHITE);
@@ -895,6 +905,116 @@ function bgTextRows(): Row[] {
   row('mixin/light=black', light, el('class="mixin"'), BLACK);
   row('mixin/dark=white', dark, el('class="mixin"'), WHITE);
   row('mixin/bg-high/dark=white', dark, el('class="mixin-high"'), WHITE);
+  return out;
+}
+
+// ─── Gamut (Phase 14c) ───────────────────────────────────────────────────────
+// A generated colour gives up chroma until sRGB can show it, so the browser
+// paints the hue that was asked for instead of clipping to another one. Per
+// pass the chroma is multiplied by 1 − 2 × overshoot (how far the worst sRGB
+// channel lies outside 0–1, counted up to 0.25); four passes. The expectations
+// are those four steps worked out apart from the Sass, e.g. the orange's light
+// primary, oklch(0.45 0.2012 44.77): its blue channel is −0.179, so the first
+// pass gives chroma 0.2012 × (1 − 0.358) = 0.1292, which sRGB holds, and the
+// other three leave it. The yellow needs more than one pass. Each row also
+// asserts the hue of the painted (clipped) colour against the brand's own:
+// uncorrected, the orange is painted #a60000, 15.5° from the brand, and the
+// yellow #764d00, 20° from it.
+const GAMUT = {
+  // brand: [colour, its oklch hue, light primary, dark primary]
+  orange: ['#ff6a00', 44.77, 'oklch(0.45 0.1292 44.77)', 'oklch(0.7009 0.1811 44.77)'],
+  yellow: ['#ffd400', 94.02, 'oklch(0.45 0.0881 94.02)', 'oklch(0.82 0.1625 94.02)'],
+  // Inside sRGB in both modes: the band and the cap, nothing else.
+  blue: ['#1a56c4', 261.35, 'oklch(0.45 0.1827 261.35)', 'oklch(0.65 0.1644 261.35)'],
+} as const;
+for (const [name, [brand]] of Object.entries(GAMUT)) {
+  sheets[`gamut-${name}`] = chainTheme(`gamut-${name}`, `$brand: ${brand}`);
+  // The helper, on the same brand.
+  sheets[`gamut-${name}-helper`] = chainTheme(
+    `gamut-${name}-helper`,
+    `$brand: ${brand}, $palettes: (primary: t.palette-from-brand())`,
+  );
+}
+// A brand far outside sRGB (one pass would take away more than half of its
+// chroma), a grey one, and a primary of one's own that is outside sRGB.
+sheets['gamut-teal'] = chainTheme('gamut-teal', '$brand: oklch(0.65 0.3 181)');
+sheets['gamut-grey'] = chainTheme('gamut-grey', '$brand: #808080');
+sheets['gamut-vivid-primary'] = chainTheme(
+  'gamut-vivid-primary',
+  '$palettes: (primary: t.palette(oklch(0.45 0.3 150)))',
+);
+
+function gamutRows(): Row[] {
+  const out: Row[] = [];
+  const row = (
+    id: string,
+    theme: string,
+    mode: Mode,
+    token: string,
+    expect: string,
+    more: Partial<Row> = {},
+  ) =>
+    out.push({
+      id: `gamut/${id}`,
+      sheets: ['core', theme],
+      html: `theme="${theme}" themeMode="${mode}"`,
+      body: P,
+      probe: '#p',
+      token,
+      expect,
+      ...more,
+    });
+  for (const [name, [brand, hue, light, dark]] of Object.entries(GAMUT))
+    for (const [mode, expect] of [
+      ['light', light],
+      ['dark', dark],
+    ] as const) {
+      const check = {
+        hue: { of: hue, within: 6 },
+        // The blue is unchanged: to the last digit the browsers print.
+        ...(name === 'blue' ? { tolerance: 0.002 } : {}),
+      };
+      row(`${name}/primary/${mode}`, `gamut-${name}`, mode, '--color--primary', expect, check);
+      row(
+        `${name}/palette-from-brand/${mode}`,
+        `gamut-${name}-helper`,
+        mode,
+        '--color--primary',
+        expect,
+        check,
+      );
+      // The brand palette itself is what was passed, inside sRGB or not.
+      row(`${name}/brand-is-exact/${mode}`, `gamut-${name}`, mode, '--color--brand', brand, {
+        tolerance: 0.002,
+      });
+    }
+  // oklch(0.65 0.22 181): the first pass halves the chroma (overshoot 0.50,
+  // counted as 0.25) and 0.11 is inside sRGB. It is a teal, not a grey: with
+  // the overshoot counted in full the factor would be 0.
+  row(
+    'teal-keeps-its-colour/dark',
+    'gamut-teal',
+    'dark',
+    '--color--primary',
+    'oklch(0.65 0.11 181)',
+    {
+      hue: { of: 181, within: 6 },
+    },
+  );
+  row('grey-stays-grey/light', 'gamut-grey', 'light', '--color--primary', 'oklch(0.45 0 0)', {
+    tolerance: 0.003,
+  });
+  // The accents: a primary that was passed is used as given, outside sRGB or
+  // not. Its secondary, oklch(0.45 0.1 150), fits; its tertiary,
+  // oklch(0.45 0.15 210), does not and is halved once.
+  const vivid = 'gamut-vivid-primary';
+  row('vivid-primary/primary-as-passed', vivid, 'light', '--color--primary', 'oklch(0.45 0.3 150)');
+  row('vivid-primary/secondary', vivid, 'light', '--color--secondary', 'oklch(0.45 0.1 150)', {
+    hue: { of: 150, within: 6 },
+  });
+  row('vivid-primary/tertiary', vivid, 'light', '--color--tertiary', 'oklch(0.45 0.075 210)', {
+    hue: { of: 210, within: 6 },
+  });
   return out;
 }
 
@@ -920,6 +1040,11 @@ interface Row {
   expect: string | Record<string, string>;
   /** Tolerance for a colour comparison (sRGB channel, 0–1). */
   tolerance?: number;
+  /**
+   * The hue of the colour as painted (clipped into sRGB), in oklch degrees,
+   * must also be within `within` of `of` (gamut rows).
+   */
+  hue?: { of: number; within: number };
   /** JavaScript run in the page before reading (crossfade rows). */
   act?: string;
   /** Element whose transitions are paused at half time (default: the probe). */
@@ -1613,6 +1738,7 @@ const rows: Row[] = [
   // ── Phase 14: the palette chain ─────────────────────────────────────────
   ...chainRows(),
   ...bgTextRows(),
+  ...gamutRows(),
 ];
 
 // A theme that passes one palette and nothing else, for the inheritance rows.
@@ -1750,6 +1876,15 @@ function judge(row: Row, value: string, animations: number | undefined): Outcome
       ok && best.label
         ? `${best.label}`
         : `${value} expected ${scored.map((s) => s.v).join(' or ')}`;
+    if (ok && row.hue) {
+      const hue = painted(got).to('oklch').coords[2] ?? 0;
+      const off = Math.abs(((hue - row.hue.of + 540) % 360) - 180);
+      if (off > row.hue.within)
+        return {
+          ok: false,
+          detail: `${value} is painted at hue ${hue.toFixed(1)}°, ${off.toFixed(1)}° from ${row.hue.of}° (${row.hue.within}° allowed)`,
+        };
+    }
     return { ok, detail };
   } catch (e) {
     return { ok: false, detail: `${value} not a colour (${(e as Error).message})` };
@@ -1815,6 +1950,7 @@ function selfContainedPage(selected: Row[]): string {
     animates: row.animates ?? null,
     expect: candidates(row).map(([, v]) => v),
     tolerance: row.tolerance ?? 0.02,
+    hue: row.hue ?? null,
   }));
   return `<!doctype html><html><head><meta charset="utf-8"><title>cp-theming render check</title>
 <style>
@@ -1831,6 +1967,7 @@ const ROWS = ${JSON.stringify(data)};
 const probe = ${probeScript};
 function parseColor(s){const m=s.match(/[-\\d.e]+/g);return m?m.map(Number):null}
 function painted(doc, value){const d=doc.createElement('div');d.style.color=value;doc.body.appendChild(d);const c=doc.defaultView.getComputedStyle(d).color;d.remove();return c}
+function hueOf([r,g,b]){const f=v=>v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);r=f(r);g=f(g);b=f(b);const l=Math.cbrt(0.4122214708*r+0.5363325363*g+0.0514459929*b),m=Math.cbrt(0.2119034982*r+0.6806995451*g+0.1073969566*b),s=Math.cbrt(0.0883024619*r+0.2817188376*g+0.6299787005*b);return (Math.atan2(0.0259040371*l+0.7827717662*m-0.808675766*s,1.9779984951*l-2.428592205*m+0.4505937099*s)*180/Math.PI+360)%360}
 function canvasRgb(value){const c=document.createElement('canvas');c.width=c.height=1;const x=c.getContext('2d');x.fillStyle='#000';x.fillRect(0,0,1,1);x.fillStyle=value;x.fillRect(0,0,1,1);return [...x.getImageData(0,0,1,1).data].slice(0,3).map(v=>v/255)}
 async function run(){
   const tbody=document.getElementById('rows');let pass=0;
@@ -1844,7 +1981,8 @@ async function run(){
       if(row.animates===true&&!r.animations){got+=' (no transition ran)'}
       else if(row.animates===false&&r.animations){got+=' ('+r.animations+' transition ran)'}
       else if(row.read==='raw'){ok=row.expect.includes(r.value)}
-      else{const a=canvasRgb(r.value);ok=row.expect.some(e=>{const b=canvasRgb(e);return Math.max(...a.map((v,i)=>Math.abs(v-b[i])))<row.tolerance});}
+      else{const a=canvasRgb(r.value);ok=row.expect.some(e=>{const b=canvasRgb(e);return Math.max(...a.map((v,i)=>Math.abs(v-b[i])))<row.tolerance});
+        if(ok&&row.hue){const h=hueOf(a),off=Math.abs((h-row.hue.of+540)%360-180);if(off>row.hue.within){ok=false;got+=' (painted at hue '+h.toFixed(1)+', '+off.toFixed(1)+' from '+row.hue.of+')'}}}
     }
     if(ok)pass++;
     const tr=document.createElement('tr');tr.innerHTML='<td><code>'+row.id+'</code></td><td class="'+(ok?'ok':'fail')+'">'+(ok?'✔':'✘')+'</td><td><code>'+got+'</code></td><td><code>'+exp.join('<br>or ')+'</code></td>';

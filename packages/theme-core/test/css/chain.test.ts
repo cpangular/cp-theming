@@ -9,7 +9,10 @@
 //     and fixture, as numbers (the expressions are evaluated, not compared);
 //   • that the brand colour is never adjusted and the primary made from it is
 //     readable on the generated background, over a grid of brand colours;
-//   • that the semantic palettes default to the colours the presets pass.
+//   • that the semantic palettes default to the colours the presets pass;
+//   • that every generated accent is inside sRGB, or close enough that the
+//     painted hue is the hue asked for (Phase 14c), for every preset, every
+//     fixture and a sweep of the hue wheel.
 // test/render.ts asserts the same in the browsers, including what a nested
 // theme inherits, which needs an element tree.
 import { test } from 'node:test';
@@ -28,7 +31,9 @@ import {
   cssColor,
   evaluateColor,
   maxChannelDiff,
+  painted,
   wcagContrast,
+  Color,
   type Mode,
 } from '../lib/color.ts';
 import {
@@ -89,31 +94,76 @@ const close = (a: number, b: number, eps = 1e-6) => Math.abs(a - b) < eps;
 /** Hue difference in degrees, the short way round. */
 const hueDiff = (a: number, b: number) => Math.abs(((a - b + 540) % 360) - 180);
 
+// ─── Gamut correction (Phase 14c) ────────────────────────────────────────────
+// The three accents give up chroma until sRGB can show them. One pass is two
+// relative colours: the inner one carries a factor in its alpha, the outer one
+// multiplies the chroma by it. Four passes, nested.
+const GAMUT_FACTOR =
+  'calc(1 - 2 * clamp(0, max(r - 1, g - 1, b - 1, -1 * r, -1 * g, -1 * b), 0.25))';
+/** The CSS the Sass must emit around a colour expression. */
+function inGamutCss(expr: string): string {
+  for (let pass = 0; pass < 4; pass++)
+    expr = `oklch(from color(from ${expr} srgb r g b / ${GAMUT_FACTOR}) l calc(c * alpha) h / 1)`;
+  return expr;
+}
+/** How far the worst sRGB channel of an oklch colour lies outside 0–1. */
+function overshoot(l: number, c: number, h: number): number {
+  const rgb = new Color('oklch', [l, c, h]).to('srgb').coords;
+  return Math.max(0, ...rgb.map((v) => Math.max((v ?? 0) - 1, -(v ?? 0))));
+}
+/**
+ * The same four passes as plain arithmetic, apart from the CSS: the chroma
+ * that is left. Each pass multiplies it by 1 − 2 × overshoot, the overshoot
+ * counted up to 0.25.
+ */
+function fitChroma(l: number, c: number, h: number): number {
+  for (let pass = 0; pass < 4; pass++) c *= 1 - 2 * Math.min(overshoot(l, c, h), 0.25);
+  return c;
+}
+/** The most chroma sRGB holds at this lightness and hue, up to `cap`. */
+function gamutChroma(l: number, h: number, cap: number): number {
+  if (overshoot(l, cap, h) === 0) return cap;
+  let [inside, outside] = [0, cap];
+  for (let k = 0; k < 30; k++) {
+    const mid = (inside + outside) / 2;
+    if (overshoot(l, mid, h) > 0) outside = mid;
+    else inside = mid;
+  }
+  return inside;
+}
+/** Hue of a colour as painted: clipped into sRGB channel by channel. */
+const paintedHue = (c: Color) => oklch(painted(c)).h;
+
 // ─── What core declares ──────────────────────────────────────────────────────
 
 test('core declares every generated colour once, on :where(:root, [theme])', () => {
   const light = (name: string) => `var(--color--${name}--mode-light)`;
   const expected: [string, string][] = [
     // primary: the brand, moved into the readable band of each mode.
+    // Then, like the other two accents, brought inside sRGB.
     [
       generated('primary', 'light'),
-      `oklch(from ${light('brand')} clamp(0.35,l,0.45) clamp(0,c,0.22) h / 1)`,
+      inGamutCss(`oklch(from ${light('brand')} clamp(0.35,l,0.45) clamp(0,c,0.22) h / 1)`),
     ],
     [
       generated('primary', 'dark'),
-      'oklch(from var(--color--brand--mode-dark) clamp(0.65,l,0.82) clamp(0,calc(c*0.9),0.22) h / 1)',
+      inGamutCss(
+        'oklch(from var(--color--brand--mode-dark) clamp(0.65,l,0.82) clamp(0,calc(c*0.9),0.22) h / 1)',
+      ),
     ],
     // secondary: primary's hue, a third of its chroma, 0.04 at least. tertiary:
     // +60°, half, 0.08 at least. Never more than the primary's own chroma.
     [
       generated('secondary', 'light'),
-      `oklch(from ${light('primary')} l min(c, max(c / 3, 0.04)) h/1)`,
+      inGamutCss(`oklch(from ${light('primary')} l min(c, max(c / 3, 0.04)) h / 1)`),
     ],
     [
       generated('tertiary', 'light'),
-      `oklch(from ${light('primary')} l min(c, max(c / 2, 0.08)) calc(h + 60)/1)`,
+      inGamutCss(`oklch(from ${light('primary')} l min(c, max(c / 2, 0.08)) calc(h + 60) / 1)`),
     ],
-    // background and surface: tinted neutrals of the brand hue.
+    // background and surface are not corrected: L 0.97 / 0.17 and 0.93 / 0.22
+    // hold their 0.006 / 0.01 of chroma at every hue.
+    // …tinted neutrals of the brand hue.
     [generated('background', 'light'), `oklch(from ${light('brand')} 0.97 min(c, 0.006) h / 1)`],
     [
       generated('background', 'dark'),
@@ -133,6 +183,10 @@ test('core declares every generated colour once, on :where(:root, [theme])', () 
       shared.get(generated(name, 'light'))!.replace('--mode-light', '--mode-dark'),
       name,
     );
+  // The colour expression is written once however many passes wrap it.
+  for (const name of ['primary', 'secondary', 'tertiary'])
+    for (const mode of MODES)
+      assert.equal(shared.get(generated(name, mode))!.split('var(').length - 1, 1, name);
   // Exactly these ten, declared nowhere else; nothing generates the brand or a
   // semantic palette.
   const all = rules(core.css).flatMap((r) => r.declarations.map(([n]) => n));
@@ -270,8 +324,14 @@ for (const theme of themes) {
 
       if (!theme.passed.has('primary')) {
         const [min, max] = mode === 'light' ? [0.35, 0.45] : [0.65, 0.82];
-        const chroma = Math.min(mode === 'light' ? brand.c : brand.c * 0.9, 0.22);
-        assert.ok(close(primary.l, Math.min(Math.max(brand.l, min), max)), `${mode} primary L`);
+        const l = Math.min(Math.max(brand.l, min), max);
+        // The band and the cap, then as much of that chroma as sRGB holds.
+        const chroma = fitChroma(
+          l,
+          Math.min(mode === 'light' ? brand.c : brand.c * 0.9, 0.22),
+          brand.h,
+        );
+        assert.ok(close(primary.l, l), `${mode} primary L`);
         assert.ok(close(primary.c, chroma), `${mode} primary C`);
         if (chroma > 1e-4) assert.ok(hueDiff(primary.h, brand.h) < 1e-3, `${mode} primary H`);
       }
@@ -283,8 +343,15 @@ for (const theme of themes) {
         const accent = read(`--color--${name}`);
         assert.ok(close(accent.l, primary.l), `${mode} ${name} L is primary's`);
         assert.ok(
-          close(accent.c, Math.min(primary.c, Math.max(primary.c / divisor, floor))),
-          `${mode} ${name} C is primary's / ${divisor}, ${floor} at least, primary's at most`,
+          close(
+            accent.c,
+            fitChroma(
+              primary.l,
+              Math.min(primary.c, Math.max(primary.c / divisor, floor)),
+              primary.h + turn,
+            ),
+          ),
+          `${mode} ${name} C is primary's / ${divisor}, ${floor} at least, primary's at most, inside sRGB`,
         );
         if (accent.c > 1e-4)
           assert.ok(
@@ -368,6 +435,136 @@ test('the brand colour is never adjusted; the primary generated from it reads on
   // Phase 14b: at 0.50, 116 of these 3360 were below 4.5:1 (cyan and green
   // brands outside sRGB, on the surface).
   assert.equal(belowAA, 0, `lowest ${lowest.ratio.toFixed(2)}:1 at ${lowest.where}`);
+});
+
+// ─── Painted hue (Phase 14c) ─────────────────────────────────────────────────
+// A colour outside sRGB is clipped channel by channel, which moves its hue: the
+// light primary of an orange brand, oklch(0.45 0.2 45), was painted as a red.
+// Every generated accent is therefore brought inside sRGB by lowering its
+// chroma, and what is painted has the hue that was asked for.
+
+interface Asked {
+  l: number;
+  c: number;
+  h: number;
+}
+interface HueReport {
+  cases: number;
+  worst: { off: number; where: string };
+  /** The same, had the colour that was asked for been painted as it is. */
+  uncorrected: number;
+  /** Lowest share of the chroma sRGB holds at that lightness and hue. */
+  share: { ratio: number; where: string };
+}
+const newReport = (): HueReport => ({
+  cases: 0,
+  worst: { off: 0, where: '' },
+  uncorrected: 0,
+  share: { ratio: Infinity, where: '' },
+});
+/** Records one generated colour against the colour its rule asks for. */
+function recordHue(report: HueReport, where: string, asked: Asked, got: Color) {
+  // A grey has no hue to keep.
+  if (asked.c < 1e-3) return;
+  report.cases++;
+  const off = hueDiff(paintedHue(got), asked.h);
+  if (off > report.worst.off) report.worst = { off, where };
+  report.uncorrected = Math.max(
+    report.uncorrected,
+    hueDiff(paintedHue(new Color('oklch', [asked.l, asked.c, asked.h])), asked.h),
+  );
+  const ratio = oklch(got).c / gamutChroma(asked.l, asked.h, asked.c);
+  if (ratio < report.share.ratio) report.share = { ratio, where };
+}
+/** What the chain asks for, for each accent of `passed` it generates, in one mode. */
+function recordAccents(
+  report: HueReport,
+  where: string,
+  ctx: ReturnType<typeof contextFor>,
+  mode: Mode,
+  passed: Set<string>,
+) {
+  const colour = (name: string) => evaluateColor(`var(--color--${name})`, ctx);
+  const brand = oklch(colour('brand'));
+  const primary = oklch(colour('primary'));
+  if (!passed.has('primary')) {
+    const [min, max] = mode === 'light' ? [0.35, 0.45] : [0.65, 0.82];
+    recordHue(
+      report,
+      `${where} primary`,
+      {
+        l: Math.min(Math.max(brand.l, min), max),
+        c: Math.min(mode === 'light' ? brand.c : brand.c * 0.9, 0.22),
+        h: brand.h,
+      },
+      colour('primary'),
+    );
+  }
+  for (const [name, divisor, floor, turn] of [
+    ['secondary', 3, 0.04, 0],
+    ['tertiary', 2, 0.08, 60],
+  ] as const)
+    if (!passed.has(name))
+      recordHue(
+        report,
+        `${where} ${name}`,
+        {
+          l: primary.l,
+          c: Math.min(primary.c, Math.max(primary.c / divisor, floor)),
+          h: (primary.h + turn) % 360,
+        },
+        colour(name),
+      );
+}
+const describe = (r: HueReport) =>
+  `${r.cases} generated colours; painted hue at most ${r.worst.off.toFixed(2)}° from the hue asked for` +
+  ` (${r.worst.where}), ${r.uncorrected.toFixed(1)}° without the correction; lowest share of the chroma` +
+  ` sRGB holds: ${(r.share.ratio * 100).toFixed(0)}% (${r.share.where})`;
+
+test('every generated accent of every preset and fixture is painted within 6° of the hue asked for', (t) => {
+  const report = newReport();
+  for (const theme of themes)
+    for (const mode of MODES)
+      recordAccents(
+        report,
+        `${theme.label} ${mode}`,
+        contextFor(theme.decls, mode),
+        mode,
+        theme.passed,
+      );
+  t.diagnostic(describe(report));
+  assert.ok(report.cases > 0, 'the presets and fixtures generate accents');
+  assert.ok(report.worst.off < 6, describe(report));
+});
+
+test('over the hue wheel, every accent generated from a brand is painted within 6° of the hue asked for', (t) => {
+  // A theme that passes only the brand: core's root rules and nothing else.
+  const decls = new Map(registeredInitialValues(core.css));
+  for (const rule of coreRules)
+    if (rule.selector.includes(':root')) for (const [n, v] of rule.declarations) decls.set(n, v);
+  const report = newReport();
+  // Lightness on, between and beyond the edges of both bands; chroma above the
+  // cap, and a moderate one.
+  for (let h = 0; h < 360; h += 2)
+    for (const l of [0.25, 0.4, 0.55, 0.73, 0.9])
+      for (const c of [0.12, 0.37]) {
+        const brand = `oklch(${l} ${c} ${h})`;
+        const passed = new Map(MODES.map((mode) => [`--color--brand--mode-${mode}`, brand]));
+        for (const mode of MODES)
+          recordAccents(
+            report,
+            `${mode} ${brand}`,
+            contextFor(decls, mode, passed),
+            mode,
+            new Set(['brand']),
+          );
+      }
+  t.diagnostic(describe(report));
+  assert.ok(report.uncorrected > 6, 'the sweep has colours the correction is needed for');
+  assert.ok(report.worst.off < 6, describe(report));
+  // The correction never takes the colour away: at least half of the chroma
+  // sRGB holds is left (one pass halves it at most, and stops there once inside).
+  assert.ok(report.share.ratio > 0.5, describe(report));
 });
 
 // ─── Semantic defaults ───────────────────────────────────────────────────────

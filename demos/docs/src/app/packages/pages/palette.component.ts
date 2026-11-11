@@ -75,6 +75,14 @@ const TOC = [
           between 0.35 and 0.45 in light mode and between 0.65 and 0.82 in dark mode, and the chroma
           capped at 0.22. A <code>primary</code> you pass yourself is used exactly as given.
         </p>
+        <p>
+          <strong>Generated accents stay on their hue.</strong> A screen cannot show every colour at
+          every lightness: an orange as dark as the light-mode primary holds less chroma than 0.22,
+          and a browser asked for more paints a red. So the generated primary, secondary and
+          tertiary give up chroma until the screen can show them, and keep their lightness and hue.
+          <code>#ff6a00</code> gets a light-mode primary of <code>#8d3700</code>, an orange-brown. A
+          colour the screen can already show is left alone.
+        </p>
         <cpa-code [code]="ex.brandOnlyScss" lang="scss" />
         <p>
           <strong>Pass one, two or three accents.</strong> Only <code>primary</code>: secondary and
@@ -316,7 +324,8 @@ const TOC = [
                 </div>
                 <div class="api-param-desc">
                   Maximum chroma cap. Prevents overly saturated results when the brand color is very
-                  vivid.
+                  vivid. The result has less chroma than this where the screen cannot show it at
+                  that lightness, so its hue stays the brand's.
                 </div>
               </div>
             </div>

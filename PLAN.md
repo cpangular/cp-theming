@@ -137,7 +137,7 @@ The `color` role is the palette's primary identity — it becomes the namespace 
 
 Core (`define-core-theme()`) declares every default and every derivation once, on `:where(:root)` and `:where(:root, [theme])`; a theme rule (`define-theme()`) holds only what its author passed, so nested themes inherit, presets coexist, and an author's `:root` rule wins. Load order: core, then themes, then the adapter.
 
-**Palette chain (Phase 14).** brand → primary → secondary, tertiary → background, surface. A theme passes whichever it has; core generates each one it left out, on the same shared selector, from the nearest thing the theme passed: primary is the brand with lightness held to 0.35–0.45 (light; 0.50 until Phase 14b) / 0.65–0.82 (dark) and chroma capped at 0.22; secondary is primary's hue with a third of its chroma, 0.04 at least; tertiary is primary's hue + 60° with half its chroma, 0.08 at least (neither floor lifts an accent above the primary's own chroma, so a grey primary gives grey accents); background and surface are neutrals of the brand hue (lightness 0.97 / 0.17 and 0.93 / 0.22, chroma 0.006 and 0.01 at most). The brand colour is never adjusted. `error`, `warn`, `caution` and `pass` have fixed defaults (the registered initial values). The root generates the whole chain; a nested theme generates what is downstream of what it passed and inherits the rest. Core holds each generated colour in a private variable (`--theme--_generated--{name}--{mode}`); `:where(:root)` points every pair of the chain at it and a theme rule does so for the palettes it left out that follow from one it passed, so nothing sets a pair where nothing upstream was passed.
+**Palette chain (Phase 14).** brand → primary → secondary, tertiary → background, surface. A theme passes whichever it has; core generates each one it left out, on the same shared selector, from the nearest thing the theme passed: primary is the brand with lightness held to 0.35–0.45 (light; 0.50 until Phase 14b) / 0.65–0.82 (dark) and chroma capped at 0.22; secondary is primary's hue with a third of its chroma, 0.04 at least; tertiary is primary's hue + 60° with half its chroma, 0.08 at least (neither floor lifts an accent above the primary's own chroma, so a grey primary gives grey accents); background and surface are neutrals of the brand hue (lightness 0.97 / 0.17 and 0.93 / 0.22, chroma 0.006 and 0.01 at most). The three accents then give up chroma until sRGB can show them, so the hue asked for is the hue painted (Phase 14c). The brand colour is never adjusted. `error`, `warn`, `caution` and `pass` have fixed defaults (the registered initial values). The root generates the whole chain; a nested theme generates what is downstream of what it passed and inherits the rest. Core holds each generated colour in a private variable (`--theme--_generated--{name}--{mode}`); `:where(:root)` points every pair of the chain at it and a theme rule does so for the palettes it left out that follow from one it passed, so nothing sets a pair where nothing upstream was passed.
 
 ---
 
@@ -517,6 +517,27 @@ colour format is accepted and oklch is recommended.
 - Harness: core.css ceiling 256 KiB (221,168 bytes, 15,211 gzipped today). render.ts has 207 rows
   (two new `chain/` rows for a muted brand, 15 `bg-text/` rows), all passing in Chromium,
   Firefox and WebKit.
+
+### ✅ Phase 14c — Generated colours stay inside the screen's gamut (PORT-PLAN.md)
+- The generated primary, secondary and tertiary, and `palette-from-var()` / `palette-from-brand()`,
+  are wrapped by `_in-gamut()` (`_palette.scss`) after the lightness clamp and chroma cap: four
+  nested passes, each multiplying the chroma by `1 − 2 × overshoot`, where the overshoot is how
+  far the worst sRGB channel lies outside 0–1. The factor travels in the alpha channel of a
+  `color(from … srgb r g b / …)`, so the colour expression is written once. Lightness and hue
+  are untouched; a colour inside sRGB is unchanged; a grey stays grey.
+- Changed from PORT-PLAN.md: the overshoot counts up to 0.25, so one pass halves the chroma at
+  most. As written, the alpha reached 0 at an overshoot of 0.5 and a vivid teal or green brand
+  got a grey primary in dark mode (489 of 2520 sweep colours kept less than half of the chroma
+  sRGB holds; now none, lowest 55%).
+- `#ff6a00`: light primary `#a60000` (a red, 15.5° off) → `#8d3700`; dark `#f7722b` unchanged.
+  `#ffd400`: light `#764d00` (20° off) → `#65540a`; dark `#e7c11e` unchanged. `#1a56c4`:
+  `#0e4bb8` / `#538cf2`, unchanged.
+- Harness: the chain test asserts the painted hue of every generated accent within 6° of the hue
+  asked for, over every preset and fixture and over a hue-wheel sweep (10,800 colours, worst
+  0.70°; 46.7° uncorrected), and that at least half of the chroma sRGB holds is left. render.ts
+  has 230 rows (23 `gamut/` rows, with a painted-hue assertion), all passing in Chromium, Firefox
+  and WebKit. `demos/docs/test/chain.ts` asserts the Getting Started primary's painted hue.
+- core.css: 221,168 → 224,536 bytes (15,211 → 15,316 gzipped).
 
 ### ⬛ Phase 13 — planned in PORT-PLAN.md
 - Phase 13 — Release through cpdevtools/git-flow

@@ -194,7 +194,13 @@ class Parser {
       this.pos = channelParser.pos;
       this.expect(')');
       const scaled = coords.map((v, k) => v / (space.scale?.[k] ?? 1));
-      return new Color(space.id, scaled as [number, number, number], alpha);
+      // An alpha outside 0–1 is clamped, as the browsers do: the gamut
+      // correction (_in-gamut() in _palette.scss) carries a factor there.
+      return new Color(
+        space.id,
+        scaled as [number, number, number],
+        Math.min(Math.max(alpha, 0), 1),
+      );
     }
     // An absolute colour function: hand its source text to colorjs.io.
     const end = this.closingParen();

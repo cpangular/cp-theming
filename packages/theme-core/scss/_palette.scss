@@ -372,6 +372,8 @@ $_contrast-step: string.unquote("clamp(0, (0.179 - #{$_luminance}) * 1e6, 1)");
 //               lightness.
 //   tertiary    primary's hue + 60°, half its chroma (0.08 at least), same
 //               lightness. Neither floor exceeds the primary's own chroma.
+//   The three accents then give up chroma until the screen can show them
+//   (_in-gamut(), below), so the hue that was asked for is the hue painted.
 //   background, surface
 //               tinted neutrals of the brand hue (what background-from-brand()
 //               and surface-from-brand() do).
@@ -414,9 +416,11 @@ $_generated-names: primary, secondary, tertiary, background, surface;
 
   @each $mode in light, dark {
     $from: var(#{$primary}--mode-#{$mode});
-    #{_generated-var(secondary, $mode)}: oklch(from #{$from} l _accent-chroma(3, 0.04) h / 1);
-    #{_generated-var(tertiary, $mode)}: oklch(
-      from #{$from} l _accent-chroma(2, 0.08) calc(h + 60) / 1
+    #{_generated-var(secondary, $mode)}: _in-gamut(
+      "oklch(from #{$from} l #{_accent-chroma(3, 0.04)} h / 1)"
+    );
+    #{_generated-var(tertiary, $mode)}: _in-gamut(
+      "oklch(from #{$from} l #{_accent-chroma(2, 0.08)} calc(h + 60) / 1)"
     );
   }
 
@@ -438,6 +442,46 @@ $_generated-names: primary, secondary, tertiary, background, surface;
 // so its accents stay grey, like the neutrals of a grey brand.
 @function _accent-chroma($divisor, $floor) {
   @return string.unquote("min(c, max(c / #{$divisor}, #{$floor}))");
+}
+
+// ─── Gamut correction (Phase 14c) ─────────────────────────────────────────────
+// A generated colour can ask for more chroma than sRGB holds at its lightness:
+// oklch(0.45 0.2 45), the light primary of an orange brand, is outside it. A
+// browser then clips each sRGB channel on its own, which moves the hue (that
+// orange is painted #a60000, a red, 16° away). _in-gamut() wraps a colour
+// expression so that it gives up chroma instead and keeps its lightness and
+// hue.
+//
+// CSS has no way to read a channel out of a colour except inside a relative
+// colour, so one pass is two of them, and $colour is written once:
+//
+//   inner  color(from $colour srgb r g b / <factor>) is the same colour, with
+//          a factor in its alpha channel: 1 − 2 × the overshoot, where the
+//          overshoot is how far the worst sRGB channel lies outside 0–1. A
+//          colour inside sRGB has factor 1.
+//   outer  oklch(from <inner> l calc(c * alpha) h / 1) scales the chroma by
+//          that factor and is opaque again.
+//
+// Each pass lands closer to the gamut's edge, from outside; four are nested.
+// The overshoot counts up to 0.25 only, so one pass halves the chroma at most:
+// without that limit the alpha reaches 0 at an overshoot of 0.5 and the colour
+// turns grey (a vivid teal brand in dark mode did). Measured over the hue
+// wheel at chroma 0.22: within the bands the primary is generated in
+// (lightness 0.35–0.45 and 0.65–0.82) the painted hue stays within 1° of the
+// one asked for (47° without the correction), and within 2° from 0.35 to 0.85.
+// Darker or lighter than that four passes do not get all the way: an accent
+// generated from a very dark or very light primary of your own is closer to
+// its hue than before, not on it.
+//
+// A colour already inside sRGB comes back unchanged, a grey stays grey.
+$_gamut-factor: "calc(1 - 2 * clamp(0, max(r - 1, g - 1, b - 1, -1 * r, -1 * g, -1 * b), 0.25))";
+$_gamut-passes: 4;
+
+@function _in-gamut($colour) {
+  @for $i from 1 through $_gamut-passes {
+    $colour: "oklch(from color(from #{$colour} srgb r g b / #{$_gamut-factor}) l calc(c * alpha) h / 1)";
+  }
+  @return string.unquote($colour);
 }
 
 // Points the registered pair of one chain palette at its generated colour.
@@ -580,7 +624,8 @@ $_generated-names: primary, secondary, tertiary, background, surface;
 //        and surface (L 0.93) for every hue; at 0.50 the cyans and greens
 //        outside sRGB fell to 3.7:1 on the surface.
 // Dark:  clamps lightness 0.65–0.82 — contrast-safe on near-black (oklch ~0.18).
-// Chroma is capped at 0.22 to avoid oversaturation.
+// Chroma is capped at 0.22 to avoid oversaturation, and then lowered as far as
+// sRGB needs at that lightness (_in-gamut()), so the hue is the origin's.
 //
 // NOTE: hues 75°–125° (yellow range) are a known rough edge in oklch. For full
 // accuracy on arbitrary brand colors, compute via JS (HCT) and pass a literal.
@@ -602,13 +647,13 @@ $_generated-names: primary, secondary, tertiary, background, surface;
 // (light) or a near-black one (dark). Used by from-var() and by the primary
 // core generates from the brand pair, so the two give the same colour.
 @function _readable-light($origin, $l-min: 0.35, $l-max: 0.45, $c-max: 0.22) {
-  @return string.unquote(
+  @return _in-gamut(
     "oklch(from #{$origin} clamp(#{$l-min},l,#{$l-max}) clamp(0,c,#{$c-max}) h / 1)"
   );
 }
 
 @function _readable-dark($origin, $l-min: 0.65, $l-max: 0.82, $c-max: 0.22) {
-  @return string.unquote(
+  @return _in-gamut(
     "oklch(from #{$origin} clamp(#{$l-min},l,#{$l-max}) clamp(0,calc(c*0.9),#{$c-max}) h / 1)"
   );
 }

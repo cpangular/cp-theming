@@ -36,6 +36,14 @@ This is a CSS-variable-based theming system. Key facts:
   dark, C 0.22 at most; secondary `min(c, max(c / 3, 0.04))`, tertiary `min(c, max(c / 2, 0.08))`
   at hue + 60°. `bg()` on `background` / `surface` gives contrast text through the private
   `--container--_bg-text`; `bg()` itself declares no `color`.
+- Gamut (Phase 14c): the generated primary, secondary and tertiary and `palette-from-var()` /
+  `palette-from-brand()` are wrapped by `_in-gamut()` (`_palette.scss`) after the clamp and cap:
+  four nested passes that multiply the chroma by `1 − 2 × overshoot` (worst sRGB channel outside
+  0–1, counted up to 0.25), the factor carried in the alpha of `color(from … srgb r g b / …)`.
+  Lightness and hue stay, so the painted hue is the one asked for (chain test: within 6°; the
+  `gamut/` rows of `render.ts`). Do not let the overshoot count past 0.25: the factor reaches 0
+  and a vivid teal brand turns grey. Chromium reports no hue for a non-oklch origin below chroma
+  0.02, so a corrected colour that faint is painted at hue 0 there.
 - Contrast (Phase 10): `--contrast` is black or white by a step at relative luminance 0.179 in
   clamped linear sRGB; the step is declared once as `--theme--_contrast-step`. Every relative-colour
   derivation ends `/ 1` (only the tints carry an alpha); a harness check enforces it.

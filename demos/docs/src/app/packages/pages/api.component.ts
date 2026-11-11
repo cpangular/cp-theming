@@ -501,7 +501,8 @@ const NG_MATERIAL_TOC = [
                     </div>
                     <div class="api-param-desc">
                       Maximum chroma cap. Prevents overly saturated results when the brand color is
-                      very vivid.
+                      very vivid. The result has less chroma than this where the screen cannot show
+                      it at that lightness, so its hue stays the brand's.
                     </div>
                   </div>
                 </div>

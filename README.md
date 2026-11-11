@@ -10,7 +10,7 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 
 | Package | npm | Status |
 |---|---|---|
-| `packages/theme-core` | `@cpangular/cp-theming-core` | 🟡 In Progress — SCSS real, TS API real (Phase 3 done), harness in `test/` (Phase 8 done), cascade: core derives once, a theme is one rule (Phase 9 done), contrast by luminance step (Phase 10 done), palette chain: `brand` and `tertiary` are core palettes and a theme passes only the colours it has (Phase 14 done) |
+| `packages/theme-core` | `@cpangular/cp-theming-core` | 🟡 In Progress — SCSS real, TS API real (Phase 3 done), harness in `test/` (Phase 8 done), cascade: core derives once, a theme is one rule (Phase 9 done), contrast by luminance step (Phase 10 done), palette chain: `brand` and `tertiary` are core palettes and a theme passes only the colours it has (Phase 14 done), generated accents kept inside sRGB so their hue is the one painted (Phase 14c done) |
 | `packages/theme-ng-core` | `@cpangular/cp-theming-ng-core` | ✅ Done — `ThemeService`, `ThemeDirective`, `ThemeModeDirective` |
 | `packages/theme-ng-material` | `@cpangular/cp-theming-ng-material` | ✅ Done — every `--mat-sys-*` token Angular Material 22 reads (186 declared), colour roles from Material's own role tables (Phase 11 done), tertiary roles from `--color--tertiary` (Phase 14 done), `[palette]` scopes for the eight accent palettes, two component patches, density scopes |
 | `packages/theme-material` | `@cpangular/cp-theming-material` | ⬛ Stub |
@@ -47,19 +47,21 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 | 13 | Release through cpdevtools/git-flow | ⬛ Not started |
 | 14 | Brand and accent palettes: pass what you have, the rest are generated (`brand` and `tertiary` core palettes; the chain brand → primary → secondary, tertiary → background, surface; semantic defaults; Material tertiary from `--color--tertiary`) | ✅ Done |
 | 14b | Follow-ups from the Phase 14 review: chroma floors for the generated secondary and tertiary, the generated primary readable on the generated background in every hue, `bg` on `background` and `surface` with readable text, Showcase back in the ng-material sidebar | ✅ Done |
+| 14c | Generated colours stay inside the screen's gamut: the generated primary, secondary and tertiary and `palette-from-var()` / `palette-from-brand()` give up chroma until sRGB can show them, so an orange brand no longer gets a red primary | ✅ Done |
 | 15 | Material component gallery in the ng-material docs | ⬛ Not started |
 
-Phases 8–15 are specified in [PORT-PLAN.md](PORT-PLAN.md); 14 and 14b were done before 13.
+Phases 8–15 are specified in [PORT-PLAN.md](PORT-PLAN.md); 14, 14b and 14c were done before 13.
 
 ### Browser baseline
 
-`packages/theme-core/test/render.ts` (207 rows: `themeMode` on any element, nested themes, coexisting
+`packages/theme-core/test/render.ts` (230 rows: `themeMode` on any element, nested themes, coexisting
 presets, user overrides, the theme-switch crossfade, the eight defects the Phase 9 critique
 confirmed, the browser-computed `--contrast` against the contrast sweep's prediction for a
 sample of colours, the Material roles, state layers and shadows of Phase 11, and the palette
 chain of Phase 14: what is generated for a theme with only a brand, only a primary, a nested
 theme, a theme beside a loaded default, and what a nested theme inherits; and the text colour of
-`bg` on the neutral palettes, Phase 14b) passes 207 of 207 in the Playwright builds
+`bg` on the neutral palettes, Phase 14b; the painted hue of the primary generated from an orange,
+a yellow and a blue brand, Phase 14c) passes 230 of 230 in the Playwright builds
 installed here: **Chromium 158**, **Firefox 159** and **WebKit 27.2** (the Safari engine; run with
 `node test/render.ts webkit`). WebKit gets the OS colour scheme pinned into the CSS rather than
 emulated, because Playwright's emulated dark scheme makes WebKit resolve `light-dark()` to dark
