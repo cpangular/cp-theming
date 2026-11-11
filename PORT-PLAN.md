@@ -118,7 +118,7 @@ cp-theming's own phases 1–6 are done and phase 7 (docs and demos) is in progre
 until Phase 9 has landed, because the cascade change deletes the docs workarounds and changes what the
 examples show. New phases continue the numbering.
 
-Order: **8 → 9 → 10 → 11 → 12 → 7 (resumed) → 13.** Phase 12 does not depend on 9–11 and can run any
+Order: **8 → 9 → 10 → 11 → 12 → 7 (resumed) → 14 → 13.** Phase 12 does not depend on 9–11 and can run any
 time after 8. Your answers of 2026-11-09 are folded into the phases; see
 [Your answers](#your-answers-2026-11-09) for what is still open.
 
@@ -473,6 +473,48 @@ Done 2026-11-11 (the pending demos are not part of this Done-when). Found on the
   `$levels`, `$dedupe`, `$default`). `variables.component.ts` and `api.component.ts` still state
   defaults nothing checks (shape, focus and weight values among them).
 
+### Phase 14 — Accent palettes: pass one, two or three, the rest are generated
+
+Goal: a theme can pass only `primary`; `secondary`, `tertiary`, `background`, `surface` and the
+semantic palettes it leaves out are generated from what it passed. Added 2026-11-11: cp-theming had
+decided in June that there is no third accent palette and that Material's tertiary maps to
+secondary; that contradicts the brand-colour idea and was never the intent. Depends on Phase 9
+(a theme declares only what it passes; core supplies the rest), so this is small now.
+
+- **`tertiary` is a core palette name**, with the same registered pair, derivations and
+  `[palette="tertiary"]` rule as the others (`$core-palette-names` in `_palette.scss`). Registered
+  count rises by 8; the harness list and docs follow.
+- **Generated accents.** On the shared derivation selector, core declares the registered pair of
+  each accent a theme did not pass, derived from the primary pair, so a nested theme that passes
+  only `primary` re-derives its own accents (a theme that passes the accent beats these
+  zero-specificity declarations on its own element, as explicit roles already do):
+  - `secondary`: primary's hue, one third of its chroma, same lightness;
+  - `tertiary`: primary's hue + 60°, half its chroma, same lightness.
+  Written as `oklch(from var(--color--primary--mode-light) l calc(c / 3) h / 1)` and the dark
+  twin, like every other derivation; Sass does no colour maths.
+- **Generated neutrals.** `background` and `surface` not passed are tinted neutrals of primary's hue,
+  with the lightness and chroma the `background-from-var` / `surface-from-var` helpers already use
+  (`_palette.scss`), so the two paths agree.
+- **Semantic palettes** (`error`, `warn`, `caution`, `pass`) not passed get the fixed colours the
+  presets already share (`$default-error` and friends in `presets/_palettes.scss`) as core defaults;
+  they do not derive from primary. With no theme loaded at all, primary's greyscale initial value
+  still makes everything derived from it grey, so the print fallback holds for the accents and
+  neutrals.
+- **Material adapter:** `tertiary` roles read `--color--tertiary`; the "tertiary = secondary" rule
+  and the docs paragraph that explains it go away. Presets pass no `tertiary`, so theirs is
+  generated and visible in the showcase.
+- **Docs:** the Palette and Theme pages say "pass one, two or three accents"; an example theme with
+  only `primary` is one of the compiled example files. PLAN.md:239-245 and the README row are
+  corrected.
+- **Harness:** `render.ts` rows for a theme with only `primary` (all four generated palettes have
+  the expected hue, chroma and lightness relation), a nested theme with only `primary` re-deriving
+  its accents, and a theme that passes `secondary` keeping it; the contrast sweep and the Material
+  surface-order check run over the generated palettes of every preset and fixture.
+
+Done when: `pnpm test` passes with the new rows and checks; the showcase shows a distinct tertiary
+on every preset in both modes (Playwright screenshots in the commit message); the docs Getting
+Started theme passes only `primary` and `secondary` and the page looks right.
+
 ### Phase 13 — Release through cpdevtools/git-flow
 
 Goal: versions, tags and publishing run through git-flow.
@@ -521,6 +563,8 @@ So they are not reopened. Tell me if you want any reversed.
 - Sass examples in the docs are compile-checked, not rendered live. Getting Started keeps its custom
   Sass section.
 - `themeMode="invert"` keeps today's selector semantics, emitted once.
+- Accent palettes a theme does not pass are generated from `primary` (Phase 14). The June decision
+  that cp-theming has no third accent palette is reversed on your instruction of 2026-11-11.
 - Authors may write palette colours in any CSS colour format (your instruction of 2026-11-09, which
   withdraws the former "oklch only" rule for inputs). Derivation stays in oklch.
 - All port work is pushed to `feature/port-spike-findings`; nothing merges to `main` without you.
