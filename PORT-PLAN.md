@@ -620,10 +620,10 @@ Done 2026-11-11.
    palette's own colour as text; for the two neutral palettes that colour is the fill. For those
    two, `bg()` sets `color` to the bg role's `--contrast` (blended through `--weight--text-blend`
    like `filled()` does). The Getting Started example goes back to `bg` where it meant `bg`.
-4. **Docs: nested themes written by hand.** Wherever a `[theme="x"]` rule typed directly in CSS is
-   described (Theme page, TypeScript API page), add that on a nested element such a rule
-   regenerates only that palette's own roles, and show the pointer lines `define-theme` emits for
-   the palettes downstream, to copy.
+4. **Docs: themes come from `t.define-theme()`.** Themes are not meant to be typed as CSS by hand.
+   Where the docs mention a `[theme="x"]` rule written directly (Theme page, TypeScript API page),
+   say that, and add one note: such a rule on a nested element regenerates only that palette's own
+   roles, not the palettes downstream of it.
 5. **Size ceiling.** Raise the `core.css` ceiling in the size check to 256 KiB and record the
    current size next to it; the gzipped size (15 KB) is the one that matters and is also printed.
 
