@@ -949,6 +949,28 @@ As done (2026-11-11):
 
 ---
 
+### Phase 16 — Wrap-up: docs deploy, demo-core, gallery hrefs (added 2026-11-11)
+
+The repo is public since 2026-11-11. Three leftovers, none of them a spike finding:
+
+1. **Docs deploy.** Add git-flow's `static-site` artifact for `demos/docs` (directory `../..`,
+   packDir `dist/docs/browser`, `deploy: [gh-pages]`, `pagesRoot: true` so the production
+   `baseHref` `/cp-theming/` stays valid), with the docs build as its `github.actions.build`.
+   Delete `pages.yml`. Record in the README where the docs are served from and that a release
+   PR merge deploys them.
+2. **`demos/demo-core` builds again.** `src/scss/components.scss` calls `a.container(high)` and
+   `a.container(low)`; the mixin takes no argument since June. Use `t.container()` with
+   `t.tone(high)` / `t.tone(low)`, through the public `theme` module like `base.scss` does. Give it
+   `github.actions.build` so CI builds it, and move its README row from Broken to In Progress.
+3. **Gallery demo hrefs.** `demos/docs/src/examples/components/sidenav.ng.html` and the list
+   example carry `href="packages/ng-material/components#…"`, which a direct request resolves
+   under the current page. Use `href="#sidenav"` / `href="#list"` (same-page anchors), and let the
+   examples check refuse an `href` that is neither a fragment, an absolute path nor a URL.
+
+Done when: a push opens or refreshes the draft release PR with the docs artifact listed; `pnpm
+build` at the root builds demo-core; the examples check passes with the href rule; the README
+rows are updated.
+
 ## Decisions already made
 
 So they are not reopened. Tell me if you want any reversed.

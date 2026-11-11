@@ -37,6 +37,7 @@ How to set things in the VS Code extension (Claude Code chat panel):
 | 11 | Phase 15 Material component gallery | Fable 5.1 | high | Auto |
 | 12 | Phase 14d brand defaults to primary | Fable 5.1 | medium | Auto |
 | 13 | Phase 13 release | Fable 5.1 | medium | Auto |
+| 14 | Phase 16 wrap-up | Fable 5.1 | medium | Auto |
 
 Subagent models are chosen inside the workflow prompts: Opus at high effort for critique, Sonnet at
 medium for reading and sweeps. You do not set these.
@@ -123,4 +124,10 @@ Work in /devcontainer/repos/cp-theming on branch feature/port-spike-findings. Re
 
 ```
 Work in /devcontainer/repos/cp-theming on branch feature/port-spike-findings. Read CLAUDE.md, .github/copilot-instructions.md and PORT-PLAN.md Phase 13, then the READMEs of https://github.com/cpdevtools/git-flow-template and https://github.com/cpdevtools/git-flow. Settings: publish to GitHub Packages only; first version 0.1.0-alpha.0 (work out from the git-flow docs how that maps onto .publish/versions.yml and a feature/ branch, and tell me if it cannot be expressed exactly); peers between the three packages use workspace:^; docs deploy to GitHub Pages. Add only what git-flow needs, as the phase lists; keep the wireit root scripts; do not adopt the template's deps.yml, syncpack or devutil root scripts. Set up packaging for the three packages exactly as the phase describes and run gitflow pack; show me each tarball's file list and its package.json exports and peerDependencies. Check with gh whether the repo is public yet: if it is, add the static-site artifact for demos/docs with the gh-pages method; if not, leave pages.yml on manual trigger and tell me. Commit and push without asking, then tell me whether git-flow opened the draft release PR and whether the test workflow is green, and fix anything red. Do not merge into main, do not run gitflow version, and do not merge the release PR.
+```
+
+## Session 14 — Phase 16 wrap-up
+
+```
+Work in /devcontainer/repos/cp-theming on branch feature/port-spike-findings. Read CLAUDE.md, .github/copilot-instructions.md and PORT-PLAN.md Phase 16, and the Deployment page of the cpdevtools/git-flow wiki for the static-site artifact (gh api repos/cpdevtools/git-flow/contents/wiki or the README's link; read-only). Do the three items: the static-site artifact for demos/docs with gh-pages deploy and pages.yml deleted; demos/demo-core building again through the public theme module with a github.actions.build script; the gallery demo hrefs as same-page anchors with the examples check refusing other relative hrefs. Run pnpm build at the root, pnpm test, and the docs examples check. When the Done-when holds, update the README and PLAN.md status tables, commit and push without asking, then tell me whether the draft release PR lists the docs artifact and whether the test workflow is green; fix anything red. Do not merge any PR.
 ```
