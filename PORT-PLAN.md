@@ -456,6 +456,23 @@ Goal: a code sample in the docs cannot disagree with the library. Depends on Pha
 Done when: no hand-written Sass sample remains in a page template; `pnpm test` compiles every
 example; the correction list above is closed.
 
+Done 2026-11-11 (the pending demos are not part of this Done-when). Found on the way:
+
+- The installed `@angular/build` (22.0.3) imports any file as text with `with { loader: 'text' }`;
+  a probe build confirmed it for `.scss` and `.html`.
+- The `styles` array of `angular.json` cannot name the packages' stylesheets at all: a `dist/…`
+  path is not in `exports` and fails to resolve, and an exported `…/css/core` path is rejected by
+  the schema, which wants a stylesheet extension. Getting Started now loads them from the app's own
+  stylesheet (`@use "@cpangular/cp-theming-core/css/core"` in Sass, `@import` in CSS), which a
+  probe build of the docs app confirmed for core, a preset and both adapter files.
+- A root theme that leaves a palette out gets core's greyscale default, the same in both modes,
+  so the old "unspecified palettes use built-in defaults" sample had a white page in dark mode.
+  The Getting Started theme now passes every palette.
+- Not done: the parameter defaults and descriptions in the API reference tables were corrected
+  only where this phase lists them or an example touched them (focus width and hue shift,
+  `$levels`, `$dedupe`, `$default`). `variables.component.ts` and `api.component.ts` still state
+  defaults nothing checks (shape, focus and weight values among them).
+
 ### Phase 13 — Release through cpdevtools/git-flow
 
 Goal: versions, tags and publishing run through git-flow.

@@ -1,5 +1,9 @@
 import { Component, inject } from '@angular/core';
 import { TocService } from '../../shell/toc.service';
+import { CodeComponent } from '../../shared/code.component';
+import colorRolesDisplayCss from '../../../examples/variables/color-roles.display.css' with {
+  loader: 'text',
+};
 
 const TOC = [
   { label: 'Naming convention', anchor: 'naming' },
@@ -17,6 +21,7 @@ const TOC = [
 @Component({
   selector: 'cpa-variables-page',
   standalone: true,
+  imports: [CodeComponent],
   template: `
     <article class="doc-page">
       <header class="page-header">
@@ -31,24 +36,7 @@ const TOC = [
           a word separator within a segment. The <code>color</code> role is the palette's primary
           identity — it becomes the prefix with no trailing segment.
         </p>
-        <pre><code class="language-css">--color--primary           /* primary color role */
---color--primary--contrast /* black or white (highest contrast) */
---color--primary--dark     /* lightness − 0.12 */
---color--primary--darker   /* lightness − 0.24 */
---color--primary--light    /* lightness + 0.12 */
---color--primary--lighter  /* lightness + 0.24 */
---color--primary--high     /* mode-relative: darker in light, lighter in dark */
---color--primary--higher   /* stronger version of --high */
---color--primary--low      /* opposite of --high */
---color--primary--lower    /* stronger version of --low */
---color--primary--bg       /* background role (same full derivative set) */
---color--primary--stroke   /* border role (same full derivative set) */
---color--primary--focus    /* per-palette focus ring color */
---color--primary--tint-1   /* 10% opacity tint */
---color--primary--tint-2   /* 20% */
---color--primary--tint-3   /* 38% */
---color--primary--tint-4   /* 60% */
---color--primary--tint-5   /* 80% */</code></pre>
+        <cpa-code [code]="ex.colorRolesDisplayCss" lang="css" />
       </section>
 
       <section id="color-vars" class="page-section">
@@ -479,6 +467,8 @@ const TOC = [
   ],
 })
 export class VariablesPageComponent {
+  protected readonly ex = { colorRolesDisplayCss };
+
   constructor() {
     inject(TocService).set(TOC);
   }

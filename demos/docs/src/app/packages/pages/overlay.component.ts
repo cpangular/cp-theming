@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { ThemeExampleComponent } from '../../shared/theme-example.component';
 import { TocService } from '../../shell/toc.service';
+import overlaysScss from '../../../examples/overlay/overlays.scss' with { loader: 'text' };
 
 const TOC = [
   { label: 'Overview', anchor: 'overview' },
@@ -26,7 +27,7 @@ const TOC = [
           surfaces. <code>--overlay--scrim</code> dims the page behind dialogs.
           <code>--overlay--shadow</code> is used by elevation shadows.
         </p>
-        <cpa-theme-example title="Configuring overlays" [scssScss]="overlayScssScss" />
+        <cpa-theme-example title="Configuring overlays" [scssScss]="ex.overlaysScss" />
       </section>
 
       <section id="api" class="page-section">
@@ -107,13 +108,7 @@ const TOC = [
   ],
 })
 export class OverlayPageComponent {
-  readonly overlayScssScss = `$my-theme: t.theme(
-  $palettes: (...),
-  $overlay: t.light-dark(
-    t.overlays($shadow: oklch(0.2 0.02 240 / 20%)),
-    t.overlays($shadow: oklch(0 0 0 / 50%)),
-  ),
-);`;
+  protected readonly ex = { overlaysScss };
 
   constructor() {
     inject(TocService).set(TOC);

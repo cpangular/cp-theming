@@ -1,0 +1,14 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+$my-theme: t.theme(
+  $palettes: (
+    primary: t.palette(oklch(0.44 0.22 253)),
+  ),
+  // a lighter shadow in light mode, a heavier one in dark mode
+  $elevation: t.light-dark(
+    t.elevation($shadow-color: oklch(0 0 0 / 20%)),
+    t.elevation($shadow-color: oklch(0 0 0 / 50%))
+  )
+);
+
+@include t.define-theme("my-theme", $my-theme);

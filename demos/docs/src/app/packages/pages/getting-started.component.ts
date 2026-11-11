@@ -3,6 +3,28 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { themeHeadSnippet } from '@cpangular/cp-theming-core';
 import { TocService } from '../../shell/toc.service';
+import { CodeComponent } from '../../shared/code.component';
+import presetCss from '../../../examples/getting-started/preset.css' with { loader: 'text' };
+import presetScss from '../../../examples/getting-started/preset.scss' with { loader: 'text' };
+import presetMaterialScss from '../../../examples/getting-started/preset-material.scss' with {
+  loader: 'text',
+};
+import materialSassScss from '../../../examples/getting-started/material-sass.scss' with {
+  loader: 'text',
+};
+import customThemeScss from '../../../examples/getting-started/custom-theme.scss' with {
+  loader: 'text',
+};
+import htmlRootHtml from '../../../examples/getting-started/html-root.html' with { loader: 'text' };
+import htmlRootCustomHtml from '../../../examples/getting-started/html-root-custom.html' with {
+  loader: 'text',
+};
+import materialComponentsDisplayHtml from '../../../examples/getting-started/material-components.display.html' with {
+  loader: 'text',
+};
+import densityDirectiveDisplayHtml from '../../../examples/getting-started/density-directive.display.html' with {
+  loader: 'text',
+};
 
 const CORE_TOC = [
   { label: 'Install', anchor: 'install' },
@@ -33,7 +55,7 @@ const NG_MATERIAL_TOC = [
 @Component({
   selector: 'cpa-getting-started-page',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, CodeComponent],
   template: `
     <article class="doc-page">
       <header class="page-header">
@@ -53,16 +75,19 @@ pnpm add @cpangular/cp-theming-core</code></pre>
           <section id="option-a" class="page-section">
             <h2>Option A — Prebuilt CSS</h2>
             <p>
-              No Sass. Use one of the four included presets. Add to <code>styles</code> in
-              <code>angular.json</code>:
+              No Sass. Use one of the four included presets. Import the core stylesheet first, then
+              the preset, from your global stylesheet:
             </p>
-            <pre><code>"styles": [
-  "@cpangular/cp-theming-core/dist/presets/azure-blue.css",
-  "@cpangular/cp-theming-core/dist/core.css",
-  "src/styles.scss"
-]</code></pre>
+            <cpa-code [code]="ex.presetCss" lang="css" />
+            <p>
+              In a <code>.scss</code> stylesheet write <code>&#64;use</code> instead of
+              <code>&#64;import</code>. These are the paths the package exports; a path into
+              <code>dist/</code> is not exported and does not resolve, and the
+              <code>styles</code> array of <code>angular.json</code> only takes paths that end in a
+              stylesheet extension, so the import goes in your own stylesheet.
+            </p>
             <p>Set the active theme on <code>&lt;html&gt;</code> in <code>index.html</code>:</p>
-            <pre><code>&lt;html lang="en" theme="azure-blue" themeMode="auto"&gt;</code></pre>
+            <cpa-code [code]="ex.htmlRootHtml" lang="html" />
             <p>
               <strong>Included presets:</strong>
               <code>azure-blue</code>, <code>rose-red</code>, <code>cyan-orange</code>,
@@ -73,37 +98,22 @@ pnpm add @cpangular/cp-theming-core</code></pre>
           <section id="option-b" class="page-section">
             <h2>Option B — Custom theme (Sass)</h2>
             <p>
-              Define your own palette colors using
-              <a href="https://oklch.com" target="_blank" rel="noopener">oklch</a>. Each palette
-              needs a light-mode and dark-mode color — all derivative shades (contrast, tints, focus
-              ring) are computed by the browser at runtime.
+              Define your own palette colours. Any CSS colour format is accepted:
+              <code>oklch()</code>, hex, <code>rgb()</code>, <code>hsl()</code>, a named colour.
+              <a href="https://oklch.com" target="_blank" rel="noopener">oklch</a> is recommended
+              for predictable lightness steps, because the library derives every shade (contrast,
+              tints, the focus ring) in oklch, in the browser. Give each palette a light-mode and a
+              dark-mode colour.
             </p>
-            <pre><code>// styles/theme.scss
-&#64;use '@cpangular/cp-theming-core/scss/theme' as t;
-
-// oklch(lightness chroma hue)
-// Light mode: lower lightness — readable on white
-// Dark mode:  higher lightness — readable on dark backgrounds
-$primary: t.light-dark(
-  t.palette(oklch(0.40 0.22 270)),   // deep purple
-  t.palette(oklch(0.78 0.18 270))    // soft purple
-);
-$secondary: t.light-dark(
-  t.palette(oklch(0.45 0.18 170)),   // teal
-  t.palette(oklch(0.74 0.15 170))    // light teal
-);
-
-// Assemble — unspecified palettes use built-in defaults
-$my-theme: t.theme(
-  $palettes: (
-    primary:   $primary,
-    secondary: $secondary,
-  )
-);
-
-&#64;include t.define-theme('my-brand', $my-theme, $default: true);
-&#64;include t.define-core-theme();</code></pre>
-            <pre><code>&lt;html lang="en" theme="my-brand" themeMode="auto"&gt;</code></pre>
+            <cpa-code [code]="ex.customThemeScss" lang="scss" />
+            <p>
+              A theme declares only the palettes it is given. A palette you leave out of a root
+              theme falls back to core's greyscale default, which is the same in light and dark
+              mode; in a nested theme it is inherited from the theme around it. So a root theme
+              passes at least <code>background</code>, <code>surface</code> and the palettes it
+              uses.
+            </p>
+            <cpa-code [code]="ex.htmlRootCustomHtml" lang="html" />
             <p>
               See the <a routerLink="../api">API reference</a> for the full
               <code>t.theme()</code> options — typography, density, shape, motion, and more.
@@ -192,12 +202,10 @@ pnpm add @cpangular/cp-theming-core @cpangular/cp-theming-ng-core</code></pre>
 
           <section id="load-css" class="page-section">
             <h2>Load the CSS</h2>
-            <p>Add to the <code>styles</code> array in <code>angular.json</code>:</p>
-            <pre><code>"styles": [
-  "@cpangular/cp-theming-core/dist/presets/azure-blue.css",
-  "@cpangular/cp-theming-core/dist/core.css",
-  "src/styles.scss"
-]</code></pre>
+            <p>
+              Load the core stylesheet, then a preset, at the top of <code>src/styles.scss</code>:
+            </p>
+            <cpa-code [code]="ex.presetScss" lang="scss" />
           </section>
 
           <section id="bootstrap" class="page-section">
@@ -219,8 +227,8 @@ export const appConfig: ApplicationConfig = &#123;
     provideTheme(),
   ],
 &#125;;</code></pre>
-            <pre><code>&lt;!-- index.html --&gt;
-&lt;html lang="en" theme="azure-blue" themeMode="auto"&gt;</code></pre>
+            <p>In <code>index.html</code>:</p>
+            <cpa-code [code]="ex.htmlRootHtml" lang="html" />
             <p><code>provideTheme()</code> accepts an optional config object:</p>
             <pre><code>import &#123; ThemeStorage &#125; from '@cpangular/cp-theming-core';
 
@@ -360,20 +368,13 @@ pnpm add @cpangular/cp-theming-core @cpangular/cp-theming-ng-core          @cpan
 
           <section id="load-css" class="page-section">
             <h2>Load the CSS</h2>
-            <p>Add to the <code>styles</code> array in <code>angular.json</code>:</p>
-            <pre><code>"styles": [
-  "@cpangular/cp-theming-core/dist/presets/azure-blue.css",
-  "@cpangular/cp-theming-core/dist/core.css",
-  "@cpangular/cp-theming-ng-material/dist/material-core.css",
-  "@cpangular/cp-theming-ng-material/dist/material-overrides.css",
-  "src/styles.scss"
-]</code></pre>
-            <p>Or include everything via SCSS instead:</p>
-            <pre><code>&#64;use '@cpangular/cp-theming-ng-material/scss/material' as m;
-
-&#64;include m.define-ng-material-core-theme();
-&#64;include m.apply-material-overrides();
-&#64;include m.apply-material-density-scopes();</code></pre>
+            <p>
+              Load core, then a preset, then the adapter, at the top of
+              <code>src/styles.scss</code>. The order matters: the adapter comes last.
+            </p>
+            <cpa-code [code]="ex.presetMaterialScss" lang="scss" />
+            <p>Or build everything from the Sass API instead:</p>
+            <cpa-code [code]="ex.materialSassScss" lang="scss" />
           </section>
 
           <section id="bootstrap" class="page-section">
@@ -395,8 +396,8 @@ export const appConfig: ApplicationConfig = &#123;
 
           <section id="html-attrs" class="page-section">
             <h2>Set HTML attributes</h2>
-            <pre><code>&lt;!-- index.html --&gt;
-&lt;html lang="en" theme="azure-blue" themeMode="auto"&gt;</code></pre>
+            <p>In <code>index.html</code>:</p>
+            <cpa-code [code]="ex.htmlRootHtml" lang="html" />
             <p>
               <code>theme</code> selects the active palette. <code>themeMode</code> accepts
               <code>light</code>, <code>dark</code>, or <code>auto</code> (follows OS preference).
@@ -421,10 +422,7 @@ export const appConfig: ApplicationConfig = &#123;
               All Angular Material M3 components inherit your theme variables automatically — no
               extra per-component setup needed.
             </p>
-            <pre><code>&lt;button mat-flat-button&gt;Themed button&lt;/button&gt;
-&lt;mat-form-field&gt;
-  &lt;input matInput placeholder="Themed input" /&gt;
-&lt;/mat-form-field&gt;</code></pre>
+            <cpa-code [code]="ex.materialComponentsDisplayHtml" lang="html" />
             <p>Switch themes at runtime via <code>ThemeService</code>:</p>
             <pre><code>import &#123; inject &#125; from '@angular/core';
 import &#123; ThemeService &#125; from '@cpangular/cp-theming-ng-core';
@@ -435,10 +433,7 @@ readonly themeService = inject(ThemeService);
 this.themeService.setTheme('rose-red');
 this.themeService.setMode(ThemeMode.DARK);</code></pre>
             <p>Apply density scopes with the directive:</p>
-            <pre><code>&lt;!-- Reduce density by 2 steps in this form --&gt;
-&lt;section [themeDensityLower]="2"&gt;
-  &lt;mat-form-field&gt;...&lt;/mat-form-field&gt;
-&lt;/section&gt;</code></pre>
+            <cpa-code [code]="ex.densityDirectiveDisplayHtml" lang="html" />
             <p>
               See the <a routerLink="../showcase">Showcase</a> for live demos of all component
               states across themes and densities.
@@ -489,6 +484,17 @@ this.themeService.setMode(ThemeMode.DARK);</code></pre>
   ],
 })
 export class GettingStartedPageComponent {
+  protected readonly ex = {
+    presetCss,
+    presetScss,
+    presetMaterialScss,
+    materialSassScss,
+    customThemeScss,
+    htmlRootHtml,
+    htmlRootCustomHtml,
+    materialComponentsDisplayHtml,
+    densityDirectiveDisplayHtml,
+  };
   private readonly _toc = inject(TocService);
   private readonly _parentParams = toSignal(inject(ActivatedRoute).parent!.params);
   /** The inline head script, shown from the library's own export so it cannot go stale. */

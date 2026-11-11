@@ -1,5 +1,9 @@
 import { Component, inject, effect, signal } from '@angular/core';
 import { TocService } from '../../shell/toc.service';
+import { CodeComponent } from '../../shared/code.component';
+import palettesScss from '../../../examples/palette/palettes.scss' with { loader: 'text' };
+import rolesScss from '../../../examples/palette/roles.scss' with { loader: 'text' };
+import derivedOutputCss from '../../../examples/palette/derived.output.css' with { loader: 'text' };
 
 const TOC = [
   { label: 'Overview', anchor: 'overview' },
@@ -16,6 +20,7 @@ const TOC = [
 @Component({
   selector: 'cpa-palette-page',
   standalone: true,
+  imports: [CodeComponent],
   template: `
     <article class="doc-page">
       <header class="page-header">
@@ -25,10 +30,15 @@ const TOC = [
 
       <section id="overview" class="page-section">
         <p class="intro">
-          A palette is a named color identity defined as an <code>oklch</code> color. From a single
-          base color, the browser derives all variant roles at runtime — dark, light, contrast, bg,
-          stroke, tints, and the focus ring — using CSS relative color syntax. Nothing is
-          pre-computed at Sass build time.
+          A palette is a named color identity defined by one base color. From it the browser derives
+          all variant roles at runtime — dark, light, contrast, bg, stroke, tints, and the focus
+          ring — using CSS relative color syntax. Nothing is pre-computed at Sass build time.
+        </p>
+        <p>
+          The base color can be written in any CSS color format: <code>oklch()</code>, hex,
+          <code>rgb()</code>, <code>hsl()</code>, a named color. <code>oklch</code> is recommended
+          for predictable lightness steps: every variant is derived in oklch, so the same step looks
+          the same on every hue.
         </p>
         <p>
           Palettes are defined inside <code>t.theme($palettes: (...))</code>. Core palette names —
@@ -37,45 +47,20 @@ const TOC = [
           are pre-registered. Any additional names in your <code>$palettes</code> map are registered
           on demand.
         </p>
-        <pre><code>$palettes: (
-  // same color in both modes
-  primary: t.palette(oklch(0.55 0.18 240)),
-
-  // separate light/dark values
-  primary: t.light-dark(
-    t.palette(oklch(0.55 0.18 240)),   // light mode
-    t.palette(oklch(0.72 0.16 240)),   // dark mode
-  ),
-
-  // auto-derived from the theme's &#36;brand color
-  primary:    t.palette-from-brand(),
-  background: t.background-from-brand(),
-  surface:    t.surface-from-brand(),
-)</code></pre>
+        <cpa-code [code]="ex.palettesScss" lang="scss" />
       </section>
 
       <section id="runtime-derivatives" class="page-section">
         <h2>Runtime derivatives</h2>
         <p>
-          All variant values are computed by the browser using CSS relative color syntax. The output
-          CSS contains <code>oklch(from var(--color--primary) ...)</code> expressions — not
-          pre-computed hex values.
+          All variant values are computed by the browser using CSS relative color syntax. A theme
+          rule holds only the colors its author passed: for each palette the light and the dark
+          color, and the token that joins them with <code>light-dark()</code>. Every derivation is
+          declared once, in <code>core.css</code>, as an
+          <code>oklch(from var(--color--primary) …)</code> expression that the browser evaluates on
+          the element that uses it. These lines are taken from the compiled CSS:
         </p>
-        <pre><code>/* Simplified output CSS */
-[theme="azure-blue"] &#123;
-  --color--primary: oklch(0.44 0.22 253);
-
-  /* Derived by the browser at runtime */
-  --color--primary--dark:     oklch(from var(--color--primary) calc(l - 0.12) c h);
-  --color--primary--light:    oklch(from var(--color--primary) calc(l + 0.12) c h);
-  /* Black or white text. S is 1 (white) when the colour's relative luminance
-     is below 0.179, else 0 (black):
-     S = clamp(0, (0.179 - (0.2126*R + 0.7152*G + 0.0722*B)) * 1e6, 1)
-     with R, G, B the linear-sRGB channels, each clamped to 0–1 */
-  --color--primary--contrast: oklch(from color(from var(--color--primary) srgb-linear S S S) l 0 0 / 1);
-  --color--primary--bg:       oklch(from var(--color--primary) calc(l * 0.22 + 0.78) calc(c * 0.18) h);
-  --color--primary--focus:    oklch(from var(--color--primary) clamp(0.35, l, 0.65) c calc(h + 40));
-&#125;</code></pre>
+        <cpa-code [code]="ex.derivedOutputCss" lang="css" />
         <p>
           The full derivative set for each role (<code>color</code>, <code>bg</code>,
           <code>stroke</code>) includes seven absolute steps: <code>--darkest</code>,
@@ -146,7 +131,7 @@ const TOC = [
         <div id="palette-fn" class="api-symbol">
           <h3 class="api-symbol-name">palette</h3>
           <p class="api-symbol-desc">
-            Define a named palette from a base <code>oklch</code> color. All derivative roles —
+            Define a named palette from a base color in any CSS color format. All derivative roles —
             <code>--dark</code>, <code>--light</code>, <code>--contrast</code>, <code>--bg</code>,
             <code>--tint-N</code>, <code>--focus</code> — are computed by the browser at runtime via
             CSS relative color syntax. Nothing is pre-computed at Sass build time.
@@ -169,12 +154,11 @@ const TOC = [
               <h5 class="api-params-heading">Parameters</h5>
               <div class="api-param-row">
                 <div>
-                  <span class="api-param-name">$base</span
-                  ><span class="api-param-type">oklch color</span>
+                  <span class="api-param-name">$base</span><span class="api-param-type">color</span>
                 </div>
                 <div class="api-param-desc">
-                  Base color in <code>oklch(l c h)</code> format. All roles are derived from this
-                  value. Required.
+                  Base color, in any CSS color format (<code>oklch(l c h)</code> recommended). All
+                  roles are derived from this value. Required.
                 </div>
               </div>
               <div class="api-param-row">
@@ -219,14 +203,7 @@ const TOC = [
               </div>
             </div>
           </div>
-          <pre><code>// Override individual roles
-primary: t.palette(
-  $base:   oklch(0.55 0.18 240),
-  $color:  oklch(0.50 0.20 240),   // identity color (defaults to $base)
-  $bg:     oklch(0.88 0.06 240),   // container/bg role
-  $stroke: oklch(0.45 0.16 240),   // border role
-  $focus:  oklch(0.40 0.22 240),   // focus ring
-),</code></pre>
+          <cpa-code [code]="ex.rolesScss" lang="scss" />
         </div>
 
         <div id="palette-from-brand" class="api-symbol">
@@ -479,6 +456,7 @@ primary: t.palette(
   ],
 })
 export class PalettePageComponent {
+  protected readonly ex = { palettesScss, rolesScss, derivedOutputCss };
   readonly paletteOptions = ['primary', 'secondary', 'error', 'warn', 'caution', 'pass'];
   readonly selectedPalette = signal('primary');
 

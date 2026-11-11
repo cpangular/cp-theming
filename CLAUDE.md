@@ -40,6 +40,14 @@ This is a CSS-variable-based theming system. Key facts:
   check compares with the export. Browser check: `node demos/docs/test/startup.ts` (needs
   `npx ng build docs`). The docs build keeps critical-CSS inlining off: it drops the theme rules
   from the first frame.
+- Docs examples (Phase 7 resumed): every Sass, CSS and attribute sample the docs show is a file
+  in `demos/docs/src/examples/{page}/`, imported as text (`with { loader: 'text' }`) and shown by
+  `cpa-code` / `cpa-theme-example` (which renders an attribute example from the same `.html`).
+  `demos/docs/test/examples.test.ts` compiles every `.scss` through the packages' `exports` with
+  zero warnings and runs the undefined-variable check on core + a preset + the example; a
+  fragment that cannot be checked is named `*.display.*`. Never write such a sample in a page
+  template (a check fails). The examples are in `.prettierignore`: their layout is part of the
+  sample. Contrast report over the built showcase: `node demos/docs/test/render.ts`.
 - A box-shadow token cannot be wrapped in `light-dark()` (colours only): `--elevation-N--shadow`
   is `<geometry> light-dark(<colour>, <colour>)`; a harness check fails a list inside `light-dark()`.
 - Focus ring color is **per-palette**, auto-derived via CSS relative color.

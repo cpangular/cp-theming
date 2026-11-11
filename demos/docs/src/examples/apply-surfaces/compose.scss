@@ -1,0 +1,13 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+.chip-soft {
+  @include t.apply-palette("primary");
+  @include t.bg();
+  @include t.outlined();
+}
+
+.chip-filled {
+  @include t.apply-palette("primary");
+  @include t.filled();
+  @include t.outlined();
+}

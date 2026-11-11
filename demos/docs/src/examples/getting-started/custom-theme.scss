@@ -1,0 +1,36 @@
+// src/styles.scss
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+@use "@cpangular/cp-theming-core/scss/presets/palettes" as p;
+
+// Any CSS colour works: oklch(), hex, rgb(), hsl(), a named colour.
+// oklch(lightness chroma hue) is recommended, because the library derives
+// every shade in oklch and equal lightness steps then look equal.
+//   light mode: a lower lightness, readable on a near-white page
+//   dark mode:  a higher lightness, readable on a near-black page
+$primary: t.light-dark(
+  t.palette(oklch(0.40 0.22 270)),   // deep purple
+  t.palette(oklch(0.78 0.18 270))    // soft purple
+);
+$secondary: t.light-dark(
+  t.palette(#00796b),                // teal, written as hex
+  t.palette(hsl(174 42% 65%))        // light teal, written as hsl()
+);
+
+// A theme declares only the palettes it is given. The neutral and status
+// palettes below are the ones the presets use; pass your own the same way.
+$my-theme: t.theme(
+  $palettes: (
+    background: p.$default-background,
+    surface:    p.$default-surface,
+    primary:    $primary,
+    secondary:  $secondary,
+    error:      p.$default-error,
+    warn:       p.$default-warn,
+    caution:    p.$default-caution,
+    pass:       p.$default-pass,
+  )
+);
+
+// Core first, then every theme.
+@include t.define-core-theme();
+@include t.define-theme("my-brand", $my-theme, $default: true);

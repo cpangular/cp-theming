@@ -99,7 +99,8 @@
     "test": {
       "dependencies": [
         "test.core",
-        "test.material"
+        "test.material",
+        "test.docs"
       ]
     },
     "test.core": {
@@ -107,6 +108,9 @@
     },
     "test.material": {
       "command": "pnpm --filter @cpangular/cp-theming-ng-material test"
+    },
+    "test.docs": {
+      "command": "pnpm --filter docs test"
     }
   },
   "devDependencies": {

@@ -18,19 +18,16 @@
 //      paint the HTML's own theme, which proves step 3 passes because of the snippet.
 //
 // Screenshots go to dist/docs-startup/{browser}-{step}.png.
-import { createServer, type Server } from 'node:http';
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { chromium, firefox, webkit, type BrowserType, type Page } from 'playwright';
+import { BASE, blockFonts, repo, requireBuild, serve, siteDir } from './lib/site.ts';
 
 // A screenshot waits for document.fonts, which WebKit never settles for a load
 // that was abandoned. Web fonts are blocked here anyway (see blockFonts).
 process.env['PW_TEST_SCREENSHOT_NO_FONTS_READY'] = '1';
 
-const repo = path.resolve(import.meta.dirname, '../../..');
-const siteDir = path.join(repo, 'dist/docs/browser');
 const outDir = path.join(repo, 'dist/docs-startup');
-const BASE = '/cp-theming/';
 const SAVED = { theme: 'rose-red', mode: 'dark' };
 // The storage keys as literals: this file runs under Node's type stripping, which cannot
 // import theme-core's src. persistence.spec.ts pins the package's exports to the same strings.
@@ -39,38 +36,6 @@ const KEYS = {
   theme: 'cp-theming--theme',
   mode: 'cp-theming--mode',
 };
-
-const TYPES: Record<string, string> = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-};
-
-function serve(): Promise<{ server: Server; origin: string }> {
-  const server = createServer((req, res) => {
-    const url = new URL(req.url ?? '/', 'http://localhost');
-    const rel = url.pathname.startsWith(BASE) ? url.pathname.slice(BASE.length) : '';
-    let file = path.join(siteDir, rel);
-    if (!file.startsWith(siteDir) || !existsSync(file) || !path.extname(file)) {
-      file = path.join(siteDir, 'index.html'); // SPA fallback
-    }
-    res.writeHead(200, {
-      'content-type': TYPES[path.extname(file)] ?? 'application/octet-stream',
-      'cache-control': 'no-store',
-    });
-    res.end(readFileSync(file));
-  });
-  return new Promise((resolve) => {
-    server.listen(0, '127.0.0.1', () => {
-      const address = server.address();
-      if (address === null || typeof address === 'string') throw new Error('no port');
-      resolve({ server, origin: `http://127.0.0.1:${address.port}` });
-    });
-  });
-}
 
 interface Painted {
   theme: string | null;
@@ -181,11 +146,6 @@ async function heldReload(
 const appStarted = (page: Page) =>
   page.evaluate(() => (document.querySelector('cpa-root')?.childElementCount ?? 0) > 0);
 
-// Web fonts are not part of the check and need the network; colours do not depend on them.
-async function blockFonts(page: Page): Promise<void> {
-  await page.route(/fonts\.(googleapis|gstatic)\.com/, (route) => route.abort());
-}
-
 const ENGINES: Record<string, BrowserType> = { chromium, firefox, webkit };
 
 async function run(name: string, origin: string): Promise<string[]> {
@@ -270,10 +230,7 @@ function fmt(p: Painted): string {
   return `theme=${p.theme} mode=${p.mode} scheme=${p.colorScheme} bg=${p.background} text=${p.text} primary=${p.primary} appStarted=${p.appStarted} sheets=${p.sheets}`;
 }
 
-if (!existsSync(path.join(siteDir, 'index.html'))) {
-  console.error(`No build at ${siteDir}. Run: pnpm build && npx ng build docs`);
-  process.exit(2);
-}
+requireBuild();
 mkdirSync(outDir, { recursive: true });
 const wanted = process.argv.slice(2).filter((a) => a in ENGINES);
 const { server, origin } = await serve();

@@ -1,6 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { ThemeExampleComponent } from '../../shared/theme-example.component';
 import { TocService } from '../../shell/toc.service';
+import ringHtml from '../../../examples/focus/ring.html' with { loader: 'text' };
+import ringScss from '../../../examples/focus/ring.scss' with { loader: 'text' };
 
 const TOC = [
   { label: 'Overview', anchor: 'overview' },
@@ -25,21 +27,15 @@ const TOC = [
           Focus configures the global focus ring appearance — width, offset, and border style. The
           ring <em>color</em> is intentionally per-palette, derived as
           <code>--color--name--focus</code>. A same-hue focus ring on a same-hue surface is
-          invisible; the per-palette derivation ensures visibility by default (hue-shifted by ~40°),
-          while still allowing explicit override via <code>t.palette($focus: ...)</code>.
+          invisible; the per-palette derivation ensures visibility by default (lightness inverted,
+          hue shifted by 60°), while still allowing explicit override via
+          <code>t.palette($focus: ...)</code>.
         </p>
         <cpa-theme-example
           title="Per-palette focus ring"
-          [attrsHtml]="focusAttrsHtml"
-          [scssScss]="focusScssScss"
-        >
-          <div demo class="demo-row">
-            <span palette="primary" bg shape="full" class="focus-demo">primary</span>
-            <span palette="secondary" bg shape="full" class="focus-demo">secondary</span>
-            <span palette="error" bg shape="full" class="focus-demo">error</span>
-            <span palette="pass" bg shape="full" class="focus-demo">pass</span>
-          </div>
-        </cpa-theme-example>
+          [attrsHtml]="ex.ringHtml"
+          [scssScss]="ex.ringScss"
+        />
       </section>
 
       <section id="api" class="page-section">
@@ -59,7 +55,7 @@ const TOC = [
             <span class="api-signature-row"
               ><span class="api-sig-kw">t.</span><span class="api-sig-name">focus</span
               ><span class="api-sig-punct">(</span><span class="api-sig-param">$width</span
-              ><span class="api-sig-punct">: </span><span class="api-sig-default">2px</span
+              ><span class="api-sig-punct">: </span><span class="api-sig-default">3px</span
               ><span class="api-sig-punct">, </span><span class="api-sig-param">$offset</span
               ><span class="api-sig-punct">: </span><span class="api-sig-default">2px</span
               ><span class="api-sig-punct">, </span><span class="api-sig-param">$style</span
@@ -72,7 +68,7 @@ const TOC = [
                 <div>
                   <span class="api-param-name">$width</span
                   ><span class="api-param-type">length?</span
-                  ><span class="api-param-default">default 2px</span>
+                  ><span class="api-param-default">default 3px</span>
                 </div>
                 <div class="api-param-desc">
                   Focus ring border width (→ <code>--focus--width</code>).
@@ -138,25 +134,11 @@ const TOC = [
   styles: [
     `
       @use 'page-shared';
-      .focus-demo {
-        outline: 3px solid var(--palette-color--focus);
-        outline-offset: 3px;
-      }
     `,
   ],
 })
 export class FocusPageComponent {
-  readonly focusAttrsHtml = `<!-- the ring uses each palette's auto-derived, hue-shifted focus color -->
-<span palette="primary" bg shape="full">primary</span>
-<span palette="secondary" bg shape="full">secondary</span>
-<span palette="error" bg shape="full">error</span>
-<span palette="pass" bg shape="full">pass</span>`;
-
-  readonly focusScssScss = `.focus-demo {
-  // --palette-color--focus resolves to the active palette's focus ring color
-  outline: 3px solid var(--palette-color--focus);
-  outline-offset: 3px;
-}`;
+  protected readonly ex = { ringHtml, ringScss };
 
   constructor() {
     inject(TocService).set(TOC);

@@ -8,7 +8,10 @@
     "start": "ng serve docs",
     "dev": "ng serve docs --configuration development",
     "build": "ng build docs --configuration production",
-    "build:dev": "ng build docs --configuration development"
+    "build:dev": "ng build docs --configuration development",
+    "test": "node --test \"test/*.test.ts\"",
+    "render": "node test/render.ts",
+    "github.actions.test": "node --test \"test/*.test.ts\""
   },
   "dependencies": {
     "@angular/animations": "^22.0.0",

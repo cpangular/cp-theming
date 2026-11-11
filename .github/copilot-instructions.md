@@ -94,6 +94,15 @@ demos/demo-brand-material/                                 — Example brand+mat
   in Chromium and Firefox since Phase 9; `--html` writes a self-contained page for Safari.
 - Startup check: `demos/docs/test/startup.ts` (Playwright, all three engines, local only), run
   after `npx ng build docs`: the saved theme and mode are painted before the bundle runs.
+- Docs examples: `demos/docs/test/examples.test.ts` (`pnpm --filter docs test`, part of
+  `pnpm test` and of CI). Every Sass, CSS and attribute sample the docs show is a file in
+  `demos/docs/src/examples/{page}/` that pages import as text. `.scss` compiles through the
+  packages' `exports` with zero warnings and passes the undefined-variable check with core + a
+  preset; `.output.css` is compiled output verbatim; `.html` uses only attributes the library's
+  CSS selects on and is what `cpa-theme-example` renders; `*.display.*` marks a fragment that
+  cannot be checked. Do not write such a sample in a page template.
+- Contrast report: `demos/docs/test/render.ts` (Playwright, Chromium by default, local only), run
+  after `npx ng build docs`: the painted contrast of every label on the showcase in light and dark.
 - Fixture themes live in `packages/theme-core/test/fixtures/` and `packages/theme-ng-material/test/fixtures/`.
 - CI: `.github/workflows/test.yml` (cpdevtools/git-flow) runs `github.actions.build` then
   `github.actions.test` in every package that defines them.

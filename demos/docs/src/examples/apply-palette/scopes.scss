@@ -1,0 +1,11 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+.primary-region {
+  // sets the text colour and the --palette-color--* variables,
+  // for this element and everything inside it
+  @include t.apply-palette("primary");
+}
+
+.secondary-region {
+  @include t.apply-palette("secondary");
+}

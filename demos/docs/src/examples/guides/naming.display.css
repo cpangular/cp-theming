@@ -1,0 +1,8 @@
+--color--primary           /* the primary palette's colour role */
+--color--primary--contrast /* black or white, whichever reads on it */
+--color--primary--dark     /* lightness − 0.12 */
+--color--primary--darker   /* lightness − 0.24 */
+--color--primary--bg       /* background role */
+--color--primary--bg--high /* background role, one step toward the text */
+--color--primary--tint-1   /* the colour at 10% opacity */
+--color--primary--focus    /* this palette's focus ring colour */

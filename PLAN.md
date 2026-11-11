@@ -249,16 +249,69 @@ $my-theme: t.theme(
 - `ng build theme-ng-material` → `dist/theme-ng-material/` (fesm2022 + types) ✅
 - Package exports: `./css/material-core`, `./css/material-overrides`, `./scss/*`
 
-### 🟡 Phase 7 — docs site + demos (resumes after Phase 11 — see PORT-PLAN.md)
+### 🟡 Phase 7 — docs site + demos (docs examples done; the four demos pending)
 
-**docs** (`demos/docs`) — Angular 22 + Material 22 documentation / showcase app:
-- Builds and deploys to GitHub Pages at `/cp-theming/` via `.github/workflows/pages.yml`
-- Five pages per package: Overview, Getting Started, API Reference, Guides, Showcase
-- Showcase page: 4-column theme comparison grid + 3-column density demo (live AM22 components)
-- Theme switching (via `ThemeService.setTheme`) and mode toggle (light/dark) both working
-- Dev server: `ng serve docs --host 0.0.0.0 --port 4200`
+**docs** (`demos/docs`) — Angular 22 + Material 22 documentation / showcase app. Dev server:
+`ng serve docs --host 0.0.0.0 --port 4200`. Deploys to GitHub Pages at `/cp-theming/` through
+`.github/workflows/pages.yml` (manual trigger until the repo is public; Phase 13 replaces it).
 
-**Bugs fixed in this phase:**
+**Navigation, as the code has it** (`app.routes.ts`, `packages/packages.routes.ts`,
+`packages/packages-layout.component.ts`):
+
+- `/` — home: one card per package and a "Get started" link to `/packages/core/getting-started`.
+- Toolbar (every page): the logo (home), one link per package (`/packages/core`,
+  `/packages/ng-core`, `/packages/ng-material`), the theme selector and the light/dark toggle.
+- `/packages/:lib/…` — a sidebar on the left, the page, and an "on this page" rail on the right
+  that each page fills through `TocService`. `/packages/:lib` redirects to `categories`.
+- Sidebar for **core** (18 pages, in this order):
+  - Getting Started
+  - _SCSS API_: Palette, Theme, Weights, Typography, Density, Shape, Focus, Motion, Elevation, Overlay
+  - _Theming_: Palette Scopes (`apply-palette`), Surface Types (`apply-surfaces`), Borders
+    (`apply-borders`), Geometry (`apply-geometry`), Tones (`apply-tones`)
+  - _Reference_: CSS Variables (`variables`), TypeScript API (`typescript-api`)
+- Sidebar for **ng-core** and **ng-material** (4 pages): Overview (`categories`), Getting Started,
+  API Reference (`api`), Guides. One component per page switches its content on `:lib`.
+- Routed but in no sidebar:
+  - `categories` for core: the card index `/packages/core` lands on. Its "Apply Mixins" card goes
+    to `apply`, which redirects to `apply-palette`.
+  - `showcase`: the live Material showcase (4-column theme comparison, density scopes, relative
+    density, palette swatches). It has content for `ng-material` only and is reached from the
+    link at the end of ng-material Getting Started.
+  - `api` and `guides` for core: the older single-page reference and guide. Core Getting Started
+    links to `api`; nothing links to core `guides`.
+  - `overview`: an older per-package overview; nothing links to it.
+
+**Examples are real files** (PORT-PLAN.md, "Phase 7 (resumed)"):
+
+- Every Sass, CSS and theme-attribute sample is a file in `demos/docs/src/examples/{page}/`. Pages
+  import it as text (`import x from '…' with { loader: 'text' }`, typed by `src/examples.d.ts`) and
+  show it with `cpa-code` or `cpa-theme-example`. A page that repeats another page's sample
+  imports the same file.
+- `cpa-theme-example` renders an attribute example from the same `.html` it shows. Sass examples
+  are compiled by the harness, not injected into the page.
+- `demos/docs/test/examples.test.ts` (`pnpm --filter docs test`, part of `pnpm test` and of CI):
+  - `name.scss` compiles through the packages' `exports` with zero warnings, and core + a preset +
+    the example leaves no `var()` read undeclared;
+  - `name.css` is valid CSS; `name.output.css` is an excerpt of compiled output, every
+    declaration verbatim under the same selector;
+  - `name.html` uses only attributes and values the library's CSS selects on;
+  - `name.display.*` is display-only (a listing of variable names, an Angular template) and the
+    marker is refused on a file that would pass its check;
+  - every file names only custom properties the library declares or reads and `@cpangular/…`
+    paths the packages export; every file is imported by a page; no `<pre>` or string field of a
+    page holds a Sass, CSS or attribute sample.
+- TypeScript, shell and JSON samples stay in the page templates; nothing checks them.
+- `demos/docs/test/render.ts` (local, `pnpm --filter docs render` after `npx ng build docs`):
+  painted-contrast report over the built showcase in light and dark, measured from screenshots.
+
+**Corrections made with the move** (the prose a compile check cannot see): `define-core-theme()`
+takes no `$selector`; the "simplified output CSS" is now the compiled output itself;
+`getAvailableThemes()` reads `[theme="name"]` selectors, not an `@property` registry; the Material
+tokens are re-declared on every `[theme]` element because `var()` is substituted where a property
+is declared; stylesheets are loaded through the exported `…/css/…` paths, not `dist/…`; any CSS
+colour format is accepted and oklch is recommended.
+
+**Bugs fixed earlier in this phase:**
 - `ThemeService.setMode` / `setTheme` now update the internal signal synchronously so Angular
   zoneless change detection picks up the change in the same microtask as the button click.
   Previously the update relied solely on the async `watchMode` MutationObserver callback which

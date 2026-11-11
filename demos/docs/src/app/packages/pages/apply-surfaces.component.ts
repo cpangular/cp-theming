@@ -1,6 +1,26 @@
 import { Component, inject } from '@angular/core';
 import { ThemeExampleComponent } from '../../shared/theme-example.component';
 import { TocService } from '../../shell/toc.service';
+import bgHtml from '../../../examples/apply-surfaces/bg.html' with { loader: 'text' };
+import bgClassesHtml from '../../../examples/apply-surfaces/bg.classes.html' with {
+  loader: 'text',
+};
+import bgScss from '../../../examples/apply-surfaces/bg.scss' with { loader: 'text' };
+import filledHtml from '../../../examples/apply-surfaces/filled.html' with { loader: 'text' };
+import filledClassesHtml from '../../../examples/apply-surfaces/filled.classes.html' with {
+  loader: 'text',
+};
+import filledScss from '../../../examples/apply-surfaces/filled.scss' with { loader: 'text' };
+import outlinedHtml from '../../../examples/apply-surfaces/outlined.html' with { loader: 'text' };
+import outlinedClassesHtml from '../../../examples/apply-surfaces/outlined.classes.html' with {
+  loader: 'text',
+};
+import outlinedScss from '../../../examples/apply-surfaces/outlined.scss' with { loader: 'text' };
+import composeHtml from '../../../examples/apply-surfaces/compose.html' with { loader: 'text' };
+import composeClassesHtml from '../../../examples/apply-surfaces/compose.classes.html' with {
+  loader: 'text',
+};
+import composeScss from '../../../examples/apply-surfaces/compose.scss' with { loader: 'text' };
 
 @Component({
   selector: 'cpa-apply-surfaces-page',
@@ -37,16 +57,10 @@ import { TocService } from '../../shell/toc.service';
         </p>
         <cpa-theme-example
           title="bg surface"
-          [attrsHtml]="bgAttrsHtml"
-          [scssHtml]="bgScssHtml"
-          [scssScss]="bgScssScss"
-        >
-          <div demo class="demo-row">
-            <span palette="primary" bg>Primary</span>
-            <span palette="secondary" bg>Secondary</span>
-            <span palette="error" bg>Error</span>
-          </div>
-        </cpa-theme-example>
+          [attrsHtml]="ex.bgHtml"
+          [scssHtml]="ex.bgClassesHtml"
+          [scssScss]="ex.bgScss"
+        />
       </section>
 
       <section id="filled" class="page-section">
@@ -57,16 +71,10 @@ import { TocService } from '../../shell/toc.service';
         </p>
         <cpa-theme-example
           title="filled surface"
-          [attrsHtml]="filledAttrsHtml"
-          [scssHtml]="filledScssHtml"
-          [scssScss]="filledScssScss"
-        >
-          <div demo class="demo-row">
-            <span palette="primary" filled>Primary</span>
-            <span palette="secondary" filled>Secondary</span>
-            <span palette="error" filled>Error</span>
-          </div>
-        </cpa-theme-example>
+          [attrsHtml]="ex.filledHtml"
+          [scssHtml]="ex.filledClassesHtml"
+          [scssScss]="ex.filledScss"
+        />
       </section>
 
       <section id="outlined" class="page-section">
@@ -79,16 +87,10 @@ import { TocService } from '../../shell/toc.service';
         </p>
         <cpa-theme-example
           title="outlined surface"
-          [attrsHtml]="outlinedAttrsHtml"
-          [scssHtml]="outlinedScssHtml"
-          [scssScss]="outlinedScssScss"
-        >
-          <div demo class="demo-row">
-            <span palette="primary" outlined>Primary</span>
-            <span palette="secondary" outlined>Secondary</span>
-            <span palette="error" outlined>Error</span>
-          </div>
-        </cpa-theme-example>
+          [attrsHtml]="ex.outlinedHtml"
+          [scssHtml]="ex.outlinedClassesHtml"
+          [scssScss]="ex.outlinedScss"
+        />
       </section>
 
       <section id="composition" class="page-section">
@@ -100,15 +102,10 @@ import { TocService } from '../../shell/toc.service';
         </p>
         <cpa-theme-example
           title="composed surfaces"
-          [attrsHtml]="composeAttrsHtml"
-          [scssHtml]="composeScssHtml"
-          [scssScss]="composeScssScss"
-        >
-          <div demo class="demo-row">
-            <span palette="primary" bg outlined>Soft</span>
-            <span palette="primary" filled outlined>Filled</span>
-          </div>
-        </cpa-theme-example>
+          [attrsHtml]="ex.composeHtml"
+          [scssHtml]="ex.composeClassesHtml"
+          [scssScss]="ex.composeScss"
+        />
       </section>
 
       <section id="comparison" class="page-section">
@@ -137,103 +134,20 @@ import { TocService } from '../../shell/toc.service';
   ],
 })
 export class ApplySurfacesPageComponent {
-  readonly bgAttrsHtml = `<span palette="primary" bg>Primary</span>
-<span palette="secondary" bg>Secondary</span>
-<span palette="error" bg>Error</span>`;
-
-  readonly bgScssHtml = `<span class="chip-primary">Primary</span>
-<span class="chip-secondary">Secondary</span>
-<span class="chip-error">Error</span>`;
-
-  readonly bgScssScss = `@use '@cpangular/cp-theming-core/scss/theme' as t;
-
-.chip-primary {
-  @include t.apply-palette('primary');
-  @include t.bg();
-}
-
-.chip-secondary {
-  @include t.apply-palette('secondary');
-  @include t.bg();
-}
-
-.chip-error {
-  @include t.apply-palette('error');
-  @include t.bg();
-}`;
-
-  readonly filledAttrsHtml = `<span palette="primary" filled>Primary</span>
-<span palette="secondary" filled>Secondary</span>
-<span palette="error" filled>Error</span>`;
-
-  readonly filledScssHtml = `<span class="btn-primary">Primary</span>
-<span class="btn-secondary">Secondary</span>
-<span class="btn-error">Error</span>`;
-
-  readonly filledScssScss = `@use '@cpangular/cp-theming-core/scss/theme' as t;
-
-.btn-primary {
-  @include t.apply-palette('primary');
-  @include t.filled();
-}
-
-.btn-secondary {
-  @include t.apply-palette('secondary');
-  @include t.filled();
-}
-
-.btn-error {
-  @include t.apply-palette('error');
-  @include t.filled();
-}`;
-
-  readonly outlinedAttrsHtml = `<span palette="primary" outlined>Primary</span>
-<span palette="secondary" outlined>Secondary</span>
-<span palette="error" outlined>Error</span>`;
-
-  readonly outlinedScssHtml = `<span class="ghost-primary">Primary</span>
-<span class="ghost-secondary">Secondary</span>
-<span class="ghost-error">Error</span>`;
-
-  readonly outlinedScssScss = `@use '@cpangular/cp-theming-core/scss/theme' as t;
-
-.ghost-primary {
-  @include t.apply-palette('primary');
-  @include t.outlined();
-}
-
-.ghost-secondary {
-  @include t.apply-palette('secondary');
-  @include t.outlined();
-}
-
-.ghost-error {
-  @include t.apply-palette('error');
-  @include t.outlined();
-}`;
-
-  readonly composeAttrsHtml = `<!-- soft chip: fill + matching border -->
-<span palette="primary" bg outlined>Soft</span>
-
-<!-- solid chip: fill + crisp edge -->
-<span palette="primary" filled outlined>Filled</span>`;
-
-  readonly composeScssHtml = `<span class="chip-soft">Soft</span>
-<span class="chip-filled">Filled</span>`;
-
-  readonly composeScssScss = `@use '@cpangular/cp-theming-core/scss/theme' as t;
-
-.chip-soft {
-  @include t.apply-palette('primary');
-  @include t.bg();
-  @include t.outlined();
-}
-
-.chip-filled {
-  @include t.apply-palette('primary');
-  @include t.filled();
-  @include t.outlined();
-}`;
+  protected readonly ex = {
+    bgHtml,
+    bgClassesHtml,
+    bgScss,
+    filledHtml,
+    filledClassesHtml,
+    filledScss,
+    outlinedHtml,
+    outlinedClassesHtml,
+    outlinedScss,
+    composeHtml,
+    composeClassesHtml,
+    composeScss,
+  };
 
   constructor() {
     inject(TocService).set([

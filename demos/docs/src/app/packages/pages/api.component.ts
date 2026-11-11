@@ -2,6 +2,11 @@ import { Component, computed, inject, effect } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { TocService } from '../../shell/toc.service';
+import { CodeComponent } from '../../shared/code.component';
+import adaptorScss from '../../../examples/theme/adaptor.scss' with { loader: 'text' };
+import adaptorUsageDisplayHtml from '../../../examples/api/adaptor-usage.display.html' with {
+  loader: 'text',
+};
 
 const CORE_TOC = [
   { label: 'Mixins', anchor: 'scss-mixins-core' },
@@ -26,6 +31,7 @@ const NG_MATERIAL_TOC = [
 @Component({
   selector: 'cpa-api-page',
   standalone: true,
+  imports: [CodeComponent],
   template: `
     <article class="doc-page">
       <header class="page-header">
@@ -47,32 +53,27 @@ const NG_MATERIAL_TOC = [
             <div class="api-symbol">
               <h3 class="api-symbol-name">define-core-theme</h3>
               <p class="api-symbol-desc">
-                Emit shared <code>&#64;property</code> registrations for all palette color roles,
-                and the attribute-selector rules (<code>[theme]</code>, <code>[palette]</code>,
-                <code>[themeDensity]</code>) that activate scoped token inheritance. Call once at
-                root — never more than once per stylesheet.
+                Emit everything that does not depend on a theme, once: the
+                <code>&#64;property</code> registrations (each core palette role's light and dark
+                color, <code>--color--brand</code>, and the weight, density, space and shape
+                scalars), every default, the <code>themeMode</code> rules, every derivation, and the
+                attribute rules (<code>[palette]</code>, the surface layers,
+                <code>[elevated]</code>, <code>[themeDensity]</code>). Call it once, at the top
+                level of a stylesheet, before any theme.
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"
                   ><span class="api-sig-kw">&#64;include t.</span
                   ><span class="api-sig-name">define-core-theme</span
-                  ><span class="api-sig-punct">(</span><span class="api-sig-param">$selector</span
-                  ><span class="api-sig-punct">: </span><span class="api-sig-default">':root'</span
-                  ><span class="api-sig-punct">)</span></span
+                  ><span class="api-sig-punct">()</span></span
                 >
                 <div class="api-member-body">
-                  <h5 class="api-params-heading">Parameters</h5>
-                  <div class="api-param-row">
-                    <div>
-                      <span class="api-param-name">$selector</span
-                      ><span class="api-param-type">string</span
-                      ><span class="api-param-default">default ':root'</span>
-                    </div>
-                    <div class="api-param-desc">
-                      CSS selector to emit <code>&#64;property</code> declarations on. Override only
-                      if your app root is not <code>:root</code>.
-                    </div>
-                  </div>
+                  <p class="api-member-desc">
+                    No parameters. The registrations are top-level <code>&#64;property</code> rules
+                    and the defaults and derivations sit on <code>:where(:root)</code> and
+                    <code>:where(:root, [theme])</code>, at zero specificity, so a theme rule and
+                    your own <code>:root</code> rule both win over them.
+                  </p>
                 </div>
               </div>
             </div>
@@ -80,9 +81,10 @@ const NG_MATERIAL_TOC = [
             <div class="api-symbol">
               <h3 class="api-symbol-name">define-theme</h3>
               <p class="api-symbol-desc">
-                Emit all CSS variable declarations for a named theme scoped to
-                <code>[theme="$name"]</code>. Multiple themes can coexist — the active one is
-                selected by setting the <code>theme</code> attribute on any ancestor element.
+                Emit one rule for a named theme, scoped to <code>[theme="$name"]</code>, holding
+                only what was passed to <code>t.theme()</code>. Multiple themes can coexist — the
+                active one is selected by setting the <code>theme</code> attribute on any ancestor
+                element.
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"
@@ -124,8 +126,8 @@ const NG_MATERIAL_TOC = [
                       ><span class="api-param-default">default false</span>
                     </div>
                     <div class="api-param-desc">
-                      Also emit on <code>:root</code> so the theme applies without any
-                      <code>[theme]</code> attribute present.
+                      Also apply on <code>:where(:root)</code>, so the theme applies without any
+                      <code>theme</code> attribute and any <code>theme</code> attribute beats it.
                     </div>
                   </div>
                   <div class="api-param-row">
@@ -135,8 +137,8 @@ const NG_MATERIAL_TOC = [
                       ><span class="api-param-default">default true</span>
                     </div>
                     <div class="api-param-desc">
-                      Skip properties whose light and dark values are identical — reduces output CSS
-                      size.
+                      Accepted for compatibility. A theme rule holds only what was passed, so
+                      nothing is left to dedupe.
                     </div>
                   </div>
                   <div class="api-param-row">
@@ -1084,8 +1086,9 @@ const NG_MATERIAL_TOC = [
                 >
                 <div class="api-member-body">
                   <p class="api-member-desc">
-                    Scan loaded stylesheets and return all registered theme definitions found via
-                    <code>&#64;property</code> registry.
+                    Scan the loaded stylesheets and return one entry per theme name found in a
+                    <code>[theme="name"]</code> selector. A cross-origin stylesheet cannot be read
+                    and is skipped.
                   </p>
                 </div>
               </div>
@@ -1297,8 +1300,8 @@ const NG_MATERIAL_TOC = [
                       ><span class="prop-type">Signal&lt;ThemeDef[]&gt;</span>
                     </td>
                     <td>
-                      Themes discovered in loaded stylesheets via
-                      <code>&#64;property</code> registry scan.
+                      Theme names found in the <code>[theme="name"]</code> selectors of the loaded
+                      stylesheets.
                     </td>
                   </tr>
                 </tbody>
@@ -1586,14 +1589,9 @@ const NG_MATERIAL_TOC = [
                     No parameters. Returns a hook map for use with <code>t.define-theme()</code>.
                   </p>
                   <h5 class="api-returns-heading">Example</h5>
-                  <pre><code>&#64;include t.define-theme('my-app', $config,
-  $default: true,
-  $adaptor: mat.adaptor(),
-);
-
-// In templates — no wrappers needed. "accent" is a custom palette of $config:
-// &lt;button mat-flat-button palette="accent"&gt;Share&lt;/button&gt;
-// &lt;mat-checkbox palette="accent"&gt;Subscribed&lt;/mat-checkbox&gt;</code></pre>
+                  <cpa-code [code]="ex.adaptorScss" lang="scss" />
+                  <p class="api-member-desc">In a template:</p>
+                  <cpa-code [code]="ex.adaptorUsageDisplayHtml" lang="html" />
                 </div>
               </div>
             </div>
@@ -1622,7 +1620,8 @@ const NG_MATERIAL_TOC = [
                     >
                   </td>
                   <td>
-                    All 166 <code>--mat-sys-*</code> → <code>var(--color--*)</code> token mappings.
+                    Every <code>--mat-sys-*</code> token Angular Material reads, declared from the
+                    cp-theming variables.
                   </td>
                 </tr>
                 <tr>
@@ -1664,6 +1663,7 @@ const NG_MATERIAL_TOC = [
   ],
 })
 export class ApiPageComponent {
+  protected readonly ex = { adaptorScss, adaptorUsageDisplayHtml };
   private readonly _toc = inject(TocService);
   private readonly _parentParams = toSignal(inject(ActivatedRoute).parent!.params);
   readonly lib = computed(() => (this._parentParams()?.['lib'] as string) ?? 'core');

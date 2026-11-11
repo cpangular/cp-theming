@@ -50,16 +50,89 @@ function collect(warnings: SassWarning[]): sass.Logger {
 const baseLoadPaths = [path.join(repoRoot, 'node_modules')];
 
 /** Compiles a Sass file. `loadPaths` are added to node_modules. */
-export function compileFile(file: string, loadPaths: string[] = []): Compiled {
+export function compileFile(
+  file: string,
+  loadPaths: string[] = [],
+  importers: sass.Options<'sync'>['importers'] = [],
+): Compiled {
   const warnings: SassWarning[] = [];
   const result = sass.compile(file, {
     style: 'expanded',
     quietDeps: true,
     loadPaths: [...loadPaths, ...baseLoadPaths],
+    importers,
     logger: collect(warnings),
   });
   return { entry: file, css: result.css, warnings };
 }
+
+/** The workspace packages a consumer imports by name. */
+export const workspacePackages: Record<string, string> = {
+  '@cpangular/cp-theming-core': coreDir,
+  '@cpangular/cp-theming-ng-material': materialDir,
+};
+
+/**
+ * Resolves `@cpangular/<package>/<subpath>` the way a bundler does: through the
+ * package's `exports` only. Returns the absolute target, `null` when the
+ * subpath is not exported, `undefined` when the specifier names no workspace
+ * package. A `./scss/*` pattern returns the path without extension (Sass adds
+ * the partial underscore and the extension).
+ */
+export function resolveExport(specifier: string): string | null | undefined {
+  const name = Object.keys(workspacePackages).find(
+    (n) => specifier === n || specifier.startsWith(`${n}/`),
+  );
+  if (!name) return undefined;
+  const dir = workspacePackages[name];
+  const exportsMap: Record<string, string> =
+    JSON.parse(readFileSync(path.join(dir, 'package.json'), 'utf8')).exports ?? {};
+  const subpath = `.${specifier.slice(name.length)}`;
+  if (typeof exportsMap[subpath] === 'string') return path.join(dir, exportsMap[subpath]);
+  for (const [key, target] of Object.entries(exportsMap)) {
+    const star = key.indexOf('*');
+    if (star < 0 || typeof target !== 'string') continue;
+    const [head, tail] = [key.slice(0, star), key.slice(star + 1)];
+    if (subpath.startsWith(head) && subpath.endsWith(tail) && subpath.length > key.length - 1)
+      return path.join(
+        dir,
+        target.replace('*', subpath.slice(head.length, subpath.length - tail.length)),
+      );
+  }
+  return null;
+}
+
+/**
+ * Sass importers for what a consumer writes: `@use '@cpangular/…'` resolves
+ * through the package's `exports` and nothing else, so an example that names
+ * an unexported path fails to compile. A built `dist/x.css` target is compiled
+ * from its Sass source and loaded as CSS, so the check does not depend on a
+ * prior build; a `./scss/*` target is a Sass file.
+ */
+export const exportsImporters: NonNullable<sass.Options<'sync'>['importers']> = [
+  {
+    canonicalize(url) {
+      const target = resolveExport(url);
+      return typeof target === 'string' && target.endsWith('.css')
+        ? new URL(`cp-theming-css:${encodeURI(target)}`)
+        : null;
+    },
+    load(canonicalUrl) {
+      const target = decodeURI(canonicalUrl.pathname);
+      const source = sourceOfDist(target);
+      const contents = source ? compileFile(source).css : readFileSync(target, 'utf8');
+      return { contents, syntax: 'css' };
+    },
+  },
+  {
+    findFileUrl(url) {
+      const target = resolveExport(url);
+      if (target === undefined) return null;
+      if (target === null) throw new Error(`"${url}" is not in the package's "exports"`);
+      return pathToFileURL(target);
+    },
+  },
+];
 
 /** Compiles Sass source as if it lived at `virtualPath`, so relative @use works. */
 export function compileSource(

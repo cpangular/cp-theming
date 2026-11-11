@@ -1,0 +1,11 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+.box {
+  @include t.apply-palette("primary");
+  @include t.filled();
+  @include t.container();
+}
+
+.box-sm { @include t.shape("sm"); }
+.box-md { @include t.shape("md"); }
+.box-lg { @include t.shape("lg"); }

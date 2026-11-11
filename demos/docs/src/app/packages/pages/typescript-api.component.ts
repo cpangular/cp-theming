@@ -75,8 +75,9 @@ const TOC = [
             >
             <div class="api-member-body">
               <p class="api-member-desc">
-                Scan loaded stylesheets and return all registered theme definitions found via
-                <code>&#64;property</code> registry.
+                Scan the loaded stylesheets and return one entry per theme name found in a
+                <code>[theme="name"]</code> selector. A cross-origin stylesheet cannot be read and
+                is skipped.
               </p>
             </div>
           </div>

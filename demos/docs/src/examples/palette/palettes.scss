@@ -1,0 +1,26 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+$my-theme: t.theme(
+  // the seed the *-from-brand() helpers read, emitted as --color--brand
+  $brand: #0b57d0,
+  $palettes: (
+    // derived from $brand in the browser
+    background: t.background-from-brand(),
+    surface:    t.surface-from-brand(),
+    primary:    t.palette-from-brand(),
+
+    // a separate colour for light and for dark mode
+    secondary: t.light-dark(
+      t.palette(oklch(0.55 0.18 240)),   // light mode
+      t.palette(oklch(0.72 0.16 240))    // dark mode
+    ),
+
+    // the same colour in both modes, in any CSS colour format
+    error: t.palette(rgb(186 26 26)),
+
+    // any other name is a custom palette, registered on demand
+    accent: t.palette(hsl(150 60% 35%)),
+  )
+);
+
+@include t.define-theme("my-theme", $my-theme);

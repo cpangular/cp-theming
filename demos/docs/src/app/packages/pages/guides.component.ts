@@ -2,6 +2,35 @@ import { Component, computed, inject, effect } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { TocService } from '../../shell/toc.service';
+import { CodeComponent } from '../../shared/code.component';
+import { ThemeExampleComponent } from '../../shared/theme-example.component';
+import namingDisplayCss from '../../../examples/guides/naming.display.css' with { loader: 'text' };
+import derivedOutputCss from '../../../examples/palette/derived.output.css' with { loader: 'text' };
+import palettesScss from '../../../examples/palette/palettes.scss' with { loader: 'text' };
+import rolesScss from '../../../examples/palette/roles.scss' with { loader: 'text' };
+import lightDarkScss from '../../../examples/theme/light-dark.scss' with { loader: 'text' };
+import modeHtml from '../../../examples/theme/mode.html' with { loader: 'text' };
+import nestedHtml from '../../../examples/theme/nested.html' with { loader: 'text' };
+import paletteScopesHtml from '../../../examples/theme/palette-scopes.html' with { loader: 'text' };
+import containerVarsDisplayCss from '../../../examples/guides/container-vars.display.css' with {
+  loader: 'text',
+};
+import tonesHtml from '../../../examples/apply-tones/relative.html' with { loader: 'text' };
+import elevationHtml from '../../../examples/elevation/levels.html' with { loader: 'text' };
+import elevationScss from '../../../examples/elevation/shadow.scss' with { loader: 'text' };
+import densityScss from '../../../examples/guides/density.scss' with { loader: 'text' };
+import densityHtml from '../../../examples/density/scopes.html' with { loader: 'text' };
+import spaceTokensDisplayCss from '../../../examples/guides/space-tokens.display.css' with {
+  loader: 'text',
+};
+import shapeScss from '../../../examples/guides/shape.scss' with { loader: 'text' };
+import shapeVarsDisplayCss from '../../../examples/guides/shape-vars.display.css' with {
+  loader: 'text',
+};
+import adaptorScss from '../../../examples/theme/adaptor.scss' with { loader: 'text' };
+import ngScopedThemeDisplayHtml from '../../../examples/guides/ng-scoped-theme.display.html' with {
+  loader: 'text',
+};
 
 const CORE_TOC = [
   { label: 'CSS variable naming', anchor: 'css-naming' },
@@ -32,6 +61,7 @@ const NG_MATERIAL_TOC = [
 @Component({
   selector: 'cpa-guides-page',
   standalone: true,
+  imports: [CodeComponent, ThemeExampleComponent],
   template: `
     <article class="doc-page">
       <header class="page-header">
@@ -47,64 +77,30 @@ const NG_MATERIAL_TOC = [
               <code>-</code> is a word separator within a segment. The <code>color</code> role is
               the palette's primary identity — it becomes the prefix with no trailing segment.
             </p>
-            <pre><code class="language-css">--color--primary           /* primary color role */
---color--primary--contrast /* black or white (highest contrast) */
---color--primary--dark     /* lightness − 0.12 */
---color--primary--darker   /* lightness − 0.24 */
---color--primary--bg       /* background role */
---color--primary--bg--high /* lighter/darker based on mode */
---color--primary--tint-1   /* 10% opacity tint */
---color--primary--focus    /* per-palette focus ring color */</code></pre>
+            <cpa-code [code]="ex.namingDisplayCss" lang="css" />
           </section>
 
           <section id="runtime-derivatives" class="page-section">
             <h2>Runtime derivatives</h2>
             <p>
-              All variant values are computed by the browser using CSS relative color syntax. There
-              are no pre-computed values — the browser derives them at paint time.
+              All variant values are computed by the browser using CSS relative color syntax. A
+              theme rule holds only the colors its author passed; every derivation is declared once,
+              in <code>core.css</code>, and evaluated on the element that uses it. These lines are
+              taken from the compiled CSS:
             </p>
-            <pre><code>/* What the output CSS looks like (simplified) */
-[theme="azure-blue"] &#123;
-  --color--primary: oklch(0.44 0.22 253);
-
-  /* Derived by browser at runtime — NOT pre-computed */
-  --color--primary--dark:     oklch(from var(--color--primary) calc(l - 0.12) c h);
-  --color--primary--light:    oklch(from var(--color--primary) calc(l + 0.12) c h);
-  /* Black or white text: S is 1 (white) when the relative luminance of
-     --color--primary is below 0.179, else 0 (black) */
-  --color--primary--contrast: oklch(from color(from var(--color--primary) srgb-linear S S S) l 0 0 / 1);
-&#125;</code></pre>
+            <cpa-code [code]="ex.derivedOutputCss" lang="css" />
           </section>
 
           <section id="palettes" class="page-section">
             <h2>Palettes</h2>
             <p>
-              Each palette is a named color identity defined as an <code>oklch</code> color. You can
+              Each palette is a named color identity defined by one base color, in any CSS color
+              format (<code>oklch</code> is recommended for predictable lightness steps). You can
               provide separate values for light and dark mode with <code>t.light-dark()</code>.
             </p>
-            <pre><code>$palettes: (
-  // same color for both modes
-  primary: t.palette(oklch(0.55 0.18 240)),
-
-  // different light/dark values
-  primary: t.light-dark(
-    t.palette(oklch(0.55 0.18 240)),   // light mode
-    t.palette(oklch(0.72 0.16 240)),   // dark mode
-  ),
-
-  // auto-derived from $brand color
-  primary:    t.palette-from-brand(),
-  background: t.background-from-brand(),
-  surface:    t.surface-from-brand(),
-)</code></pre>
+            <cpa-code [code]="ex.palettesScss" lang="scss" />
             <p>Override individual roles within a palette:</p>
-            <pre><code>primary: t.palette(
-  $base:   oklch(0.55 0.18 240),
-  $color:  oklch(0.50 0.20 240),   // identity color (defaults to $base)
-  $bg:     oklch(0.88 0.06 240),   // container/bg role
-  $stroke: oklch(0.45 0.16 240),   // border role
-  $focus:  oklch(0.40 0.22 240),   // focus ring
-),</code></pre>
+            <cpa-code [code]="ex.rolesScss" lang="scss" />
             <p>
               Core palette names (<code>primary</code>, <code>secondary</code>, <code>error</code>,
               <code>warn</code>, <code>caution</code>, <code>pass</code>, <code>surface</code>,
@@ -117,30 +113,18 @@ const NG_MATERIAL_TOC = [
             <h2>Light &amp; dark mode</h2>
             <p>
               Wrap any sub-config value in <code>t.light-dark($light, $dark)</code> to provide
-              separate light and dark expressions. The active <code>color-scheme</code> on the root
-              element controls which resolves.
+              separate light and dark values. Each resolves against the mode of the element that
+              uses it.
             </p>
-            <pre><code>$my-theme: t.theme(
-  $palettes: (
-    primary: t.light-dark(
-      t.palette(oklch(0.55 0.18 240)),   // light
-      t.palette(oklch(0.72 0.16 240)),   // dark
-    ),
-  ),
-  $weights: t.light-dark(
-    t.weights($text-blend: 82%),
-    t.weights($text-blend: 78%),
-  ),
-);</code></pre>
-            <p>Control mode from HTML or TypeScript:</p>
-            <pre><code>&lt;!-- HTML --&gt;
-&lt;html themeMode="auto"&gt;    &lt;!-- follows OS preference --&gt;
-&lt;html themeMode="light"&gt;
-&lt;html themeMode="dark"&gt;
-&lt;div  themeMode="invert"&gt;  &lt;!-- flip mode for this subtree --&gt;
+            <cpa-code [code]="ex.lightDarkScss" lang="scss" />
+            <p>
+              The <code>themeMode</code> attribute chooses the mode, on any element, with or without
+              a <code>theme</code> attribute:
+            </p>
+            <cpa-theme-example title="themeMode on any element" [attrsHtml]="ex.modeHtml" />
+            <p>Or from TypeScript, for the page as a whole:</p>
+            <pre><code class="language-typescript">import &#123; setMode, ThemeMode &#125; from '@cpangular/cp-theming-core';
 
-// TypeScript
-import &#123; setMode, ThemeMode &#125; from '@cpangular/cp-theming-core';
 setMode(ThemeMode.DARK);
 setMode(ThemeMode.AUTO);</code></pre>
           </section>
@@ -148,16 +132,11 @@ setMode(ThemeMode.AUTO);</code></pre>
           <section id="nested-scopes" class="page-section">
             <h2>Nested theme scopes</h2>
             <p>
-              Place the <code>theme</code> attribute on any element to apply a different palette to
-              that subtree. CSS custom properties inherit, so all descendants pick up the new
-              values.
+              Place the <code>theme</code> attribute on any element to apply a different theme to
+              that subtree. A nested theme declares only what its author passed and inherits
+              everything else from the theme around it.
             </p>
-            <pre><code>&lt;html theme="azure-blue"&gt;
-  &lt;!-- azure-blue variables active here --&gt;
-  &lt;div theme="rose-red"&gt;
-    &lt;!-- rose-red variables active here --&gt;
-  &lt;/div&gt;
-&lt;/html&gt;</code></pre>
+            <cpa-theme-example title="A theme inside a theme" [attrsHtml]="ex.nestedHtml" />
           </section>
 
           <section id="surfaces" class="page-section">
@@ -167,53 +146,31 @@ setMode(ThemeMode.AUTO);</code></pre>
               <code>--palette-color--*</code> aliases at the named palette's vars and setting the
               identity text color. Stack atomic surface layers on top:
             </p>
-            <pre><code>&lt;!-- subtle tonal fill, keeps identity text (chip/pill) --&gt;
-&lt;section palette="primary" bg&gt;...&lt;/section&gt;
-
-&lt;!-- solid fill from palette identity color --&gt;
-&lt;div palette="secondary" filled&gt;...&lt;/div&gt;
-
-&lt;!-- inset border from palette stroke role --&gt;
-&lt;div palette="primary" outlined shape="sm"&gt;...&lt;/div&gt;
-
-&lt;!-- corners + padding --&gt;
-&lt;div palette="primary" bg shape="md" container&gt;...&lt;/div&gt;</code></pre>
-            <p>Fill layers (<code>bg</code>, <code>filled</code>) set these vars on the element:</p>
-            <pre><code class="language-css">--container--text            /* blended body text */
---container--text-emphasis   /* full-contrast text */
---container--text-deemphasis /* reduced emphasis text */
---container--stroke          /* border color */
---container--padding         /* density-reactive padding */
---container--radius          /* corner radius */</code></pre>
+            <cpa-theme-example
+              title="Palette scope and surface layers"
+              [attrsHtml]="ex.paletteScopesHtml"
+            />
+            <p>
+              <code>filled</code> sets these variables on the element, for content that needs more
+              than one text emphasis; a palette scope alone sets <code>--container--stroke</code>:
+            </p>
+            <cpa-code [code]="ex.containerVarsDisplayCss" lang="css" />
           </section>
 
           <section id="tones" class="page-section">
             <h2>Tone modifiers</h2>
             <p>Shift the active palette's lightness within a scope:</p>
-            <pre><code>&lt;!-- mode-relative: darkens in light mode, lightens in dark --&gt;
-&lt;div palette="primary" tone="high"&gt;...&lt;/div&gt;
-&lt;div palette="primary" tone="low"&gt;...&lt;/div&gt;
-
-&lt;!-- larger mode-relative shifts --&gt;
-&lt;div palette="primary" tone="higher"&gt;...&lt;/div&gt;
-&lt;div palette="primary" tone="highest"&gt;...&lt;/div&gt;
-&lt;div palette="primary" tone="lower"&gt;...&lt;/div&gt;
-&lt;div palette="primary" tone="lowest"&gt;...&lt;/div&gt;</code></pre>
+            <cpa-theme-example title="Mode-relative tone scale" [attrsHtml]="ex.tonesHtml" />
           </section>
 
           <section id="elevation" class="page-section">
             <h2>Elevation</h2>
             <p>Five shadow levels, adapted for light and dark mode:</p>
-            <pre><code>&lt;div elevated="0"&gt;flat&lt;/div&gt;
-&lt;div elevated="1"&gt;card&lt;/div&gt;
-&lt;div elevated="2"&gt;dropdown / select panel&lt;/div&gt;
-&lt;div elevated="3"&gt;floating action button&lt;/div&gt;
-&lt;div elevated="4"&gt;hovered FAB&lt;/div&gt;
-&lt;div elevated="5"&gt;modal / dialog&lt;/div&gt;</code></pre>
-            <p>Or from SCSS:</p>
-            <pre><code>.my-card &#123;
-  box-shadow: var(--elevation-2--shadow);
-&#125;</code></pre>
+            <cpa-theme-example
+              title="Shadow levels"
+              [attrsHtml]="ex.elevationHtml"
+              [scssScss]="ex.elevationScss"
+            />
           </section>
 
           <section id="density" class="page-section">
@@ -222,38 +179,21 @@ setMode(ThemeMode.AUTO);</code></pre>
               Set a base density in your theme config, or override per-subtree with
               <code>[themeDensity]</code>:
             </p>
-            <pre><code>// in your theme definition
-$density: t.density($scale: 0)  // 0 = default, -5 = most compact
-
-&lt;!-- scoped override --&gt;
-&lt;div themeDensity="-2"&gt;
-  &lt;!-- all --space--* tokens are recalculated inside here --&gt;
-&lt;/div&gt;</code></pre>
+            <cpa-code [code]="ex.densityScss" lang="scss" />
+            <cpa-theme-example title="Density scopes" [attrsHtml]="ex.densityHtml" />
             <p>Density tokens:</p>
-            <pre><code class="language-css">--space--xxs /*  2px base  (− 1px per step) */
---space--xs  /*  4px base  (− 1px per step) */
---space--sm  /*  8px base  (− 2px per step) */
---space--md  /* 16px base  (− 4px per step) */
---space--lg  /* 24px base  (− 4px per step) */
---space--xl  /* 32px base  (− 4px per step) */
---space--xxl /* 48px base  (− 4px per step) */</code></pre>
+            <cpa-code [code]="ex.spaceTokensDisplayCss" lang="css" />
           </section>
 
           <section id="shape" class="page-section">
             <h2>Shape</h2>
-            <p>Corner radius scale, emitted as CSS custom properties:</p>
-            <pre><code>// in your theme definition (defaults shown)
-$shape: t.shape($xs: 4px, $sm: 8px, $md: 12px, $lg: 16px, $xl: 28px)
-
-/* CSS vars emitted */
---shape--xxs:  2px
---shape--xs:   4px
---shape--sm:   8px
---shape--md:  12px
---shape--lg:  16px
---shape--xl:  28px
---shape--xxl: 48px
---shape--full: 9999px</code></pre>
+            <p>
+              A corner radius scale. Pass the steps you want to change; the others keep their
+              defaults:
+            </p>
+            <cpa-code [code]="ex.shapeScss" lang="scss" />
+            <p>The variables, with their defaults:</p>
+            <cpa-code [code]="ex.shapeVarsDisplayCss" lang="css" />
           </section>
 
           <section id="adaptor-hooks" class="page-section">
@@ -263,18 +203,13 @@ $shape: t.shape($xs: 4px, $sm: 8px, $md: 12px, $lg: 16px, $xl: 28px)
               <code>$adaptor</code> parameter — without any coupling in core. An adaptor is a Sass
               map of hook mixins returned by a function:
             </p>
-            <pre><code>// Using the Angular Material adaptor
-&#64;use '@cpangular/cp-theming-core/scss/theme' as t;
-&#64;use '@cpangular/cp-theming-ng-material/scss/material' as mat;
-
-&#64;include t.define-theme('my-theme', $my-theme, $adaptor: mat.adaptor());</code></pre>
-            <p>The adaptor receives four optional hook mixins:</p>
-            <pre><code>// define-palette-after($palette-name) is called after each palette is registered.
-// mat.adaptor() uses it to emit, for each custom palette name of the theme:
-//   [palette="accent"]  &#123; --mat-sys-primary: var(--color--accent); … &#125;
-// so Material components respond to that [palette] attribute too. The core
-// names (primary, secondary, error, warn, caution, pass) get the same rule
-// from mat.define-ng-material-core-theme().</code></pre>
+            <cpa-code [code]="ex.adaptorScss" lang="scss" />
+            <p>
+              The map may hold four hook mixins, all optional:
+              <code>define-theme-before</code> and <code>define-theme-after</code> (called with the
+              theme name, around the theme rule) and <code>define-palette-before</code> and
+              <code>define-palette-after</code> (called once per palette name, at root level).
+            </p>
           </section>
         }
 
@@ -295,13 +230,7 @@ $shape: t.shape($xs: 4px, $sm: 8px, $md: 12px, $lg: 16px, $xl: 28px)
               Import <code>ThemeDirective</code> and use <code>[theme]</code> on any host element.
               The directive sets the HTML attribute, activating the correct CSS variable scope.
             </p>
-            <pre><code>// component.ts
-imports: [ThemeDirective]
-
-// template
-&lt;div [theme]="'rose-red'"&gt;
-  &lt;!-- Material components here inherit rose-red palette --&gt;
-&lt;/div&gt;</code></pre>
+            <cpa-code [code]="ex.ngScopedThemeDisplayHtml" lang="html" />
           </section>
 
           <section id="persisting-state" class="page-section">
@@ -317,11 +246,16 @@ themeService.restorePersistedState();</code></pre>
           <section id="cascade" class="page-section">
             <h2>How the cascade works</h2>
             <p>
-              <code>material-core.css</code> maps every <code>--mat-sys-*</code> token to a
-              <code>var(--color--*)</code> reference on <code>:root</code>. Because CSS custom
-              property <code>var()</code> references are resolved lazily at the element where
-              they're consumed (not where they're defined), Angular Material components inside a
-              <code>[theme="rose-red"]</code> subtree automatically receive rose-red's values.
+              <code>material-core.css</code> declares every <code>--mat-sys-*</code> token as a
+              <code>var(--color--*)</code> expression on <code>:root</code> and on every
+              <code>[theme]</code> element. A <code>var()</code> is substituted on the element that
+              declares the property, not where the property is later used, so a single
+              <code>:root</code> rule would hold the root theme's colors and a nested theme would
+              not change them. Declaring the tokens again on each <code>[theme]</code> element makes
+              that element re-evaluate them against its own theme, and Angular Material components
+              inside a <code>[theme="rose-red"]</code> subtree receive rose-red's values. The
+              cp-theming color tokens are themselves <code>light-dark()</code> expressions, so a
+              nested <code>themeMode</code> flips the Material colors with no rule of its own.
             </p>
           </section>
 
@@ -363,6 +297,27 @@ themeService.restorePersistedState();</code></pre>
   ],
 })
 export class GuidesPageComponent {
+  protected readonly ex = {
+    namingDisplayCss,
+    derivedOutputCss,
+    palettesScss,
+    rolesScss,
+    lightDarkScss,
+    modeHtml,
+    nestedHtml,
+    paletteScopesHtml,
+    containerVarsDisplayCss,
+    tonesHtml,
+    elevationHtml,
+    elevationScss,
+    densityScss,
+    densityHtml,
+    spaceTokensDisplayCss,
+    shapeScss,
+    shapeVarsDisplayCss,
+    adaptorScss,
+    ngScopedThemeDisplayHtml,
+  };
   private readonly _toc = inject(TocService);
   private readonly _parentParams = toSignal(inject(ActivatedRoute).parent!.params);
   readonly lib = computed(() => (this._parentParams()?.['lib'] as string) ?? 'core');

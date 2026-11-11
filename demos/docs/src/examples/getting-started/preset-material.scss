@@ -1,0 +1,5 @@
+// src/styles.scss — core first, then the theme, then the adapter
+@use "@cpangular/cp-theming-core/css/core";
+@use "@cpangular/cp-theming-core/css/presets/azure-blue";
+@use "@cpangular/cp-theming-ng-material/css/material-core";
+@use "@cpangular/cp-theming-ng-material/css/material-overrides";

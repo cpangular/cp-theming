@@ -1,0 +1,16 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+.chip-primary {
+  @include t.apply-palette("primary");
+  @include t.bg();
+}
+
+.chip-secondary {
+  @include t.apply-palette("secondary");
+  @include t.bg();
+}
+
+.chip-error {
+  @include t.apply-palette("error");
+  @include t.bg();
+}

@@ -20,7 +20,7 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 
 | Demo | Description | Status |
 |---|---|---|
-| `demos/docs` | Angular 22 + Material 22 docs/showcase site | 🟡 In Progress — all pages scaffolded, theme + mode switching working without the Phase 7 workaround block, showcase checked in light and dark for the four themes and nested themes (Phase 11), saved theme and mode painted on the first frame (Phase 12, `node demos/docs/test/startup.ts`); Pages deploy is manual-only until the repo is public |
+| `demos/docs` | Angular 22 + Material 22 docs/showcase site | 🟡 In Progress — all pages built; every Sass, CSS and attribute sample is a real file under `demos/docs/src/examples/`, compiled and checked by `pnpm test` and rendered live from the same file; theme + mode switching working, saved theme and mode painted on the first frame (`node demos/docs/test/startup.ts`), painted-contrast report over the showcase (`node demos/docs/test/render.ts`); TypeScript, shell and JSON samples are still hand-written; Pages deploy is manual-only until the repo is public |
 | `demos/demo-core` | Vanilla TS + Vite | 🔴 Broken — POC reimplemented, loads core first via `t.define-core-theme()`, but `pnpm build` fails: `src/scss/components.scss` calls `a.container(high)` and the mixin takes no argument |
 | `demos/demo-material` | Angular + Material adapter | ⬛ Stub |
 | `demos/demo-brand-core` | Example brand theme pack | ⬛ Stub |
@@ -38,7 +38,7 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 | 4 | Precompiled CSS per preset theme | ✅ Done |
 | 5 | `theme-ng-core` — Angular signals wrapper | ✅ Done |
 | 6 | `theme-ng-material` — Angular Material M3 adapter + density scopes | ✅ Done |
-| 7 | `demos/docs` — Documentation + showcase site | 🟡 In Progress — unblocked by Phase 11; next in PORT-PLAN.md's order |
+| 7 | `demos/docs` — Documentation + showcase site | 🟡 In Progress — docs examples are real, checked files (PORT-PLAN.md "Phase 7 (resumed)" done); the four demos below the docs are still stubs |
 | 8 | Test harness and CI (`node --test` CSS checks, vitest API tests, Playwright `render.ts`, git-flow `test.yml`) | ✅ Done |
 | 9 | Cascade: a theme is one rule; core derives once | ✅ Done |
 | 10 | Contrast and alpha (`--contrast` by a luminance step; every derivation opaque except the tints) | ✅ Done |
@@ -75,7 +75,7 @@ shows Material components without hover, focus and press layers.
 pnpm install
 pnpm build         # builds all packages
 pnpm build.core    # builds @cpangular/cp-theming-core only
-pnpm test          # CSS checks (node --test) + TypeScript API tests (vitest) in both packages
+pnpm test          # CSS checks (node --test) + TypeScript API tests (vitest) in both packages, and the docs examples
 pnpm fix           # format all files with prettier
 
 # Browser check of the cascade (Playwright, Chromium + Firefox; local only)
@@ -83,6 +83,9 @@ pnpm --filter @cpangular/cp-theming-core render
 
 # Browser check of startup: saved theme and mode painted before the docs bundle runs (local only)
 npx ng build docs && node demos/docs/test/startup.ts
+
+# Painted-contrast report over the built showcase, light and dark (local only)
+npx ng build docs && node demos/docs/test/render.ts
 ```
 
 ---
