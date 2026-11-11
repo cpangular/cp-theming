@@ -56,80 +56,94 @@ pre {
   }
 }
 
-// ── highlight.js dark-mode overrides (mirrors github-dark) ─────────────────
-[themeMode="dark"] {
-  .hljs {
-    color: #c9d1d9;
-  }
+// ── highlight.js colours: GitHub light / GitHub dark, picked by the effective mode ───
+// github.min.css (loaded first) is light-only. These light-dark() pairs follow the
+// element's color-scheme, so they are right under themeMode="dark", "auto" with a
+// dark OS, and a nested themeMode, where a [themeMode="dark"] selector would not match.
+.hljs {
+  color: light-dark(#24292e, #c9d1d9);
+}
 
-  .hljs-doctag,
-  .hljs-keyword,
-  .hljs-meta .hljs-keyword,
-  .hljs-template-tag,
-  .hljs-template-variable,
-  .hljs-type,
-  .hljs-variable.language_ {
-    color: #ff7b72;
-  }
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  color: light-dark(#d73a49, #ff7b72);
+}
 
-  .hljs-title,
-  .hljs-title.class_,
-  .hljs-title.class_.inherited__,
-  .hljs-title.function_ {
-    color: #d2a8ff;
-  }
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  color: light-dark(#6f42c1, #d2a8ff);
+}
 
-  .hljs-attr,
-  .hljs-attribute,
-  .hljs-literal,
-  .hljs-meta,
-  .hljs-number,
-  .hljs-operator,
-  .hljs-variable,
-  .hljs-selector-attr,
-  .hljs-selector-class,
-  .hljs-selector-pseudo {
-    color: #79c0ff;
-  }
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  color: light-dark(#005cc5, #79c0ff);
+}
 
-  .hljs-meta .hljs-string,
-  .hljs-regexp,
-  .hljs-string {
-    color: #a5d6ff;
-  }
+.hljs-selector-pseudo {
+  color: light-dark(#22863a, #79c0ff);
+}
 
-  .hljs-built_in,
-  .hljs-symbol {
-    color: #ffa657;
-  }
+.hljs-meta .hljs-string,
+.hljs-regexp,
+.hljs-string {
+  color: light-dark(#032f62, #a5d6ff);
+}
 
-  .hljs-code,
-  .hljs-comment,
-  .hljs-formula {
-    color: #8b949e;
-  }
+.hljs-built_in,
+.hljs-symbol {
+  color: light-dark(#e36209, #ffa657);
+}
 
-  .hljs-name,
-  .hljs-quote,
-  .hljs-selector-tag,
-  .hljs-selector-id {
-    color: #7ee787;
-  }
+.hljs-code,
+.hljs-comment,
+.hljs-formula {
+  color: light-dark(#6a737d, #8b949e);
+}
 
-  .hljs-deletion {
-    color: #ffdcd7;
-    background-color: #67060c;
-  }
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag {
+  color: light-dark(#22863a, #7ee787);
+}
 
-  .hljs-addition {
-    color: #aff5b4;
-    background-color: #033a16;
-  }
+.hljs-subst,
+.hljs-emphasis,
+.hljs-strong {
+  color: light-dark(#24292e, #c9d1d9);
+}
 
-  .hljs-section {
-    color: #79c0ff;
-    font-weight: bold;
-  }
+.hljs-bullet {
+  color: light-dark(#735c0f, #f2cc60);
+}
+
+.hljs-section {
+  color: light-dark(#005cc5, #79c0ff);
+  font-weight: bold;
+}
+
+.hljs-deletion {
+  color: light-dark(#b31d28, #ffdcd7);
+  background-color: light-dark(#ffeef0, #67060c);
+}
+
+.hljs-addition {
+  color: light-dark(#22863a, #aff5b4);
+  background-color: light-dark(#f0fff4, #033a16);
 }
 
 h1,
