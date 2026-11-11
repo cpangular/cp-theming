@@ -424,3 +424,41 @@ test('core derives the auto bg, stroke and focus into their registered pairs, fr
   );
   assert.doesNotMatch(deemphasis, /var\(--weight--text-deemphasis-blend[,)]/);
 });
+
+// Phase 14b: the bg layer keeps the palette's own colour as text, and for
+// background and surface that colour is the fill. bg() offers the bg role's
+// contrast in a private variable; only those two palette rules read it, and
+// they clear it first so an outer bg() does not reach a palette scope inside.
+test('bg() gives background and surface the contrast of their bg role as text; every other palette keeps its colour', () => {
+  const rule = (selector: string) => {
+    const found = rules(core.css).filter((r) => normalizeSelector(r.selector) === selector);
+    assert.equal(found.length, 1, selector);
+    return found[0].declarations;
+  };
+  const BG_TEXT = '--container--_bg-text';
+  // Last declaration wins inside one rule.
+  const last = (decls: [string, string][], name: string) =>
+    decls.filter(([n]) => n === name).at(-1)?.[1];
+  assert.equal(last(rule('[palette][bg]'), BG_TEXT), 'var(--palette-color--bg--contrast)');
+  assert.ok(!rule('[palette][bg]').some(([n]) => n === 'color'), 'bg() itself sets no colour');
+  for (const name of CORE_PALETTE_NAMES) {
+    const decls = rule(`[palette=${name}]`);
+    if (name === 'background' || name === 'surface') {
+      assert.equal(last(decls, BG_TEXT), 'initial', name);
+      assert.equal(last(decls, 'color'), `var(${BG_TEXT}, var(--palette-color))`, name);
+    } else {
+      assert.equal(last(decls, BG_TEXT), undefined, name);
+      assert.equal(last(decls, 'color'), 'var(--palette-color)', name);
+    }
+  }
+  // bg(high) offers the high step's contrast.
+  const { css } = compileSource(
+    `@use "../../scss/theme" as t;
+.x { @include t.apply-palette(surface); @include t.bg(high); }`,
+    path.join(coreDir, 'test/fixtures/__bg-text.scss'),
+  );
+  assert.equal(
+    last(rules(css).find((r) => r.selector === '.x')!.declarations, BG_TEXT),
+    'var(--palette-color--bg--high--contrast)',
+  );
+});

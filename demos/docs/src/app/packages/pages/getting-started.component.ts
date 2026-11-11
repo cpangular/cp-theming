@@ -138,11 +138,11 @@ pnpm add @cpangular/cp-theming-core</code></pre>
                 </tr>
                 <tr>
                   <td><code>secondary</code></td>
-                  <td>The primary's hue with a third of its chroma.</td>
+                  <td>The primary's hue with a third of its chroma (0.04 at least).</td>
                 </tr>
                 <tr>
                   <td><code>tertiary</code></td>
-                  <td>The primary's hue turned 60°, with half its chroma.</td>
+                  <td>The primary's hue turned 60°, with half its chroma (0.08 at least).</td>
                 </tr>
                 <tr>
                   <td><code>background</code>, <code>surface</code></td>

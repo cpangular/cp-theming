@@ -39,7 +39,7 @@
 @function palette-from-var(
   $var,
   $light-l-min: 0.35,
-  $light-l-max: 0.5,
+  $light-l-max: 0.45,
   $dark-l-min: 0.65,
   $dark-l-max: 0.82,
   $c-max: 0.22
@@ -49,7 +49,7 @@
 
 @function palette-from-brand(
   $light-l-min: 0.35,
-  $light-l-max: 0.5,
+  $light-l-max: 0.45,
   $dark-l-min: 0.65,
   $dark-l-max: 0.82,
   $c-max: 0.22

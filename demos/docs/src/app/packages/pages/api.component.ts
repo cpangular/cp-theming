@@ -84,7 +84,8 @@ const NG_MATERIAL_TOC = [
                 Emit one rule for a named theme, scoped to <code>[theme="$name"]</code>, holding
                 only what was passed to <code>t.theme()</code>. Multiple themes can coexist — the
                 active one is selected by setting the <code>theme</code> attribute on any ancestor
-                element.
+                element. Themes come from this mixin; a <code>[theme="name"]</code> rule is not
+                meant to be typed as CSS by hand (see the Theme page).
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"
@@ -1094,7 +1095,8 @@ const NG_MATERIAL_TOC = [
                 <div class="api-member-body">
                   <p class="api-member-desc">
                     Scan the loaded stylesheets and return one entry per theme name found in a
-                    <code>[theme="name"]</code> selector. A cross-origin stylesheet cannot be read
+                    <code>[theme="name"]</code> selector: the rules
+                    <code>t.define-theme()</code> emits. A cross-origin stylesheet cannot be read
                     and is skipped.
                   </p>
                 </div>

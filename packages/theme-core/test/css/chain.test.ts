@@ -97,17 +97,21 @@ test('core declares every generated colour once, on :where(:root, [theme])', () 
     // primary: the brand, moved into the readable band of each mode.
     [
       generated('primary', 'light'),
-      `oklch(from ${light('brand')} clamp(0.35,l,0.5) clamp(0,c,0.22) h / 1)`,
+      `oklch(from ${light('brand')} clamp(0.35,l,0.45) clamp(0,c,0.22) h / 1)`,
     ],
     [
       generated('primary', 'dark'),
       'oklch(from var(--color--brand--mode-dark) clamp(0.65,l,0.82) clamp(0,calc(c*0.9),0.22) h / 1)',
     ],
-    // secondary: primary's hue, a third of its chroma. tertiary: +60°, half.
-    [generated('secondary', 'light'), `oklch(from ${light('primary')} l calc(c / 3) h/1)`],
+    // secondary: primary's hue, a third of its chroma, 0.04 at least. tertiary:
+    // +60°, half, 0.08 at least. Never more than the primary's own chroma.
+    [
+      generated('secondary', 'light'),
+      `oklch(from ${light('primary')} l min(c, max(c / 3, 0.04)) h/1)`,
+    ],
     [
       generated('tertiary', 'light'),
-      `oklch(from ${light('primary')} l calc(c / 2) calc(h + 60)/1)`,
+      `oklch(from ${light('primary')} l min(c, max(c / 2, 0.08)) calc(h + 60)/1)`,
     ],
     // background and surface: tinted neutrals of the brand hue.
     [generated('background', 'light'), `oklch(from ${light('brand')} 0.97 min(c, 0.006) h / 1)`],
@@ -265,22 +269,22 @@ for (const theme of themes) {
       const primary = read('--color--primary');
 
       if (!theme.passed.has('primary')) {
-        const [min, max] = mode === 'light' ? [0.35, 0.5] : [0.65, 0.82];
+        const [min, max] = mode === 'light' ? [0.35, 0.45] : [0.65, 0.82];
         const chroma = Math.min(mode === 'light' ? brand.c : brand.c * 0.9, 0.22);
         assert.ok(close(primary.l, Math.min(Math.max(brand.l, min), max)), `${mode} primary L`);
         assert.ok(close(primary.c, chroma), `${mode} primary C`);
         if (chroma > 1e-4) assert.ok(hueDiff(primary.h, brand.h) < 1e-3, `${mode} primary H`);
       }
-      for (const [name, divisor, turn] of [
-        ['secondary', 3, 0],
-        ['tertiary', 2, 60],
+      for (const [name, divisor, floor, turn] of [
+        ['secondary', 3, 0.04, 0],
+        ['tertiary', 2, 0.08, 60],
       ] as const) {
         if (theme.passed.has(name)) continue;
         const accent = read(`--color--${name}`);
         assert.ok(close(accent.l, primary.l), `${mode} ${name} L is primary's`);
         assert.ok(
-          close(accent.c, primary.c / divisor),
-          `${mode} ${name} C is primary's / ${divisor}`,
+          close(accent.c, Math.min(primary.c, Math.max(primary.c / divisor, floor))),
+          `${mode} ${name} C is primary's / ${divisor}, ${floor} at least, primary's at most`,
         );
         if (accent.c > 1e-4)
           assert.ok(
@@ -360,10 +364,10 @@ test('the brand colour is never adjusted; the primary generated from it reads on
       `lowest ${lowest.ratio.toFixed(2)}:1 at ${lowest.where}`,
   );
   assert.ok(adjusted > 0 && adjusted < count, 'the grid has brands inside and outside the band');
-  // The band is the one palette-from-brand() has always used. It holds 3:1
-  // (large text, UI components) for every brand; below 4.5:1 are the brands
-  // whose primary lands on the light edge of the band in a light hue.
-  assert.ok(lowest.ratio >= 3, `${lowest.ratio.toFixed(2)}:1 at ${lowest.where}`);
+  // The band is palette-from-brand()'s. Its light-mode top is 0.45 since
+  // Phase 14b: at 0.50, 116 of these 3360 were below 4.5:1 (cyan and green
+  // brands outside sRGB, on the surface).
+  assert.equal(belowAA, 0, `lowest ${lowest.ratio.toFixed(2)}:1 at ${lowest.where}`);
 });
 
 // ─── Semantic defaults ───────────────────────────────────────────────────────

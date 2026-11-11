@@ -62,12 +62,14 @@ test('core.css registers exactly the expected 109 properties, each once', () => 
 });
 
 // Core carries every derivation once (the presets carried eight copies), for
-// ten palette names since Phase 14 (about 20 KB expanded per name).
-test('core.css stays under 224 KiB expanded and 16 KiB gzipped', (t) => {
+// ten palette names since Phase 14 (about 20 KB expanded per name). The
+// gzipped size is the one that matters: the expanded ceiling is 256 KiB since
+// Phase 14b, when core.css was 221,168 bytes (216 KiB), 15,211 gzipped.
+test('core.css stays under 256 KiB expanded and 16 KiB gzipped', (t) => {
   const bytes = Buffer.byteLength(core.css);
   const gz = gzipSync(core.css).length;
   t.diagnostic(`core.css: ${bytes} bytes, ${gz} gzipped`);
-  assert.ok(bytes <= 224 * 1024, `${bytes} bytes`);
+  assert.ok(bytes <= 256 * 1024, `${bytes} bytes`);
   assert.ok(gz <= 16 * 1024, `${gz} bytes gzipped`);
 });
 

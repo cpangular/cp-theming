@@ -133,7 +133,7 @@ surface:    t.surface-from-brand($c-tint: 0.02),
 Colours follow the chain **brand → primary → secondary, tertiary → background, surface**. A theme passes whichever it has and core generates the rest, in the browser, from the nearest one it passed:
 
 - only `$brand` → primary (the brand, moved into the lightness that reads on the page), secondary, tertiary, background and surface are all generated; the `brand` palette stays the exact colour;
-- only `primary` → secondary (same hue, a third of the chroma) and tertiary (hue + 60°, half the chroma) are generated;
+- only `primary` → secondary (same hue, a third of the chroma, 0.04 at least) and tertiary (hue + 60°, half the chroma, 0.08 at least) are generated;
 - `primary` and `secondary` → tertiary is generated; pass all three and none is.
 
 `error`, `warn`, `caution` and `pass` have fixed defaults. A nested theme generates what follows from what it passes and inherits the rest. Details: [docs/palettes.md](docs/palettes.md#brand-accents-and-neutrals-pass-what-you-have).

@@ -72,10 +72,19 @@ const FLAT_NAV: NavItem[] = [
   { path: 'guides', label: 'Guides' },
 ];
 
+// ng-material has its own list: the Showcase page has content for it only.
+const NG_MATERIAL_NAV: NavItem[] = [
+  { path: 'categories', label: 'Overview' },
+  { path: 'getting-started', label: 'Getting Started' },
+  { path: 'api', label: 'API Reference' },
+  { path: 'guides', label: 'Guides' },
+  { path: 'showcase', label: 'Showcase' },
+];
+
 const LIB_NAV: Record<string, NavItem[]> = {
   core: CORE_NAV,
   'ng-core': FLAT_NAV,
-  'ng-material': FLAT_NAV,
+  'ng-material': NG_MATERIAL_NAV,
 };
 
 @Component({

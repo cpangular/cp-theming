@@ -55,6 +55,11 @@ import composeScss from '../../../examples/apply-surfaces/compose.scss' with { l
           lighter than the text — and <strong>keeps the palette's identity color for text</strong>:
           colored text on a tonal surface (the chip / pill look).
         </p>
+        <p>
+          <code>background</code> and <code>surface</code> are the exception: their color is the
+          fill itself, so on those two palettes <code>bg</code> sets the text to the fill's contrast
+          color (black or white), as <code>filled</code> does.
+        </p>
         <cpa-theme-example
           title="bg surface"
           [attrsHtml]="ex.bgHtml"

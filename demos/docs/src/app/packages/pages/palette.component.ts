@@ -72,7 +72,7 @@ const TOC = [
           <strong>The primary made from it is adjusted.</strong> A brand colour is often too light,
           too dark or too saturated to carry buttons, links and text. When a theme passes no
           <code>primary</code>, core makes one from the brand: the same hue, with the lightness held
-          between 0.35 and 0.50 in light mode and between 0.65 and 0.82 in dark mode, and the chroma
+          between 0.35 and 0.45 in light mode and between 0.65 and 0.82 in dark mode, and the chroma
           capped at 0.22. A <code>primary</code> you pass yourself is used exactly as given.
         </p>
         <cpa-code [code]="ex.brandOnlyScss" lang="scss" />

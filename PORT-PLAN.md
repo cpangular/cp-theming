@@ -635,6 +635,37 @@ Done when: `pnpm test` passes with the chain test, sweep and render rows updated
 screenshot shows a coloured tertiary on cyan-orange in both modes; the docs Getting Started surface
 swatch uses `bg` with readable text.
 
+Done 2026-11-11.
+
+- **Item 1, changed from the text above: the floor does not exceed the primary's chroma.** The
+  expressions are `min(c, max(c / 3, 0.04))` and `min(c, max(c / 2, 0.08))`. With the bare
+  `max()` a grey primary would get accents of chroma 0.04 and 0.08 in whatever hue the browser
+  reports for grey, and the no-theme fallback (everything grey, Phase 14) would turn pink. The
+  same reasoning made the neutrals' chroma a ceiling in Phase 14. Any primary with chroma 0.08 or
+  more gets exactly the floors as written. cyan-orange's tertiary is `#2e557d` light and
+  `#91bce9` dark (painted, both engines).
+- **Item 2.** 0 of 3360 below 4.5:1, lowest 4.60:1 (`oklch(0.5 0.25 195)` on the surface, light);
+  the chain test now asserts 0, not 3:1. `palette-from-var()` shares the default, so it moved too.
+- **Item 3: `bg()` hands the colour over, the palette rule takes it.** `bg()` cannot know which
+  palette it is on, and a `color` declared by `[palette][bg]` (0,2,0) would start beating
+  authors' own class rules on every palette. So `bg()` sets the private
+  `--container--_bg-text` to the contrast of the step it paints (`bg(high)` → the high step's),
+  and `apply-palette()` for `background` and `surface` reads it:
+  `color: var(--container--_bg-text, var(--palette-color))`, after clearing it so an outer
+  `bg` does not reach a palette scope without one. Consequences: in a rule of one's own,
+  `apply-palette()` goes before `bg()`; `bg()` on a child without its own `apply-palette()`
+  still inherits its text colour, as before. The text is the pure contrast colour: `filled()`
+  does not blend its text through `--weight--text-blend` either (it sets the contrast colour and
+  a de-emphasis tier), so "like `filled()` does" is what landed and the blend is not. `bg()` does
+  not set `--container--text` and its siblings: it cannot do so for the neutrals only.
+- **Seen in the screenshots, not fixed.** The Getting Started brand `#ff6a00` gives a light-mode
+  primary of `oklch(0.45 0.2 45)`, which is outside sRGB; the browsers paint it `#a60000`, a red
+  (hue 29°, not 45°). At 0.50 it was `#b72200` (hue 33°), so the shift was there before and is a
+  little larger now. The chroma cap of 0.22 is above what sRGB holds at this lightness for most
+  hues; lowering chroma to fit the gamut would keep the hue.
+- The docs contrast report is unchanged in kind: 224 labels, 40 below 4.5:1 in each engine, all
+  docs captions (swatch labels and `code` in section text), none on a component.
+
 ### Phase 15 — Material component gallery (added 2026-11-11)
 
 Goal: the ng-material docs show every Angular Material 22 component under the adapter, so a

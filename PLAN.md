@@ -137,7 +137,7 @@ The `color` role is the palette's primary identity — it becomes the namespace 
 
 Core (`define-core-theme()`) declares every default and every derivation once, on `:where(:root)` and `:where(:root, [theme])`; a theme rule (`define-theme()`) holds only what its author passed, so nested themes inherit, presets coexist, and an author's `:root` rule wins. Load order: core, then themes, then the adapter.
 
-**Palette chain (Phase 14).** brand → primary → secondary, tertiary → background, surface. A theme passes whichever it has; core generates each one it left out, on the same shared selector, from the nearest thing the theme passed: primary is the brand with lightness held to 0.35–0.50 (light) / 0.65–0.82 (dark) and chroma capped at 0.22; secondary is primary's hue with a third of its chroma; tertiary is primary's hue + 60° with half its chroma; background and surface are neutrals of the brand hue (lightness 0.97 / 0.17 and 0.93 / 0.22, chroma 0.006 and 0.01 at most). The brand colour is never adjusted. `error`, `warn`, `caution` and `pass` have fixed defaults (the registered initial values). The root generates the whole chain; a nested theme generates what is downstream of what it passed and inherits the rest. Core holds each generated colour in a private variable (`--theme--_generated--{name}--{mode}`); `:where(:root)` points every pair of the chain at it and a theme rule does so for the palettes it left out that follow from one it passed, so nothing sets a pair where nothing upstream was passed.
+**Palette chain (Phase 14).** brand → primary → secondary, tertiary → background, surface. A theme passes whichever it has; core generates each one it left out, on the same shared selector, from the nearest thing the theme passed: primary is the brand with lightness held to 0.35–0.45 (light; 0.50 until Phase 14b) / 0.65–0.82 (dark) and chroma capped at 0.22; secondary is primary's hue with a third of its chroma, 0.04 at least; tertiary is primary's hue + 60° with half its chroma, 0.08 at least (neither floor lifts an accent above the primary's own chroma, so a grey primary gives grey accents); background and surface are neutrals of the brand hue (lightness 0.97 / 0.17 and 0.93 / 0.22, chroma 0.006 and 0.01 at most). The brand colour is never adjusted. `error`, `warn`, `caution` and `pass` have fixed defaults (the registered initial values). The root generates the whole chain; a nested theme generates what is downstream of what it passed and inherits the rest. Core holds each generated colour in a private variable (`--theme--_generated--{name}--{mode}`); `:where(:root)` points every pair of the chain at it and a theme rule does so for the palettes it left out that follow from one it passed, so nothing sets a pair where nothing upstream was passed.
 
 ---
 
@@ -492,13 +492,36 @@ colour format is accepted and oklch is recommended.
   take by reference, each palette's relation
   to its origin for every preset and fixture, the brand never adjusted); the contrast sweep and
   the Material surface-order check cover all ten palettes (0 of 1680 preset role/step colours
-  below 4.5:1); two fixtures (only `brand`, only `primary`). render.ts has 190 rows, 84 of them
+  below 4.5:1); two fixtures (only `brand`, only `primary`). render.ts had 190 rows at Phase 14, 84 of them
   `chain/`, all passing in Chromium, Firefox and WebKit. `demos/docs/test/chain.ts` (local) reads
   pixels on the built docs: the `brand` swatch is the example's colour in both modes, and every
   preset column shows three different accents.
 - core.css: 178 KB → 221 KB (12.4 KB → 15.2 KB gzipped).
 
+### ✅ Phase 14b — Follow-ups from the Phase 14 review (PORT-PLAN.md)
+- Generated accents have a chroma floor: secondary `min(c, max(c / 3, 0.04))`, tertiary
+  `min(c, max(c / 2, 0.08))` of the primary pair. The outer `min` keeps a floor from lifting an
+  accent above the primary's own chroma, so a grey primary (the no-theme fallback) still gives
+  grey accents. cyan-orange's tertiary went from a slate grey to a blue.
+- The light-mode band of the generated primary is 0.35–0.45 (was 0.35–0.50), in the chain and in
+  `palette-from-brand()` / `palette-from-var()`. Over the 1680-case brand grid the primary is at
+  4.5:1 or better on the generated background and surface in all 3360 cases (116 were below);
+  the lowest is 4.60:1. The chain test asserts 0.
+- `bg` on `background` and `surface` sets the text to the bg role's contrast. `bg()` hands it
+  over in a private variable (`--container--_bg-text`) that only those two `[palette]` rules
+  read; `bg()` declares no `color` itself, so every other palette is unchanged. The Getting
+  Started example uses `bg` for its background and surface.
+- Docs: themes come from `t.define-theme()` (Theme page, TypeScript API page, API reference),
+  with the caveat for a nested rule written directly in CSS. Showcase is back in the ng-material
+  sidebar, which has its own nav list.
+- Harness: core.css ceiling 256 KiB (221,168 bytes, 15,211 gzipped today). render.ts has 207 rows
+  (two new `chain/` rows for a muted brand, 15 `bg-text/` rows), all passing in Chromium,
+  Firefox and WebKit.
+
 ### ⬛ Phase 13 — planned in PORT-PLAN.md
 - Phase 13 — Release through cpdevtools/git-flow
+
+### ⬛ Phase 15 — planned in PORT-PLAN.md
+- Phase 15 — Material component gallery in the ng-material docs
 
 ---

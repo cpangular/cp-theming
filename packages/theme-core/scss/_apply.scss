@@ -272,7 +272,21 @@
   // palette (no surface fill required).
   color: var(--palette-color);
   --container--stroke: var(--palette-color--stroke);
+
+  // background and surface are fills: their colour and their bg role are the
+  // same colour, so identity text on bg() would be invisible. With bg() on the
+  // element the text is the bg role's contrast, which bg() hands over in a
+  // private variable; without it the text stays the identity colour. The
+  // variable is cleared first so a bg() further out does not reach in here.
+  // In a rule of your own, include apply-palette() before bg().
+  @if $name == background or $name == surface {
+    #{$_bg-text}: initial;
+    color: var(#{$_bg-text}, var(--palette-color));
+  }
 }
+
+// The text colour bg() offers the palette: read only by background and surface.
+$_bg-text: --container--_bg-text;
 
 // ─── Shared surface extent ────────────────────────────────────────────────────
 // Shared outer extent for every surface layer (bg fill, filled fill, outlined
@@ -293,6 +307,9 @@
 // toward --color--surface. Deterministic (no compositing over whatever is behind
 // it) and always lighter than the identity text it inherits from apply-palette()
 // — colored text on a tonal surface (the pill / chip look). Follows tone().
+// The exception is the two neutral palettes, background and surface, whose
+// identity colour is the fill itself: there the text is the bg role's contrast
+// (black or white), the colour filled() would give it. See apply-palette().
 //
 // Rendered as an inset ::before pseudo-element (not a direct background) so an
 // inline element (e.g. a <span>) keeps its normal inline flow while still getting
@@ -308,6 +325,7 @@
 
   position: relative;
   isolation: isolate;
+  #{$_bg-text}: var(#{$base}--contrast);
 
   &::before {
     content: "";

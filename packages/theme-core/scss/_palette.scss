@@ -368,8 +368,10 @@ $_contrast-step: string.unquote("clamp(0, (0.179 - #{$_luminance}) * 1e6, 1)");
 //   primary     from the brand pair, moved into the band that reads on a
 //               near-white or near-black page (what palette-from-brand() does).
 //               The brand colour itself is never adjusted.
-//   secondary   primary's hue, one third of its chroma, same lightness.
-//   tertiary    primary's hue + 60°, half its chroma, same lightness.
+//   secondary   primary's hue, one third of its chroma (0.04 at least), same
+//               lightness.
+//   tertiary    primary's hue + 60°, half its chroma (0.08 at least), same
+//               lightness. Neither floor exceeds the primary's own chroma.
 //   background, surface
 //               tinted neutrals of the brand hue (what background-from-brand()
 //               and surface-from-brand() do).
@@ -412,8 +414,10 @@ $_generated-names: primary, secondary, tertiary, background, surface;
 
   @each $mode in light, dark {
     $from: var(#{$primary}--mode-#{$mode});
-    #{_generated-var(secondary, $mode)}: oklch(from #{$from} l calc(c / 3) h / 1);
-    #{_generated-var(tertiary, $mode)}: oklch(from #{$from} l calc(c / 2) calc(h + 60) / 1);
+    #{_generated-var(secondary, $mode)}: oklch(from #{$from} l _accent-chroma(3, 0.04) h / 1);
+    #{_generated-var(tertiary, $mode)}: oklch(
+      from #{$from} l _accent-chroma(2, 0.08) calc(h + 60) / 1
+    );
   }
 
   @each $name, $neutral in $_neutrals {
@@ -425,6 +429,15 @@ $_generated-names: primary, secondary, tertiary, background, surface;
       );
     }
   }
+}
+
+// The chroma of a generated accent: the primary's divided by $divisor, but not
+// below $floor, so a muted primary still gives an accent with a colour
+// (cyan-orange's tertiary was a slate grey at half of 0.1). The floor never
+// lifts it above the primary's own chroma: a grey primary has no hue to take,
+// so its accents stay grey, like the neutrals of a grey brand.
+@function _accent-chroma($divisor, $floor) {
+  @return string.unquote("min(c, max(c / #{$divisor}, #{$floor}))");
 }
 
 // Points the registered pair of one chain palette at its generated colour.
@@ -563,7 +576,9 @@ $_generated-names: primary, secondary, tertiary, background, surface;
 // Returns a light-dark palette config pair that derives its color at runtime
 // from a CSS custom property using relative color syntax.
 //
-// Light: clamps lightness 0.35–0.50 — contrast-safe on near-white (oklch ~0.97).
+// Light: clamps lightness 0.35–0.45 — 4.5:1 on the generated background (L 0.97)
+//        and surface (L 0.93) for every hue; at 0.50 the cyans and greens
+//        outside sRGB fell to 3.7:1 on the surface.
 // Dark:  clamps lightness 0.65–0.82 — contrast-safe on near-black (oklch ~0.18).
 // Chroma is capped at 0.22 to avoid oversaturation.
 //
@@ -572,7 +587,7 @@ $_generated-names: primary, secondary, tertiary, background, surface;
 @function from-var(
   $var,
   $light-l-min: 0.35,
-  $light-l-max: 0.5,
+  $light-l-max: 0.45,
   $dark-l-min: 0.65,
   $dark-l-max: 0.82,
   $c-max: 0.22
@@ -586,7 +601,7 @@ $_generated-names: primary, secondary, tertiary, background, surface;
 // The colour $origin moved into the band that reads on a near-white page
 // (light) or a near-black one (dark). Used by from-var() and by the primary
 // core generates from the brand pair, so the two give the same colour.
-@function _readable-light($origin, $l-min: 0.35, $l-max: 0.5, $c-max: 0.22) {
+@function _readable-light($origin, $l-min: 0.35, $l-max: 0.45, $c-max: 0.22) {
   @return string.unquote(
     "oklch(from #{$origin} clamp(#{$l-min},l,#{$l-max}) clamp(0,c,#{$c-max}) h / 1)"
   );
@@ -601,7 +616,7 @@ $_generated-names: primary, secondary, tertiary, background, surface;
 // Convenience: derive from the standard --color--brand var.
 @function from-brand(
   $light-l-min: 0.35,
-  $light-l-max: 0.5,
+  $light-l-max: 0.45,
   $dark-l-min: 0.65,
   $dark-l-max: 0.82,
   $c-max: 0.22

@@ -32,6 +32,10 @@ This is a CSS-variable-based theming system. Key facts:
   follows from what it passed, the rest inherits, and a theme on `<html>` beats a default theme
   loaded beside it. Semantic palettes default to their registered initial values. Checks:
   `test/css/chain.test.ts`, the `chain/` rows of `render.ts`, `demos/docs/test/chain.ts`.
+- Chain numbers (Phase 14b): generated primary is the brand with L in 0.35–0.45 light / 0.65–0.82
+  dark, C 0.22 at most; secondary `min(c, max(c / 3, 0.04))`, tertiary `min(c, max(c / 2, 0.08))`
+  at hue + 60°. `bg()` on `background` / `surface` gives contrast text through the private
+  `--container--_bg-text`; `bg()` itself declares no `color`.
 - Contrast (Phase 10): `--contrast` is black or white by a step at relative luminance 0.179 in
   clamped linear sRGB; the step is declared once as `--theme--_contrast-step`. Every relative-colour
   derivation ends `/ 1` (only the tints carry an alpha); a harness check enforces it.

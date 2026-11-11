@@ -159,6 +159,12 @@ setMode(ThemeMode.AUTO);</code></pre>
             what was passed to <code>t.theme()</code>. Multiple themes can coexist — the active one
             is selected by setting the <code>theme</code> attribute on any ancestor element.
           </p>
+          <p class="api-symbol-desc">
+            Themes come from <code>t.define-theme()</code>; a <code>[theme="name"]</code> rule is
+            not meant to be typed as CSS by hand. If you do write one, on a nested element it
+            regenerates only the roles of the palette it sets, not the palettes generated from that
+            palette.
+          </p>
           <div class="api-member-card">
             <span class="api-signature-row"
               ><span class="api-sig-kw">&#64;include t.</span

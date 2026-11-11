@@ -63,8 +63,10 @@ demos/demo-brand-material/                                 — Example brand+mat
   whichever it has (one, two or three accents, with or without `$brand`) and
   core generates each one it left out, at runtime, on the shared derivation
   selector: primary from the brand with
-  `palette-from-brand()`'s readability clamps, secondary (primary's hue, a
-  third of its chroma) and tertiary (hue + 60°, half its chroma) from primary,
+  `palette-from-brand()`'s readability clamps (lightness 0.35–0.45 light /
+  0.65–0.82 dark, chroma 0.22 at most), secondary (primary's hue, a third of
+  its chroma, 0.04 at least) and tertiary (hue + 60°, half its chroma, 0.08 at
+  least; neither floor exceeds the primary's own chroma) from primary,
   background and surface as neutrals of the brand hue. The brand colour is
   never adjusted: `--color--brand` is exactly what was passed. `error`, `warn`,
   `caution` and `pass` are fixed defaults, not derived. The root generates the
@@ -87,6 +89,13 @@ demos/demo-brand-material/                                 — Example brand+mat
 - **Derivations are opaque.** Every relative-colour derivation ends `/ 1`, so a translucent
   input cannot make ladder steps, auto roles or text translucent. Only `--tint-1..5` carry an
   alpha. The contrast check fails a derivation without it.
+
+- **`bg()` on `background` and `surface` sets contrast text.** The bg layer keeps the
+  palette's colour as text; for the two neutral palettes that colour is the fill, so their
+  `[palette]` rule reads the bg role's contrast from a private variable `bg()` sets
+  (`--container--_bg-text`, cleared by those two rules so it does not inherit into a palette
+  scope without `bg`). `bg()` itself declares no `color`. In a rule of your own, include
+  `apply-palette()` before `bg()`.
 
 - **Focus color is per-palette.** `--pal-{name}--focus` is derived per palette,
   not a global. A matching-hue focus ring on a same-hue surface is invisible.

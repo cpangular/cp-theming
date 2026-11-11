@@ -46,17 +46,20 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 | 12 | Startup: no flash, safe import (lazy guarded persistence, `themeHeadSnippet`, browser-only work skipped off-browser) | ✅ Done |
 | 13 | Release through cpdevtools/git-flow | ⬛ Not started |
 | 14 | Brand and accent palettes: pass what you have, the rest are generated (`brand` and `tertiary` core palettes; the chain brand → primary → secondary, tertiary → background, surface; semantic defaults; Material tertiary from `--color--tertiary`) | ✅ Done |
+| 14b | Follow-ups from the Phase 14 review: chroma floors for the generated secondary and tertiary, the generated primary readable on the generated background in every hue, `bg` on `background` and `surface` with readable text, Showcase back in the ng-material sidebar | ✅ Done |
+| 15 | Material component gallery in the ng-material docs | ⬛ Not started |
 
-Phases 8–14 are specified in [PORT-PLAN.md](PORT-PLAN.md); 14 was done before 13.
+Phases 8–15 are specified in [PORT-PLAN.md](PORT-PLAN.md); 14 and 14b were done before 13.
 
 ### Browser baseline
 
-`packages/theme-core/test/render.ts` (190 rows: `themeMode` on any element, nested themes, coexisting
+`packages/theme-core/test/render.ts` (207 rows: `themeMode` on any element, nested themes, coexisting
 presets, user overrides, the theme-switch crossfade, the eight defects the Phase 9 critique
 confirmed, the browser-computed `--contrast` against the contrast sweep's prediction for a
 sample of colours, the Material roles, state layers and shadows of Phase 11, and the palette
 chain of Phase 14: what is generated for a theme with only a brand, only a primary, a nested
-theme, a theme beside a loaded default, and what a nested theme inherits) passes 190 of 190 in the Playwright builds
+theme, a theme beside a loaded default, and what a nested theme inherits; and the text colour of
+`bg` on the neutral palettes, Phase 14b) passes 207 of 207 in the Playwright builds
 installed here: **Chromium 158**, **Firefox 159** and **WebKit 27.2** (the Safari engine; run with
 `node test/render.ts webkit`). WebKit gets the OS colour scheme pinned into the CSS rather than
 emulated, because Playwright's emulated dark scheme makes WebKit resolve `light-dark()` to dark
@@ -123,7 +126,7 @@ and a theme switch crossfades when the registered light/dark colours are transit
 Colours follow the chain **brand → primary → secondary, tertiary → background, surface**. A theme
 passes whichever it has and the browser generates the rest from the nearest one it passed: above,
 primary is the brand moved into the lightness that reads on the page, tertiary is primary's hue
-turned 60° with half its chroma, and background and surface are neutrals with a trace of the
+turned 60° with half its chroma (0.08 at least), and background and surface are neutrals with a trace of the
 brand's hue. Pass one, two or three accents; `error`, `warn`, `caution` and `pass` have defaults.
 
 ---

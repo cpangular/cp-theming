@@ -300,10 +300,11 @@ function alphaRows(): Row[] {
 // what it has and core generates the rest. Every expectation here is worked
 // out by hand from the numbers PORT-PLAN.md Phase 14 gives, not read back
 // through the evaluator, so these rows check the Sass and not just the browser:
-//   primary     brand with L clamped to 0.35–0.50 (light) / 0.65–0.82 (dark) and
+//   primary     brand with L clamped to 0.35–0.45 (light) / 0.65–0.82 (dark) and
 //               C capped at 0.22 (dark: 0.9 C first)
-//   secondary   primary's L and H, C / 3
-//   tertiary    primary's L, C / 2, H + 60
+//   secondary   primary's L and H, C / 3 (0.04 at least)
+//   tertiary    primary's L, C / 2 (0.08 at least), H + 60
+//               neither floor lifts an accent above the primary's own C
 //   background  brand's H at L 0.97 / 0.17, C 0.006 at most
 //   surface     brand's H at L 0.93 / 0.22, C 0.01 at most
 // The brand is too light for a light page, too dark for a dark one and above
@@ -396,7 +397,7 @@ function chainRows(): Row[] {
   row('brand-only/palette-brand-is-exact', brandOnly, '--palette-color', CHAIN.brand, {
     body: '<div id="p" palette="brand">x</div>',
   });
-  row('brand-only/primary-is-readable/light', brandOnly, '--color--primary', 'oklch(0.5 0.22 30)');
+  row('brand-only/primary-is-readable/light', brandOnly, '--color--primary', 'oklch(0.45 0.22 30)');
   row('brand-only/primary-is-readable/dark', brandDark, '--color--primary', 'oklch(0.65 0.216 30)');
   // White text on it, black on the lighter dark-mode one: what the sweep predicts.
   for (const [mode, attrs] of [
@@ -411,9 +412,9 @@ function chainRows(): Row[] {
       text,
     );
   }
-  row('brand-only/secondary/light', brandOnly, '--color--secondary', 'oklch(0.5 0.07333 30)');
+  row('brand-only/secondary/light', brandOnly, '--color--secondary', 'oklch(0.45 0.07333 30)');
   row('brand-only/secondary/dark', brandDark, '--color--secondary', 'oklch(0.65 0.072 30)');
-  row('brand-only/tertiary/light', brandOnly, '--color--tertiary', 'oklch(0.5 0.11 90)');
+  row('brand-only/tertiary/light', brandOnly, '--color--tertiary', 'oklch(0.45 0.11 90)');
   row('brand-only/tertiary/dark', brandDark, '--color--tertiary', 'oklch(0.65 0.108 90)');
   row('brand-only/background/light', brandOnly, '--color--background', 'oklch(0.97 0.006 30)');
   row('brand-only/background/dark', brandDark, '--color--background', 'oklch(0.17 0.006 30)');
@@ -425,6 +426,11 @@ function chainRows(): Row[] {
   );
   row('brand-only/surface/light', brandOnly, '--color--surface', 'oklch(0.93 0.01 30)');
   row('brand-only/surface/dark', brandDark, '--color--surface', 'oklch(0.22 0.01 30)');
+  // A muted brand (C 0.06): a third and a half of it are below the floors, so
+  // secondary is 0.04 and tertiary stops at the primary's own 0.06, not 0.08.
+  const brandB = 'theme="brand-only-b"';
+  row('brand-only/muted/secondary-floor', brandB, '--color--secondary', 'oklch(0.45 0.04 200)');
+  row('brand-only/muted/tertiary-capped', brandB, '--color--tertiary', 'oklch(0.45 0.06 260)');
   // The generated palettes get every role and derivative: the bg role is the
   // tint of the generated colour (L 0.92, 40% of its chroma).
   row('brand-only/tertiary-bg-role', brandOnly, '--color--tertiary--bg', 'oklch(0.92 0.044 90)');
@@ -432,10 +438,10 @@ function chainRows(): Row[] {
   row('brand-only/error-is-the-default/light', brandOnly, '--color--error', 'oklch(0.52 0.22 27)');
   row('brand-only/pass-is-the-default/dark', brandDark, '--color--pass', 'oklch(0.72 0.16 145)');
   // A default theme: the same on the root without a theme attribute.
-  row('brand-only/default-theme/primary', '', '--color--primary', 'oklch(0.5 0.22 30)', {
+  row('brand-only/default-theme/primary', '', '--color--primary', 'oklch(0.45 0.22 30)', {
     sheets: ['core', 'brandOnlyDefault'],
   });
-  row('brand-only/default-theme/tertiary', '', '--color--tertiary', 'oklch(0.5 0.11 90)', {
+  row('brand-only/default-theme/tertiary', '', '--color--tertiary', 'oklch(0.45 0.11 90)', {
     sheets: ['core', 'brandOnlyDefault'],
   });
 
@@ -446,17 +452,11 @@ function chainRows(): Row[] {
   row('primary-only/secondary/light', primaryOnly, '--color--secondary', 'oklch(0.45 0.06 300)');
   row('primary-only/secondary/dark', primaryDark, '--color--secondary', 'oklch(0.75 0.05 300)');
   row('primary-only/tertiary/light', primaryOnly, '--color--tertiary', 'oklch(0.45 0.09 0)');
-  row('primary-only/tertiary/dark', primaryDark, '--color--tertiary', 'oklch(0.75 0.075 0)');
+  row('primary-only/tertiary/dark', primaryDark, '--color--tertiary', 'oklch(0.75 0.08 0)');
   // The mode flips on a plain element inside it, like every other palette.
-  row(
-    'primary-only/tertiary/nested-mode',
-    primaryOnly,
-    '--color--tertiary',
-    'oklch(0.75 0.075 0)',
-    {
-      body: '<div id="p" themeMode="dark">x</div>',
-    },
-  );
+  row('primary-only/tertiary/nested-mode', primaryOnly, '--color--tertiary', 'oklch(0.75 0.08 0)', {
+    body: '<div id="p" themeMode="dark">x</div>',
+  });
   row(
     'primary-only/background-is-grey/light',
     primaryOnly,
@@ -486,7 +486,7 @@ function chainRows(): Row[] {
     '--color--secondary',
     CHAIN.outerSecondaryDark,
   );
-  row('passes-secondary/tertiary-from-primary', outer, '--color--tertiary', 'oklch(0.4 0.05 310)');
+  row('passes-secondary/tertiary-from-primary', outer, '--color--tertiary', 'oklch(0.4 0.08 310)');
   row('passes-background/keeps-it', outer, '--color--background', CHAIN.outerBgLight);
 
   // ── Nested themes: generated downstream of what the nested theme passed,
@@ -496,28 +496,28 @@ function chainRows(): Row[] {
     'nested/only-primary/re-derives-secondary',
     outer,
     '--color--secondary',
-    'oklch(0.4 0.03333 20)',
+    'oklch(0.4 0.04 20)',
     nested('minimal'),
   );
   row(
     'nested/only-primary/re-derives-tertiary',
     outer,
     '--color--tertiary',
-    'oklch(0.4 0.05 80)',
+    'oklch(0.4 0.08 80)',
     nested('minimal'),
   );
   row(
     'nested/only-primary/re-derives-secondary/dark',
     `${outer} themeMode="dark"`,
     '--color--secondary',
-    'oklch(0.8 0.03333 20)',
+    'oklch(0.8 0.04 20)',
     nested('minimal'),
   );
   row(
     'nested/only-primary/secondary-bg-role-follows',
     outer,
     '--color--secondary--bg',
-    'oklch(0.92 0.01333 20)',
+    'oklch(0.92 0.016 20)',
     nested('minimal'),
   );
   // …and the outer background and error, which it has nothing upstream of.
@@ -540,14 +540,14 @@ function chainRows(): Row[] {
     'nested/only-brand/primary',
     outer,
     '--color--primary',
-    'oklch(0.5 0.22 30)',
+    'oklch(0.45 0.22 30)',
     nested('brand-only'),
   );
   row(
     'nested/only-brand/secondary',
     outer,
     '--color--secondary',
-    'oklch(0.5 0.07333 30)',
+    'oklch(0.45 0.07333 30)',
     nested('brand-only'),
   );
   row(
@@ -611,7 +611,7 @@ function chainRows(): Row[] {
     'nested/only-secondary/keeps-outer-tertiary',
     outer,
     '--color--tertiary',
-    'oklch(0.4 0.05 310)',
+    'oklch(0.4 0.08 310)',
     nested('secondary-only'),
   );
   // No colour passed (only a shape): every colour of the theme around it.
@@ -648,19 +648,19 @@ function chainRows(): Row[] {
     'nested/no-colour/keeps-outer-generated-primary',
     brandOnly,
     '--color--primary',
-    'oklch(0.5 0.22 30)',
+    'oklch(0.45 0.22 30)',
     nested('plain'),
   );
   row(
     'nested/no-colour/keeps-outer-generated-tertiary',
     brandOnly,
     '--color--tertiary',
-    'oklch(0.5 0.11 90)',
+    'oklch(0.45 0.11 90)',
     nested('plain'),
   );
   // Three deep: outer → only-brand → only-primary. The innermost has its own
   // accents and the middle theme's generated background.
-  row('nested/three-deep/secondary', outer, '--color--secondary', 'oklch(0.4 0.03333 20)', {
+  row('nested/three-deep/secondary', outer, '--color--secondary', 'oklch(0.4 0.04 20)', {
     body: '<div theme="brand-only"><div id="p" theme="minimal">x</div></div>',
   });
   row('nested/three-deep/background', outer, '--color--background', 'oklch(0.97 0.006 30)', {
@@ -686,7 +686,7 @@ function chainRows(): Row[] {
 
   // ── The root always generates: a hand-written brand pair on :root is a theme ──
   sheets.userBrand = `:root { --color--brand--mode-light: ${CHAIN.brand}; --color--brand--mode-dark: ${CHAIN.brand}; }`;
-  row('user-root-brand-pair/primary', '', '--color--primary', 'oklch(0.5 0.22 30)', {
+  row('user-root-brand-pair/primary', '', '--color--primary', 'oklch(0.45 0.22 30)', {
     sheets: ['core', 'userBrand'],
   });
   row('user-root-brand-pair/surface', '', '--color--surface', 'oklch(0.93 0.01 30)', {
@@ -697,7 +697,7 @@ function chainRows(): Row[] {
     'root-theme-without-colour/still-generates',
     'theme="plain"',
     '--color--primary',
-    'oklch(0.5 0.22 30)',
+    'oklch(0.45 0.22 30)',
     { sheets: ['core', 'brandOnlyDefault', 'plain'] },
   );
 
@@ -708,14 +708,14 @@ function chainRows(): Row[] {
     'beside-a-default/only-brand/primary',
     brandOnly,
     '--color--primary',
-    'oklch(0.5 0.22 30)',
+    'oklch(0.45 0.22 30)',
     beside,
   );
   row(
     'beside-a-default/only-brand/secondary',
     brandOnly,
     '--color--secondary',
-    'oklch(0.5 0.07333 30)',
+    'oklch(0.45 0.07333 30)',
     beside,
   );
   row(
@@ -770,9 +770,9 @@ function chainRows(): Row[] {
       act: "document.documentElement.setAttribute('theme', 'brand-only-b')",
       animates: true,
       tolerance: 0.04,
-      // brand-only-c is too light: L 0.7 → 0.5. brand-only-b is inside the band,
+      // brand-only-c is too light: L 0.7 → 0.45. brand-only-b is inside the band,
       // so its primary is the brand itself.
-      expect: midway('oklch(0.5 0.1 30)', CHAIN.brandB),
+      expect: midway('oklch(0.45 0.1 30)', CHAIN.brandB),
     },
   );
 
@@ -800,8 +800,8 @@ function chainRows(): Row[] {
 
   // ── Material: tertiary roles read --color--tertiary ──
   const mat = { sheets: [...all, 'material'] };
-  row('mat-sys/tertiary', outer, '--mat-sys-tertiary', 'oklch(0.4 0.05 310)', mat);
-  row('mat-sys/tertiary/nested-theme', outer, '--mat-sys-tertiary', 'oklch(0.4 0.05 80)', {
+  row('mat-sys/tertiary', outer, '--mat-sys-tertiary', 'oklch(0.4 0.08 310)', mat);
+  row('mat-sys/tertiary/nested-theme', outer, '--mat-sys-tertiary', 'oklch(0.4 0.08 80)', {
     ...mat,
     ...nested('minimal'),
   });
@@ -810,17 +810,91 @@ function chainRows(): Row[] {
     'mat-sys/tertiary-container',
     outer,
     '--mat-sys-tertiary-container',
-    'oklch(0.92 0.02 310)',
+    'oklch(0.92 0.032 310)',
     mat,
   );
   row('mat-sys/palette-brand', brandOnly, '--mat-sys-primary', CHAIN.brand, {
     ...mat,
     body: '<div id="p" palette="brand">x</div>',
   });
-  row('mat-sys/palette-tertiary', brandOnly, '--mat-sys-primary', 'oklch(0.5 0.11 90)', {
+  row('mat-sys/palette-tertiary', brandOnly, '--mat-sys-primary', 'oklch(0.45 0.11 90)', {
     ...mat,
     body: '<div id="p" palette="tertiary">x</div>',
   });
+  return out;
+}
+
+// ─── bg() on background and surface (Phase 14b) ──────────────────────────────
+// The bg layer keeps the palette's own colour as text. For background and
+// surface that colour is the fill, so there the text is the bg role's contrast.
+// brand-only generates background L 0.97 / 0.17 and surface L 0.93 / 0.22.
+sheets.bgText = compileSource(
+  `@use "../../scss/theme" as t;
+// A surface whose bg role is not its colour: the text follows the bg role.
+@include t.define-theme("dark-fill", t.theme($palettes: (
+  surface: t.palette(oklch(0.93 0 0), $bg: oklch(0.3 0.1 250)),
+)));
+.mixin { @include t.apply-palette(surface); @include t.bg(); }
+.mixin-high { @include t.apply-palette(surface); @include t.bg(high); }`,
+  path.join(coreDir, 'test/fixtures/__render-bg-text.scss'),
+).css;
+
+function bgTextRows(): Row[] {
+  const out: Row[] = [];
+  const BLACK = 'oklch(0 0 0)';
+  const WHITE = 'oklch(1 0 0)';
+  const row = (id: string, html: string, body: string, expect: string) =>
+    out.push({
+      id: `bg-text/${id}`,
+      sheets: ['core', 'brandOnly', 'bgText'],
+      html,
+      body,
+      probe: '#p',
+      token: 'color',
+      read: 'text',
+      expect,
+    });
+  const light = 'theme="brand-only"';
+  const dark = 'theme="brand-only" themeMode="dark"';
+  const el = (attrs: string) => `<div id="p" ${attrs}>x</div>`;
+  row('surface/light=black', light, el('palette="surface" bg'), BLACK);
+  row('surface/dark=white', dark, el('palette="surface" bg'), WHITE);
+  row('background/light=black', light, el('palette="background" bg'), BLACK);
+  row('background/dark=white', dark, el('palette="background" bg'), WHITE);
+  // It resolves where it is used: a themeMode inside a light page.
+  row(
+    'surface/nested-mode=white',
+    light,
+    '<div themeMode="dark"><div id="p" palette="surface" bg>x</div></div>',
+    WHITE,
+  );
+  // Without bg the text is the identity colour, as before.
+  row('surface/no-bg-is-identity', light, el('palette="surface"'), 'oklch(0.93 0.01 30)');
+  // …also inside an element that has bg: its text colour does not reach in.
+  row(
+    'background/no-bg-inside-surface-bg',
+    light,
+    '<div palette="surface" bg><span id="p" palette="background">x</span></div>',
+    'oklch(0.97 0.006 30)',
+  );
+  row(
+    'surface/no-bg-inside-primary-bg',
+    light,
+    '<div palette="primary" bg><span id="p" palette="surface">x</span></div>',
+    'oklch(0.93 0.01 30)',
+  );
+  // Every other palette keeps its identity colour on bg.
+  row('primary/bg-is-identity', light, el('palette="primary" bg'), 'oklch(0.45 0.22 30)');
+  row('brand/bg-is-identity', light, el('palette="brand" bg'), CHAIN.brand);
+  // filled wins over bg on the same element (its own contrast text).
+  row('surface/filled-and-bg', dark, el('palette="surface" bg filled'), WHITE);
+  // The contrast is the bg role's: a light surface with a dark $bg gets white.
+  row('follows-the-bg-role', 'theme="dark-fill"', el('palette="surface" bg'), WHITE);
+  // The mixins in a rule of one's own; bg(high) reads the high step's contrast
+  // (dark mode: L 0.22 + 0.12, still white).
+  row('mixin/light=black', light, el('class="mixin"'), BLACK);
+  row('mixin/dark=white', dark, el('class="mixin"'), WHITE);
+  row('mixin/bg-high/dark=white', dark, el('class="mixin-high"'), WHITE);
   return out;
 }
 
@@ -839,8 +913,9 @@ interface Row {
   /**
    * paint: read through `color: var(token)` on a probe child. raw: getPropertyValue.
    * shadow: the colour of the computed `box-shadow: var(token)` on a probe child, or `none`.
+   * text: the probe's own computed `color` (the token is not read).
    */
-  read?: 'paint' | 'raw' | 'shadow';
+  read?: 'paint' | 'raw' | 'shadow' | 'text';
   /** The value, or labelled candidates of which one must match (crossfade rows). */
   expect: string | Record<string, string>;
   /** Tolerance for a colour comparison (sRGB channel, 0–1). */
@@ -1537,6 +1612,7 @@ const rows: Row[] = [
   ...alphaRows(),
   // ── Phase 14: the palette chain ─────────────────────────────────────────
   ...chainRows(),
+  ...bgTextRows(),
 ];
 
 // A theme that passes one palette and nothing else, for the inheritance rows.
@@ -1624,6 +1700,7 @@ const probeScript = `(({ probe, token, read, act, transitioned, animates }) => {
   if (!el) return { error: 'no element matches ' + probe };
   const readValue = () => {
     if (read === 'raw') return getComputedStyle(el).getPropertyValue(token).trim();
+    if (read === 'text') return getComputedStyle(el).color;
     const span = document.createElement('span');
     if (read === 'shadow') span.style.boxShadow = 'var(' + token + ')';
     else span.style.color = 'var(' + token + ')';
