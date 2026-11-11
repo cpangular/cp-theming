@@ -939,6 +939,13 @@ As done (2026-11-11):
 - The repo is still private, so there is no `static-site` artifact and `pages.yml` stays on
   manual trigger. Its install step now passes `GITHUB_TOKEN`, which the `@cpdevtools` registry
   lines in `.npmrc` need.
+- theme-ng-core's `publishConfig` also has `linkDirectory: false`. Without it pnpm links the
+  workspace copy to `dist/theme-ng-core`, which does not exist before a build; with it the demos
+  and tests keep resolving the source. The lockfile records the publish directory
+  (`publishDirectory`), and a frozen install fails if it does not.
+- The first push created `release/feature/port-spike-findings` at the same commit, so there was
+  nothing to compare; the draft release PR (#1) opened on the second push. The test workflow is
+  green and builds theme-ng-core with ng-packagr.
 
 ---
 
