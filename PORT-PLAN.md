@@ -848,6 +848,30 @@ says why it cannot be); the README row for `demos/docs` lists the gallery.
   label, badges covering the text beside them; the harness pressed Escape with focus inside the
   sidenav and measured an autocomplete panel while it was opening.
 
+### Phase 14d — A theme without a brand uses its primary as the brand (decided 2026-11-11)
+
+Found by Phase 15: the presets pass no `brand`, so `palette="brand"` is core's grey in both modes
+and brand-coloured fills are near-black on a dark page. "The brand is never adjusted" holds only
+for a brand that was given.
+
+- When a theme passes no `brand`, its brand palette is its primary, exactly as that primary is
+  (passed or generated): the brand pair points at the primary pair. The direction per theme is
+  decided as Phase 14's pointers already do it: a theme that passes `brand` and no `primary`
+  points primary at the generated-from-brand; a theme that passes `primary` and no `brand` points
+  brand at primary; one that passes both points nothing; one that passes neither inherits both.
+  At the root with nothing loaded, brand keeps its grey initial value and primary follows it, so
+  there is no cycle and the no-theme fallback is unchanged.
+- The `*-from-brand()` helpers keep reading `--color--brand`; with brand = primary they produce
+  the same colours as the `*-from-var("--color--primary")` form.
+- The gallery's "brand fills are near-black in dark mode" paragraph goes; `palette="brand"` on
+  every preset shows that preset's primary. The brand rows in the chain test and `render.ts`
+  gain: a theme with only `primary` has `--color--brand` equal to it in both modes; a theme with
+  both keeps both; a nested theme with only `secondary` inherits the outer brand.
+
+Done when: the chain test and `render.ts` pass with the new rows; the gallery screenshots show
+`palette="brand"` fills in each preset's primary in both modes, and the painted-contrast report
+stays at 0 component labels below 4.5:1.
+
 ### Phase 13 — Release through cpdevtools/git-flow
 
 Goal: versions, tags and publishing run through git-flow.
