@@ -357,9 +357,9 @@ $_palette-hooks-emitted: ();
 // stylesheet (the @property rules must be at root level), before any theme.
 //   1. @property registrations: each core palette role's light and dark
 //      colour, --color--brand, and the scalars (weights, density, space, shape).
-//   2. :where(:root): color-scheme, the mode flag, and the default of every
-//      unregistered group (weights and elevation pairs, overlay, elevation,
-//      typography, focus geometry, motion).
+//   2. :where(:root): color-scheme, the mode flag, the contrast step, and the
+//      default of every unregistered group (weights and elevation pairs,
+//      overlay, elevation, typography, focus geometry, motion).
 //   3. The themeMode rules.
 //   4. :where(:root, [theme]): every derivation for the core palette names and
 //      the typography role fonts.
@@ -375,6 +375,7 @@ $_palette-hooks-emitted: ();
 
   :where(:root) {
     @include _m.root-defaults();
+    @include _pal.root-defaults();
     @include _w.emit-root-defaults();
     @include _ov.emit-root-defaults();
     @include _el.emit-root-defaults();

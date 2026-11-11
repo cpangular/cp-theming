@@ -55,6 +55,16 @@ demos/demo-brand-material/                                 — Example brand+mat
   `define-theme()` emits `[theme="name"]` holding only what was passed. Load
   order is core, then themes, then the adapter. Variable-only rules are `:where()`.
 
+- **Contrast is automatic, by luminance.** Every `--contrast` is black or white, chosen by a
+  step at WCAG relative luminance 0.179 read from linear sRGB with each channel clamped to 0–1
+  (`_palette.scss`, "Contrast"). The step is declared once as the private
+  `--theme--_contrast-step`. Do not go back to a lightness threshold: no single one passes
+  every hue.
+
+- **Derivations are opaque.** Every relative-colour derivation ends `/ 1`, so a translucent
+  input cannot make ladder steps, auto roles or text translucent. Only `--tint-1..5` carry an
+  alpha. The contrast check fails a derivation without it.
+
 - **Focus color is per-palette.** `--pal-{name}--focus` is derived per palette,
   not a global. A matching-hue focus ring on a same-hue surface is invisible.
 

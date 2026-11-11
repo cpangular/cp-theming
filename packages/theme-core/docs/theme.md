@@ -255,7 +255,7 @@ Emits everything that is theme-independent and shared across all themes. Call on
 **What it emits, once:**
 
 - **`@property` registrations** for the typed custom properties (see below)
-- **`:where(:root)`** — `color-scheme: light dark`, the mode flag, and the default of every unregistered group (weight and elevation-tint pairs, overlay, elevation shadows, typography, focus geometry, motion). The greyscale palette fallback lives in the registered colours' `initial-value`s.
+- **`:where(:root)`** — `color-scheme: light dark`, the mode flag, the contrast step (a private variable every `--contrast` reads), and the default of every unregistered group (weight and elevation-tint pairs, overlay, elevation shadows, typography, focus geometry, motion). The greyscale palette fallback lives in the registered colours' `initial-value`s.
 - **The `themeMode` rules** for `light`, `dark`, `auto` and `invert`, each wrapped in `:where()`, setting `color-scheme` and a private 0/1 mode flag. They match the `[themeMode]` element itself, so a mode works on any element.
 - **`:where(:root, [theme])`** — every derivation for the eight core palette names (the auto `--bg`, `--stroke` and `--focus` roles, derived into their registered pairs from the colour pair and then joined; the 7-step ladders, contrasts, mode-relative aliases and tints) and the typography role fonts.
 - **`:where(:root, [theme], [themeMode])`** — every mode-varying percentage (weights, elevation tints) picked arithmetically from its light and dark value and the mode flag. CSS `light-dark()` is never used for a percentage.

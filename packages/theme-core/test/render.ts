@@ -9,8 +9,10 @@
 //   node test/render.ts --html out.html # also write a self-contained page that runs
 //                                       # every row in whatever browser opens it (Safari)
 //
-// Every row asserts the behaviour PORT-PLAN.md Phase 9 specifies. Stylesheets
-// load in the order core, themes, adapter, user CSS.
+// Every row asserts the behaviour PORT-PLAN.md Phase 9 specifies, and the
+// contrast/ and alpha/ rows that of Phase 10: the browser's --contrast is the
+// one the contrast sweep (test/css/contrast.test.ts) predicts. Stylesheets load
+// in the order core, themes, adapter, user CSS.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { chromium, firefox, webkit, type BrowserType } from 'playwright';
@@ -165,6 +167,132 @@ function midway(
   return { 'oklab midpoint': derive(mid('oklab')), 'sRGB midpoint': derive(mid('srgb')) };
 }
 
+// ─── Contrast samples (Phase 10) ─────────────────────────────────────────────
+// The sweep proves, with colorjs.io, that the --contrast expression in the
+// compiled CSS reaches 4.5:1. These rows prove the browsers evaluate that
+// expression to the same black or white: `expectFrom` is the sweep's evaluator.
+// Each sample is set as the primary pair on a [theme] element, so core
+// re-derives every role, ladder step and contrast from it.
+const CONTRAST_SAMPLES: [label: string, colour: string][] = [
+  // Either side of the step: relative luminance 0.178 and 0.181.
+  ['grey-below-step', '#757575'],
+  ['grey-above-step', '#767676'],
+  // Outside sRGB: the choice follows the clipped colour that is painted. Read
+  // unclamped, these three have a luminance below the step and would get white.
+  ['outside-srgb-red', 'oklch(0.55 0.32 30)'],
+  ['outside-srgb-pink', 'oklch(0.6 0.32 0)'],
+  ['outside-srgb-teal', 'oklch(0.55 0.32 190)'],
+  ['outside-srgb-p3-green', 'color(display-p3 0 1 0)'],
+  // Why no lightness threshold works: the lighter of these two needs white
+  // text and the darker needs black.
+  ['violet-l-0.59', 'oklch(0.59 0.28 310)'],
+  ['green-l-0.56', 'oklch(0.56 0.17 138)'],
+  // Any CSS colour format.
+  ['hsl-amber', 'hsl(30 100% 40%)'],
+  ['rgb-rust', 'rgb(200 60 20)'],
+  ['hex-blue', '#0000ff'],
+];
+const TRANSLUCENT = 'oklch(0.6 0.2 30 / 0.4)';
+
+/** A [theme] element whose primary pair is `colour` in both modes. */
+const primaryPair = (colour: string) =>
+  `<div id="p" theme="custom" style="--color--primary--mode-light: ${colour}; --color--primary--mode-dark: ${colour}">x</div>`;
+const pairOverrides = (colour: string) => ({
+  '--color--primary--mode-light': colour,
+  '--color--primary--mode-dark': colour,
+});
+
+/** `white` or `black`, for a row id that says what the sweep predicts. */
+function textName(value: string): string {
+  const l = cssColor(value).to('oklch').coords[0] ?? 0;
+  return l > 0.99 ? 'white' : l < 0.01 ? 'black' : `neither black nor white, ${value}`;
+}
+
+function contrastRows(): Row[] {
+  const out: Row[] = [];
+  const sample = (label: string, colour: string, token: string) => {
+    const expect = expectFrom('alpha', 'alpha', token, 'light', pairOverrides(colour));
+    out.push({
+      id: `contrast/${label}${token.replace('--color--primary', '')}=${textName(expect)}`,
+      sheets: ['core', 'alpha'],
+      html: 'theme="alpha"',
+      body: primaryPair(colour),
+      probe: '#p',
+      token,
+      expect,
+    });
+  };
+  for (const [label, colour] of CONTRAST_SAMPLES)
+    sample(label, colour, '--color--primary--contrast');
+  // The contrast of a ladder step and of the auto bg and stroke roles.
+  for (const suffix of ['--dark', '--lightest', '--bg', '--bg--darkest', '--stroke'])
+    sample('outside-srgb-red', 'oklch(0.55 0.32 30)', `--color--primary${suffix}--contrast`);
+  // A shipped preset: every palette's text in both modes (white on warn and
+  // caution in light mode is the automatic choice, accepted 2026-11-09).
+  for (const mode of ['light', 'dark'] as const)
+    for (const name of CORE_PALETTES) {
+      const token = `--color--${name}--contrast`;
+      const expect = expectFrom('azure', 'azure-blue', token, mode);
+      out.push({
+        id: `contrast/azure-blue-${mode}-${name}=${textName(expect)}`,
+        sheets: ['core', 'azure'],
+        html: `theme="azure-blue" themeMode="${mode}"`,
+        body: P,
+        probe: '#p',
+        token,
+        expect,
+      });
+    }
+  return out;
+}
+
+// Alpha is pinned to 1 in every derivation, so a translucent input gives opaque
+// ladder steps, auto roles and text; only the tints carry an alpha (their weight).
+function alphaRows(): Row[] {
+  // The prediction itself must be opaque (the tint: its 10% weight), so a row
+  // cannot pass by browser and evaluator agreeing on a translucent value.
+  const predicted = (expect: string, alpha: number): string => {
+    const got = cssColor(expect).alpha ?? 1;
+    if (Math.abs(got - alpha) > 1e-6)
+      throw new Error(`alpha rows: expected alpha ${alpha}, the CSS gives ${expect}`);
+    return expect;
+  };
+  const out: Row[] = ['--dark', '--bg', '--stroke', '--focus', '--contrast', '--tint-1'].map(
+    (suffix) => ({
+      id: `alpha/translucent-input${suffix}`,
+      sheets: ['core', 'alpha'],
+      html: 'theme="alpha"',
+      body: primaryPair(TRANSLUCENT),
+      probe: '#p',
+      token: `--color--primary${suffix}`,
+      expect: predicted(
+        expectFrom(
+          'alpha',
+          'alpha',
+          `--color--primary${suffix}`,
+          'light',
+          pairOverrides(TRANSLUCENT),
+        ),
+        suffix === '--tint-1' ? 0.1 : 1,
+      ),
+    }),
+  );
+  const brand = 'oklch(0.44 0.22 253 / 0.4)';
+  out.push({
+    id: 'alpha/translucent-brand-from-brand',
+    sheets: ['core', 'brandfx'],
+    html: 'theme="brandfx"',
+    body: `<div id="p" theme="brandfx" style="--color--brand: ${brand}">x</div>`,
+    probe: '#p',
+    token: '--color--primary',
+    expect: predicted(
+      expectFrom('brandfx', 'brandfx', '--color--primary', 'light', { '--color--brand': brand }),
+      1,
+    ),
+  });
+  return out;
+}
+
 // ─── Rows ────────────────────────────────────────────────────────────────────
 interface Row {
   id: string;
@@ -192,6 +320,16 @@ interface Row {
 }
 
 const P = '<div id="p">probe</div>';
+const CORE_PALETTES = [
+  'background',
+  'surface',
+  'primary',
+  'secondary',
+  'error',
+  'warn',
+  'caution',
+  'pass',
+];
 const rows: Row[] = [
   // ── Behaviour today (PORT-PLAN.md) ──────────────────────────────────────
   {
@@ -745,6 +883,9 @@ const rows: Row[] = [
       '--color--primary--mode-light': COLOR.user,
     }),
   },
+  // ── Phase 10: contrast and alpha ────────────────────────────────────────
+  ...contrastRows(),
+  ...alphaRows(),
 ];
 
 // A theme that passes one palette and nothing else, for the inheritance rows.

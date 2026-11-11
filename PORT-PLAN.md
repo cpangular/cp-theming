@@ -279,6 +279,15 @@ Goal: `--contrast` is chosen automatically and is readable on every opaque colou
   `*-from-var` / `*-from-brand` helpers (:152-157, :247-248, :267, :302, :325-369). `--tint-1..5`
   keep their weight alpha.
 - Correct the formula shown in demos/docs (palette.component.ts:71, guides.component.ts:73).
+- **As landed (2026-11-11).** `S` is declared once on `:where(:root)` as the private variable
+  `--theme--_contrast-step` and each `--contrast` substitutes it; written out three times in each of
+  the 168 contrast declarations it added 52 KB to core.css and broke the size check. The browser
+  resolves the same expression. The six slide-toggle handle tints in the adapter's overrides
+  (`_material.scss:263-274`) are pinned too, and a harness check now fails any relative-colour
+  derivation without `/ 1` other than a tint. The harness reads a custom palette's derivations from
+  `:where([theme])`, which the `todo` had hidden. Measured on this code the visible change is 68
+  colours, not 52 (the sweep covers 1344 colours; the 52 was counted over 1008 at `df8151e`): 59
+  were below 4.5:1, and 9 passed with black at 4.53–4.55 and now carry white at 4.62–4.64.
 
 Visible change: 52 preset role/step colours switch from black to white text, none the other way,
 including the `warn` and `caution` bases in light mode. That is the automatic choice doing its job:

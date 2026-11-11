@@ -164,6 +164,19 @@ For every palette named `{name}`, the following CSS custom properties are emitte
 --color--{name}--lower--contrast
 ```
 
+#### How `--contrast` is chosen
+
+Every `--contrast` is black or white, chosen by the browser from the colour it sits on: white when that colour's WCAG relative luminance is below 0.179, black when it is above. At 0.179 black and white give the same contrast, so the text reaches at least 4.5:1 on every opaque colour, whatever its hue and whatever format it was written in. Luminance is read from the linear-sRGB channels, each clamped to 0–1, so a colour outside sRGB gets the text that suits the clipped colour the screen paints.
+
+```css
+/* S = clamp(0, (0.179 - (0.2126*R + 0.7152*G + 0.0722*B)) * 1e6, 1), with R, G, B clamped to 0–1 */
+--color--primary--contrast: oklch(from color(from var(--color--primary) srgb-linear S S S) l 0 0 / 1);
+```
+
+Core declares `S` once, as the private variable `--theme--_contrast-step`, and each `--contrast` reads it.
+
+Every derived colour — ladder steps, the auto `--bg`, `--stroke` and `--focus`, the contrasts, and the `*-from-var()` / `*-from-brand()` palettes — has alpha 1, even when the colour it derives from is translucent. Only the tints carry an alpha. The 4.5:1 guarantee is for opaque colours: text on a `$bg` you pass with an alpha is chosen as if that colour were opaque.
+
 ### Background role
 
 Same set of modifiers under `--color--{name}--bg`:

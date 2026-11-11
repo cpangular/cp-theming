@@ -68,7 +68,11 @@ const TOC = [
   /* Derived by the browser at runtime */
   --color--primary--dark:     oklch(from var(--color--primary) calc(l - 0.12) c h);
   --color--primary--light:    oklch(from var(--color--primary) calc(l + 0.12) c h);
-  --color--primary--contrast: oklch(from var(--color--primary) clamp(0, (0.5 - l) * 99999, 1) 0 0);
+  /* Black or white text. S is 1 (white) when the colour's relative luminance
+     is below 0.179, else 0 (black):
+     S = clamp(0, (0.179 - (0.2126*R + 0.7152*G + 0.0722*B)) * 1e6, 1)
+     with R, G, B the linear-sRGB channels, each clamped to 0–1 */
+  --color--primary--contrast: oklch(from color(from var(--color--primary) srgb-linear S S S) l 0 0 / 1);
   --color--primary--bg:       oklch(from var(--color--primary) calc(l * 0.22 + 0.78) calc(c * 0.18) h);
   --color--primary--focus:    oklch(from var(--color--primary) clamp(0.35, l, 0.65) c calc(h + 40));
 &#125;</code></pre>
@@ -80,6 +84,13 @@ const TOC = [
           <code>--lowest</code>, <code>--lower</code>, <code>--low</code>, base,
           <code>--high</code>, <code>--higher</code>, <code>--highest</code>; a
           <code>--contrast</code> for each; and <code>--tint-1</code> through <code>--tint-5</code>.
+        </p>
+        <p>
+          <code>--contrast</code> is chosen automatically: white text on a colour whose WCAG
+          relative luminance is below 0.179, black text above it. That is the point where both give
+          the same contrast, so the text reaches at least 4.5:1 on every opaque colour, in any
+          colour format and whatever its hue. Every derived colour is opaque (alpha 1) even when the
+          input is not; only the tints carry an alpha.
         </p>
       </section>
 

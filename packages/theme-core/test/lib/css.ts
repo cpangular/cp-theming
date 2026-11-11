@@ -195,3 +195,39 @@ export function declarationsFor(css: string, selector: string): Map<string, stri
   }
   return map;
 }
+
+export interface RelativeColor {
+  /** The whole function, e.g. `oklch(from var(--x) l c h / 1)`. */
+  text: string;
+  /** What follows its top-level `/`, or null when it has none. */
+  alpha: string | null;
+}
+
+/**
+ * The outermost relative colours (`fn(from …)`) in a declaration value. One
+ * nested in another's origin is not listed: its alpha feeds the outer function,
+ * which decides the alpha of the result.
+ */
+export function relativeColors(value: string): RelativeColor[] {
+  const out: RelativeColor[] = [];
+  const re = /\b[a-z-]+\(\s*from\s/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(value))) {
+    const open = value.indexOf('(', m.index);
+    let depth = 0;
+    let end = open;
+    let slash = -1;
+    for (; end < value.length; end++) {
+      const ch = value[end];
+      if (ch === '(') depth++;
+      else if (ch === ')' && --depth === 0) break;
+      else if (ch === '/' && depth === 1) slash = end;
+    }
+    out.push({
+      text: value.slice(m.index, end + 1),
+      alpha: slash < 0 ? null : value.slice(slash + 1, end).trim(),
+    });
+    re.lastIndex = end + 1; // skip relative colours nested inside this one
+  }
+  return out;
+}

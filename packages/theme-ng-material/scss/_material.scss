@@ -261,16 +261,16 @@
     // Chroma is scaled down to ~25% — matching M3 primary-container tone (muted tint,
     // not the saturated primary hue). Full chroma at L=0.90 looks vivid and off-hue.
     --mat-slide-toggle-selected-hover-handle-color: light-dark(
-      oklch(from var(--color--primary) 0.9 calc(c * 0.25) h),
-      oklch(from var(--color--primary) 0.25 calc(c * 0.25) h)
+      oklch(from var(--color--primary) 0.9 calc(c * 0.25) h / 1),
+      oklch(from var(--color--primary) 0.25 calc(c * 0.25) h / 1)
     );
     --mat-slide-toggle-selected-focus-handle-color: light-dark(
-      oklch(from var(--color--primary) 0.9 calc(c * 0.25) h),
-      oklch(from var(--color--primary) 0.25 calc(c * 0.25) h)
+      oklch(from var(--color--primary) 0.9 calc(c * 0.25) h / 1),
+      oklch(from var(--color--primary) 0.25 calc(c * 0.25) h / 1)
     );
     --mat-slide-toggle-selected-pressed-handle-color: light-dark(
-      oklch(from var(--color--primary) 0.88 calc(c * 0.25) h),
-      oklch(from var(--color--primary) 0.22 calc(c * 0.25) h)
+      oklch(from var(--color--primary) 0.88 calc(c * 0.25) h / 1),
+      oklch(from var(--color--primary) 0.22 calc(c * 0.25) h / 1)
     );
   }
 }

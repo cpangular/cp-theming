@@ -70,7 +70,9 @@ const NG_MATERIAL_TOC = [
   /* Derived by browser at runtime — NOT pre-computed */
   --color--primary--dark:     oklch(from var(--color--primary) calc(l - 0.12) c h);
   --color--primary--light:    oklch(from var(--color--primary) calc(l + 0.12) c h);
-  --color--primary--contrast: oklch(from var(--color--primary) clamp(0, (0.5 - l) * 99999, 1) 0 0);
+  /* Black or white text: S is 1 (white) when the relative luminance of
+     --color--primary is below 0.179, else 0 (black) */
+  --color--primary--contrast: oklch(from color(from var(--color--primary) srgb-linear S S S) l 0 0 / 1);
 &#125;</code></pre>
           </section>
 

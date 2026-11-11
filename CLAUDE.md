@@ -23,6 +23,9 @@ This is a CSS-variable-based theming system. Key facts:
 - Cascade (Phase 9): core (`define-core-theme()`) derives once on `:where(:root, [theme])`; a theme
   rule holds only what was passed. Registered: the role colour pairs `--mode-light`/`--mode-dark`,
   `--color--brand`, the scalars. Load order: core, themes, adapter.
+- Contrast (Phase 10): `--contrast` is black or white by a step at relative luminance 0.179 in
+  clamped linear sRGB; the step is declared once as `--theme--_contrast-step`. Every relative-colour
+  derivation ends `/ 1` (only the tints carry an alpha); a harness check enforces it.
 - Focus ring color is **per-palette**, auto-derived via CSS relative color.
 - `cp-theming-core` has **zero Angular dependency**.
 - Most packages are currently **stubs** — implement with `// TODO(phase-N):` comments.

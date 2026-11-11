@@ -83,9 +83,10 @@ export function formatWarning(w: {
 /**
  * The declarations in force on a theme's root element, in cascade order: the
  * registered initial values, every root-level variable rule of core and of the
- * theme stylesheet (`:where(:root)`, `:where(:root, [theme])`, …), then the
- * theme's own `[theme="name"]` rule. This is what the evaluator reads a token
- * from now that core derives once and a theme rule holds only what was passed.
+ * theme stylesheet (`:where(:root)`, `:where(:root, [theme])`, … and
+ * `:where([theme])`, where a custom palette name is derived), then the theme's
+ * own `[theme="name"]` rule. This is what the evaluator reads a token from now
+ * that core derives once and a theme rule holds only what was passed.
  */
 export function themeDeclarations(core: Stylesheet, theme: Stylesheet, name: string) {
   const map = new Map<string, string>();
@@ -93,7 +94,8 @@ export function themeDeclarations(core: Stylesheet, theme: Stylesheet, name: str
     for (const [n, v] of registeredInitialValues(css)) map.set(n, v);
   for (const css of [core.css, theme.css])
     for (const rule of rules(css)) {
-      if (rule.context.length || !rule.selector.includes(':root')) continue;
+      if (rule.context.length) continue;
+      if (!rule.selector.includes(':root') && rule.selector !== ':where([theme])') continue;
       for (const [n, v] of rule.declarations) map.set(n, v);
     }
   for (const [n, v] of declarationsFor(theme.css, themeSelector(name))) map.set(n, v);

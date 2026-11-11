@@ -318,8 +318,26 @@ $my-theme: t.theme(
 - Consumers: the docs workaround block is deleted; demo-core loads core first via
   `t.define-core-theme()`.
 
-### ⬛ Phases 10–13 — planned in PORT-PLAN.md
-- Phase 10 — Contrast and alpha
+### ✅ Phase 10 — Contrast and alpha (PORT-PLAN.md)
+- `--contrast` (base, ladder steps, `--bg`, `--stroke`) is black or white by a step at WCAG relative
+  luminance 0.179, read from linear sRGB with each channel clamped to 0–1, kept as an oklch value:
+  `oklch(from color(from var(--x) srgb-linear S S S) l 0 0 / 1)`. Core declares `S` once on
+  `:where(:root)` as the private `--theme--_contrast-step`; every `--contrast` substitutes it.
+- Alpha is pinned to 1 on ladder steps, the auto `--bg` / `--stroke` / `--focus`, the contrasts, the
+  `*-from-var` / `*-from-brand` helpers and the adapter's slide-toggle handle tints. `--tint-1..5`
+  keep their weight alpha.
+- Contrast sweep has no `todo`: 0 of 1344 preset role/step colours and 0 of 2376 grid colours below
+  4.5:1 (lowest 4.60:1 and 4.58:1). Before: 59 preset colours and 162 grid colours below, worst
+  3.28:1. A new check asserts every relative-colour derivation pins alpha except the tints.
+- Visible change: 68 preset role/step colours switch from black to white text, none the other way,
+  including the `warn` and `caution` bases in light mode (accepted 2026-11-09).
+- render.ts has 92 rows: the browser's `--contrast` equals the sweep's prediction for 11 sample
+  colours (either side of the step, outside sRGB, hex/`rgb()`/`hsl()`), five ladder and role
+  contrasts, and every azure-blue palette in both modes; a translucent input gives opaque
+  derivatives. All pass in Chromium, Firefox and WebKit.
+- core.css went from 165 KB to 178 KB (12.2 KB to 12.4 KB gzipped).
+
+### ⬛ Phases 11–13 — planned in PORT-PLAN.md
 - Phase 11 — Material adapter from Material's role tables
 - Phase 12 — Startup: no flash, safe import
 - Phase 13 — Release through cpdevtools/git-flow

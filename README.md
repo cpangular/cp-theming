@@ -41,7 +41,7 @@ A modern CSS-variable-based theming system for Angular applications. All color d
 | 7 | `demos/docs` — Documentation + showcase site | 🟡 In Progress — paused until Phase 9 |
 | 8 | Test harness and CI (`node --test` CSS checks, vitest API tests, Playwright `render.ts`, git-flow `test.yml`) | ✅ Done |
 | 9 | Cascade: a theme is one rule; core derives once | ✅ Done |
-| 10 | Contrast and alpha | ⬛ Not started |
+| 10 | Contrast and alpha (`--contrast` by a luminance step; every derivation opaque except the tints) | ✅ Done |
 | 11 | Material adapter from Material's role tables | ⬛ Not started |
 | 12 | Startup: no flash, safe import | ⬛ Not started |
 | 13 | Release through cpdevtools/git-flow | ⬛ Not started |
@@ -50,9 +50,10 @@ Phases 8–13 are specified in [PORT-PLAN.md](PORT-PLAN.md).
 
 ### Browser baseline
 
-`packages/theme-core/test/render.ts` (53 rows: `themeMode` on any element, nested themes, coexisting
-presets, user overrides, the theme-switch crossfade, and the eight defects the Phase 9 critique
-confirmed) passes 53 of 53 in the Playwright builds
+`packages/theme-core/test/render.ts` (92 rows: `themeMode` on any element, nested themes, coexisting
+presets, user overrides, the theme-switch crossfade, the eight defects the Phase 9 critique
+confirmed, and the browser-computed `--contrast` against the contrast sweep's prediction for a
+sample of colours) passes 92 of 92 in the Playwright builds
 installed here: **Chromium 158**, **Firefox 159** and **WebKit 27.2** (the Safari engine; run with
 `node test/render.ts webkit`). WebKit gets the OS colour scheme pinned into the CSS rather than
 emulated, because Playwright's emulated dark scheme makes WebKit resolve `light-dark()` to dark

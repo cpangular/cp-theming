@@ -348,7 +348,7 @@ A light/dark flip and a `palette` attribute change are instant at the variable l
 
 Derivative vars (`--contrast`, `--dark`, `--high`, etc.) are computed using CSS relative color syntax:
 ```css
---color--primary--dark: oklch(from var(--color--primary) clamp(0, calc(l - 0.12), 1) c h);
+--color--primary--dark: oklch(from var(--color--primary) clamp(0, calc(l - 0.12), 1) c h / 1);
 ```
 and `--color--primary` is `light-dark(var(--color--primary--mode-light), var(--color--primary--mode-dark))`. Unregistered, both stay expressions until an element uses them, so a `themeMode` on any element flips them, and when the registered pair transitions the browser re-evaluates them on every frame. Registering them would freeze them to a colour on the element where they are declared.
 

@@ -138,34 +138,62 @@ $_registered-palette-names: ();
   #{$t}: light-dark(var(#{$t}--mode-light), var(#{$t}--mode-dark));
 }
 
+// ─── Contrast ─────────────────────────────────────────────────────────────────
+// --contrast is black or white text, whichever reads on its colour.
+//
+// WCAG relative luminance Y is a weighted sum of the linear-sRGB channels.
+// Black and white text give equal contrast at Y = 0.179, so text is white
+// below that and black above it, which keeps every opaque colour at 4.5:1 or
+// better (worst case 4.58:1). Each channel is clamped to 0–1 first: a colour
+// outside sRGB is painted clipped, and the choice has to match what is painted.
+//
+// $_contrast-step is that choice as a number: 1 (white) or 0 (black); the 1e6
+// gain makes it a hard switch. It reads r, g and b, so it only means something
+// inside `color(from … srgb-linear …)`. Core declares it once on :where(:root)
+// as a private variable and every --contrast substitutes it, instead of
+// repeating the expression three times in each of the 168 contrast
+// declarations (about 50 KB of core.css).
+$_contrast-step-var: --theme--_contrast-step;
+$_luminance: "(0.2126 * clamp(0, r, 1) + 0.7152 * clamp(0, g, 1) + 0.0722 * clamp(0, b, 1))";
+$_contrast-step: string.unquote("clamp(0, (0.179 - #{$_luminance}) * 1e6, 1)");
+
+// Called once from define-core-theme() inside :where(:root).
+@mixin root-defaults() {
+  #{$_contrast-step-var}: #{$_contrast-step};
+}
+
+// The contrast colour of $origin: the step on all three linear-sRGB channels
+// (black or white), read back as an oklch lightness so the token stays an
+// oklch value, alpha 1.
+@function _contrast-of($origin) {
+  $s: var(#{$_contrast-step-var});
+  @return string.unquote(
+    "oklch(from color(from #{$origin} srgb-linear #{$s} #{$s} #{$s}) l 0 0 / 1)"
+  );
+}
+
 // All modifier vars + their contrasts for one role.
 @mixin _role-derivatives($palette, $role) {
   $p: token($palette, $role);
 
-  // contrast (black or white — whichever has highest contrast against the role value).
-  // Chroma-aware: a saturated color reads perceptually darker than its raw oklch
-  // L suggests (e.g. red 0.54/0.22 looks dark), so bias the black↔white threshold
-  // up by 0.25·chroma before comparing against 0.5. Keeps amber/yellow (low-ish
-  // chroma, L~0.55) on black text while flipping saturated red/green to white.
-  $cl: "clamp(0, (0.5 - l + 0.25 * c) * 99999, 1)";
-
-  #{$p}--contrast: oklch(from var(#{$p}) #{$cl} 0 0);
+  // contrast — black or white by the luminance step (see Contrast above).
+  #{$p}--contrast: _contrast-of(var(#{$p}));
 
   // absolute lightness steps — 7-level ladder (±3 from base)
-  #{$p}--dark: oklch(from var(#{$p}) clamp(0, calc(l - #{vars.$theme-step-1}), 1) c h);
-  #{$p}--darker: oklch(from var(#{$p}) clamp(0, calc(l - #{vars.$theme-step-2}), 1) c h);
-  #{$p}--darkest: oklch(from var(#{$p}) clamp(0, calc(l - #{vars.$theme-step-3}), 1) c h);
-  #{$p}--light: oklch(from var(#{$p}) clamp(0, calc(l + #{vars.$theme-step-1}), 1) c h);
-  #{$p}--lighter: oklch(from var(#{$p}) clamp(0, calc(l + #{vars.$theme-step-2}), 1) c h);
-  #{$p}--lightest: oklch(from var(#{$p}) clamp(0, calc(l + #{vars.$theme-step-3}), 1) c h);
+  #{$p}--dark: oklch(from var(#{$p}) clamp(0, calc(l - #{vars.$theme-step-1}), 1) c h / 1);
+  #{$p}--darker: oklch(from var(#{$p}) clamp(0, calc(l - #{vars.$theme-step-2}), 1) c h / 1);
+  #{$p}--darkest: oklch(from var(#{$p}) clamp(0, calc(l - #{vars.$theme-step-3}), 1) c h / 1);
+  #{$p}--light: oklch(from var(#{$p}) clamp(0, calc(l + #{vars.$theme-step-1}), 1) c h / 1);
+  #{$p}--lighter: oklch(from var(#{$p}) clamp(0, calc(l + #{vars.$theme-step-2}), 1) c h / 1);
+  #{$p}--lightest: oklch(from var(#{$p}) clamp(0, calc(l + #{vars.$theme-step-3}), 1) c h / 1);
 
   // modifier contrasts
-  #{$p}--dark--contrast: oklch(from var(#{$p}--dark) #{$cl} 0 0);
-  #{$p}--darker--contrast: oklch(from var(#{$p}--darker) #{$cl} 0 0);
-  #{$p}--darkest--contrast: oklch(from var(#{$p}--darkest) #{$cl} 0 0);
-  #{$p}--light--contrast: oklch(from var(#{$p}--light) #{$cl} 0 0);
-  #{$p}--lighter--contrast: oklch(from var(#{$p}--lighter) #{$cl} 0 0);
-  #{$p}--lightest--contrast: oklch(from var(#{$p}--lightest) #{$cl} 0 0);
+  #{$p}--dark--contrast: _contrast-of(var(#{$p}--dark));
+  #{$p}--darker--contrast: _contrast-of(var(#{$p}--darker));
+  #{$p}--darkest--contrast: _contrast-of(var(#{$p}--darkest));
+  #{$p}--light--contrast: _contrast-of(var(#{$p}--light));
+  #{$p}--lighter--contrast: _contrast-of(var(#{$p}--lighter));
+  #{$p}--lightest--contrast: _contrast-of(var(#{$p}--lightest));
 
   // mode-relative aliases — light-dark() flips direction automatically with color-scheme
   // light mode: high → darker,  low → lighter
@@ -218,8 +246,10 @@ $_registered-palette-names: ();
   // rather than re-deriving from an outer `$color` override.
   $bg: token($name, bg);
   @if $name != background and $name != surface {
-    #{$bg}--mode-light: oklch(from var(#{$c}--mode-light) 0.92 calc(c * var(--bg-chroma, 0.4)) h);
-    #{$bg}--mode-dark: oklch(from var(#{$c}--mode-dark) 0.24 calc(c * var(--bg-chroma, 0.4)) h);
+    #{$bg}--mode-light: oklch(
+      from var(#{$c}--mode-light) 0.92 calc(c * var(--bg-chroma, 0.4)) h / 1
+    );
+    #{$bg}--mode-dark: oklch(from var(#{$c}--mode-dark) 0.24 calc(c * var(--bg-chroma, 0.4)) h / 1);
   }
   @include _join($name, bg);
 
@@ -231,10 +261,10 @@ $_registered-palette-names: ();
   // Focus ring — per palette: inverted lightness + 60° hue shift, always distinct.
   @each $mode in light, dark {
     #{token($name, stroke)}--mode-#{$mode}: oklch(
-      from var(#{$c}--mode-#{$mode}) clamp(0.42, l, 0.6) c h
+      from var(#{$c}--mode-#{$mode}) clamp(0.42, l, 0.6) c h / 1
     );
     #{token($name, focus)}--mode-#{$mode}: oklch(
-      from var(#{$c}--mode-#{$mode}) clamp(0.1, calc(1 - l), 0.9) c calc(h + 60)
+      from var(#{$c}--mode-#{$mode}) clamp(0.1, calc(1 - l), 0.9) c calc(h + 60) / 1
     );
   }
   @include _join($name, stroke);
@@ -383,10 +413,10 @@ $_registered-palette-names: ();
   $c-max: 0.22
 ) {
   $light-base: string.unquote(
-    "oklch(from var(#{$var}) clamp(#{$light-l-min},l,#{$light-l-max}) clamp(0,c,#{$c-max}) h)"
+    "oklch(from var(#{$var}) clamp(#{$light-l-min},l,#{$light-l-max}) clamp(0,c,#{$c-max}) h / 1)"
   );
   $dark-base: string.unquote(
-    "oklch(from var(#{$var}) clamp(#{$dark-l-min},l,#{$dark-l-max}) clamp(0,calc(c*0.9),#{$c-max}) h)"
+    "oklch(from var(#{$var}) clamp(#{$dark-l-min},l,#{$dark-l-max}) clamp(0,calc(c*0.9),#{$c-max}) h / 1)"
   );
   @return (light: config($light-base), dark: config($dark-base));
 }
@@ -419,14 +449,14 @@ $_registered-palette-names: ();
 //
 // $c-tint: chroma amount. 0.006 = barely perceptible, 0.015 = noticeable but neutral.
 @function background-from-var($var, $c-tint: 0.006) {
-  $light-base: string.unquote("oklch(from var(#{$var}) 0.97 #{$c-tint} h)");
-  $dark-base: string.unquote("oklch(from var(#{$var}) 0.17 #{$c-tint} h)");
+  $light-base: string.unquote("oklch(from var(#{$var}) 0.97 #{$c-tint} h / 1)");
+  $dark-base: string.unquote("oklch(from var(#{$var}) 0.17 #{$c-tint} h / 1)");
   @return (light: config($light-base), dark: config($dark-base));
 }
 
 @function surface-from-var($var, $c-tint: 0.01) {
-  $light-base: string.unquote("oklch(from var(#{$var}) 0.93 #{$c-tint} h)");
-  $dark-base: string.unquote("oklch(from var(#{$var}) 0.22 #{$c-tint} h)");
+  $light-base: string.unquote("oklch(from var(#{$var}) 0.93 #{$c-tint} h / 1)");
+  $dark-base: string.unquote("oklch(from var(#{$var}) 0.22 #{$c-tint} h / 1)");
   @return (light: config($light-base), dark: config($dark-base));
 }
 
