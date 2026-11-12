@@ -1,5 +1,1 @@
-# Maps the release-group placeholder every manifest carries to its real version.
-# git-flow reads this file and `gitflow version` bumps it. On a branch with a
-# slash the branch name is inserted: on feature/port-spike-findings this
-# resolves to 0.1.0-feature.port-spike-findings.alpha.0; on main it is 0.1.0-alpha.0.
-'0.0.0-MAIN': 0.1.0-alpha.0
+0.0.0-MAIN: 0.1.0
