@@ -1,0 +1,84 @@
+name: Deploy — Production
+
+# Deploys the docs site (demos/docs, a git-flow `static-site` artifact) to
+# GitHub Pages. Discovered by `gitflow deploy` by its name (deploy-{env}.yml) and
+# dispatched by it with the release to deploy; merging a release PR publishes the
+# release and its `deploy-gh-pages.zip` bundle, it never deploys.
+#
+# GitHub Pages has no host to pull the bundle, so the job fetches it and runs its
+# deploy command itself: the site is committed to the root of the `gh-pages`
+# branch. The repository's Pages source must be that branch
+# (Settings → Pages → Deploy from a branch → gh-pages, / (root)).
+#
+# Optional configuration (Settings → Environments → Production):
+#   vars.DEPLOY_ENV   KEY=VAL lines passed to the deploy, e.g. PAGES_ROOT=
+#                     (empty) when the site moves to a custom domain
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_id:
+        description: 'GitHub Release ID (numeric) or tag (e.g. v0.1.0/docs)'
+        required: true
+        type: string
+      deploy_type:
+        description: 'Deploy type. Only gh-pages exists here; leave blank.'
+        required: false
+        type: string
+        default: ''
+      deploy_env:
+        description: 'Per-run deploy env overrides as KEY=VAL lines (highest priority).'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: write # push to the gh-pages branch
+  packages: read # the deploy CLI installs from GitHub Packages
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: 'Production'
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Deploy to GitHub Pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE: ${{ inputs.release_id }}
+          DEPLOY_TYPE: ${{ inputs.deploy_type }}
+          DEPLOY_ENV_LINES: |
+            ${{ vars.DEPLOY_ENV }}
+            ${{ inputs.deploy_env }}
+        run: |
+          case "$DEPLOY_TYPE" in
+            ''|gh-pages) ;;
+            *) echo "This workflow deploys with gh-pages only, not '$DEPLOY_TYPE'." >&2; exit 1 ;;
+          esac
+
+          # `gitflow deploy` passes the numeric id; a manual run may pass the tag.
+          case "$RELEASE" in
+            *[!0-9]*) RELEASE="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE" --jq .id)" ;;
+          esac
+
+          while IFS= read -r line; do
+            case "$line" in ''|'#'*) ;; *=*) export "$line" ;; esac
+          done <<< "$DEPLOY_ENV_LINES"
+
+          pnpm config set "//npm.pkg.github.com/:_authToken" "$GITHUB_TOKEN"
+          pnpm config set @cpdevtools:registry https://npm.pkg.github.com
+          pnpm dlx @cpdevtools/git-flow-deploy-cli deploy "$GITHUB_REPOSITORY" \
+            "$RELEASE" --bundle deploy-gh-pages.zip

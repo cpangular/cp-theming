@@ -20,7 +20,15 @@ import { MatIcon } from '@angular/material/icon';
           </p>
           <div class="hero-actions">
             <a mat-flat-button routerLink="/packages/core/getting-started">Get started</a>
+            <a mat-stroked-button href="demos/demo-core/index.html" target="_blank" rel="noopener">
+              Live demo: vanilla TypeScript + Vite
+            </a>
           </div>
+          <p class="hero-note">
+            The live demo is <code>demos/demo-core</code> from the repository, built with this site.
+            The three Angular demos, <code>demo-material</code>, <code>demo-brand-core</code> and
+            <code>demo-brand-material</code>, are stubs and are not hosted yet.
+          </p>
         </div>
       </section>
 
@@ -130,6 +138,13 @@ import { MatIcon } from '@angular/material/icon';
         line-height: 1.7;
         color: var(--color--surface--contrast);
         margin: 0 0 40px;
+      }
+
+      .hero-note {
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--color--surface--contrast);
+        margin: 24px 0 0;
       }
 
       .hero-actions {

@@ -6,11 +6,21 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm run demo-core.dev",
-    "build": "pnpm run demo-core.build",
+    "build": "wireit",
     "preview": "pnpm run demo-core.preview",
     "demo-core.dev": "vite",
-    "demo-core.build": "vite build",
-    "demo-core.preview": "vite preview"
+    "demo-core.preview": "vite preview",
+    "github.actions.build": "wireit"
+  },
+  "wireit": {
+    "build": {
+      "command": "vite build"
+    },
+    "github.actions.build": {
+      "dependencies": [
+        "build"
+      ]
+    }
   },
   "dependencies": {
     "@cpangular/cp-theming-core": "workspace:*"

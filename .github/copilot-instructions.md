@@ -160,7 +160,11 @@ demos/demo-brand-material/                                 — Example brand+mat
   add a measured patch to `apply-material-overrides()`.
 - The docs read the adapter's built CSS (`packages/theme-ng-material/dist/*.css`): after a change
   in its `scss/`, run `pnpm --filter @cpangular/cp-theming-ng-material build` before
-  `npx ng build docs`. Root `pnpm build` builds core only.
+  `npx ng build docs`. Root `pnpm build` builds core and `demos/demo-core`, not the adapter.
+- The deployed site is `pnpm --filter docs build`: core, the adapter and demo-core, the production
+  `ng build`, then `demos/docs/scripts/assemble.ts` (demo-core copied to `demos/demo-core/`,
+  `404.html`). An example's `href` is a fragment, an absolute path or a URL; the docs layout keeps
+  a fragment link on the page, because the site's `<base href>` would otherwise send it to the root.
 - Fixture themes live in `packages/theme-core/test/fixtures/` and `packages/theme-ng-material/test/fixtures/`.
 - CI: `.github/workflows/test.yml` (cpdevtools/git-flow) runs `github.actions.build` then
   `github.actions.test` in every package that defines them.
@@ -169,6 +173,9 @@ demos/demo-brand-material/                                 — Example brand+mat
   `.publish/versions.yml`, changed only by `pnpm gitflow version`, which the user runs. A push
   updates a draft release PR into `release/<branch>`; merging it publishes the three packages to
   GitHub Packages (`.publish/registries.yml`). Never merge a release PR or merge into `main`.
+  `demos/docs` is a `static-site` artifact (`deploy: [gh-pages]`, `pagesRoot`): a merge attaches
+  the built site to the release, and `pnpm gitflow deploy` (the user runs it) puts it on the
+  `gh-pages` branch through `.github/workflows/deploy-production.yml`. A merge never deploys.
   Each published package has `release-artifacts.yml` and `github.actions.pack`: theme-core packs
   with `publishConfig.exports`, theme-ng-core with `publishConfig.directory` (the ng-packagr
   output), theme-ng-material as plain Sass/CSS. Peers between them are `workspace:^`.

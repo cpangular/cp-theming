@@ -978,6 +978,34 @@ build` at the root builds demo-core and the docs build includes it; the home pag
 the link works on the deployed site; the examples check passes with the href rule; the README
 rows are updated.
 
+**As landed (2026-11-12)**
+
+- Item 1 differs from the text above in one way: a release PR merge does not deploy. git-flow
+  keeps publishing and deploying apart (wiki, Deployment), so the merge attaches `docs-site.zip`
+  and `deploy-gh-pages.zip` to the `docs` release, and `pnpm gitflow deploy` dispatches
+  `.github/workflows/deploy-production.yml`, which runs the bundle in the job and commits the
+  site to `gh-pages`. That workflow is written from the wiki's snippet; the template repository
+  does not ship the `deploy-gh-pages.yml.example` the wiki names. It has not run yet: nothing is
+  merged, and the Pages source is not set to `gh-pages`.
+- The docs `github.actions.build` is `pnpm --filter docs build`: wireit builds core, the adapter
+  and demo-core, then the production `ng build`, then `demos/docs/scripts/assemble.ts` (the demo
+  copied in, and the `404.html` that `pages.yml` used to write). `gitflow pack` in `demos/docs`
+  produces `docs-site.zip` with the demo inside.
+- Item 2 was larger than two calls. demo-core also used a `danger` palette, the absolute tones
+  (`darker` … `lighter`) and `a.stroke()`, none of which exist, and `container` no longer paints.
+  Its Sass now goes through `t` only, the cards use `t.bg()` (one `t.filled()` card shows the
+  emphasis tiers), the markup says `bg container` and `error`, and the absolute tone table is
+  gone. Vite builds with `base: './'`.
+- Item 3: with the site's `<base href>`, the old `packages/ng-material/components#sidenav`
+  resolved correctly and a bare `#sidenav` would have loaded the home page. The examples carry
+  `#sidenav` / `#list` as planned, and `packages-layout.component.ts` keeps a fragment-only click
+  on the page (router navigation with the fragment, then the existing scroll). Checked in
+  Chromium on the built site: the URL becomes `…/components#sidenav` with no page load.
+- Item 4: the links are `demos/demo-core/index.html` (relative to the site root through the
+  base), opened in a new tab. Checked on the built site served under `/cp-theming/`: both links
+  open the demo, it loads without a failed request, and switches theme and mode.
+- Not checked: the link on the deployed site (there is no deployed site yet).
+
 ### Phase 17 — Docs that teach (added 2026-11-12)
 
 The site today is reference material: pages grouped by module, prose followed by code blocks that

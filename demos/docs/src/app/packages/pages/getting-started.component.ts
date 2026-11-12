@@ -75,6 +75,13 @@ const NG_MATERIAL_TOC = [
             <pre><code>npm install @cpangular/cp-theming-core
 # or
 pnpm add @cpangular/cp-theming-core</code></pre>
+            <p>
+              <a href="demos/demo-core/index.html" target="_blank" rel="noopener"
+                >Live demo: vanilla TypeScript + Vite</a
+              >
+              — the repository's <code>demos/demo-core</code>, built with this site: two themes,
+              light, dark and auto modes, nested themes and density, with no framework.
+            </p>
           </section>
 
           <section id="option-a" class="page-section">

@@ -257,6 +257,31 @@ for (const file of html) {
   });
 }
 
+// ── Links ────────────────────────────────────────────────────────────────────
+// A relative `href` resolves against the page it is rendered in (or against the
+// site's `<base href>`), so the sample works on one page and not on the next. A
+// sample links to a section of its own page (`#section`), to an absolute path
+// or to a URL.
+const LINK_TARGET = /^(#|\/|[a-z][a-z0-9+.-]*:)/i;
+
+for (const file of [...html, ...templates]) {
+  if (!attributesOf(readFileSync(file, 'utf8')).some((a) => a.name.toLowerCase() === 'href'))
+    continue;
+  test(`${rel(file)}: every href is a fragment, an absolute path or a URL`, () => {
+    const relative = attributesOf(readFileSync(file, 'utf8'))
+      .filter((a) => a.name.toLowerCase() === 'href' && !LINK_TARGET.test(a.value ?? ''))
+      .map((a) => `href="${a.value ?? ''}"`);
+    assert.deepEqual(relative, []);
+  });
+}
+
+test('the href rule refuses a relative link', () => {
+  for (const ok of ['#list', '/packages/core', 'https://example.com', 'mailto:a@example.com'])
+    assert.ok(LINK_TARGET.test(ok), ok);
+  for (const bad of ['packages/ng-material/components#list', './x', '../x', 'x.html', ''])
+    assert.ok(!LINK_TARGET.test(bad), bad);
+});
+
 // ── Angular templates ────────────────────────────────────────────────────────
 
 const appSources = walk(appDir)

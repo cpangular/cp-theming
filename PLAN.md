@@ -255,8 +255,8 @@ $my-theme: t.theme(
 ### 🟡 Phase 7 — docs site + demos (docs examples done; the four demos pending)
 
 **docs** (`demos/docs`) — Angular 22 + Material 22 documentation / showcase app. Dev server:
-`ng serve docs --host 0.0.0.0 --port 4200`. Deploys to GitHub Pages at `/cp-theming/` through
-`.github/workflows/pages.yml` (manual trigger until the repo is public; git-flow's `static-site` artifact replaces it then).
+`ng serve docs --host 0.0.0.0 --port 4200`. Deploys to GitHub Pages at `/cp-theming/` as git-flow's
+`static-site` artifact, by `gitflow deploy` through `.github/workflows/deploy-production.yml` (Phase 16).
 
 **Navigation, as the code has it** (`app.routes.ts`, `packages/packages.routes.ts`,
 `packages/packages-layout.component.ts`):
@@ -359,7 +359,7 @@ colour format is accepted and oklch is recommended.
   31 rows, one per "Behaviour today" case plus the mode, palette and nesting cases; 15 pass today,
   the other 16 are the cascade defects Phase 9 fixes.
 - Wiring: wireit `test` scripts, `github.actions.build` / `github.actions.test`, git-flow's
-  `test.yml`; `pages.yml` is manual-only until the repo is public.
+  `test.yml`; `pages.yml` was manual-only until the repo went public (deleted in Phase 16).
 
 ### ✅ Phase 9 — Cascade: a theme is one rule; core derives once (PORT-PLAN.md)
 - Registration is what animation needs, nothing derived: each core palette role's light and dark
@@ -630,7 +630,33 @@ colour format is accepted and oklch is recommended.
   production tsconfig reads core through `packages/theme-core/dist/index.d.ts`. theme-ng-material:
   `files: [dist, scss]`, no `sideEffects: false` (it is CSS).
 - Peers between the three packages are `workspace:^`.
-- Docs deploy: the repo is still private, so `pages.yml` stays on manual trigger. Once it is
-  public, add a `static-site` artifact (`deploy: [gh-pages]`) for `demos/docs` and delete `pages.yml`.
+- Docs deploy: the repo was private when this landed, so `pages.yml` stayed on manual trigger.
+  Phase 16 replaced it with the `static-site` artifact.
+
+### ✅ Phase 16 — Wrap-up: docs deploy, demo-core, gallery hrefs (PORT-PLAN.md)
+
+Done in the repo; the first deploy has not been run (it needs the release PR merged, the Pages
+source set to `gh-pages`, and `pnpm gitflow deploy`, all the user's to do).
+
+- `demos/docs/release-artifacts.yml`: `static-site`, `directory: ../..`, `packDir:
+  dist/docs/browser`, `pagesRoot: true`, `deploy: [gh-pages]`. The docs have
+  `github.actions.build` (core, the adapter and demo-core first, then `ng build docs
+  --configuration production`, then `scripts/assemble.ts`: demo-core copied to
+  `demos/demo-core/` and `404.html`) and `github.actions.pack`. `pages.yml` is deleted.
+- Merging a release PR does not deploy (git-flow keeps the two apart).
+  `.github/workflows/deploy-production.yml` is the environment `gitflow deploy` dispatches: it
+  fetches `deploy-gh-pages.zip` from the release and commits the site to the `gh-pages` branch.
+- `demos/demo-core` builds: its Sass goes through the public `theme` module only, its markup uses
+  today's attributes (`bg`, the `error` palette, the mode-relative tones), Vite builds with a
+  relative `base`. Root `pnpm build` builds core and demo-core.
+- Gallery demo links are `href="#sidenav"` / `href="#list"`. The site has a `<base href>`, which
+  a fragment-only link resolves against, so the docs layout keeps such a click on the page.
+  `examples.test.ts` refuses an `href` that is not a fragment, an absolute path or a URL.
+- The home page and the core Getting Started page link to the hosted demo-core; the home page
+  says the three Angular demos are stubs.
+
+### ⬛ Phase 17 — Docs that teach (PORT-PLAN.md)
+
+Not started. A Learn track of ten chapters above the existing pages, which become the Reference.
 
 ---

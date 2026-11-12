@@ -122,7 +122,7 @@ const LIB_NAV: Record<string, NavItem[]> = {
       </mat-sidenav>
 
       <mat-sidenav-content>
-        <div #pageScroll class="page-scroll">
+        <div #pageScroll class="page-scroll" (click)="onPageClick($event)">
           <div class="page-main">
             <router-outlet />
           </div>
@@ -209,8 +209,10 @@ export class PackagesLayoutComponent implements AfterViewInit {
   @ViewChild('pageScroll') private readonly _pageScrollRef!: ElementRef<HTMLElement>;
   pageScrollEl: HTMLElement | null = null;
 
+  private readonly _router = inject(Router);
+
   constructor() {
-    const router = inject(Router);
+    const router = this._router;
     const destroyRef = inject(DestroyRef);
     const highlightCode = () =>
       document
@@ -230,6 +232,22 @@ export class PackagesLayoutComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     this.pageScrollEl = this._pageScrollRef.nativeElement;
+  }
+
+  /**
+   * Keeps `href="#section"` on this page. The site has a `<base href>`, and a
+   * fragment-only link resolves against it: without this the browser would
+   * load the site root with that fragment.
+   */
+  onPageClick(event: MouseEvent): void {
+    if (event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const link = (event.target as Element | null)?.closest?.('a[href^="#"]');
+    const fragment = link?.getAttribute('href')?.slice(1);
+    if (!link || !fragment) return;
+    event.preventDefault();
+    void this._router.navigate([], { fragment, queryParamsHandling: 'preserve' });
+    this._scrollToFragment(fragment);
   }
 
   /** Scrolls the page container (not the window) to the section the URL fragment names. */

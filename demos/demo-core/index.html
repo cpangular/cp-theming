@@ -61,6 +61,12 @@
           <p class="text--emphasis">Emphasis text</p>
           <div class="text--deemphasis">Deemphasis text</div>
         </div>
+        <div class="card card--filled">
+          <h3>Primary · filled</h3>
+          <p>The palette's own colour with contrast text.</p>
+          <p class="text--emphasis">Emphasis text</p>
+          <div class="text--deemphasis">Deemphasis text</div>
+        </div>
         <div class="card card--primary-high">
           <h3>Primary · high</h3>
           <p>Mode-relative: darker in light mode, lighter in dark mode.</p>
@@ -73,9 +79,9 @@
           <h3>Secondary</h3>
           <p>Secondary palette container.</p>
         </div>
-        <div class="card card--danger">
-          <h3>Danger</h3>
-          <p>Danger palette container.</p>
+        <div class="card card--error">
+          <h3>Error</h3>
+          <p>Error palette container.</p>
         </div>
         <div class="card card--surface">
           <h3>Surface</h3>
@@ -92,7 +98,7 @@
       <div class="row">
         <div class="card--outlined">
           <h3>Primary outlined</h3>
-          <p>No background — stroke border + palette colour text.</p>
+          <p>No fill — a border in the palette's stroke role and palette colour text.</p>
         </div>
       </div>
     </section>
@@ -103,11 +109,11 @@
       <div class="row" style="gap: 0.75rem; padding: 1rem; align-items: center; flex-wrap: wrap;">
         <div>
           <button class="btn btn--primary">Filled (lightness shift)</button>
-          <p class="label">hover/press = high modifier</p>
+          <p class="label">hover = tone(high)</p>
         </div>
         <div>
           <button class="btn btn--outlined">Outlined</button>
-          <p class="label">hover = lower modifier</p>
+          <p class="label">hover = bg()</p>
         </div>
         <div>
           <button class="btn btn--state-layer">State Layer</button>
@@ -124,7 +130,8 @@
       <h2>Tonal variants</h2>
       <p class="text--deemphasis">
         <code>palette</code> selects the palette. <code>tone</code> shifts all palette vars to a
-        modifier step. <code>container</code> applies the bg. All three compose independently.
+        modifier step. <code>bg</code> paints the palette's bg role and <code>container</code> gives
+        the box its padding and radius. All four compose independently.
       </p>
 
       <style>
@@ -138,7 +145,7 @@
         .tone-table td > div .t-de  { display: block; font-weight: 400; }
       </style>
 
-      <p style="font-size:0.8rem; font-weight:600; margin: 0.5rem 0 0.25rem 0;">Mode-relative</p>
+      <p style="font-size:0.8rem; font-weight:600; margin: 0.5rem 0 0.25rem 0;">Mode-relative: high is darker in light mode and lighter in dark mode</p>
       <table class="tone-table">
         <thead><tr>
           <th></th>
@@ -147,80 +154,39 @@
         <tbody>
           <tr>
             <th class="row-label">primary</th>
-            <td><div palette="primary" tone="higher" container><span class="t-em text--emphasis">Emphasis</span><strong>higher</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="primary" tone="high"   container><span class="t-em text--emphasis">Emphasis</span><strong>high</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="primary"               container><span class="t-em text--emphasis">Emphasis</span><strong>base</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="primary" tone="low"    container><span class="t-em text--emphasis">Emphasis</span><strong>low</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="primary" tone="lower"  container><span class="t-em text--emphasis">Emphasis</span><strong>lower</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="primary" tone="higher" bg container><span class="t-em text--emphasis">Emphasis</span><strong>higher</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="primary" tone="high"   bg container><span class="t-em text--emphasis">Emphasis</span><strong>high</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="primary"               bg container><span class="t-em text--emphasis">Emphasis</span><strong>base</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="primary" tone="low"    bg container><span class="t-em text--emphasis">Emphasis</span><strong>low</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="primary" tone="lower"  bg container><span class="t-em text--emphasis">Emphasis</span><strong>lower</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
           </tr>
           <tr>
             <th class="row-label">secondary</th>
-            <td><div palette="secondary" tone="higher" container><span class="t-em text--emphasis">Emphasis</span><strong>higher</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="secondary" tone="high"   container><span class="t-em text--emphasis">Emphasis</span><strong>high</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="secondary"               container><span class="t-em text--emphasis">Emphasis</span><strong>base</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="secondary" tone="low"    container><span class="t-em text--emphasis">Emphasis</span><strong>low</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="secondary" tone="lower"  container><span class="t-em text--emphasis">Emphasis</span><strong>lower</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="secondary" tone="higher" bg container><span class="t-em text--emphasis">Emphasis</span><strong>higher</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="secondary" tone="high"   bg container><span class="t-em text--emphasis">Emphasis</span><strong>high</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="secondary"               bg container><span class="t-em text--emphasis">Emphasis</span><strong>base</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="secondary" tone="low"    bg container><span class="t-em text--emphasis">Emphasis</span><strong>low</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="secondary" tone="lower"  bg container><span class="t-em text--emphasis">Emphasis</span><strong>lower</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
           </tr>
           <tr>
-            <th class="row-label">danger</th>
-            <td><div palette="danger" tone="higher" container><span class="t-em text--emphasis">Emphasis</span><strong>higher</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="danger" tone="high"   container><span class="t-em text--emphasis">Emphasis</span><strong>high</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="danger"               container><span class="t-em text--emphasis">Emphasis</span><strong>base</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="danger" tone="low"    container><span class="t-em text--emphasis">Emphasis</span><strong>low</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="danger" tone="lower"  container><span class="t-em text--emphasis">Emphasis</span><strong>lower</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <th class="row-label">error</th>
+            <td><div palette="error" tone="higher" bg container><span class="t-em text--emphasis">Emphasis</span><strong>higher</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="error" tone="high"   bg container><span class="t-em text--emphasis">Emphasis</span><strong>high</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="error"               bg container><span class="t-em text--emphasis">Emphasis</span><strong>base</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="error" tone="low"    bg container><span class="t-em text--emphasis">Emphasis</span><strong>low</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="error" tone="lower"  bg container><span class="t-em text--emphasis">Emphasis</span><strong>lower</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
           </tr>
           <tr>
             <th class="row-label">surface</th>
-            <td><div palette="surface" tone="higher" container><span class="t-em text--emphasis">Emphasis</span><strong>higher</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="surface" tone="high"   container><span class="t-em text--emphasis">Emphasis</span><strong>high</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="surface"               container><span class="t-em text--emphasis">Emphasis</span><strong>base</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="surface" tone="low"    container><span class="t-em text--emphasis">Emphasis</span><strong>low</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="surface" tone="lower"  container><span class="t-em text--emphasis">Emphasis</span><strong>lower</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="surface" tone="higher" bg container><span class="t-em text--emphasis">Emphasis</span><strong>higher</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="surface" tone="high"   bg container><span class="t-em text--emphasis">Emphasis</span><strong>high</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="surface"               bg container><span class="t-em text--emphasis">Emphasis</span><strong>base</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="surface" tone="low"    bg container><span class="t-em text--emphasis">Emphasis</span><strong>low</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="surface" tone="lower"  bg container><span class="t-em text--emphasis">Emphasis</span><strong>lower</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
           </tr>
         </tbody>
       </table>
 
-      <p style="font-size:0.8rem; font-weight:600; margin: 0.5rem 0 0.25rem 0;">Absolute</p>
-      <table class="tone-table">
-        <thead><tr>
-          <th></th>
-          <th>darker</th><th>dark</th><th>base</th><th>light</th><th>lighter</th>
-        </tr></thead>
-        <tbody>
-          <tr>
-            <th class="row-label">primary</th>
-            <td><div palette="primary" tone="darker"  container><span class="t-em text--emphasis">Emphasis</span><strong>darker</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="primary" tone="dark"    container><span class="t-em text--emphasis">Emphasis</span><strong>dark</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="primary"                container><span class="t-em text--emphasis">Emphasis</span><strong>base</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="primary" tone="light"   container><span class="t-em text--emphasis">Emphasis</span><strong>light</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="primary" tone="lighter" container><span class="t-em text--emphasis">Emphasis</span><strong>lighter</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-          </tr>
-          <tr>
-            <th class="row-label">secondary</th>
-            <td><div palette="secondary" tone="darker"  container><span class="t-em text--emphasis">Emphasis</span><strong>darker</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="secondary" tone="dark"    container><span class="t-em text--emphasis">Emphasis</span><strong>dark</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="secondary"                container><span class="t-em text--emphasis">Emphasis</span><strong>base</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="secondary" tone="light"   container><span class="t-em text--emphasis">Emphasis</span><strong>light</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="secondary" tone="lighter" container><span class="t-em text--emphasis">Emphasis</span><strong>lighter</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-          </tr>
-          <tr>
-            <th class="row-label">danger</th>
-            <td><div palette="danger" tone="darker"  container><span class="t-em text--emphasis">Emphasis</span><strong>darker</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="danger" tone="dark"    container><span class="t-em text--emphasis">Emphasis</span><strong>dark</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="danger"                container><span class="t-em text--emphasis">Emphasis</span><strong>base</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="danger" tone="light"   container><span class="t-em text--emphasis">Emphasis</span><strong>light</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="danger" tone="lighter" container><span class="t-em text--emphasis">Emphasis</span><strong>lighter</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-          </tr>
-          <tr>
-            <th class="row-label">surface</th>
-            <td><div palette="surface" tone="darker"  container><span class="t-em text--emphasis">Emphasis</span><strong>darker</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="surface" tone="dark"    container><span class="t-em text--emphasis">Emphasis</span><strong>dark</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="surface"                container><span class="t-em text--emphasis">Emphasis</span><strong>base</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="surface" tone="light"   container><span class="t-em text--emphasis">Emphasis</span><strong>light</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-            <td><div palette="surface" tone="lighter" container><span class="t-em text--emphasis">Emphasis</span><strong>lighter</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
-          </tr>
-        </tbody>
-      </table>
     </section>
 
     <!-- ── Colour swatches ─────────────────────────────────────────────── -->
@@ -246,7 +212,7 @@
         <div class="swatch" style="background:var(--color--background);color:var(--color--background--contrast)">bg</div>
         <div class="swatch" style="background:var(--color--primary);color:var(--color--primary--contrast)">primary</div>
         <div class="swatch" style="background:var(--color--secondary);color:var(--color--secondary--contrast)">secondary</div>
-        <div class="swatch" style="background:var(--color--danger);color:var(--color--danger--contrast)">danger</div>
+        <div class="swatch" style="background:var(--color--error);color:var(--color--error--contrast)">error</div>
       </div>
 
       <h3 style="padding: 0 1rem; margin: 1rem 0 0.25rem;">Palette tints</h3>
@@ -271,13 +237,13 @@
           <div class="swatch" style="background:var(--color--secondary);color:var(--color--secondary--contrast)">100%</div>
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center;">
-          <span style="width: 72px; font-size: 0.7rem;">danger</span>
-          <div class="swatch" style="background:var(--color--danger--tint-1)">1</div>
-          <div class="swatch" style="background:var(--color--danger--tint-2)">2</div>
-          <div class="swatch" style="background:var(--color--danger--tint-3)">3</div>
-          <div class="swatch" style="background:var(--color--danger--tint-4)">4</div>
-          <div class="swatch" style="background:var(--color--danger--tint-5)">5</div>
-          <div class="swatch" style="background:var(--color--danger);color:var(--color--danger--contrast)">100%</div>
+          <span style="width: 72px; font-size: 0.7rem;">error</span>
+          <div class="swatch" style="background:var(--color--error--tint-1)">1</div>
+          <div class="swatch" style="background:var(--color--error--tint-2)">2</div>
+          <div class="swatch" style="background:var(--color--error--tint-3)">3</div>
+          <div class="swatch" style="background:var(--color--error--tint-4)">4</div>
+          <div class="swatch" style="background:var(--color--error--tint-5)">5</div>
+          <div class="swatch" style="background:var(--color--error);color:var(--color--error--contrast)">100%</div>
         </div>
       </div>
     </section>
@@ -309,8 +275,8 @@
               <strong>ember · secondary</strong>
               <div class="text--deemphasis">amber</div>
             </div>
-            <div class="card card--danger" style="margin:0; flex:1;">
-              <strong>ember · danger</strong>
+            <div class="card card--error" style="margin:0; flex:1;">
+              <strong>ember · error</strong>
               <div class="text--deemphasis">deep red</div>
             </div>
           </div>

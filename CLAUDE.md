@@ -91,6 +91,17 @@ This is a CSS-variable-based theming system. Key facts:
   Never merge it, never merge into `main`. theme-core packs with `publishConfig.exports`,
   theme-ng-core with `publishConfig.directory` (ng-packagr output; its production tsconfig reads
   core's built types, so build core first), theme-ng-material as plain Sass/CSS.
+- Docs site and demo-core (Phase 16): `demos/docs` is a git-flow `static-site` artifact
+  (`pagesRoot`, `deploy: [gh-pages]`). `pnpm --filter docs build` builds core, the adapter and
+  `demos/demo-core`, runs the production `ng build`, then `demos/docs/scripts/assemble.ts` copies
+  demo-core to `dist/docs/browser/demos/demo-core/` and writes `404.html`. Merging a release PR
+  attaches the site to the release; it does not deploy. `pnpm gitflow deploy` (the user runs it)
+  dispatches `.github/workflows/deploy-production.yml`, which commits the site to `gh-pages`.
+  The site has a `<base href>`: a link to a file of the site is relative to the site root
+  (`demos/demo-core/index.html`), and `href="#section"` stays on the page only because
+  `packages-layout.component.ts` handles the click. An example's `href` is a fragment, an
+  absolute path or a URL (a check fails anything else). demo-core uses the public `theme` module
+  only; root `pnpm build` builds core and demo-core.
 - A box-shadow token cannot be wrapped in `light-dark()` (colours only): `--elevation-N--shadow`
   is `<geometry> light-dark(<colour>, <colour>)`; a harness check fails a list inside `light-dark()`.
 - Focus ring color is **per-palette**, auto-derived via CSS relative color.
