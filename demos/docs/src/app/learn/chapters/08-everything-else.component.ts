@@ -27,8 +27,9 @@ import tryScopeHtml from '../../../examples/learn/08-everything-else/try-scope.h
     <cpa-chapter [n]="8">
       <div chapterExample>
         <p class="learn-lead">
-          A card and six sliders. Each slider changes one number of the theme. None of them is a
-          colour.
+          A card and six sliders. Five of them change a value the theme carries, on the element with
+          the theme. The Shadow slider sets how deep the card's shadow is. None of them changes a
+          palette's colour, though Quiet text changes how two colours are mixed.
         </p>
         <cpa-live-example
           chapter="08-everything-else"
@@ -47,25 +48,30 @@ import tryScopeHtml from '../../../examples/learn/08-everything-else/try-scope.h
           all.
         </p>
         <p>
-          A theme carries them the way it carries colours. Each is a variable with a name and a
-          default, set on the theme's element and inherited by everything inside it. What chapters 1
-          to 6 said about colours holds for all of them: a theme passes only the ones it changes, a
-          theme inside another inherits the rest, and when a value changes the browser works out
-          again whatever depends on it. That last part is all the sliders do.
+          A theme carries them the way it carries colours. Each is a CSS variable with a name and a
+          default, set on the theme's element and inherited by everything inside it. A few also have
+          an attribute that sets them for one element and what is inside it, as
+          <cpa-ref name="themeMode" /> does for modes. What chapters 1 to 6 said about colours holds
+          for all of them: a theme passes only the ones it changes, and a theme inside another
+          inherits the rest. When a value changes, the browser works out again whatever depends on
+          it. The sliders only change a value, and the browser does the rest.
         </p>
         <ul>
           <li>
-            <strong>Spacing.</strong> <cpa-ref name="--space--{size}" /> is a scale of seven sizes
-            from xxs to xxl, 2px to 48px. All seven hang on one number, the density: lower it and
-            every space shrinks together. <cpa-ref name="themeDensity" /> puts an element and
-            everything inside it in a density from -5 to 5, the way
-            <cpa-ref name="themeMode" /> does for a mode. The first slider sets it on the theme's
-            element. <cpa-ref name="container" /> gives an element the scale's standard padding.
+            <strong>Spacing.</strong> <cpa-ref name="--space--{size}" /> is a scale of seven sizes:
+            xxs, xs, sm, md, lg, xl and xxl. All seven follow one number, the
+            <strong>density</strong>, which is 0 unless you change it. At 0 they run from 2px to
+            48px. Below 0 every space shrinks together, and above 0 every space grows.
+            <cpa-ref name="themeDensity" /> puts an element and everything inside it in a density
+            from -5 to 5. The Density slider sets it on the theme's element.
+            <cpa-ref name="container" /> gives an element padding of the lg size, so the padding
+            follows the density too. (This attribute is not the same thing as the variables of
+            chapter 5 whose names start with container.)
           </li>
           <li>
-            <strong>Shape.</strong> <cpa-ref name="--shape--{size}" /> is a scale of corner sizes,
-            xxs to xxl, and <em>full</em> for a pill. <cpa-ref name="shape" value="md" /> rounds an
-            element with one of them.
+            <strong>Shape.</strong> <cpa-ref name="--shape--{size}" /> is a scale of corner sizes
+            with the same names, xxs to xxl, and <em>full</em> for a pill.
+            <cpa-ref name="shape" value="md" /> rounds an element with one of them.
           </li>
           <li>
             <strong>Elevation.</strong> <cpa-ref name="--elevation-N--shadow" /> is a shadow, for N
@@ -74,31 +80,38 @@ import tryScopeHtml from '../../../examples/learn/08-everything-else/try-scope.h
           </li>
           <li>
             <strong>Motion.</strong> <cpa-ref name="--motion--{name}" /> holds four durations
-            (short, medium, long, extra) and four easing curves, for your transitions and
-            animations. The pulsing dot uses the extra duration.
+            (duration-short, duration-medium, duration-long and duration-extra) and four easing
+            curves (easing-standard, easing-emphasized, easing-decelerate and easing-accelerate),
+            for your transitions and animations. The pulsing dot beside "Syncing" uses
+            duration-extra and easing-standard, and the Pulse slider changes the duration.
           </li>
           <li>
-            <strong>Weights.</strong> <cpa-ref name="--weight--{name}" /> are percentages: how
-            strong a hover or a press wash is, how strong each of the five tints of chapter 4 is,
-            and how much of the text colour a quieter line keeps. That last one is behind
-            <cpa-ref name="--container--text-deemphasis" /> from chapter 5, the colour of "Renews on
-            1 March".
+            <strong>Weights.</strong> <cpa-ref name="--weight--{name}" /> are percentages, not font
+            weights. One sets how much of the text colour a quieter line keeps: the colour of
+            "Renews on 1 March", <cpa-ref name="--container--text-deemphasis" /> from chapter 5, is
+            the text colour mixed with the card's fill at that percentage. The Quiet text slider
+            changes it. Others set how strong each of the five tints of chapter 4 is, and how strong
+            the wash over a hovered or pressed element is.
           </li>
           <li>
             <strong>Type.</strong> <cpa-ref name="--text--{role}--{property}" /> is a set of fifteen
             text styles: display, headline, title, body and label, each in large, medium and small.
-            Every style has a font, a size, a line height, a weight and a letter spacing. The card's
-            title is the large title style.
+            In the name, <em>role</em> is the style, written as the kind and the size joined by a
+            dash, such as title-large. Every style has a font, a size, a line height, a weight and a
+            tracking (its letter spacing). The card's title is title-large and its other text is
+            body-medium.
           </li>
         </ul>
         <p>
-          <cpa-ref name="container" /> and <cpa-ref name="shape" /> are layers like the ones in
-          chapter 5: they go on an element that has <cpa-ref name="palette" />.
-          <cpa-ref name="elevated" /> and <cpa-ref name="themeDensity" /> work on any element.
+          Like <cpa-ref name="bg" /> and <cpa-ref name="filled" /> in chapter 5,
+          <cpa-ref name="container" /> and <cpa-ref name="shape" /> go on the same element as
+          <cpa-ref name="palette" />. <cpa-ref name="elevated" /> and
+          <cpa-ref name="themeDensity" /> work on any element.
         </p>
         <p>
-          This rules out numbers scattered through a stylesheet, and a second "compact" stylesheet
-          for the dense parts of an application. A dense table is the same table inside a density.
+          So you no longer type numbers for spacing, corners and timing all through a stylesheet, or
+          keep a second "compact" stylesheet for the dense parts of an application. A dense table is
+          the same table inside a density.
         </p>
       </div>
 
@@ -113,8 +126,16 @@ import tryScopeHtml from '../../../examples/learn/08-everything-else/try-scope.h
         </p>
         <cpa-code [code]="files['try-own.theme.scss']" lang="scss" />
         <p>
-          In your own CSS the variables are read like the colours. This is the example's stylesheet:
-          every font, gap, corner and duration in it comes from the theme.
+          From the top, this theme changes the density, two corner sizes, the colour of the shadows,
+          the extra duration, the weight behind the quiet line, and the font of every text style
+          (display and headline follow it unless the theme gives them a font of their own). A
+          <cpa-ref name="themeDensity" /> attribute inside this theme replaces its density from that
+          element inward: the two do not add up.
+        </p>
+        <p>
+          In your own CSS the variables are read like the colours. This is the example's stylesheet.
+          Every font, gap, corner and duration above "Layout only" comes from the theme. The numbers
+          under it only place the example on the page.
         </p>
         <cpa-code [code]="files['example.scss']" lang="scss" />
       </div>
@@ -122,9 +143,9 @@ import tryScopeHtml from '../../../examples/learn/08-everything-else/try-scope.h
       <div chapterTry>
         <ul>
           <li>
-            <strong>Numbers of its own.</strong> The theme above: tighter, squarer, a serif face, a
-            violet shadow, a slower pulse and a quiet line that is less quiet. The HTML and the
-            example's stylesheet are unchanged.
+            <strong>Numbers of its own.</strong> The theme in the code above: tighter, squarer, a
+            serif face, a violet shadow, a slower pulse and a quiet line that is less quiet. The
+            HTML and the example's stylesheet are unchanged.
           </li>
           <li>
             <strong>A density on one element.</strong> The card twice. The second has

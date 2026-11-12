@@ -33,8 +33,9 @@ import overlayScopeTs from '../../../examples/components/overlay-scope.ts.txt' w
     <cpa-chapter [n]="10">
       <div chapterExample>
         <p class="learn-lead">
-          The Buttons example of the Components gallery, three times: in a theme, in a theme inside
-          it, and in a palette inside that. Point at a button to see where its colours come from.
+          The Buttons example of this site's Components gallery, a page that shows Material's
+          components, three times: in a theme, in a theme inside it, and in a palette inside that.
+          Point at a button to see where its colours come from.
         </p>
         <cpa-live-template [panels]="example" [roles]="true" />
       </div>
@@ -52,41 +53,50 @@ import overlayScopeTs from '../../../examples/components/overlay-scope.ts.txt' w
           from the variables your theme already has. Where cp-theming has a variable for the same
           job, Material's simply points at it: the main fill is your primary, and the text on it is
           your primary's contrast. Where Material wants a shade that cp-theming has no name for, the
-          adapter works it out from one of your colours by the rules of Material's own design, and
-          the browser does the arithmetic, as it does for your steps. Point at buttons in the
-          example: the line under it reads both halves out of the stylesheets the page is running.
+          adapter works it out from one of your colours by the rules of Material's own design. That
+          shade is a formula, which the browser works out like the steps of chapter 1. Point at a
+          button in the example. The lines under it name the Material variable of the button's fill
+          and of its text, and the variable of yours that each one reads.
         </p>
-        <p>Two things follow from doing it at that level.</p>
+        <p>
+          The adapter works on Material's shared variables, not on each component, and two things
+          follow.
+        </p>
         <ul>
           <li>
-            Nothing is mapped component by component. A Material component you add tomorrow is
-            themed already, because it reads the same variables as the ones you have.
+            Colours are not mapped component by component, apart from the patches below. A Material
+            component you add tomorrow is themed already, because it reads the same variables as the
+            ones you have.
           </li>
           <li>
             Material's variables are declared on every element that carries a theme, so they are
-            worked out again inside a nested theme (chapter 6). And a
-            <cpa-ref name="palette" /> scope (chapter 5) points the main ones at its own palette, so
-            the buttons in the innermost box are tertiary without being told.
+            worked out again inside a nested theme (chapter 6): the buttons in the ember box are
+            ember's. And a <cpa-ref name="palette" /> scope (chapter 5) points Material's primary
+            variables at its own palette. So in the innermost box the buttons that Material paints
+            with its primary, such as Filled, are tertiary without being told. Tonal and Elevated
+            take their fill from other Material variables and keep ember's colours.
           </li>
         </ul>
         <p>
-          One kind of component does not follow the element it is in. Material draws a menu, a
-          dialog, a tooltip and other <strong>overlays</strong> in a container at the end of the
-          page, outside the element that opened them. They take the theme and the mode of the page,
-          not of a nested theme. The gallery uses a small directive,
-          <cpa-ref name="cpaOverlayScope" />, that copies the theme and mode of an element onto that
-          container. It belongs to this site and is not part of the library: copy it if you nest
-          themes around overlays.
+          One kind of component does not follow the element it is in. Material draws some
+          <strong>overlays</strong>, such as a menu, a dialog or a tooltip, in a container at the
+          end of the page, outside the element that opened them. They take the theme and the mode of
+          the page, not of a nested theme. (The list of a select or an autocomplete opens beside its
+          field and is not affected.) The gallery uses a small Angular directive, an attribute that
+          adds behaviour to an element: <cpa-ref name="cpaOverlayScope" />. It copies the theme and
+          the mode of its element onto that container. It belongs to this site and is not part of
+          the library: copy it if you nest themes around overlays.
         </p>
         <p>
-          And a few components do not take every colour from the shared variables, or combine them
-          in a way that is hard to read with some colours. For those the adapter has a second,
-          optional part: <strong>patches</strong>, each a small correction for a case that was
-          measured in the gallery.
+          A few components do not work this cleanly. Some take a colour from somewhere other than
+          the shared variables, and some pair two variables in a way that is hard to read with some
+          colours. For those the adapter has a second, optional part: <strong>patches</strong>
+          (the mixin's name calls them overrides), each a small correction for a case that was
+          measured in the gallery. The example does not show a component with and without its patch.
         </p>
         <p>
-          This rules out a Material theme written beside your own and kept in step with it, and
-          colour overrides for individual components in your application.
+          So you do not need a Material theme written beside your own and kept in step with it, or
+          colour rules for single components in your application.
         </p>
       </div>
 
@@ -94,16 +104,19 @@ import overlayScopeTs from '../../../examples/components/overlay-scope.ts.txt' w
         <p>
           The adapter is a package of its own,
           <code>&#64;cpangular/cp-theming-ng-material</code>, with two mixins.
-          <cpa-ref name="define-ng-material-core-theme()" /> declares Material's variables;
+          <cpa-ref name="define-ng-material-core-theme()" /> declares Material's variables, and
           <cpa-ref name="apply-material-overrides()" /> adds the patches. Both are included once,
-          after core and the themes:
+          after <cpa-ref name="t.define-core-theme()" /> and the themes:
         </p>
         <cpa-code [code]="themeScss" lang="scss" />
         <p>
           Nothing else changes. The templates use Material as Material documents it, and the
-          attributes of the earlier chapters go on any element around the components:
-          <em>example.ng.html</em> beside the example, with the gallery's
-          <em>buttons.ng.html</em> inside it.
+          attributes of the earlier chapters go on any element around the components. In the
+          <em>example.ng.html</em> tab, each theme box also has
+          <cpa-ref name="palette" value="background" /> and <cpa-ref name="bg" />, so it is painted
+          with its theme's background, as in chapter 6. The <em>g-</em> classes are the gallery's
+          layout. <em>buttons.ng.html</em> is the gallery's Buttons example, placed in it three
+          times.
         </p>
       </div>
 
@@ -112,11 +125,12 @@ import overlayScopeTs from '../../../examples/components/overlay-scope.ts.txt' w
           <li>
             <strong>Other components in a palette.</strong> The gallery's example of a button, a
             checkbox and a switch inside <cpa-ref name="palette" value="tertiary" />. None of them
-            is told its colour.
+            is told its colour: what they show is the tertiary of this site's theme.
           </li>
           <li>
-            <strong>Overlays in a nested theme.</strong> The gallery's example of a nested theme
-            with <cpa-ref name="cpaOverlayScope" /> on it. Open the menu or the dialog: it is drawn
+            <strong>Overlays in a nested theme.</strong> The gallery's example of a nested theme,
+            <em>my-brand</em> (a theme of this site with an orange brand colour), with
+            <cpa-ref name="cpaOverlayScope" /> on it. Open the menu or the dialog: it is drawn
             outside the box and still has the box's theme. The directive's source is the third file.
           </li>
         </ul>

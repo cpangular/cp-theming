@@ -1240,7 +1240,65 @@ Found while writing:
 - Not changed: the default warn and caution as text on the default surface are 4.18:1 and 3.86:1
   in light mode (chapter 7's Try it shows them). This is the item already listed below.
 
-Not done: the review pass (Session 17).
+**As landed: the review pass (Session 17, 2026-11-12)**
+
+- Ten Opus readers, one per chapter, each given its chapter page, its example files, its
+  screenshots and the "Introduces" lines of the chapters before it. They returned 514 findings in
+  four lists: used before taught (182), read twice (119), not shown by the example (131), code
+  before its idea (82). Clarity as the readers scored it: 3 of 5 for chapters 5 and 8, 4 for the
+  rest.
+- One Opus synthesizer merged them into 66 exact edits in 25 files (the ten pages, fourteen example
+  files, one line of `live-example.component.ts`), rejected 49 groups of findings with the reason
+  (taught by an earlier chapter, or the example coming first by design) and left 10 open. All 66
+  applied. No `REFS` or `PATTERNS` entry changed.
+- What the edits do, in the main: "step" is defined at its first use in chapter 1; chapters 1 to 3
+  name the soft background, border and focus ring by the last word of their variables (bg, stroke,
+  focus) without linking them; chapter 1 explains `$`, a Sass map and what the name passed to
+  `define-theme()` is; "This rules out…" became a plain sentence in every chapter; each chapter
+  says where its example does not show a claim.
+- Corrected, because the readers checked the claim against the screen and it was wrong:
+  - Chapters 1 and 4 said the lighter steps of a yellow "run out at white". They are one and the
+    same strong yellow (`rgb(255 253 82)` for gold, measured in three engines), so in chapter 4's
+    "Written with shades" the pill is invisible and the text unreadable.
+  - Chapter 3 drew the chain as one line ending in background and surface. They come from the
+    brand, not from secondary and tertiary; it is now two lines. It also says what a theme with a
+    primary and no brand does for them (takes them from around it; on `<html>` they take a trace
+    of the primary's hue).
+  - Chapter 5: `filled outlined` draws its edge in the soft background colour, `bg` does not set
+    the `--container--text*` variables, and the badge takes the scope it sits in.
+  - Chapter 7 said both cases outside the guarantee "do go under 4.5". On a light page at the
+    starting colour neither does (6.62 and 6.80); the chapter now says which goes under where.
+  - Chapter 10: in a `palette` scope only the buttons Material paints with its primary change;
+    Tonal and Elevated keep the theme's fill (measured).
+- After the edits: order check passed, 446 docs checks, `learn.ts` 2934/2934 across Chromium,
+  Firefox and WebKit. The claims the synthesizer marked for measuring were measured in the three
+  engines (`packages/theme-core/test/.scratch/s17/`, local only).
+
+Judgment calls you may want to revisit:
+
+- **Learn code blocks are up to 660px tall, not 460px.** Chapter 6's `theme.scss` (607px) ended
+  inside the scroll area, above the `define-theme()` lines the paragraph is about. Chapters 4, 7,
+  8 and 9 still have a stylesheet or script that scrolls.
+- **Chapter 3 has one sentence about a theme on `<html>`**, added by hand after the synthesis: the
+  synthesizer's "does not generate them" is not true there (Phase 14d).
+- **Chapter 9 mentions `invert`** in one sentence, because the head snippet shown in the chapter
+  contains the word.
+
+Open after the review (real findings a text edit cannot close):
+
+- Chapters 1 to 3 cannot link bg, stroke and focus: `REFS` gives them to chapter 4 (the Session 15
+  call). Moving the four entries to chapter 1 would let them.
+- Chapter 5's title word "surfaces" is read as the surface palette. It is defined in the text now;
+  a new title would be clearer.
+- `auto` is never seen changing (chapters 2 and 9): a frame cannot change the device's setting.
+- Chapter 4: "Written with shades" is shown on the yellow only, not on the violet it was drawn for
+  (a third tab).
+- Chapter 8: the sliders write to the frame, and the source beside it does not show what they set.
+- Chapter 9: the Angular half is excerpts of this site, not a running example (the Session 16
+  call).
+- Chapter 10: overlays in a nested theme without `cpaOverlayScope` are described and not shown; no
+  readout names a shade the adapter derives; the icon buttons show their ligature text ("fav") in
+  the check's screenshots, where web fonts are blocked.
 
 ## Decisions already made
 

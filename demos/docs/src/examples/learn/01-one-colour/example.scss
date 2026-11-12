@@ -30,14 +30,18 @@
   color: var(--color--primary--lightest--contrast);
 }
 
+/* The soft background (bg), with a contrast of its own. */
 .soft {
   background: var(--color--primary--bg);
   color: var(--color--primary--bg--contrast);
 }
+/* The border colour (stroke). */
 .border {
   border: 2px solid var(--color--primary--stroke);
 }
-/* The ring is drawn on the colour it has to show against. */
+/* The focus ring (focus). Its lightness is the opposite of the colour's and its
+   hue is turned part of the way round, so it shows against the colour. That is
+   why it is drawn on the colour here. */
 .ring {
   background: var(--color--primary);
   color: var(--color--primary--contrast);

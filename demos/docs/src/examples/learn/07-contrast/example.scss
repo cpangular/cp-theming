@@ -30,7 +30,8 @@
   color: var(--color--primary--lightest--contrast);
 }
 
-/* A tint lets the page show through, so what is behind this text is a mix. */
+/* A tint lets the page show through, so what is behind this text is a mix.
+   The text is the page's own: the contrast of the background palette. */
 .wash {
   background: var(--color--primary--tint-4);
   color: var(--color--background--contrast);

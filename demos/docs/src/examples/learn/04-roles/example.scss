@@ -14,7 +14,8 @@
       color: var(--color--#{$name}--contrast);
     }
 
-    // focus: a ring that shows against this palette.
+    // focus: a ring that shows against this palette. The class .focused
+    // draws it without the keyboard, so the example can show it.
     button:focus-visible,
     button.focused {
       outline: 3px solid var(--color--#{$name}--focus);

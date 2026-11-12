@@ -24,7 +24,8 @@ import tryPrimaryTheme from '../../../examples/learn/03-generated/try-primary.th
     <cpa-chapter [n]="3">
       <div chapterExample>
         <p class="learn-lead">
-          This theme was given one colour, a bright amber, as its brand colour. It has six palettes.
+          This theme was given one colour, a bright amber, as its brand colour. It has six palettes,
+          shown as six swatches under the two sentences.
         </p>
         <cpa-live-example chapter="03-generated" [files]="files" [frames]="example" />
       </div>
@@ -36,20 +37,26 @@ import tryPrimaryTheme from '../../../examples/learn/03-generated/try-primary.th
           as its main colour would have links and buttons nobody can read.
         </p>
         <p>
-          So the brand colour is its own kind of input. It becomes a palette named
-          <em>brand</em>, and the colour of that palette, <cpa-ref name="--color--brand" />, is
-          exactly the colour you passed, in light mode and in dark mode. It is never adjusted. Use
-          it where the colour has to be exact, such as a logo or a banner.
+          So the brand colour is passed on its own, apart from the palettes, and treated
+          differently. It becomes a palette named <em>brand</em>. That palette's colour,
+          <cpa-ref name="--color--brand" />, is exactly the colour you passed, in light mode and in
+          dark mode. It is never adjusted. Use it where the colour has to be exact, such as a logo
+          or a banner.
         </p>
-        <p>The other palettes are generated from it, each from the one before, in a fixed order:</p>
-        <p class="learn-chain">brand → primary → secondary and tertiary → background and surface</p>
+        <p>
+          The other palettes are generated from it in a fixed order, a chain. Primary comes from the
+          brand. Secondary and tertiary come from primary. Background and surface come from the
+          brand:
+        </p>
+        <p class="learn-chain">brand → primary → secondary and tertiary</p>
+        <p class="learn-chain">brand → background and surface</p>
         <ul>
           <li>
-            <strong>primary</strong> is the brand colour moved to where it can be read. It keeps the
-            hue, which is the kind of colour it is (amber stays amber), and is made darker for light
-            mode and lighter for dark mode. The second sentence of the example is in it. This is the
-            palette for links, buttons and anything that should look like the brand and still be
-            readable.
+            <strong>primary</strong> is the brand colour made dark or light enough to read. It keeps
+            the hue, which is the kind of colour it is (amber stays amber), and is made darker for
+            light mode and lighter for dark mode. The second sentence of the example is in it. This
+            is the palette for links, buttons and anything that should look like the brand and still
+            be readable.
           </li>
           <li>
             <strong>secondary</strong> is the primary with most of its colour taken out: a quiet
@@ -60,28 +67,37 @@ import tryPrimaryTheme from '../../../examples/learn/03-generated/try-primary.th
           <li>
             <strong>background</strong> and <strong>surface</strong> are nearly white in light mode
             and nearly black in dark mode, with a trace of the brand's hue. Background is for the
-            page; surface is for what sits on the page, such as a card.
+            page; surface is for what sits on the page, such as a card. The example shows only their
+            swatches.
           </li>
         </ul>
         <p>
-          All six are palettes like the one in chapter 1, so each has its steps and its contrast
-          under its own name. And like the steps, the generated colours are worked out by the
-          browser, not written into the stylesheet.
+          All six are palettes like the one in chapter 1. Each has its steps, its contrasts, its
+          soft background and its border colour under its own name: with <em>secondary</em> as the
+          name, <cpa-ref name="--color--{name}--contrast" /> is the text on the secondary swatch.
+          The generated colours are formulas too, worked out by the browser like the steps.
         </p>
         <p>
           The rule is: <strong>pass what you have</strong>. A palette you pass is used exactly as
-          you passed it. A palette you leave out is generated from the nearest thing before it in
-          the order that you did pass. Nothing is generated from secondary, so passing your own
-          secondary changes that palette and nothing else. Pass a primary and no brand, as in
-          chapters 1 and 2, and secondary and tertiary are generated from your primary, while the
-          brand palette is simply that primary.
+          you passed it, in both modes. A palette you leave out is generated from the palette before
+          it in the chain, whether you passed that one or it was generated too. Nothing is generated
+          from secondary, so passing your own secondary changes that palette and nothing else.
+        </p>
+        <p>
+          If you pass a primary and no brand, as chapters 1 and 2 did, the brand palette is that
+          primary, and secondary and tertiary are generated from it. Background and surface come
+          only from a brand you pass, so this theme does not generate them. It takes them from
+          around it: in this chapter's examples, the plain neutrals of a page with no theme. Chapter
+          6 is about what a theme takes from around it. (A theme on the
+          <code>&lt;html&gt;</code> element has nothing around it. There background and surface take
+          a trace of the primary's hue.)
         </p>
       </div>
 
       <div chapterCode>
         <p>
-          The brand colour is an argument of <cpa-ref name="t.theme()" /> itself,
-          <cpa-ref name="$brand" />:
+          The brand colour is not one of the palettes in <cpa-ref name="$palettes" />. It has an
+          argument of <cpa-ref name="t.theme()" /> to itself, <cpa-ref name="$brand" />:
         </p>
         <cpa-code [code]="files['theme.scss']" lang="scss" />
         <p>
@@ -100,13 +116,14 @@ import tryPrimaryTheme from '../../../examples/learn/03-generated/try-primary.th
             happens to be readable too; that is luck of this colour, not something to rely on.
           </li>
           <li>
-            <strong>Own secondary.</strong> The second stylesheet above. Only the secondary swatch
-            changes.
+            <strong>Own secondary.</strong> The second stylesheet in the code above. Only the
+            secondary swatch changes.
           </li>
           <li>
             <strong>Primary, no brand.</strong> The theme passes a green primary and nothing else.
-            Secondary and tertiary now come from the green, the brand swatch shows the same green,
-            and both sentences are readable.
+            Secondary and tertiary now come from the green, and the brand swatch shows the same
+            green, so both sentences are readable. Background and surface are the plain neutrals,
+            with no trace of green.
           </li>
         </ul>
         <cpa-live-example chapter="03-generated" [files]="files" [frames]="tryIt" />

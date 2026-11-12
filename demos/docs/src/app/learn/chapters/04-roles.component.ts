@@ -24,20 +24,24 @@ import tryShadesScss from '../../../examples/learn/04-roles/try-shades.scss' wit
     <cpa-chapter [n]="4">
       <div chapterExample>
         <p class="learn-lead">
-          One small component, shown in three palettes. The words on each part say which variable
-          colours it.
+          One small component, shown in three palettes. The heading names the palette. The other
+          words name, by the last word of its variable, what colours each part. The button marked
+          <em>contrast</em> is filled with the palette's colour and written in its contrast.
         </p>
         <cpa-live-example chapter="04-roles" [files]="files" [frames]="example" />
       </div>
 
       <div chapterIdea>
         <p>
-          A palette gives you its colour and six steps. Which of them is right for a border? You
-          could choose by eye: the lightest step for the fill, a darker one for the border, the
-          colour itself for text. That works for the colour you were looking at. A step is a fixed
-          distance from the colour, so what it looks like depends on where the colour starts. The
-          lightest step of a deep violet is a pale violet; the lightest step of a yellow is white,
-          and the fill is gone. In dark mode a pale fill is the wrong thing altogether.
+          A palette gives you its colour and six steps, from darkest to lightest. Which of them is
+          right for a border? You could choose by eye: the lightest step for the fill, a darker one
+          for the border, the colour itself for text, white on the button. Picking a colour by how
+          light it looks like this is choosing a <strong>shade</strong>. It works for the colour you
+          were looking at. But a step is the colour made lighter or darker by a fixed amount, so
+          what it looks like depends on where the colour starts. The lightest step of a deep violet
+          is a pale violet. A yellow is nearly as light as a colour gets, so its lighter steps have
+          no room left and stay a strong yellow: yellow text cannot be read on them, and white text
+          cannot be read on the yellow. In dark mode a pale fill is the wrong thing altogether.
         </p>
         <p>
           So a palette also has <strong>roles</strong>: variables named after a job. Each is worked
@@ -55,32 +59,36 @@ import tryShadesScss from '../../../examples/learn/04-roles/try-shades.scss' wit
             and on a dark one.
           </li>
           <li>
-            <cpa-ref name="--color--{name}" /> itself is the role for the part that should be
-            unmistakably this palette, such as the button here, with
+            The palette's colour, <cpa-ref name="--color--{name}" />, counts as a role too: it is
+            for the part that should be unmistakably this palette, such as the button here, with
             <cpa-ref name="--color--{name}--contrast" /> as the text on it.
           </li>
           <li>
             <cpa-ref name="--color--{name}--focus" /> is the <strong>focus ring</strong> shown
-            around the control the keyboard is on. Each palette has its own, in a different hue from
-            the palette, because a ring in the button's own colour would not show next to the
-            button.
+            around the control the keyboard is on. Each palette has its own. Its lightness is the
+            opposite of the palette's and its hue is turned part of the way round the colour wheel,
+            because a ring in the button's own colour would not show next to the button. (The
+            example draws it on the buttons marked <em>focus</em> without the keyboard.)
           </li>
           <li>
             <cpa-ref name="--color--{name}--tint-N" />, with N from 1 to 5, is the colour made
             see-through, from faint to nearly solid. A tint is a wash over whatever is already
-            there, for a hovered row or a selected item. The pill in the example is tint 2.
+            there, for a hovered row or a selected item. The pill in the example is tint 2, a wash
+            over the card's fill.
           </li>
         </ul>
         <p>
-          The roles are the soft background, border and focus ring you saw in chapter 1, now with
-          their names. A role has steps and contrasts like any colour: the card in chapter 2 was
-          filled with the high step of the bg role.
+          Three of these are the soft background, border and focus ring of chapter 1, whose names
+          end in bg, stroke and focus. A role has steps like a colour, each with its contrast: the
+          card in chapter 2 was filled with the high step of bg, and its text was that step's
+          contrast.
         </p>
         <p>
           This divides the work. The component decides the job of each part: this is a fill, that is
-          a border. The theme decides which colour does the job. A component written with roles goes
-          on working when the palette, the theme or the mode changes; one written with shades works
-          for the colour it was drawn with.
+          a border. The theme decides which colour does the job, because every role is worked out
+          from its palette's colour. A component written with roles goes on working when the
+          palette, the theme or the mode changes; one written with shades works for the colour it
+          was drawn with.
         </p>
       </div>
 
@@ -99,14 +107,18 @@ import tryShadesScss from '../../../examples/learn/04-roles/try-shades.scss' wit
           <li>
             <strong>A pale primary.</strong> The theme passes a light yellow in place of the violet;
             the component's stylesheet is untouched. The fill is still a fill, the border still
-            shows, and the text on the button has turned black.
+            shows, and the text on the button has turned black. One role does less well here: the
+            focus ring of a pale colour is nearly black, so in dark mode it is hard to see against
+            the dark fill.
           </li>
           <li>
-            <strong>Written with shades.</strong> The same pale theme, with the component rewritten
-            the way the first paragraph describes: lightest step for the fill, a darker step for the
-            border, the colour for text, white on the button. Every one of those choices looked fine
-            on the violet. (The words in the boxes are unchanged and still name the roles; the
-            colours no longer come from them.)
+            <strong>Written with shades.</strong> The same pale theme, with the component written by
+            eye the way the first paragraph describes: the lightest step for the fill, a darker step
+            for the border and the focus ring, a lighter step for the pill, the colour for the text,
+            white on the button. On the yellow the text in the colour and the white text cannot be
+            read, and the pill cannot be seen: it is the same yellow as the fill. (The words in the
+            boxes are unchanged, so they still name the roles, but this stylesheet no longer uses
+            the role variables.)
           </li>
         </ul>
         <cpa-live-example chapter="04-roles" [files]="files" [frames]="tryIt" />

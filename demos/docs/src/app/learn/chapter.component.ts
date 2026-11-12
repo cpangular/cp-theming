@@ -154,7 +154,7 @@ import { CHAPTERS } from './chapters';
 
       .learn-prose cpa-code pre {
         max-width: 700px;
-        max-height: 460px;
+        max-height: 660px;
         margin: 0 0 18px;
         font-size: 13.5px;
       }

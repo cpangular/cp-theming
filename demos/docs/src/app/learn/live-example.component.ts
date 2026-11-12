@@ -231,7 +231,7 @@ export const LIVE_STYLES = `
       }
 
       .live-measure--low strong::after {
-        content: ' below 4.5';
+        content: ' (below 4.5)';
         font-family: Roboto, sans-serif;
       }
 
