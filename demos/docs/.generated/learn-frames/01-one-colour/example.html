@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>One colour, a whole palette: example</title>
+    <link rel="stylesheet" href="../frame.css" />
+    <link rel="stylesheet" href="../core.css" />
+    <link rel="stylesheet" href="theme.css" />
+    <link rel="stylesheet" href="example.css" />
+  </head>
+  <body>
+<div theme="ocean">
+  <!-- the colour the theme was given, with text that reads on it -->
+  <p class="given">--color--primary</p>
+
+  <!-- worked out from it: three darker steps (--color--primary--dark and on)
+       and three lighter ones (--color--primary--light and on) -->
+  <div class="steps">
+    <p class="darkest">darkest</p>
+    <p class="darker">darker</p>
+    <p class="dark">dark</p>
+    <p class="light">light</p>
+    <p class="lighter">lighter</p>
+    <p class="lightest">lightest</p>
+  </div>
+
+  <!-- also worked out from it: a soft background, a border, a focus ring -->
+  <div class="uses">
+    <p class="soft">soft background</p>
+    <p class="border">border</p>
+    <p class="ring">focus ring</p>
+  </div>
+</div>
+  </body>
+</html>

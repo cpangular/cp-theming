@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Themes inside themes: try-default</title>
+    <link rel="stylesheet" href="../frame.css" />
+    <link rel="stylesheet" href="../core.css" />
+    <link rel="stylesheet" href="try-default.theme.css" />
+    <link rel="stylesheet" href="example.css" />
+  </head>
+  <body>
+<!-- no theme attribute here: harbour is the default theme -->
+<div palette="background" bg class="page">
+  <h4>no theme attribute: harbour, the default</h4>
+  <p class="chain">
+    <span palette="brand" filled>brand</span>
+    <span palette="primary" filled>primary</span>
+    <span palette="secondary" filled>secondary</span>
+    <span palette="tertiary" filled>tertiary</span>
+    <span palette="surface" bg>surface</span>
+  </p>
+
+  <div class="inside">
+    <!-- a brand: everything follows from it, so nothing is left to inherit -->
+    <section theme="ember" palette="background" bg>
+      <h4>theme="ember" passes a brand colour</h4>
+      <p class="chain">
+        <span palette="brand" filled>brand <em>passed</em></span>
+        <span palette="primary" filled>primary <em>generated</em></span>
+        <span palette="secondary" filled>secondary <em>generated</em></span>
+        <span palette="tertiary" filled>tertiary <em>generated</em></span>
+        <span palette="surface" bg>surface <em>generated</em></span>
+      </p>
+    </section>
+
+    <!-- a primary: secondary and tertiary follow from it, background and surface do not -->
+    <section theme="moss" palette="background" bg>
+      <h4>theme="moss" passes a primary</h4>
+      <p class="chain">
+        <span palette="brand" filled>brand <em>its primary</em></span>
+        <span palette="primary" filled>primary <em>passed</em></span>
+        <span palette="secondary" filled>secondary <em>generated</em></span>
+        <span palette="tertiary" filled>tertiary <em>generated</em></span>
+        <span palette="surface" bg>surface <em>inherited</em></span>
+      </p>
+    </section>
+
+    <!-- a secondary: nothing follows from it -->
+    <section theme="plum" palette="background" bg>
+      <h4>theme="plum" passes a secondary</h4>
+      <p class="chain">
+        <span palette="brand" filled>brand <em>inherited</em></span>
+        <span palette="primary" filled>primary <em>inherited</em></span>
+        <span palette="secondary" filled>secondary <em>passed</em></span>
+        <span palette="tertiary" filled>tertiary <em>inherited</em></span>
+        <span palette="surface" bg>surface <em>inherited</em></span>
+      </p>
+    </section>
+  </div>
+</div>
+  </body>
+</html>

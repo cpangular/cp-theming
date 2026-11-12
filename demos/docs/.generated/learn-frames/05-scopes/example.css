@@ -1,0 +1,1 @@
+.count{background:var(--palette-color);color:var(--palette-color--contrast)}.quiet{color:var(--container--text-deemphasis)}p{display:flex;flex-wrap:wrap;gap:16px;margin:0 0 18px}.panel{display:flex;align-items:center;gap:16px;margin:0 5px 14px;padding:14px}.count{margin-left:auto;padding:0 9px;border-radius:99px}
