@@ -1,6 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { ThemeExampleComponent } from '../../shared/theme-example.component';
 import { TocService } from '../../shell/toc.service';
+import scaleHtml from '../../../examples/shape/scale.html' with { loader: 'text' };
+import scaleScss from '../../../examples/shape/scale.scss' with { loader: 'text' };
 
 const TOC = [
   { label: 'Overview', anchor: 'overview' },
@@ -28,19 +30,9 @@ const TOC = [
         </p>
         <cpa-theme-example
           title="Corner radius scale"
-          [attrsHtml]="shapeAttrsHtml"
-          [scssScss]="shapeScssScss"
-        >
-          <div demo class="demo-row">
-            <div palette="primary" filled container shape="xxs">xxs</div>
-            <div palette="primary" filled container shape="xs">xs</div>
-            <div palette="primary" filled container shape="sm">sm</div>
-            <div palette="primary" filled container shape="md">md</div>
-            <div palette="primary" filled container shape="lg">lg</div>
-            <div palette="primary" filled container shape="xl">xl</div>
-            <div palette="primary" filled container shape="xxl">xxl</div>
-          </div>
-        </cpa-theme-example>
+          [attrsHtml]="ex.scaleHtml"
+          [scssScss]="ex.scaleScss"
+        />
       </section>
 
       <section id="api" class="page-section">
@@ -180,23 +172,7 @@ const TOC = [
   ],
 })
 export class ShapePageComponent {
-  readonly shapeAttrsHtml = `<div palette="primary" filled container shape="xxs">xxs</div>
-<div palette="primary" filled container shape="xs">xs</div>
-<div palette="primary" filled container shape="sm">sm</div>
-<div palette="primary" filled container shape="md">md</div>
-<div palette="primary" filled container shape="lg">lg</div>
-<div palette="primary" filled container shape="xl">xl</div>
-<div palette="primary" filled container shape="xxl">xxl</div>`;
-
-  readonly shapeScssScss = `@use '@cpangular/cp-theming-core/scss/theme' as t;
-
-.box-xxs { @include t.apply-palette('primary'); @include t.filled(); @include t.container(); @include t.shape('xxs'); }
-.box-xs  { @include t.apply-palette('primary'); @include t.filled(); @include t.container(); @include t.shape('xs'); }
-.box-sm  { @include t.apply-palette('primary'); @include t.filled(); @include t.container(); @include t.shape('sm'); }
-.box-md  { @include t.apply-palette('primary'); @include t.filled(); @include t.container(); @include t.shape('md'); }
-.box-lg  { @include t.apply-palette('primary'); @include t.filled(); @include t.container(); @include t.shape('lg'); }
-.box-xl  { @include t.apply-palette('primary'); @include t.filled(); @include t.container(); @include t.shape('xl'); }
-.box-xxl { @include t.apply-palette('primary'); @include t.filled(); @include t.container(); @include t.shape('xxl'); }`;
+  protected readonly ex = { scaleHtml, scaleScss };
 
   constructor() {
     inject(TocService).set(TOC);

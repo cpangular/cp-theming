@@ -1,0 +1,7 @@
+{
+  "extends": "../../../packages/theme-core/test/tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "../../.."
+  },
+  "include": ["*.ts", "lib/*.ts"]
+}

@@ -1,0 +1,29 @@
+/* Layout only: every colour comes from the attributes in the HTML. */
+.page {
+  padding: 16px;
+}
+h4 {
+  margin: 0 0 10px;
+  font: 12px/1.4 ui-monospace, monospace;
+}
+.chain {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  margin: 0;
+}
+.chain span {
+  padding: 22px 8px 8px;
+  font-size: 12px;
+}
+.chain em {
+  display: block;
+  font-size: 11px;
+}
+.inside {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+section {
+  padding: 14px;
+}

@@ -1,0 +1,36 @@
+<div class="g-grid">
+  <mat-form-field appearance="fill">
+    <mat-label>Select</mat-label>
+    <mat-select value="pear">
+      <mat-option value="apple">Apple</mat-option>
+      <mat-option value="pear">Pear</mat-option>
+      <mat-option value="plum" disabled>Plum</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Multiple</mat-label>
+    <mat-select multiple [value]="['apple', 'pear']">
+      <mat-option value="apple">Apple</mat-option>
+      <mat-option value="pear">Pear</mat-option>
+      <mat-option value="plum">Plum</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Disabled</mat-label>
+    <mat-select disabled value="apple">
+      <mat-option value="apple">Apple</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>Autocomplete</mat-label>
+    <input matInput value="Pe" [matAutocomplete]="fruit" />
+    <mat-autocomplete #fruit>
+      <mat-option value="Peach">Peach</mat-option>
+      <mat-option value="Pear">Pear</mat-option>
+      <mat-option value="Persimmon" disabled>Persimmon</mat-option>
+    </mat-autocomplete>
+  </mat-form-field>
+</div>

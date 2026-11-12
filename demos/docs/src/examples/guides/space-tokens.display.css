@@ -1,0 +1,7 @@
+--space--xxs /*  2px at scale 0, 1px less per step */
+--space--xs  /*  4px at scale 0, 1px less per step */
+--space--sm  /*  8px at scale 0, 2px less per step */
+--space--md  /* 16px at scale 0, 4px less per step */
+--space--lg  /* 24px at scale 0, 4px less per step */
+--space--xl  /* 32px at scale 0, 4px less per step */
+--space--xxl /* 48px at scale 0, 4px less per step */

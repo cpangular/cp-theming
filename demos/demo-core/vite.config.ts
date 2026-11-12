@@ -5,6 +5,9 @@ import { resolve } from 'path';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
+  // Relative asset URLs: the build is served from wherever it is copied, e.g.
+  // demos/demo-core/ inside the docs site.
+  base: './',
   build: {
     minify: false,
     cssMinify: false,

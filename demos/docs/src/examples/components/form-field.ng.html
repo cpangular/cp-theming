@@ -1,0 +1,66 @@
+<!-- Each row: the filled appearance, then the outlined one -->
+<div class="g-pairs">
+  <mat-form-field appearance="fill">
+    <mat-label>Filled</mat-label>
+    <input matInput value="Text" />
+    <mat-hint>Hint text</mat-hint>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Outlined</mat-label>
+    <input matInput value="Text" />
+    <mat-hint>Hint text</mat-hint>
+  </mat-form-field>
+
+  <!-- Prefix and suffix icons, and a placeholder -->
+  <mat-form-field appearance="fill" floatLabel="always">
+    <mat-label>Search</mat-label>
+    <mat-icon matIconPrefix>search</mat-icon>
+    <input matInput placeholder="Placeholder" />
+    <mat-icon matIconSuffix>mic</mat-icon>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" floatLabel="always">
+    <mat-label>Search</mat-label>
+    <mat-icon matIconPrefix>search</mat-icon>
+    <input matInput placeholder="Placeholder" />
+    <mat-icon matIconSuffix>mic</mat-icon>
+  </mat-form-field>
+
+  <!-- Error: the control is invalid and touched -->
+  <mat-form-field appearance="fill">
+    <mat-label>Email</mat-label>
+    <input matInput [formControl]="email" />
+    <mat-error>Not an email address</mat-error>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Email</mat-label>
+    <input matInput [formControl]="email" />
+    <mat-error>Not an email address</mat-error>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>Disabled</mat-label>
+    <input matInput disabled value="Text" />
+    <mat-hint>Hint text</mat-hint>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Disabled</mat-label>
+    <input matInput disabled value="Text" />
+    <mat-hint>Hint text</mat-hint>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>Textarea</mat-label>
+    <textarea matInput rows="3">Several lines
+of text</textarea>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Textarea</mat-label>
+    <textarea matInput rows="3">Several lines
+of text</textarea>
+  </mat-form-field>
+</div>

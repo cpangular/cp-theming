@@ -1,0 +1,17 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+.card {
+  @include t.apply-palette("primary");
+  @include t.bg();
+  @include t.outlined();
+  @include t.shape("sm");
+  @include t.container();
+}
+
+.badge {
+  @include t.apply-palette("secondary");
+  @include t.filled();
+  @include t.outlined();
+  @include t.shape("sm");
+  @include t.container();
+}

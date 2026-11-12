@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { ThemeExampleComponent } from '../../shared/theme-example.component';
 import { TocService } from '../../shell/toc.service';
+import weightsScss from '../../../examples/weights/weights.scss' with { loader: 'text' };
 
 const TOC = [
   { label: 'Overview', anchor: 'overview' },
@@ -28,7 +29,7 @@ const TOC = [
           <code>t.light-dark()</code> is common — dark mode often needs slightly lower primary text
           opacity to reduce eye strain.
         </p>
-        <cpa-theme-example title="Configuring weights" [scssScss]="weightsScssScss" />
+        <cpa-theme-example title="Configuring weights" [scssScss]="ex.weightsScss" />
       </section>
 
       <section id="api" class="page-section">
@@ -208,13 +209,7 @@ const TOC = [
   ],
 })
 export class WeightsPageComponent {
-  readonly weightsScssScss = `$my-theme: t.theme(
-  $palettes: (...),
-  $weights: t.light-dark(
-    t.weights($text-blend: 0.87),   // light mode
-    t.weights($text-blend: 0.78),   // dark mode — slightly more translucent
-  ),
-);`;
+  protected readonly ex = { weightsScss };
 
   constructor() {
     inject(TocService).set(TOC);

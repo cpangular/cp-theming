@@ -1,0 +1,10 @@
+<!-- The boxes take their colour from a palette scope; the ripple is Material's. -->
+<div class="g-row">
+  <div class="g-box" matRipple palette="surface" bg container shape="md">Click for a ripple</div>
+  <div class="g-box" matRipple [matRippleCentered]="true" palette="primary" bg container shape="md">
+    Centred
+  </div>
+  <div class="g-box" matRipple [matRippleDisabled]="true" palette="surface" bg container shape="md">
+    Disabled
+  </div>
+</div>

@@ -4,17 +4,24 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // --density-scale: 0 (default) to -5 (most compact). Override on any ancestor
 // to shift all --space--* values inside that scope. Components recalculate
-// automatically via calc().
+// automatically via calc(). The defaults (scale 0) are the registered
+// initial values, so core declares nothing for them.
 // ─────────────────────────────────────────────────────────────────────────────
 @use "sass:map";
 
-@function config($scale: 0) {
+// Returns only what was passed.
+@function config($scale: null) {
+  @if $scale == null {
+    @return ();
+  }
   @return (scale: $scale);
 }
 
-@mixin emit($config) {
+@mixin emit-theme($config) {
   $scale: map.get($config, scale);
-  @include _emit-space-vars($scale);
+  @if $scale != null {
+    @include _emit-space-vars($scale);
+  }
 }
 
 // Internal: emit --density-scale + all --space--* with a literal scale value.
@@ -36,7 +43,9 @@
 
 // Emit [themeDensity="N"] scope selectors for all density levels (-5 to 5).
 // Call from define-core-theme() so each scope re-declares --density-scale and
-// all --space--* vars with the literal scale baked in.
+// all --space--* vars with the literal scale baked in. These keep attribute
+// specificity on purpose: a density scope on a theme element must beat the
+// theme's own density.
 @mixin scope-selectors() {
   @for $i from -5 through 5 {
     [themeDensity="#{$i}"] {

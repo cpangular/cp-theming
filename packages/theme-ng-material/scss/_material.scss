@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // _material.scss
-// Maps --color--* / --weight--* / --shape--* / --motion--* vars from
+// Maps --color--* / --weight--* / --shape--* / --motion--* / --text--* vars from
 // @cpangular/cp-theming-core to Angular Material 22 --mat-sys-* tokens.
 //
 // Usage:
@@ -8,107 +8,75 @@
 //   @include m.define-ng-material-core-theme();
 //   @include m.apply-material-overrides();  // optional component patches
 //
-// The mappings are unscoped (emitted on :root). Since --color--* vars are
-// inherited custom properties, nested [theme] elements naturally change their
-// resolved values — Angular Material components inside pick the correct palette
-// without any additional rules.
+// Load order: core, then themes, then this adapter.
 // ─────────────────────────────────────────────────────────────────────────────
 
 @use "sass:list";
 @use "sass:math";
+@use "sass:string";
+@use "roles";
 @forward "material-palette";
+@use "material-palette" as mp;
 
 // ─── Core theme mapping ───────────────────────────────────────────────────────
 
-// Color-only tokens extracted into their own mixin.
-//
-// IMPORTANT: --color--* properties are registered via @property { syntax: "<color>" }.
-// Chromium resolves @property var() references eagerly when they appear inside
-// an unregistered custom property.  That means:
-//   :root { --mat-sys-primary: var(--color--primary); }
-// stores the RESOLVED azure-blue color in --mat-sys-primary, which then inherits
-// to all descendants — nested [theme=rose-red] can no longer override it.
-//
-// Fix: also emit these mappings at [theme] level so each scoped element
-// re-evaluates the tokens against its own --color--* computed values.
-@mixin _color-tokens() {
-  // ── Primary ──────────────────────────────────────────────────────────────
-  --mat-sys-primary: var(--color--primary);
-  --mat-sys-on-primary: var(--color--primary--contrast);
-  --mat-sys-primary-container: var(--color--primary--bg);
-  --mat-sys-on-primary-container: var(--color--primary--bg--contrast);
-  --mat-sys-primary-fixed: var(--color--primary--bg);
-  --mat-sys-primary-fixed-dim: var(--color--primary--bg--low);
-  --mat-sys-on-primary-fixed: var(--color--primary--bg--contrast);
-  --mat-sys-on-primary-fixed-variant: var(--color--primary--bg--contrast);
-  --mat-sys-inverse-primary: var(--color--primary--contrast);
+$_type-scales:
+  display-large, display-medium, display-small, headline-large, headline-medium, headline-small,
+  title-large, title-medium, title-small, body-large, body-medium, body-small, label-large,
+  label-medium, label-small;
 
-  // ── Secondary ─────────────────────────────────────────────────────────────
-  --mat-sys-secondary: var(--color--secondary);
-  --mat-sys-on-secondary: var(--color--secondary--contrast);
-  --mat-sys-secondary-container: var(--color--secondary--bg);
-  --mat-sys-on-secondary-container: var(--color--secondary--bg--contrast);
-  --mat-sys-secondary-fixed: var(--color--secondary--bg);
-  --mat-sys-secondary-fixed-dim: var(--color--secondary--bg--low);
-  --mat-sys-on-secondary-fixed: var(--color--secondary--bg--contrast);
-  --mat-sys-on-secondary-fixed-variant: var(--color--secondary--bg--contrast);
-
-  // ── Tertiary (no 3rd palette — maps to secondary) ─────────────────────────
-  --mat-sys-tertiary: var(--color--secondary);
-  --mat-sys-on-tertiary: var(--color--secondary--contrast);
-  --mat-sys-tertiary-container: var(--color--secondary--bg);
-  --mat-sys-on-tertiary-container: var(--color--secondary--bg--contrast);
-  --mat-sys-tertiary-fixed: var(--color--secondary--bg);
-  --mat-sys-tertiary-fixed-dim: var(--color--secondary--bg--low);
-  --mat-sys-on-tertiary-fixed: var(--color--secondary--bg--contrast);
-  --mat-sys-on-tertiary-fixed-variant: var(--color--secondary--bg--contrast);
-
-  // ── Error ─────────────────────────────────────────────────────────────────
-  --mat-sys-error: var(--color--error);
-  --mat-sys-on-error: var(--color--error--contrast);
-  --mat-sys-error-container: var(--color--error--bg);
-  --mat-sys-on-error-container: var(--color--error--bg--contrast);
-
-  // ── Surface ───────────────────────────────────────────────────────────────
-  --mat-sys-surface: var(--color--surface);
-  --mat-sys-on-surface: var(--color--surface--contrast);
-  --mat-sys-surface-variant: var(--color--surface--bg);
-  --mat-sys-on-surface-variant: var(--color--surface--bg--contrast);
-  --mat-sys-surface-dim: var(--color--surface--low);
-  --mat-sys-surface-bright: var(--color--surface--high);
-  --mat-sys-surface-container: var(--color--surface--bg);
-  --mat-sys-surface-container-low: var(--color--surface--bg--low);
-  --mat-sys-surface-container-high: var(--color--surface--bg--high);
-  --mat-sys-surface-container-highest: var(--color--surface--bg--higher);
-  --mat-sys-surface-tint: var(--color--primary--tint-1);
-  --mat-sys-inverse-surface: var(--color--surface--high);
-  --mat-sys-inverse-on-surface: var(--color--surface--high--contrast);
-
-  // ── Background ────────────────────────────────────────────────────────────
-  --mat-sys-background: var(--color--background);
-  --mat-sys-on-background: var(--color--background--contrast);
-
-  // ── Outline ───────────────────────────────────────────────────────────────
-  --mat-sys-outline: var(--color--surface--stroke);
-  --mat-sys-outline-variant: var(--color--surface--stroke--low);
-
-  // ── Overlays ──────────────────────────────────────────────────────────────
-  --mat-sys-scrim: var(--overlay--scrim);
-  --mat-sys-shadow: var(--overlay--shadow);
+// The state-layer opacities follow registered, already-picked weights. Material
+// reads them as plain numbers (0.08) and builds `calc(x * 100%)` from them for
+// color-mix(); a cp-theming weight is a percentage (8%), which would make that
+// a percentage times a percentage and the whole declaration invalid — no hover
+// or keyboard-focus layer on options and menu items, no ripple on buttons. So
+// each weight is divided by 100% into a number.
+@mixin _state-layers() {
+  --mat-sys-hover-state-layer-opacity: calc(var(--weight--state-hover) / 100%);
+  --mat-sys-focus-state-layer-opacity: calc(var(--weight--state-focus) / 100%);
+  --mat-sys-pressed-state-layer-opacity: calc(var(--weight--state-press) / 100%);
+  --mat-sys-dragged-state-layer-opacity: calc(var(--weight--state-drag) / 100%);
 }
 
+// Selectors
+//
+// var() is substituted where a custom property is declared, so
+//   :root { --mat-sys-primary: var(--color--primary); }
+// holds the root theme's expression and a nested [theme] would not change it.
+// Every token that references a cp-theming variable is therefore declared on
+// `:root, :where([theme])`: each theme element re-evaluates it against its own
+// values. The role tokens it reads are unregistered light-dark() expressions,
+// so a nested themeMode flips every --mat-sys-* colour without a rule of its own.
+//
+// The root half keeps :root specificity on purpose: it has to beat the
+// `html { @include mat.theme(…) }` rule that `ng add @angular/material`
+// generates. The [theme] half is zero specificity so a [palette="name"] remap
+// wins on an element that carries both attributes. Literal constants, which no
+// theme can change, are declared on :root only.
 @mixin define-ng-material-core-theme() {
   :root {
-    @include _color-tokens();
+    --mat-sys-corner-none: 0px;
+    --mat-sys-easing-linear: linear;
+  }
+
+  :root,
+  :where([theme]) {
+    // ── Colour roles ──────────────────────────────────────────────────────────
+    // From Angular Material's own role tables (see _roles.scss): the roles
+    // cp-theming has a token for point at it, every other role is the theme's
+    // colour at the M3 tone the table names, and the neutral tones are offsets
+    // from --color--surface.
+    @each $role, $value in roles.system-roles() {
+      --mat-sys-#{$role}: #{$value};
+    }
+    @each $role, $value in roles.system-tones() {
+      --mat-sys-#{$role}: #{$value};
+    }
 
     // ── State layer opacities ─────────────────────────────────────────────────
-    --mat-sys-hover-state-layer-opacity: var(--weight--state-hover);
-    --mat-sys-focus-state-layer-opacity: var(--weight--state-focus);
-    --mat-sys-pressed-state-layer-opacity: var(--weight--state-press);
-    --mat-sys-dragged-state-layer-opacity: var(--weight--state-drag);
+    @include _state-layers();
 
     // ── Shape ─────────────────────────────────────────────────────────────────
-    --mat-sys-corner-none: 0px;
     --mat-sys-corner-extra-small: var(--shape--xs);
     --mat-sys-corner-small: var(--shape--sm);
     --mat-sys-corner-medium: var(--shape--md);
@@ -149,119 +117,225 @@
     --mat-sys-easing-emphasized: var(--motion--easing-emphasized);
     --mat-sys-easing-emphasized-accelerate: var(--motion--easing-accelerate);
     --mat-sys-easing-emphasized-decelerate: var(--motion--easing-decelerate);
-    --mat-sys-easing-linear: linear;
     --mat-sys-easing-legacy: var(--motion--easing-standard);
     --mat-sys-easing-legacy-accelerate: var(--motion--easing-accelerate);
     --mat-sys-easing-legacy-decelerate: var(--motion--easing-decelerate);
 
     // ── Typography ────────────────────────────────────────────────────────────
-    // Maps --mat-sys-{scale}-{property} → --typescale--{scale}--{property}
-    // 15 scales × 5 properties
-
-    @each $scale in display-large, display-medium, display-small, headline-large, headline-medium,
-      headline-small, title-large, title-medium, title-small, body-large, body-medium, body-small,
-      label-large, label-medium, label-small
-    {
-      --mat-sys-#{$scale}-font: var(--typescale--#{$scale}--font);
-      --mat-sys-#{$scale}-size: var(--typescale--#{$scale}--size);
-      --mat-sys-#{$scale}-line-height: var(--typescale--#{$scale}--line-height);
-      --mat-sys-#{$scale}-tracking: var(--typescale--#{$scale}--tracking);
-      --mat-sys-#{$scale}-weight: var(--typescale--#{$scale}--weight);
+    // 15 scales: the five properties of each from --text--{scale}--{property},
+    // and the font shorthand Material reads as --mat-sys-{scale}
+    // (weight size / line-height family).
+    @each $scale in $_type-scales {
+      $t: --text--#{$scale};
+      $shorthand: var(#{$t}--weight)
+        var(#{$t}--size)
+        #{"/"}
+        var(#{$t}--line-height)
+        var(#{$t}--font);
+      --mat-sys-#{$scale}: #{$shorthand};
+      --mat-sys-#{$scale}-font: var(#{$t}--font);
+      --mat-sys-#{$scale}-size: var(#{$t}--size);
+      --mat-sys-#{$scale}-line-height: var(#{$t}--line-height);
+      --mat-sys-#{$scale}-tracking: var(#{$t}--tracking);
+      --mat-sys-#{$scale}-weight: var(#{$t}--weight);
     }
+    --mat-sys-label-large-weight-prominent: var(--text--bold-weight);
+    --mat-sys-label-medium-weight-prominent: var(--text--bold-weight);
   }
 
-  // Re-declare color tokens at every [theme] element.
-  // This forces Chromium to re-evaluate the var() references at each scoped
-  // element, picking up the correct --color--* values for nested themes.
-  [theme] {
-    @include _color-tokens();
+  // A weight is re-picked on every [themeMode] element, and the alias above
+  // was substituted on the nearest :root or [theme]; re-declare it where the
+  // weight changes without a theme attribute.
+  :where([themeMode]) {
+    @include _state-layers();
+  }
+
+  // [palette="name"] for the core accent palettes: Material components inside
+  // the scope take that palette as their primary. A custom palette name gets
+  // the same rule from the mat.adaptor() hook of the theme that defines it.
+  @each $name in roles.$accent-names {
+    [palette="#{$name}"] {
+      @include mp.material-palette($name);
+    }
   }
 }
 
 // ─── Component overrides ──────────────────────────────────────────────────────
-// Patches for Angular Material components that bypass --mat-sys-* tokens and
-// hardcode values. Grows as gaps are discovered during demo-material development.
+// Patches for Angular Material components whose own token defaults do not work
+// with cp-theming's roles. Each one says which default it replaces and why;
+// re-check them whenever the role mapping changes (PORT-PLAN.md Phase 11 lists
+// the ones that were removed). A harness check fails a patch for a token the
+// installed Material does not read.
 
 @mixin apply-material-overrides() {
-  // mat-select option checkmark
-  //
-  // AM option CSS has:
-  //   .mat-mdc-option .mat-pseudo-checkbox {
-  //     --mat-pseudo-checkbox-minimal-selected-checkmark-color:
-  //       var(--mat-option-selected-state-label-text-color, var(--mat-sys-on-secondary-container));
-  //   }
-  // That resolves to white on themes where the secondary has a dark @property
-  // base color (via the contrast formula eager-resolution bug in Chromium).
-  // Use a more specific selector (3 classes vs 2) to guarantee we win the
-  // cascade even though component styles load after global stylesheets.
-  .mat-mdc-select-panel .mat-mdc-option .mat-pseudo-checkbox {
-    --mat-pseudo-checkbox-minimal-selected-checkmark-color: var(--color--primary);
-  }
-
-  // Slide toggle — unselected track visibility + icon fix.
-  //
-  // AM22 maps the unselected track fill to --mat-sys-surface-variant (near-white
-  // in light mode) and the outline to --mat-sys-outline (also near-white against
-  // our surface tokens), making the pill invisible.
-  //
-  // The M3 spec intent: the off-state icon should be the SAME color as the track
-  // fill, so it's invisible (hidden in plain sight). We use the surface--stroke
-  // token (a neutral mid-grey) for both track outline and icon fill, and a
-  // low-opacity surface--bg tint for the fill — matching the reference appearance
-  // at material.angular.dev.
   mat-slide-toggle,
   .mat-mdc-slide-toggle {
-    // Track fill: neutral surface-variant tint — visible but clearly "off"
-    --mat-slide-toggle-unselected-track-color: var(--color--surface--bg);
-    --mat-slide-toggle-unselected-hover-track-color: var(--color--surface--bg--high);
-    --mat-slide-toggle-unselected-focus-track-color: var(--color--surface--bg--high);
-    --mat-slide-toggle-unselected-pressed-track-color: var(--color--surface--bg--high);
-    // Track outline: use the surface stroke (neutral grey) — visible against track
-    --mat-slide-toggle-track-outline-color: var(--color--surface--stroke);
-    --mat-slide-toggle-hover-track-outline-color: var(--color--surface--stroke);
-    --mat-slide-toggle-focus-track-outline-color: var(--color--surface--stroke);
-    --mat-slide-toggle-pressed-track-outline-color: var(--color--surface--stroke);
-    // Off-state icon: same as track fill — invisible per M3 spec
-    --mat-slide-toggle-unselected-icon-color: var(--color--surface--bg);
-    --mat-slide-toggle-unselected-hover-icon-color: var(--color--surface--bg--high);
-    --mat-slide-toggle-unselected-focus-icon-color: var(--color--surface--bg--high);
-    --mat-slide-toggle-unselected-pressed-icon-color: var(--color--surface--bg--high);
-
-    // ── Selected (checked) state ───────────────────────────────────────────
+    // Selected icon.
     //
-    // AM22 defaults:
-    //   handle (normal): --mat-sys-on-primary        → white (on-primary contrast)  ✓
-    //   handle (hover):  --mat-sys-primary-container → --color--primary--bg = primary ✗
-    //                    (same as track → handle disappears into track on hover)
-    //   icon:            --mat-sys-on-primary-container → contrast of primary--bg
-    //                    = white (because primary--bg is dark) → white on white ✗
-    //
-    // Fix: derive a "container" tone inline via CSS relative color — push
-    // lightness to 0.90 in light mode / 0.25 in dark mode, matching M3 tone-90/10.
-    // The icon should be the primary color itself (dark on white handle in light,
-    // light on dark handle in dark).
-    --mat-slide-toggle-selected-icon-color: var(--color--primary);
-    --mat-slide-toggle-selected-hover-icon-color: var(--color--primary);
-    --mat-slide-toggle-selected-focus-icon-color: var(--color--primary);
-    --mat-slide-toggle-selected-pressed-icon-color: var(--color--primary);
-
-    // Hover/focus/press handle: a container-like light tint of primary.
-    // light-dark() so both modes get a tone on the opposite end from the handle.
-    // Chroma is scaled down to ~25% — matching M3 primary-container tone (muted tint,
-    // not the saturated primary hue). Full chroma at L=0.90 looks vivid and off-hue.
-    --mat-slide-toggle-selected-hover-handle-color: light-dark(
-      oklch(from var(--color--primary) 0.9 calc(c * 0.25) h),
-      oklch(from var(--color--primary) 0.25 calc(c * 0.25) h)
-    );
-    --mat-slide-toggle-selected-focus-handle-color: light-dark(
-      oklch(from var(--color--primary) 0.9 calc(c * 0.25) h),
-      oklch(from var(--color--primary) 0.25 calc(c * 0.25) h)
-    );
-    --mat-slide-toggle-selected-pressed-handle-color: light-dark(
-      oklch(from var(--color--primary) 0.88 calc(c * 0.25) h),
-      oklch(from var(--color--primary) 0.22 calc(c * 0.25) h)
-    );
+    // Material draws it in on-primary-container on a handle in on-primary. In M3
+    // those are a dark and a white tone; here both are a black-or-white contrast
+    // (of --bg and of the colour), and they are the same one whenever a theme's
+    // primary is light in light mode or dark in dark mode — a single primary
+    // used for both modes always is in one of them — which hides the icon. The
+    // primary itself always reads on its own contrast. --mat-sys-primary, not
+    // --color--primary, so the icon follows a [palette] scope like the track.
+    --mat-slide-toggle-selected-icon-color: var(--mat-sys-primary);
   }
+
+  // Accents as text.
+  //
+  // Material paints some labels in primary or in error, on the surface or on a
+  // container: the label of a text, outlined or elevated button, the focused
+  // and the invalid label of a form field, an error message, the label of a
+  // step in error. In M3 those are tone 40 / 80 accents, which read on every
+  // surface container with a state layer over it. A cp-theming accent is the
+  // colour its author wrote, and `brand` is one colour in both modes.
+  // Measured in the presets, as Material has it:
+  //   - a text button on a filled card: 3.8–4.4:1 in five of the eight preset
+  //     modes, and 3.3–4.4:1 with keyboard focus in all eight;
+  //   - a focused text, outlined or elevated button on the surface: 4.3:1 in
+  //     magenta-violet and rose-red, light mode;
+  //   - the label of a step in error, and anything under palette="error":
+  //     4.49:1 in cyan-orange, light mode;
+  //   - the focused or invalid label of a filled field, on its container in
+  //     surface-variant: 2.3–3.5:1 in dark mode, and the invalid one is under
+  //     4.5:1 in light mode as well;
+  //   - every one of them under palette="brand" in dark mode, with a brand that
+  //     is dark: 1.04–1.11:1 (measured with core's grey default as the brand;
+  //     since Phase 14d a preset's brand is its primary, but a brand a theme
+  //     passes is still one colour in both modes).
+  // So the accent in a label is held to a lightness: no lighter than 0.40 in
+  // light mode, no darker than 0.82 in dark mode. M3's tone 40 is about 0.44,
+  // on a surface at tone 98; the presets' light surface is near tone 91, and at
+  // 0.44 a focused button under palette="error" or "secondary" was 4.37:1 on
+  // it in rose-red. Hue and chroma are kept, and a colour already past the
+  // limit is unchanged. With the limits, a focused label in any palette is at
+  // 4.9:1 or better on the surface and 4.6:1 on surface-container-low in every
+  // preset in both modes. On surface-container-high (a dialog, the filled card
+  // below) the theme's primary is at 4.6:1 or better; a focused label there
+  // under palette="error" is still 4.0–4.4:1 in rose-red and in dark mode. A fill
+  // (a filled button, a checkbox, a slider) stays the author's colour, exactly.
+  // The lines and icons that belong to a held label (a field's outline,
+  // indicator, caret and arrow, the icon of a step in error) are held with it,
+  // so the two stay one colour.
+  //
+  // Each token is declared on the component itself, so the accent resolves in
+  // the [theme] and [palette] it is in. :where() keeps the rule at no
+  // specificity: Material's own rules for the same element (a button in a
+  // toolbar, the calendar's period button) and yours win, wherever they load.
+  // A value set on an ancestor does not: set these on the component.
+  $primary: _as-text(var(--mat-sys-primary));
+  $error: _as-text(var(--mat-sys-error));
+
+  :where(.mat-mdc-button) {
+    --mat-button-text-label-text-color: #{$primary};
+  }
+  :where(.mat-mdc-outlined-button) {
+    --mat-button-outlined-label-text-color: #{$primary};
+  }
+  :where(.mat-mdc-raised-button) {
+    --mat-button-protected-label-text-color: #{$primary};
+  }
+
+  :where(.mat-step-header) {
+    --mat-stepper-header-error-state-label-text-color: #{$error};
+    --mat-stepper-header-error-state-icon-foreground-color: #{$error};
+  }
+
+  :where(.mat-mdc-form-field) {
+    --mat-form-field-error-text-color: #{$error};
+    --mat-form-field-error-trailing-icon-color: #{$error};
+    --mat-form-field-error-focus-trailing-icon-color: #{$error};
+    --mat-form-field-focus-select-arrow-color: #{$primary};
+    --mat-select-focused-arrow-color: #{$primary};
+    --mat-select-invalid-arrow-color: #{$error};
+
+    --mat-form-field-filled-caret-color: #{$primary};
+    --mat-form-field-filled-focus-label-text-color: #{$primary};
+    --mat-form-field-filled-focus-active-indicator-color: #{$primary};
+    --mat-form-field-filled-error-caret-color: #{$error};
+    --mat-form-field-filled-error-label-text-color: #{$error};
+    --mat-form-field-filled-error-focus-label-text-color: #{$error};
+    --mat-form-field-filled-error-active-indicator-color: #{$error};
+    --mat-form-field-filled-error-focus-active-indicator-color: #{$error};
+
+    --mat-form-field-outlined-caret-color: #{$primary};
+    --mat-form-field-outlined-focus-label-text-color: #{$primary};
+    --mat-form-field-outlined-focus-outline-color: #{$primary};
+    --mat-form-field-outlined-error-caret-color: #{$error};
+    --mat-form-field-outlined-error-label-text-color: #{$error};
+    --mat-form-field-outlined-error-focus-label-text-color: #{$error};
+    --mat-form-field-outlined-error-outline-color: #{$error};
+    --mat-form-field-outlined-error-focus-outline-color: #{$error};
+  }
+
+  // Filled card: the container.
+  //
+  // Material's is surface-container-highest, the furthest container from the
+  // surface, and a card holds text buttons. With the held label above, a
+  // hovered or focused one was still 3.9–4.5:1 on it in six of the eight
+  // preset modes; in dark mode the limit would have to be 0.89, close to
+  // white (rose-red: 4.46:1 at 0.88). One step closer to the surface, the same
+  // as a dialog, it is 4.6:1 or better in all eight.
+  // The elevated and the outlined card keep Material's containers.
+  :where(.mat-mdc-card-filled) {
+    --mat-card-filled-container-color: var(--mat-sys-surface-container-high);
+  }
+
+  // Filled form field: the container.
+  //
+  // Material's is surface-variant, tone 90 / 30 in M3: the furthest neutral
+  // from the surface that a label sits on. surface-container-high is a step
+  // closer to the surface. With it and the held accents above, the focused and
+  // the invalid label of a filled field are at 4.75:1 or better in every preset
+  // in both modes.
+  :where(.mat-mdc-form-field.mat-form-field-appearance-fill) {
+    --mat-form-field-filled-container-color: var(--mat-sys-surface-container-high);
+  }
+
+  // Text Material leaves to inherit.
+  //
+  // A hint, a list subheader, and the content of a tab and of a step have no
+  // colour of their own in Material: they take the page's, which M3 expects to
+  // be on-surface. Everything beside them is painted for a surface (the field's
+  // label, the list items, the tab labels; the stepper paints the surface
+  // itself). In a [palette] scope the inherited colour is the palette's own,
+  // which no rule holds to a lightness: 4.49:1 for the content of a step under
+  // palette="error" in cyan-orange, light mode, and 1.04–1.11:1 for all four
+  // under palette="brand" in dark mode with a dark brand. They get the role M3
+  // gives them. Plain class selectors, after core's [palette] rule in load
+  // order, so this also holds with the attribute on the stepper itself.
+  .mat-mdc-form-field-hint-wrapper,
+  .mat-mdc-subheader {
+    color: var(--mat-sys-on-surface-variant);
+  }
+  .mat-mdc-tab-body-content,
+  .mat-stepper-horizontal,
+  .mat-stepper-vertical {
+    color: var(--mat-sys-on-surface);
+  }
+
+  // Grid tile header and footer.
+  //
+  // Material writes white text on a 38% black scrim, as literals: there is no
+  // token to set. The scrim is meant for a photograph; over a tile in any light
+  // colour it is a mid grey, and the label measures 3.2:1 on a surface tile in
+  // the presets' light mode and 2.7:1 on white. At 60% the label is at 5.7:1
+  // on a white tile, the worst there is, and higher over anything darker. The
+  // text stays white in both modes, as Material has it. Three classes, to come
+  // after Material's own two wherever its component styles are inserted.
+  .mat-grid-list .mat-grid-tile .mat-grid-tile-header,
+  .mat-grid-list .mat-grid-tile .mat-grid-tile-footer {
+    background: rgb(0 0 0 / 0.6);
+  }
+}
+
+// An accent as a label: held to the lightness M3 gives the accents it paints
+// as text (see "Accents as text" above).
+@function _as-text($origin) {
+  @return string.unquote(
+    "light-dark(oklch(from #{$origin} min(l, 0.4) c h / 1), oklch(from #{$origin} max(l, 0.82) c h / 1))"
+  );
 }
 
 // ─── Per-element density scopes ───────────────────────────────────────────────

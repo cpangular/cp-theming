@@ -1,0 +1,6 @@
+// --palette-color--focus is the focus colour of the palette scope around
+// the element; the width, offset and style come from the theme's t.focus()
+.my-button:focus-visible {
+  outline: var(--focus--width) var(--focus--style) var(--palette-color--focus);
+  outline-offset: var(--focus--offset);
+}

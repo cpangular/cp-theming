@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { ThemeExampleComponent } from '../../shared/theme-example.component';
 import { TocService } from '../../shell/toc.service';
+import familiesScss from '../../../examples/typography/families.scss' with { loader: 'text' };
 
 const TOC = [
   { label: 'Overview', anchor: 'overview' },
@@ -25,7 +26,7 @@ const TOC = [
           for the type scale. The same config applies to both light and dark modes; wrap in
           <code>t.light-dark()</code> only when font choices genuinely differ by mode.
         </p>
-        <cpa-theme-example title="Configuring typography" [scssScss]="typographyScssScss" />
+        <cpa-theme-example title="Configuring typography" [scssScss]="ex.familiesScss" />
       </section>
 
       <section id="api" class="page-section">
@@ -117,13 +118,7 @@ const TOC = [
   ],
 })
 export class TypographyPageComponent {
-  readonly typographyScssScss = `$my-theme: t.theme(
-  $palettes: (...),
-  $typography: t.typography(
-    $plain-family: 'Inter, system-ui, sans-serif',
-    $brand-family: '"Playfair Display", serif',
-  ),
-);`;
+  protected readonly ex = { familiesScss };
 
   constructor() {
     inject(TocService).set(TOC);

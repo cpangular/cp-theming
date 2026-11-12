@@ -1,6 +1,8 @@
-// Base reset + theme container bindings.
-// Depends on theme CSS vars being emitted first (via ocean/ember imports).
-@use "@cpangular/cp-theming-core/scss/apply" as a;
+// Core first: registrations, defaults, mode rules and every derivation, once.
+// The theme files (ocean, ember) load after this and declare only what they pass.
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+@include t.define-core-theme();
 
 *,
 *::before,
@@ -15,15 +17,14 @@ body {
   line-height: 1.5;
 }
 
-// Emit [container] attribute + .stroke class globally.
-@include a.define-core-theme();
-
 // Any element with [theme], or <body> when a $default: true theme is active,
-// becomes a background-palette container.
+// becomes a background-palette container: bg() paints the background palette
+// and gives it contrast text.
 [theme],
 body {
-  @include a.apply-palette(background);
-  @include a.container();
+  @include t.apply-palette(background);
+  @include t.bg();
+  @include t.container();
 }
 
 body {

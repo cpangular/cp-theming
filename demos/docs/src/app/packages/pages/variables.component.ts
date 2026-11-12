@@ -1,5 +1,13 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { TocService } from '../../shell/toc.service';
+import { CodeComponent } from '../../shared/code.component';
+import { VARIABLES } from '../../../../.generated/variables';
+import { ColourSwatchesComponent } from './variables/colour-swatches.component';
+import type { VariableTable } from './variables/variables-data';
+import colorRolesDisplayCss from '../../../examples/variables/color-roles.display.css' with {
+  loader: 'text',
+};
 
 const TOC = [
   { label: 'Naming convention', anchor: 'naming' },
@@ -11,17 +19,27 @@ const TOC = [
   { label: 'Motion variables', anchor: 'motion-vars' },
   { label: 'Elevation variables', anchor: 'elevation-vars' },
   { label: 'Overlay variables', anchor: 'overlay-vars' },
-  { label: 'Container scope vars', anchor: 'container-vars' },
+  { label: 'Typography variables', anchor: 'text-vars' },
+  { label: 'Palette scope variables', anchor: 'palette-scope-vars' },
+  { label: 'Container scope variables', anchor: 'container-vars' },
 ];
 
+/**
+ * The Reference's CSS Variables page. Its content is generated from the
+ * compiled core.css when the site is built (scripts/variables.ts): one live
+ * swatch for every colour token, grouped by palette and role, and a table row
+ * for every other variable. The page adds the headings, a sentence per family
+ * and the theme and mode the swatches are shown in.
+ */
 @Component({
   selector: 'cpa-variables-page',
   standalone: true,
+  imports: [CodeComponent, ColourSwatchesComponent, NgTemplateOutlet],
   template: `
     <article class="doc-page">
       <header class="page-header">
         <h1>CSS Variables</h1>
-        <p class="subtitle">@cpangular/cp-theming-core</p>
+        <p class="subtitle">&#64;cpangular/cp-theming-core</p>
       </header>
 
       <section id="naming" class="page-section">
@@ -31,454 +49,220 @@ const TOC = [
           a word separator within a segment. The <code>color</code> role is the palette's primary
           identity — it becomes the prefix with no trailing segment.
         </p>
-        <pre><code class="language-css">--color--primary           /* primary color role */
---color--primary--contrast /* black or white (highest contrast) */
---color--primary--dark     /* lightness − 0.12 */
---color--primary--darker   /* lightness − 0.24 */
---color--primary--light    /* lightness + 0.12 */
---color--primary--lighter  /* lightness + 0.24 */
---color--primary--high     /* mode-relative: darker in light, lighter in dark */
---color--primary--higher   /* stronger version of --high */
---color--primary--low      /* opposite of --high */
---color--primary--lower    /* stronger version of --low */
---color--primary--bg       /* background role (same full derivative set) */
---color--primary--stroke   /* border role (same full derivative set) */
---color--primary--focus    /* per-palette focus ring color */
---color--primary--tint-1   /* 10% opacity tint */
---color--primary--tint-2   /* 20% */
---color--primary--tint-3   /* 38% */
---color--primary--tint-4   /* 60% */
---color--primary--tint-5   /* 80% */</code></pre>
+        <cpa-code [code]="ex.colorRolesDisplayCss" lang="css" />
+        <p>
+          Everything below this section is read out of the compiled <em>core.css</em> when the site
+          is built: {{ data.colourTokens }} colour tokens and {{ data.otherVariables }} other
+          variables. Names that core keeps to itself (a segment that starts with an underscore) are
+          left out.
+        </p>
       </section>
 
       <section id="color-vars" class="page-section">
         <h2>Color variables</h2>
         <p>
-          Each named palette emits three role prefixes: the identity color (no suffix after the
-          name), <code>--bg</code>, and <code>--stroke</code>. All three have the full derivative
-          set below.
+          Every colour token core declares, as a live swatch. A palette has three roles (its colour,
+          <code>bg</code> and <code>stroke</code>), and each role has the same set: the role itself,
+          six steps in a fixed direction, six that follow the mode, and the light and dark value a
+          theme sets. The small chip in a swatch is that colour's <code>--contrast</code>: black or
+          white, whichever reads on it. Click a swatch for its name.
         </p>
-        <table class="api-props-table">
-          <thead>
-            <tr>
-              <th>Variable pattern</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>--color--&#123;name&#125;</code></td>
-              <td>Identity / primary color for the palette.</td>
-            </tr>
-            <tr>
-              <td><code>--color--&#123;name&#125;--contrast</code></td>
-              <td>White or black — whichever contrasts more with the identity color.</td>
-            </tr>
-            <tr>
-              <td><code>--color--&#123;name&#125;--dark</code></td>
-              <td>Lightness − 0.12.</td>
-            </tr>
-            <tr>
-              <td><code>--color--&#123;name&#125;--darker</code></td>
-              <td>Lightness − 0.24.</td>
-            </tr>
-            <tr>
-              <td><code>--color--&#123;name&#125;--light</code></td>
-              <td>Lightness + 0.12.</td>
-            </tr>
-            <tr>
-              <td><code>--color--&#123;name&#125;--lighter</code></td>
-              <td>Lightness + 0.24.</td>
-            </tr>
-            <tr>
-              <td><code>--color--&#123;name&#125;--high</code></td>
-              <td>Mode-relative: darker in light mode, lighter in dark mode.</td>
-            </tr>
-            <tr>
-              <td><code>--color--&#123;name&#125;--higher</code></td>
-              <td>Stronger version of <code>--high</code>.</td>
-            </tr>
-            <tr>
-              <td><code>--color--&#123;name&#125;--low</code></td>
-              <td>Opposite direction from <code>--high</code>.</td>
-            </tr>
-            <tr>
-              <td><code>--color--&#123;name&#125;--lower</code></td>
-              <td>Stronger version of <code>--low</code>.</td>
-            </tr>
-            <tr>
-              <td><code>--color--&#123;name&#125;--bg</code></td>
-              <td>Background/container role (full derivative set).</td>
-            </tr>
-            <tr>
-              <td><code>--color--&#123;name&#125;--stroke</code></td>
-              <td>Border/stroke role (full derivative set).</td>
-            </tr>
-            <tr>
-              <td><code>--color--&#123;name&#125;--focus</code></td>
-              <td>Focus ring color — hue-shifted per palette for visibility.</td>
-            </tr>
-            <tr>
-              <td><code>--color--&#123;name&#125;--tint-1 … tint-5</code></td>
-              <td>Transparent tints at 10% / 20% / 38% / 60% / 80%.</td>
-            </tr>
-            <tr>
-              <td><code>--color--brand</code></td>
-              <td>Theme brand seed color (emitted when <code>$brand</code> is set).</td>
-            </tr>
-          </tbody>
-        </table>
+
+        <cpa-colour-swatches [palettes]="data.palettes" />
       </section>
 
       <section id="weight-vars" class="page-section">
         <h2>Weight variables</h2>
-        <table class="api-props-table">
-          <thead>
-            <tr>
-              <th>Variable</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>--weight--text-blend</code></td>
-              <td>Primary text opacity (default 0.87).</td>
-            </tr>
-            <tr>
-              <td><code>--weight--text-emphasis-blend</code></td>
-              <td>High-emphasis text opacity (default 1.0).</td>
-            </tr>
-            <tr>
-              <td><code>--weight--text-deemphasis-blend</code></td>
-              <td>Low-emphasis / hint text opacity (default 0.55).</td>
-            </tr>
-            <tr>
-              <td><code>--weight--text-primary-tint</code></td>
-              <td>Tint for primary-colored text on surfaces.</td>
-            </tr>
-            <tr>
-              <td><code>--weight--state-hover</code></td>
-              <td>Hover state layer opacity (default 0.08).</td>
-            </tr>
-            <tr>
-              <td><code>--weight--state-press</code></td>
-              <td>Press / active state layer opacity (default 0.12).</td>
-            </tr>
-            <tr>
-              <td><code>--weight--state-focus</code></td>
-              <td>Keyboard-focused state layer opacity (default 0.12).</td>
-            </tr>
-            <tr>
-              <td><code>--weight--state-drag</code></td>
-              <td>Dragging state layer opacity (default 0.16).</td>
-            </tr>
-            <tr>
-              <td><code>--weight--tint-1 … tint-5</code></td>
-              <td>Tint opacities at five levels.</td>
-            </tr>
-          </tbody>
-        </table>
+        <p>Percentages for text emphasis, state washes and tints. Each is kept per mode.</p>
+        <ng-container *ngTemplateOutlet="table; context: { $implicit: tables['weight-vars'] }" />
       </section>
 
       <section id="space-vars" class="page-section">
         <h2>Space variables</h2>
-        <table class="api-props-table">
-          <thead>
-            <tr>
-              <th>Variable</th>
-              <th>Base (scale 0)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>--density-scale</code></td>
-              <td>Active density scale (0 to −5).</td>
-            </tr>
-            <tr>
-              <td><code>--space--xxs</code></td>
-              <td>2px</td>
-            </tr>
-            <tr>
-              <td><code>--space--xs</code></td>
-              <td>4px</td>
-            </tr>
-            <tr>
-              <td><code>--space--sm</code></td>
-              <td>8px</td>
-            </tr>
-            <tr>
-              <td><code>--space--md</code></td>
-              <td>16px</td>
-            </tr>
-            <tr>
-              <td><code>--space--lg</code></td>
-              <td>24px</td>
-            </tr>
-            <tr>
-              <td><code>--space--xl</code></td>
-              <td>32px</td>
-            </tr>
-            <tr>
-              <td><code>--space--xxl</code></td>
-              <td>48px</td>
-            </tr>
-          </tbody>
-        </table>
+        <p>
+          The spacing scale at density 0. A <code>themeDensity</code> scope declares all of them
+          again for its density.
+        </p>
+        <ng-container *ngTemplateOutlet="table; context: { $implicit: tables['space-vars'] }" />
       </section>
 
       <section id="shape-vars" class="page-section">
         <h2>Shape variables</h2>
-        <table class="api-props-table">
-          <thead>
-            <tr>
-              <th>Variable</th>
-              <th>Default</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>--shape--xxs</code></td>
-              <td>2px</td>
-            </tr>
-            <tr>
-              <td><code>--shape--xs</code></td>
-              <td>4px</td>
-            </tr>
-            <tr>
-              <td><code>--shape--sm</code></td>
-              <td>8px</td>
-            </tr>
-            <tr>
-              <td><code>--shape--md</code></td>
-              <td>12px</td>
-            </tr>
-            <tr>
-              <td><code>--shape--lg</code></td>
-              <td>16px</td>
-            </tr>
-            <tr>
-              <td><code>--shape--xl</code></td>
-              <td>28px</td>
-            </tr>
-            <tr>
-              <td><code>--shape--xxl</code></td>
-              <td>32px</td>
-            </tr>
-            <tr>
-              <td><code>--shape--full</code></td>
-              <td>9999px</td>
-            </tr>
-          </tbody>
-        </table>
+        <p>Corner radii.</p>
+        <ng-container *ngTemplateOutlet="table; context: { $implicit: tables['shape-vars'] }" />
       </section>
 
       <section id="focus-vars" class="page-section">
         <h2>Focus variables</h2>
-        <table class="api-props-table">
-          <thead>
-            <tr>
-              <th>Variable</th>
-              <th>Default</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>--focus--width</code></td>
-              <td>2px</td>
-            </tr>
-            <tr>
-              <td><code>--focus--offset</code></td>
-              <td>2px</td>
-            </tr>
-            <tr>
-              <td><code>--focus--style</code></td>
-              <td>solid</td>
-            </tr>
-          </tbody>
-        </table>
+        <p>The geometry of the focus ring. Its colour is per palette, above.</p>
+        <ng-container *ngTemplateOutlet="table; context: { $implicit: tables['focus-vars'] }" />
       </section>
 
       <section id="motion-vars" class="page-section">
         <h2>Motion variables</h2>
-        <table class="api-props-table">
-          <thead>
-            <tr>
-              <th>Variable</th>
-              <th>Default</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>--motion--duration-short</code></td>
-              <td>100ms</td>
-            </tr>
-            <tr>
-              <td><code>--motion--duration-medium</code></td>
-              <td>250ms</td>
-            </tr>
-            <tr>
-              <td><code>--motion--duration-long</code></td>
-              <td>400ms</td>
-            </tr>
-            <tr>
-              <td><code>--motion--duration-extra</code></td>
-              <td>600ms</td>
-            </tr>
-            <tr>
-              <td><code>--motion--easing-standard</code></td>
-              <td>cubic-bezier(0.2,0,0,1)</td>
-            </tr>
-            <tr>
-              <td><code>--motion--easing-emphasized</code></td>
-              <td>cubic-bezier(0.2,0,0,1)</td>
-            </tr>
-            <tr>
-              <td><code>--motion--easing-decelerate</code></td>
-              <td>cubic-bezier(0,0,0,1)</td>
-            </tr>
-            <tr>
-              <td><code>--motion--easing-accelerate</code></td>
-              <td>cubic-bezier(0.3,0,1,1)</td>
-            </tr>
-          </tbody>
-        </table>
+        <p>Durations and easing curves.</p>
+        <ng-container *ngTemplateOutlet="table; context: { $implicit: tables['motion-vars'] }" />
       </section>
 
       <section id="elevation-vars" class="page-section">
         <h2>Elevation variables</h2>
-        <table class="api-props-table">
-          <thead>
-            <tr>
-              <th>Variable</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>--elevation-0--shadow</code></td>
-              <td>No shadow.</td>
-            </tr>
-            <tr>
-              <td><code>--elevation-1--shadow</code></td>
-              <td>Card-level elevation.</td>
-            </tr>
-            <tr>
-              <td><code>--elevation-2--shadow</code></td>
-              <td>Dropdown / select panel.</td>
-            </tr>
-            <tr>
-              <td><code>--elevation-3--shadow</code></td>
-              <td>Floating action button.</td>
-            </tr>
-            <tr>
-              <td><code>--elevation-4--shadow</code></td>
-              <td>Hovered FAB.</td>
-            </tr>
-            <tr>
-              <td><code>--elevation-5--shadow</code></td>
-              <td>Modal / dialog.</td>
-            </tr>
-            <tr>
-              <td><code>--elevation-&#123;N&#125;--tint</code></td>
-              <td>Surface tint color at each elevation level.</td>
-            </tr>
-          </tbody>
-        </table>
+        <p>A shadow and a surface tint for each of the six levels.</p>
+        <ng-container *ngTemplateOutlet="table; context: { $implicit: tables['elevation-vars'] }" />
       </section>
 
       <section id="overlay-vars" class="page-section">
         <h2>Overlay variables</h2>
-        <table class="api-props-table">
-          <thead>
-            <tr>
-              <th>Variable</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>--overlay--scrim</code></td>
-              <td>Modal / backdrop scrim color.</td>
-            </tr>
-            <tr>
-              <td><code>--overlay--shadow</code></td>
-              <td>Elevation shadow base color.</td>
-            </tr>
-          </tbody>
-        </table>
+        <ng-container *ngTemplateOutlet="table; context: { $implicit: tables['overlay-vars'] }" />
+      </section>
+
+      <section id="text-vars" class="page-section">
+        <h2>Typography variables</h2>
+        <p>
+          The families and weights, then the type scale: one variable for each cell, named
+          <code>--text--&#123;style&#125;--&#123;property&#125;</code>.
+        </p>
+        <ng-container *ngTemplateOutlet="table; context: { $implicit: tables['text-vars'] }" />
+        <div class="var-scroll">
+          <table class="api-props-table var-scale">
+            <thead>
+              <tr>
+                <th>Style</th>
+                @for (property of data.typeScale.properties; track property) {
+                  <th>
+                    <code>--{{ property }}</code>
+                  </th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (s of data.typeScale.styles; track s.style) {
+                <tr>
+                  <td>
+                    <code>--text--{{ s.style }}</code>
+                  </td>
+                  @for (property of data.typeScale.properties; track property) {
+                    <td>{{ s.values[property] }}</td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="palette-scope-vars" class="page-section">
+        <h2>Palette scope variables</h2>
+        <p>
+          Declared by <code>[palette]</code> on its element: the colours of the palette that element
+          is in. <code>tone</code> moves them along the steps.
+        </p>
+        <ng-container
+          *ngTemplateOutlet="table; context: { $implicit: tables['palette-scope-vars'] }"
+        />
+        <details>
+          <summary>
+            The palette before tone is applied ({{ tables['palette-source-vars'].rows.length }}
+            variables)
+          </summary>
+          <ng-container
+            *ngTemplateOutlet="table; context: { $implicit: tables['palette-source-vars'] }"
+          />
+        </details>
       </section>
 
       <section id="container-vars" class="page-section">
         <h2>Container scope variables</h2>
         <p>
-          Set by the surface layers (<code>bg()</code>, <code>filled()</code>,
-          <code>outlined()</code>, <code>shape()</code>, <code>container()</code>) and read by child
-          elements:
+          Set by the surface layers (<code>bg</code>, <code>filled</code>, <code>outlined</code>,
+          <code>shape</code>, <code>container</code>) and read by the elements inside. The ones
+          marked as yours are read by core and never set by it.
         </p>
+        <ng-container *ngTemplateOutlet="table; context: { $implicit: tables['container-vars'] }" />
+      </section>
+    </article>
+
+    <ng-template #table let-t>
+      <div class="var-scroll">
         <table class="api-props-table">
           <thead>
             <tr>
               <th>Variable</th>
-              <th>Description</th>
+              <th>Value in core</th>
+              <th>Notes</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td><code>--container--text</code></td>
-              <td>Blended body text color.</td>
-            </tr>
-            <tr>
-              <td><code>--container--text-emphasis</code></td>
-              <td>Full-contrast text.</td>
-            </tr>
-            <tr>
-              <td><code>--container--text-deemphasis</code></td>
-              <td>Reduced emphasis text.</td>
-            </tr>
-            <tr>
-              <td><code>--container--stroke</code></td>
-              <td>Border color.</td>
-            </tr>
-            <tr>
-              <td><code>--container--padding</code></td>
-              <td>Density-reactive padding (all sides).</td>
-            </tr>
-            <tr>
-              <td><code>--container--radius</code></td>
-              <td>Corner radius base value.</td>
-            </tr>
-            <tr>
-              <td><code>--palette-color</code></td>
-              <td>Active palette identity color alias.</td>
-            </tr>
-            <tr>
-              <td><code>--palette-color--bg</code></td>
-              <td>Active palette bg role alias.</td>
-            </tr>
-            <tr>
-              <td><code>--palette-color--stroke</code></td>
-              <td>Active palette stroke role alias.</td>
-            </tr>
-            <tr>
-              <td><code>--palette-color--focus</code></td>
-              <td>Active palette focus role alias.</td>
-            </tr>
-            <tr>
-              <td><code>--palette-color--tint-1 … tint-5</code></td>
-              <td>Active palette tint aliases.</td>
-            </tr>
+            @for (row of t.rows; track row.name) {
+              <tr>
+                <td>
+                  <code>{{ row.name }}</code>
+                </td>
+                <td class="var-value">{{ row.input ? 'not set' : row.value }}</td>
+                <td>
+                  @if (row.note) {
+                    <span>{{ row.note }} </span>
+                  }
+                  @if (row.type) {
+                    <span>Registered as {{ row.type }}. </span>
+                  }
+                  @if (row.pair; as pair) {
+                    <span
+                      >Per mode: <code>{{ pair[0] }}</code
+                      >, <code>{{ pair[1] }}</code
+                      >.
+                    </span>
+                  }
+                  @if (row.where; as where) {
+                    <span>Declared on {{ where.join(', ') }}. </span>
+                  }
+                  @if (row.input) {
+                    <span>Yours to set. </span>
+                  }
+                </td>
+              </tr>
+            }
           </tbody>
         </table>
-      </section>
-    </article>
+      </div>
+    </ng-template>
   `,
   styles: [
     `
       @use 'page-shared';
+
+      .var-scroll {
+        overflow-x: auto;
+      }
+
+      .var-value {
+        max-width: 340px;
+        font-family: 'Roboto Mono', monospace;
+        font-size: 12.5px;
+        overflow-wrap: anywhere;
+      }
+
+      .var-scale td,
+      .var-scale th {
+        white-space: nowrap;
+      }
+
+      details {
+        margin-top: 12px;
+      }
+
+      summary {
+        cursor: pointer;
+      }
     `,
   ],
 })
 export class VariablesPageComponent {
+  protected readonly ex = { colorRolesDisplayCss };
+  protected readonly data = VARIABLES;
+  protected readonly tables: Record<string, VariableTable> = Object.fromEntries(
+    VARIABLES.tables.map((table) => [table.id, table]),
+  );
+
   constructor() {
     inject(TocService).set(TOC);
   }

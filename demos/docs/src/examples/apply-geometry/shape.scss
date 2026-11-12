@@ -1,0 +1,8 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+.my-card {
+  @include t.apply-palette("primary");
+  @include t.bg();
+  @include t.container();
+  @include t.shape("md");
+}

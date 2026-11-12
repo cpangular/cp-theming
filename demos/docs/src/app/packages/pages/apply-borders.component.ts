@@ -1,6 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { ThemeExampleComponent } from '../../shared/theme-example.component';
 import { TocService } from '../../shell/toc.service';
+import basicHtml from '../../../examples/apply-borders/basic.html' with { loader: 'text' };
+import basicScss from '../../../examples/apply-borders/basic.scss' with { loader: 'text' };
+import widthHtml from '../../../examples/apply-borders/width.html' with { loader: 'text' };
+import widthScss from '../../../examples/apply-borders/width.scss' with { loader: 'text' };
+import combinedHtml from '../../../examples/apply-borders/combined.html' with { loader: 'text' };
+import combinedScss from '../../../examples/apply-borders/combined.scss' with { loader: 'text' };
 
 @Component({
   selector: 'cpa-apply-borders-page',
@@ -31,24 +37,9 @@ import { TocService } from '../../shell/toc.service';
         </p>
         <cpa-theme-example
           title="Basic border"
-          [attrsHtml]="borderAttrsHtml"
-          [scssScss]="borderScssScss"
-        >
-          <div demo class="demo-row">
-            <div class="demo-swatch" palette="primary" bg outlined shape="sm">
-              <span class="demo-tag">bg + outlined</span>
-              <span class="demo-name">Primary</span>
-            </div>
-            <div class="demo-swatch" palette="secondary" bg outlined shape="sm">
-              <span class="demo-tag">bg + outlined</span>
-              <span class="demo-name">Secondary</span>
-            </div>
-            <div class="demo-swatch" palette="error" outlined shape="sm">
-              <span class="demo-tag">outlined only</span>
-              <span class="demo-name">Error</span>
-            </div>
-          </div>
-        </cpa-theme-example>
+          [attrsHtml]="ex.basicHtml"
+          [scssScss]="ex.basicScss"
+        />
       </section>
 
       <section id="width" class="page-section">
@@ -60,42 +51,9 @@ import { TocService } from '../../shell/toc.service';
         </p>
         <cpa-theme-example
           title="Custom border width"
-          [attrsHtml]="widthAttrsHtml"
-          [scssScss]="widthScssScss"
-        >
-          <div demo class="demo-row">
-            <div
-              class="demo-swatch"
-              palette="primary"
-              outlined
-              shape="sm"
-              style="--stroke-width: 1px"
-            >
-              <span class="demo-tag">1px (default)</span>
-              <span class="demo-name">Normal</span>
-            </div>
-            <div
-              class="demo-swatch"
-              palette="primary"
-              outlined
-              shape="sm"
-              style="--stroke-width: 2px"
-            >
-              <span class="demo-tag">2px</span>
-              <span class="demo-name">Medium</span>
-            </div>
-            <div
-              class="demo-swatch"
-              palette="primary"
-              outlined
-              shape="sm"
-              style="--stroke-width: 4px"
-            >
-              <span class="demo-tag">4px</span>
-              <span class="demo-name">Heavy</span>
-            </div>
-          </div>
-        </cpa-theme-example>
+          [attrsHtml]="ex.widthHtml"
+          [scssScss]="ex.widthScss"
+        />
       </section>
 
       <section id="combined" class="page-section">
@@ -107,20 +65,9 @@ import { TocService } from '../../shell/toc.service';
         </p>
         <cpa-theme-example
           title="outlined + fill combinations"
-          [attrsHtml]="combinedAttrsHtml"
-          [scssScss]="combinedScssScss"
-        >
-          <div demo class="demo-row">
-            <div class="demo-swatch" palette="primary" bg outlined shape="sm" container>
-              <span class="demo-tag">bg + outlined</span>
-              <span class="demo-name">Defined card</span>
-            </div>
-            <div class="demo-swatch" palette="secondary" filled outlined shape="sm" container>
-              <span class="demo-tag">filled + outlined</span>
-              <span class="demo-name">Bold edge</span>
-            </div>
-          </div>
-        </cpa-theme-example>
+          [attrsHtml]="ex.combinedHtml"
+          [scssScss]="ex.combinedScss"
+        />
       </section>
     </article>
   `,
@@ -131,63 +78,14 @@ import { TocService } from '../../shell/toc.service';
   ],
 })
 export class ApplyBordersPageComponent {
-  readonly borderAttrsHtml = `<div palette="primary" bg outlined shape="sm">
-  Bordered tonal card
-</div>
-
-<!-- outlined without a fill (just the border) -->
-<div palette="primary" outlined shape="sm">
-  Border only — transparent
-</div>`;
-
-  readonly borderScssScss = `@use '@cpangular/cp-theming-core/scss/theme' as t;
-
-.my-card {
-  @include t.apply-palette('primary');
-  @include t.bg();
-  @include t.outlined();
-  @include t.shape('sm');
-}`;
-
-  readonly widthAttrsHtml = `<div palette="primary" outlined shape="sm"
-     style="--stroke-width: 2px">
-  2px border
-</div>`;
-
-  readonly widthScssScss = `@use '@cpangular/cp-theming-core/scss/theme' as t;
-
-.my-card {
-  @include t.apply-palette('primary');
-  @include t.outlined();
-  @include t.shape('sm');
-  --stroke-width: 2px;
-}`;
-
-  readonly combinedAttrsHtml = `<div palette="primary" bg outlined shape="sm" container>
-  bg + outlined
-</div>
-
-<button palette="secondary" filled outlined shape="sm" container>
-  filled + outlined
-</button>`;
-
-  readonly combinedScssScss = `@use '@cpangular/cp-theming-core/scss/theme' as t;
-
-.card {
-  @include t.apply-palette('primary');
-  @include t.bg();
-  @include t.outlined();
-  @include t.shape('sm');
-  @include t.container();
-}
-
-.badge {
-  @include t.apply-palette('secondary');
-  @include t.filled();
-  @include t.outlined();
-  @include t.shape('sm');
-  @include t.container();
-}`;
+  protected readonly ex = {
+    basicHtml,
+    basicScss,
+    widthHtml,
+    widthScss,
+    combinedHtml,
+    combinedScss,
+  };
 
   constructor() {
     inject(TocService).set([

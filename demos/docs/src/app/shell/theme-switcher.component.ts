@@ -53,7 +53,6 @@ const MODE_META: Record<ThemeMode, { icon: string; tooltip: string }> = {
 
         /* Keep the icon button's icon in the toolbar's contrast colour */
         --mat-icon-button-icon-color: var(--color--primary--contrast);
-        --mdc-icon-button-icon-color: var(--color--primary--contrast);
 
         ::ng-deep .mat-mdc-icon-button mat-icon {
           color: var(--color--primary--contrast);
@@ -65,17 +64,19 @@ const MODE_META: Record<ThemeMode, { icon: string; tooltip: string }> = {
 
         --mat-form-field-container-height: 36px;
         --mat-form-field-container-vertical-padding: 6px;
-        /* Force contrast text inside primary-colour toolbar */
+        /* The field sits on the primary-coloured toolbar, where Material's own
+           defaults (outline and arrow in primary when focused) would vanish. */
         --mat-select-enabled-trigger-text-color: var(--color--primary--contrast);
-        --mat-select-arrow-color: var(--color--primary--contrast);
+        --mat-select-enabled-arrow-color: var(--color--primary--contrast);
+        --mat-select-focused-arrow-color: var(--color--primary--contrast);
         --mat-form-field-outlined-label-text-color: var(--color--primary--contrast);
         --mat-form-field-outlined-hover-label-text-color: var(--color--primary--contrast);
-        --mdc-outlined-text-field-outline-color: oklch(
-          from var(--color--primary--contrast) l c h / 0.5
+        --mat-form-field-outlined-outline-color: oklch(
+          from var(--color--primary--contrast) l c h / 0.7
         );
-        --mdc-outlined-text-field-hover-outline-color: var(--color--primary--contrast);
-        --mdc-outlined-text-field-focus-outline-color: var(--color--primary--contrast);
-        --mdc-outlined-text-field-input-text-color: var(--color--primary--contrast);
+        --mat-form-field-outlined-hover-outline-color: var(--color--primary--contrast);
+        --mat-form-field-outlined-focus-outline-color: var(--color--primary--contrast);
+        --mat-form-field-outlined-input-text-color: var(--color--primary--contrast);
 
         ::ng-deep .mat-mdc-text-field-wrapper {
           background: rgba(255, 255, 255, 0.12);

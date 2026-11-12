@@ -1,0 +1,13 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+$my-theme: t.theme(
+  $palettes: (
+    primary: t.palette(oklch(0.44 0.22 253)),
+  ),
+  $weights: t.light-dark(
+    t.weights($text-blend: 82%),   // light mode
+    t.weights($text-blend: 78%)    // dark mode: slightly more translucent
+  )
+);
+
+@include t.define-theme("my-theme", $my-theme);

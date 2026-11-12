@@ -1,0 +1,11 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+$my-theme: t.theme(
+  $palettes: (
+    primary: t.palette(oklch(0.44 0.22 253)),
+  ),
+  // 0 is the default; -5 is the most compact
+  $density: t.density($scale: -1)
+);
+
+@include t.define-theme("my-theme", $my-theme);

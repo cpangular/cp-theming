@@ -1,0 +1,11 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+// A blue with the same saturation and lightness as the yellow.
+$dial: t.theme(
+  $palettes: (
+    primary: t.palette(hsl(240 100% 45%)),
+  )
+);
+
+@include t.define-core-theme();
+@include t.define-theme("dial", $dial);

@@ -1,0 +1,55 @@
+// The same component written with shades instead of roles: "a bit lighter"
+// for the fill, "a bit darker" for the border, the colour itself for text.
+@each $name in primary, secondary, tertiary {
+  .notice.#{$name} {
+    background: var(--color--#{$name}--lightest);
+    border: 1px solid var(--color--#{$name}--dark);
+    color: var(--color--#{$name});
+
+    button {
+      background: var(--color--#{$name});
+      color: white;
+    }
+
+    button:focus-visible,
+    button.focused {
+      outline: 3px solid var(--color--#{$name}--darker);
+    }
+
+    .tag {
+      background: var(--color--#{$name}--lighter);
+    }
+  }
+}
+
+// Layout only.
+.row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.notice {
+  padding: 14px;
+  border-radius: 8px;
+}
+.notice h4 {
+  margin: 0;
+}
+.notice p {
+  margin: 6px 0 12px;
+  font-size: 13px;
+}
+.notice .tag {
+  display: table;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+}
+.notice button {
+  margin: 12px 8px 0 0;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  outline-offset: 2px;
+}

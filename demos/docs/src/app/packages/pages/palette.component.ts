@@ -1,8 +1,16 @@
 import { Component, inject, effect, signal } from '@angular/core';
 import { TocService } from '../../shell/toc.service';
+import { CodeComponent } from '../../shared/code.component';
+import palettesScss from '../../../examples/palette/palettes.scss' with { loader: 'text' };
+import rolesScss from '../../../examples/palette/roles.scss' with { loader: 'text' };
+import brandOnlyScss from '../../../examples/palette/brand-only.scss' with { loader: 'text' };
+import primaryOnlyScss from '../../../examples/palette/primary-only.scss' with { loader: 'text' };
+import fromBrandScss from '../../../examples/palette/from-brand.scss' with { loader: 'text' };
+import derivedOutputCss from '../../../examples/palette/derived.output.css' with { loader: 'text' };
 
 const TOC = [
   { label: 'Overview', anchor: 'overview' },
+  { label: 'Brand, accents and neutrals', anchor: 'chain' },
   { label: 'Runtime derivatives', anchor: 'runtime-derivatives' },
   { label: 'Color variables', anchor: 'color-variables' },
   { label: 'API Reference', anchor: 'api' },
@@ -16,6 +24,7 @@ const TOC = [
 @Component({
   selector: 'cpa-palette-page',
   standalone: true,
+  imports: [CodeComponent],
   template: `
     <article class="doc-page">
       <header class="page-header">
@@ -25,53 +34,98 @@ const TOC = [
 
       <section id="overview" class="page-section">
         <p class="intro">
-          A palette is a named color identity defined as an <code>oklch</code> color. From a single
-          base color, the browser derives all variant roles at runtime — dark, light, contrast, bg,
-          stroke, tints, and the focus ring — using CSS relative color syntax. Nothing is
-          pre-computed at Sass build time.
+          A palette is a named color identity defined by one base color. From it the browser derives
+          all variant roles at runtime — dark, light, contrast, bg, stroke, tints, and the focus
+          ring — using CSS relative color syntax. Nothing is pre-computed at Sass build time.
+        </p>
+        <p>
+          The base color can be written in any CSS color format: <code>oklch()</code>, hex,
+          <code>rgb()</code>, <code>hsl()</code>, a named color. <code>oklch</code> is recommended
+          for predictable lightness steps: every variant is derived in oklch, so the same step looks
+          the same on every hue.
         </p>
         <p>
           Palettes are defined inside <code>t.theme($palettes: (...))</code>. Core palette names —
-          <code>primary</code>, <code>secondary</code>, <code>error</code>, <code>warn</code>,
-          <code>caution</code>, <code>pass</code>, <code>surface</code>, <code>background</code> —
-          are pre-registered. Any additional names in your <code>$palettes</code> map are registered
-          on demand.
+          <code>brand</code>, <code>primary</code>, <code>secondary</code>, <code>tertiary</code>,
+          <code>error</code>, <code>warn</code>, <code>caution</code>, <code>pass</code>,
+          <code>surface</code>, <code>background</code> — are pre-registered, and a theme does not
+          have to pass all of them. Any additional names in your <code>$palettes</code> map are
+          registered on demand.
         </p>
-        <pre><code>$palettes: (
-  // same color in both modes
-  primary: t.palette(oklch(0.55 0.18 240)),
+        <cpa-code [code]="ex.palettesScss" lang="scss" />
+      </section>
 
-  // separate light/dark values
-  primary: t.light-dark(
-    t.palette(oklch(0.55 0.18 240)),   // light mode
-    t.palette(oklch(0.72 0.16 240)),   // dark mode
-  ),
-
-  // auto-derived from the theme's &#36;brand color
-  primary:    t.palette-from-brand(),
-  background: t.background-from-brand(),
-  surface:    t.surface-from-brand(),
-)</code></pre>
+      <section id="chain" class="page-section">
+        <h2>Brand, accents and neutrals</h2>
+        <p>Pass the colours you have. The others are generated, in the browser, along one chain:</p>
+        <p>
+          <code>brand</code> → <code>primary</code> → <code>secondary</code>,
+          <code>tertiary</code> → <code>background</code>, <code>surface</code>
+        </p>
+        <p>
+          <strong>The brand colour is kept exact.</strong> <code>$brand</code> is the colour from
+          your guidelines. It becomes the <code>brand</code> palette, a palette like any other
+          (<code>palette="brand"</code>, <code>--color--brand</code>,
+          <code>--color--brand--contrast</code>, …), and nothing ever adjusts it. A theme that
+          passes a <code>primary</code> and no brand has that primary as its brand palette, exactly
+          as passed; one that passes neither inherits the brand of the theme around it.
+        </p>
+        <p>
+          <strong>The primary made from it is adjusted.</strong> A brand colour is often too light,
+          too dark or too saturated to carry buttons, links and text. When a theme passes no
+          <code>primary</code>, core makes one from the brand: the same hue, with the lightness held
+          between 0.35 and 0.45 in light mode and between 0.65 and 0.82 in dark mode, and the chroma
+          capped at 0.22. A <code>primary</code> you pass yourself is used exactly as given.
+        </p>
+        <p>
+          <strong>Generated accents stay on their hue.</strong> A screen cannot show every colour at
+          every lightness: an orange as dark as the light-mode primary holds less chroma than 0.22,
+          and a browser asked for more paints a red. So the generated primary, secondary and
+          tertiary give up chroma until the screen can show them, and keep their lightness and hue.
+          <code>#ff6a00</code> gets a light-mode primary of <code>#8d3700</code>, an orange-brown. A
+          colour the screen can already show is left alone.
+        </p>
+        <cpa-code [code]="ex.brandOnlyScss" lang="scss" />
+        <p>
+          <strong>Pass one, two or three accents.</strong> Only <code>primary</code>: secondary and
+          tertiary are generated from it. <code>primary</code> and <code>secondary</code>: tertiary
+          is generated. All three: none is. Only <code>brand</code>: all of them are.
+        </p>
+        <cpa-code [code]="ex.primaryOnlyScss" lang="scss" />
+        <p>
+          <code>error</code>, <code>warn</code>, <code>caution</code> and <code>pass</code> are not
+          part of the chain. A theme that leaves one out gets a fixed default (red, orange, amber,
+          green), the same ones the presets use.
+        </p>
+        <p>
+          <strong>Nested themes.</strong> A nested theme generates what follows from what it passes
+          and inherits the rest. One that passes only <code>primary</code> gets its own secondary
+          and tertiary and keeps the background and surface around it; one that passes only
+          <code>brand</code> gets the whole chain; one that passes no colour keeps every colour of
+          the theme around it. A default theme loaded beside yours (every preset is one) counts as
+          the theme around it: on <code>&lt;html&gt;</code> your theme beats it for what you pass
+          and what is generated from that, and the rest comes from the default.
+        </p>
+        <p>
+          <strong>Changing a colour by hand.</strong> Each palette colour is a registered pair,
+          <code>--color--primary--mode-light</code> and <code>--color--primary--mode-dark</code>.
+          Set the pair on <code>:root</code> and everything generated from it follows. On a nested
+          <code>[theme]</code> element a hand-written pair changes that palette and its own shades,
+          not the palettes generated from it: set those pairs too, or define a theme.
+        </p>
       </section>
 
       <section id="runtime-derivatives" class="page-section">
         <h2>Runtime derivatives</h2>
         <p>
-          All variant values are computed by the browser using CSS relative color syntax. The output
-          CSS contains <code>oklch(from var(--color--primary) ...)</code> expressions — not
-          pre-computed hex values.
+          All variant values are computed by the browser using CSS relative color syntax. A theme
+          rule holds only the colors its author passed: for each palette the light and the dark
+          color, and the token that joins them with <code>light-dark()</code>. Every derivation is
+          declared once, in <code>core.css</code>, as an
+          <code>oklch(from var(--color--primary) …)</code> expression that the browser evaluates on
+          the element that uses it. These lines are taken from the compiled CSS:
         </p>
-        <pre><code>/* Simplified output CSS */
-[theme="azure-blue"] &#123;
-  --color--primary: oklch(0.44 0.22 253);
-
-  /* Derived by the browser at runtime */
-  --color--primary--dark:     oklch(from var(--color--primary) calc(l - 0.12) c h);
-  --color--primary--light:    oklch(from var(--color--primary) calc(l + 0.12) c h);
-  --color--primary--contrast: oklch(from var(--color--primary) clamp(0, (0.5 - l) * 99999, 1) 0 0);
-  --color--primary--bg:       oklch(from var(--color--primary) calc(l * 0.22 + 0.78) calc(c * 0.18) h);
-  --color--primary--focus:    oklch(from var(--color--primary) clamp(0.35, l, 0.65) c calc(h + 40));
-&#125;</code></pre>
+        <cpa-code [code]="ex.derivedOutputCss" lang="css" />
         <p>
           The full derivative set for each role (<code>color</code>, <code>bg</code>,
           <code>stroke</code>) includes seven absolute steps: <code>--darkest</code>,
@@ -80,6 +134,13 @@ const TOC = [
           <code>--lowest</code>, <code>--lower</code>, <code>--low</code>, base,
           <code>--high</code>, <code>--higher</code>, <code>--highest</code>; a
           <code>--contrast</code> for each; and <code>--tint-1</code> through <code>--tint-5</code>.
+        </p>
+        <p>
+          <code>--contrast</code> is chosen automatically: white text on a colour whose WCAG
+          relative luminance is below 0.179, black text above it. That is the point where both give
+          the same contrast, so the text reaches at least 4.5:1 on every opaque colour, in any
+          colour format and whatever its hue. Every derived colour is opaque (alpha 1) even when the
+          input is not; only the tints carry an alpha.
         </p>
       </section>
 
@@ -135,7 +196,7 @@ const TOC = [
         <div id="palette-fn" class="api-symbol">
           <h3 class="api-symbol-name">palette</h3>
           <p class="api-symbol-desc">
-            Define a named palette from a base <code>oklch</code> color. All derivative roles —
+            Define a named palette from a base color in any CSS color format. All derivative roles —
             <code>--dark</code>, <code>--light</code>, <code>--contrast</code>, <code>--bg</code>,
             <code>--tint-N</code>, <code>--focus</code> — are computed by the browser at runtime via
             CSS relative color syntax. Nothing is pre-computed at Sass build time.
@@ -158,12 +219,11 @@ const TOC = [
               <h5 class="api-params-heading">Parameters</h5>
               <div class="api-param-row">
                 <div>
-                  <span class="api-param-name">$base</span
-                  ><span class="api-param-type">oklch color</span>
+                  <span class="api-param-name">$base</span><span class="api-param-type">color</span>
                 </div>
                 <div class="api-param-desc">
-                  Base color in <code>oklch(l c h)</code> format. All roles are derived from this
-                  value. Required.
+                  Base color, in any CSS color format (<code>oklch(l c h)</code> recommended). All
+                  roles are derived from this value. Required.
                 </div>
               </div>
               <div class="api-param-row">
@@ -208,14 +268,7 @@ const TOC = [
               </div>
             </div>
           </div>
-          <pre><code>// Override individual roles
-primary: t.palette(
-  $base:   oklch(0.55 0.18 240),
-  $color:  oklch(0.50 0.20 240),   // identity color (defaults to $base)
-  $bg:     oklch(0.88 0.06 240),   // container/bg role
-  $stroke: oklch(0.45 0.16 240),   // border role
-  $focus:  oklch(0.40 0.22 240),   // focus ring
-),</code></pre>
+          <cpa-code [code]="ex.rolesScss" lang="scss" />
         </div>
 
         <div id="palette-from-brand" class="api-symbol">
@@ -226,6 +279,12 @@ primary: t.palette(
             appropriate ranges per mode. Requires <code>$brand</code> to be set on
             <code>t.theme()</code>.
           </p>
+          <p class="api-symbol-desc">
+            A theme that passes <code>$brand</code> and no <code>primary</code> already gets this
+            palette as its primary, with the default numbers. Call the function to change the
+            numbers, or to make another palette follow the brand:
+          </p>
+          <cpa-code [code]="ex.fromBrandScss" lang="scss" />
           <div class="api-member-card">
             <span class="api-signature-row"
               ><span class="api-sig-kw">t.</span><span class="api-sig-name">palette-from-brand</span
@@ -267,7 +326,8 @@ primary: t.palette(
                 </div>
                 <div class="api-param-desc">
                   Maximum chroma cap. Prevents overly saturated results when the brand color is very
-                  vivid.
+                  vivid. The result has less chroma than this where the screen cannot show it at
+                  that lightness, so its hue stays the brand's.
                 </div>
               </div>
             </div>
@@ -279,7 +339,9 @@ primary: t.palette(
           <p class="api-symbol-desc">
             Derive a barely-chromatic neutral background palette from the brand color — a
             near-neutral with a whisper of the brand hue, ideal for page backgrounds. Uses a lower
-            chroma tint than <code>t.surface-from-brand()</code>.
+            chroma tint than <code>t.surface-from-brand()</code>. A theme that passes
+            <code>$brand</code> and no <code>background</code> gets this palette, with the default
+            tint; a grey brand gives a grey background.
           </p>
           <div class="api-member-card">
             <span class="api-signature-row"
@@ -468,7 +530,24 @@ primary: t.palette(
   ],
 })
 export class PalettePageComponent {
-  readonly paletteOptions = ['primary', 'secondary', 'error', 'warn', 'caution', 'pass'];
+  protected readonly ex = {
+    palettesScss,
+    rolesScss,
+    derivedOutputCss,
+    brandOnlyScss,
+    primaryOnlyScss,
+    fromBrandScss,
+  };
+  readonly paletteOptions = [
+    'brand',
+    'primary',
+    'secondary',
+    'tertiary',
+    'error',
+    'warn',
+    'caution',
+    'pass',
+  ];
   readonly selectedPalette = signal('primary');
 
   readonly colorGroups = [

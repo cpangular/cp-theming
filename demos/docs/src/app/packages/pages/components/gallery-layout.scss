@@ -1,0 +1,95 @@
+// Layout for the gallery templates in src/examples/components/, and nothing
+// else: where things sit and how big they are. Every colour on the Components
+// page comes from the adapter or from a cp-theming attribute in the template;
+// test/examples.test.ts fails any other kind of declaration here.
+
+:host {
+  display: block;
+}
+
+:host > * + * {
+  margin-top: 20px;
+}
+
+.g-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+}
+
+.g-top {
+  align-items: flex-start;
+}
+
+.g-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 280px;
+  max-width: 100%;
+}
+
+.g-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  align-items: start;
+  gap: 12px 16px;
+}
+
+.g-pairs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 260px));
+  align-items: start;
+  gap: 12px 24px;
+}
+
+.g-field {
+  width: 190px;
+}
+
+.g-wide {
+  width: 100%;
+}
+
+.g-calendar {
+  width: 300px;
+}
+
+.g-frame {
+  height: 180px;
+}
+
+.g-pad {
+  margin: 0;
+  padding: 16px;
+}
+
+.g-spacer {
+  flex: 1;
+}
+
+.g-box {
+  padding: 20px 28px;
+}
+
+.g-fill {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+}
+
+.g-scope {
+  padding: 20px;
+}
+
+.g-roomy {
+  gap: 44px;
+  padding: 12px;
+}
+
+.g-tall {
+  height: 40px;
+}

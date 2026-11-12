@@ -8,9 +8,9 @@
 @use '@cpangular/cp-theming-core/scss/theme' as t;
 @use '@cpangular/cp-theming-core/scss/presets' as presets;
 
-// Emit a preset as the default theme
-@include t.define-theme('azure-blue', presets.$azure-blue, $default: true);
+// Core first, then a preset as the default theme
 @include t.define-core-theme();
+@include t.define-theme('azure-blue', presets.$azure-blue, $default: true);
 ```
 
 Or import only palettes for use in a custom theme:
@@ -43,7 +43,7 @@ $typography: t.typography($plain-family: system-ui)
 $motion:     t.motion()
 ```
 
-All four include: `background`, `surface`, `primary`, `secondary`, `error`, `pass`, `caution`, `warn`.
+All four pass: `background`, `surface`, `primary`, `secondary`, `error`, `pass`, `caution`, `warn`. None passes `tertiary` or `brand`, so each preset's tertiary is the one core generates from its primary (the same lightness, half the chroma, hue + 60°), and each preset's `brand` palette is its primary.
 
 ---
 
@@ -164,15 +164,13 @@ $ocean: t.theme(
 
 ## Using brand-derived themes
 
-Instead of literal colors, you can derive all palettes from a runtime `--color--brand` variable. This allows themes to be recolored live via JavaScript:
+Instead of literal colors, pass the brand colour and let core generate the rest: primary, tertiary, background and surface below come from `$brand`. Setting the pair `--color--brand--mode-light` / `--color--brand--mode-dark` at runtime recolours all of them:
 
 ```scss
 $brand-theme: t.theme(
-  $brand: oklch(0.44 0.22 253),        // sets --color--brand at build time
+  $brand: oklch(0.44 0.22 253),        // the brand palette, --color--brand
   $palettes: (
-    background: t.background-from-brand(),
-    surface:    t.surface-from-brand(),
-    primary:    t.palette-from-brand(),
+    // a helper is only needed for numbers other than core's
     secondary:  t.palette-from-brand($c-max: 0.16),
     error:      p.$default-error,
     pass:       p.$default-pass,
@@ -183,11 +181,12 @@ $brand-theme: t.theme(
 );
 ```
 
-Override `--color--brand` at runtime to recolor everything:
+Set the brand's registered pair at runtime to recolor everything made from it, generated or from a helper:
 
 ```js
-document.querySelector('[theme="brand-theme"]')
-  .style.setProperty('--color--brand', 'oklch(0.48 0.24 349)');
+const el = document.querySelector('[theme="brand-theme"]');
+el.style.setProperty('--color--brand--mode-light', 'oklch(0.48 0.24 349)');
+el.style.setProperty('--color--brand--mode-dark', 'oklch(0.48 0.24 349)');
 ```
 
 See [palettes.md](palettes.md#runtime-derived-palettes) for the full `*-from-brand()` API.

@@ -1,0 +1,5 @@
+<!-- No overlay scope: open() gives the dialog a panel class and sets this
+     element's theme on that panel. -->
+<div #scope class="g-scope" theme="my-brand" palette="background" bg container shape="md">
+  <button matButton="outlined" (click)="open(scope)">Open dialog</button>
+</div>

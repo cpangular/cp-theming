@@ -1,6 +1,10 @@
 import { Component, inject } from '@angular/core';
+import { CodeComponent } from '../../shared/code.component';
 import { ThemeExampleComponent } from '../../shared/theme-example.component';
 import { TocService } from '../../shell/toc.service';
+import levelsHtml from '../../../examples/elevation/levels.html' with { loader: 'text' };
+import shadowScss from '../../../examples/elevation/shadow.scss' with { loader: 'text' };
+import lightDarkScss from '../../../examples/elevation/light-dark.scss' with { loader: 'text' };
 
 const TOC = [
   { label: 'Overview', anchor: 'overview' },
@@ -12,7 +16,7 @@ const TOC = [
 @Component({
   selector: 'cpa-elevation-page',
   standalone: true,
-  imports: [ThemeExampleComponent],
+  imports: [CodeComponent, ThemeExampleComponent],
   template: `
     <article class="doc-page">
       <header class="page-header">
@@ -28,17 +32,9 @@ const TOC = [
         </p>
         <cpa-theme-example
           title="Shadow levels"
-          [attrsHtml]="elevAttrsHtml"
-          [scssScss]="elevScssScss"
-        >
-          <div demo class="demo-row">
-            <div palette="surface" bg container shape="md" elevated="1">elevated="1"</div>
-            <div palette="surface" bg container shape="md" elevated="2">elevated="2"</div>
-            <div palette="surface" bg container shape="md" elevated="3">elevated="3"</div>
-            <div palette="surface" bg container shape="md" elevated="4">elevated="4"</div>
-            <div palette="surface" bg container shape="md" elevated="5">elevated="5"</div>
-          </div>
-        </cpa-theme-example>
+          [attrsHtml]="ex.levelsHtml"
+          [scssScss]="ex.shadowScss"
+        />
       </section>
 
       <section id="api" class="page-section">
@@ -77,21 +73,17 @@ const TOC = [
               </div>
               <div class="api-param-row">
                 <div>
-                  <span class="api-param-name">$levels</span
-                  ><span class="api-param-type">list?</span
+                  <span class="api-param-name">$levels</span><span class="api-param-type">map?</span
                   ><span class="api-param-default">default null</span>
                 </div>
                 <div class="api-param-desc">
-                  Override individual levels as a list of <code>box-shadow</code> values.
+                  Override individual levels: a map from level (1–5) to
+                  <code>(shadow: …, tint: …)</code>.
                 </div>
               </div>
             </div>
           </div>
-          <pre><code>// Light and dark have different shadow opacity
-$elevation: t.light-dark(
-  t.elevation($shadow-color: oklch(0 0 0 / 20%)),
-  t.elevation($shadow-color: oklch(0 0 0 / 50%)),
-)</code></pre>
+          <cpa-code [code]="ex.lightDarkScss" lang="scss" />
         </div>
       </section>
 
@@ -145,18 +137,7 @@ $elevation: t.light-dark(
   ],
 })
 export class ElevationPageComponent {
-  readonly elevAttrsHtml = `<div palette="surface" bg container shape="md" elevated="1">card</div>
-<div palette="surface" bg container shape="md" elevated="2">dropdown</div>
-<div palette="surface" bg container shape="md" elevated="3">fab</div>
-<div palette="surface" bg container shape="md" elevated="4">hovered fab</div>
-<div palette="surface" bg container shape="md" elevated="5">dialog</div>`;
-
-  readonly elevScssScss = `@use '@cpangular/cp-theming-core/scss/theme' as t;
-
-// Apply a level via the elevated attribute, or pull the shadow var directly:
-.my-card {
-  box-shadow: var(--elevation-2--shadow);
-}`;
+  protected readonly ex = { levelsHtml, shadowScss, lightDarkScss };
 
   constructor() {
     inject(TocService).set(TOC);

@@ -1,9 +1,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Theme — public API. Single import for all theme authoring.
+//
+// Load order: core (define-core-theme / dist/core.css) first, then every
+// theme, then an adapter. Core registers the typed properties and declares
+// every default and every derivation once; a theme rule holds only what its
+// author passed, so themes nest and inherit, presets coexist, and an author's
+// own :root rule wins.
 // ─────────────────────────────────────────────────────────────────────────────
 @use "sass:map";
 @use "sass:list";
 @use "sass:meta";
+@use "mode" as _m;
 @use "palette" as _pal;
 @use "weights" as _w;
 @use "overlay" as _ov;
@@ -17,6 +24,7 @@
 
 // ─── Public: sub-module config builders exposed as t.* ───────────────────────
 // (@forward can't rename individual members, so we use wrapper functions.)
+// Every builder returns only the keys it was given; core supplies the defaults.
 
 @function palette($base, $color: null, $bg: null, $stroke: null, $focus: null) {
   @return _pal.config($base, $color, $bg, $stroke, $focus);
@@ -25,11 +33,13 @@
 // palette-from-var($var) — derives a palette from any CSS custom property at runtime.
 // palette-from-brand()   — convenience wrapper for --color--brand.
 // Both return a light-dark config pair using oklch relative color syntax.
-// The --color--brand var is emitted when $brand is passed to t.theme().
+// --color--brand is the brand palette's colour: $brand in t.theme().
+// A theme that passes $brand and no `primary` gets the same primary from core,
+// so palette-from-brand() is only needed to change the clamp numbers.
 @function palette-from-var(
   $var,
   $light-l-min: 0.35,
-  $light-l-max: 0.5,
+  $light-l-max: 0.45,
   $dark-l-min: 0.65,
   $dark-l-max: 0.82,
   $c-max: 0.22
@@ -39,7 +49,7 @@
 
 @function palette-from-brand(
   $light-l-min: 0.35,
-  $light-l-max: 0.5,
+  $light-l-max: 0.45,
   $dark-l-min: 0.65,
   $dark-l-max: 0.82,
   $c-max: 0.22
@@ -90,12 +100,13 @@
   @return _ov.config($scrim, $shadow);
 }
 
+// Display and headline follow $plain-family when no $brand-family is given.
 @function typography(
-  $plain-family: system-ui,
+  $plain-family: null,
   $brand-family: null,
-  $bold-weight: 700,
-  $medium-weight: 500,
-  $regular-weight: 400,
+  $bold-weight: null,
+  $medium-weight: null,
+  $regular-weight: null,
   $scale-overrides: null
 ) {
   @return _ty.config(
@@ -108,7 +119,7 @@
   );
 }
 
-@function density($scale: 0) {
+@function density($scale: null) {
   @return _dn.config($scale);
 }
 
@@ -151,7 +162,7 @@
   );
 }
 
-// t.elevation($shadow-color) — rescale shadow opacity across all 6 levels.
+// t.elevation($shadow-color) — rescale shadow opacity across levels 1–5.
 // For dark mode, use t.light-dark(t.elevation(), t.elevation($shadow-color: oklch(0 0 0 / 50%))).
 @function elevation($shadow-color: null, $levels: null) {
   @return _el.config($shadow-color, $levels);
@@ -166,9 +177,39 @@
   @return (light: $light, dark: $resolved-dark);
 }
 
+// Internal: a mode-varying argument as a (light, dark) pair of configs.
+// null → two empty configs; a bare config (no t.light-dark()) applies to both.
+@function _pair-of($value) {
+  @if $value == null {
+    @return (light: (), dark: ());
+  }
+  @if meta.type-of($value) == map and map.has-key($value, light) {
+    @return $value;
+  }
+  @return (light: $value, dark: $value);
+}
+
+@function _or-empty($value) {
+  @if $value == null {
+    @return ();
+  }
+  @return $value;
+}
+
 // ─── Public: t.theme() ───────────────────────────────────────────────────────
+// Holds only what was passed. Core supplies every default.
+//
+// Colours follow the chain brand → primary → secondary, tertiary → background,
+// surface: pass whichever you have, and core generates the rest from the
+// nearest thing you passed (_palette.scss, "Generated palettes"). error, warn,
+// caution and pass have fixed defaults.
+//
+// $brand — the brand colour exactly as the guidelines give it. It becomes the
+// `brand` palette (--color--brand) and is never adjusted; the same as passing
+// `brand: t.palette(…)` in $palettes. A theme that passes `primary` and no
+// brand gets that primary as its brand palette.
 @function theme(
-  $palettes,
+  $palettes: (),
   $weights: null,
   $overlay: null,
   $typography: null,
@@ -179,314 +220,231 @@
   $elevation: null,
   $brand: null
 ) {
-  $l-weights: _w.defaults();
-  $d-weights: _w.defaults();
-  @if $weights != null {
-    $l-weights: map.merge(_w.defaults(), map.get($weights, light));
-    $d-weights: map.merge(_w.defaults(), map.get($weights, dark));
-  }
-
-  $l-overlay: _ov.defaults();
-  $d-overlay: _ov.defaults();
-  @if $overlay != null {
-    $l-overlay: map.merge(_ov.defaults(), map.get($overlay, light));
-    $d-overlay: map.merge(_ov.defaults(), map.get($overlay, dark));
-  }
-
-  $typography-resolved: _ty.config();
-  @if $typography != null {
-    $typography-resolved: $typography;
-  }
-
-  $density-resolved: _dn.config();
-  @if $density != null {
-    $density-resolved: $density;
-  }
-
-  $shape-resolved: _sh.config();
-  @if $shape != null {
-    $shape-resolved: $shape;
-  }
-
-  $focus-resolved: _fo.config();
-  @if $focus != null {
-    $focus-resolved: $focus;
-  }
-
-  $motion-resolved: _mo.config();
-  @if $motion != null {
-    $motion-resolved: $motion;
-  }
-
-  // Elevation defaults: light=30% shadow opacity, dark=50% (shadows need more opacity on dark surfaces).
-  $l-elevation: _el.config();
-  $d-elevation: _el.config(
-    $shadow-color: oklch(0 0 0 / 50%),
-  );
-  @if $elevation != null {
-    $l-elevation: map.get($elevation, light);
-    $d-elevation: map.get($elevation, dark);
-  }
+  $w: _pair-of($weights);
+  $o: _pair-of($overlay);
+  $e: _pair-of($elevation);
 
   @return (
     light: (
-      weights: $l-weights,
-      overlay: $l-overlay,
+      weights: map.get($w, light),
+      overlay: map.get($o, light),
       palettes: $palettes,
-      elevation: $l-elevation,
+      elevation: map.get($e, light),
     ),
     dark: (
-      weights: $d-weights,
-      overlay: $d-overlay,
+      weights: map.get($w, dark),
+      overlay: map.get($o, dark),
       palettes: $palettes,
-      elevation: $d-elevation,
+      elevation: map.get($e, dark),
     ),
-    typography: $typography-resolved,
-    density: $density-resolved,
-    shape: $shape-resolved,
-    focus: $focus-resolved,
-    motion: $motion-resolved,
+    typography: _or-empty($typography),
+    density: _or-empty($density),
+    shape: _or-empty($shape),
+    focus: _or-empty($focus),
+    motion: _or-empty($motion),
     brand: $brand
   );
 }
 
-// ─── Internal: emit weight vars for one mode ─────────────────────────────────
-@mixin _weight-vars($w) {
-  $tints: map.get($w, tints);
-  --weight--text-blend: #{map.get($w, text-blend)};
-  --weight--text-emphasis-blend: #{map.get($w, text-emphasis-blend)};
-  --weight--text-deemphasis-blend: #{map.get($w, text-deemphasis-blend)};
-  --weight--text-primary-tint: #{map.get($w, text-primary-tint)};
-  --weight--state-hover: #{map.get($w, state-hover)};
-  --weight--state-press: #{map.get($w, state-press)};
-  --weight--state-focus: #{map.get($w, state-focus)};
-  --weight--state-drag: #{map.get($w, state-drag)};
-  --weight--tint-1: #{list.nth($tints, 1)};
-  --weight--tint-2: #{list.nth($tints, 2)};
-  --weight--tint-3: #{list.nth($tints, 3)};
-  --weight--tint-4: #{list.nth($tints, 4)};
-  --weight--tint-5: #{list.nth($tints, 5)};
-}
+// ─── Internal: root-level pieces of a palette name, once per compilation ──────
+// A custom name gets its registrations, derivations and [palette] rule here;
+// every name gets the adaptor's define-palette hooks, once.
+$_palette-rules-emitted: ();
+$_palette-hooks-emitted: ();
 
-// ─── Internal: emit only weight vars that differ between light and dark ───────
-@mixin _weight-vars-diff($lw, $dw) {
-  $lt: map.get($lw, tints);
-  $dt: map.get($dw, tints);
-  @if map.get($lw, text-blend) != map.get($dw, text-blend) {
-    --weight--text-blend: #{map.get($dw, text-blend)};
-  }
-  @if map.get($lw, text-emphasis-blend) != map.get($dw, text-emphasis-blend) {
-    --weight--text-emphasis-blend: #{map.get($dw, text-emphasis-blend)};
-  }
-  @if map.get($lw, text-deemphasis-blend) != map.get($dw, text-deemphasis-blend) {
-    --weight--text-deemphasis-blend: #{map.get($dw, text-deemphasis-blend)};
-  }
-  @if map.get($lw, text-primary-tint) != map.get($dw, text-primary-tint) {
-    --weight--text-primary-tint: #{map.get($dw, text-primary-tint)};
-  }
-  @if map.get($lw, state-hover) != map.get($dw, state-hover) {
-    --weight--state-hover: #{map.get($dw, state-hover)};
-  }
-  @if map.get($lw, state-press) != map.get($dw, state-press) {
-    --weight--state-press: #{map.get($dw, state-press)};
-  }
-  @if map.get($lw, state-focus) != map.get($dw, state-focus) {
-    --weight--state-focus: #{map.get($dw, state-focus)};
-  }
-  @if map.get($lw, state-drag) != map.get($dw, state-drag) {
-    --weight--state-drag: #{map.get($dw, state-drag)};
-  }
-  @for $i from 1 through 5 {
-    @if list.nth($lt, $i) != list.nth($dt, $i) {
-      --weight--tint-#{$i}: #{list.nth($dt, $i)};
-    }
-  }
-}
+@mixin _root-palette($name, $adaptor) {
+  @include _pal.define-custom-palette($name);
 
-// ─── Internal: emit all CSS vars for both modes ───────────────────────────────
-@mixin _mode-vars($light, $dark, $dedupe: true, $adaptor: ()) {
-  $lw: map.get($light, weights);
-  $dw: map.get($dark, weights);
-  $lo: map.get($light, overlay);
-  $do: map.get($dark, overlay);
-  $palettes: map.get($light, palettes);
-
-  color-scheme: light dark;
-
-  @include _weight-vars($lw);
-
-  $l-scrim: map.get($lo, scrim);
-  $d-scrim: map.get($do, scrim);
-  $l-shadow: map.get($lo, shadow);
-  $d-shadow: map.get($do, shadow);
-  @if $dedupe and $l-scrim == $d-scrim {
-    --overlay--scrim: #{$l-scrim};
-  } @else {
-    --overlay--scrim: light-dark(#{$l-scrim}, #{$d-scrim});
-  }
-  @if $dedupe and $l-shadow == $d-shadow {
-    --overlay--shadow: #{$l-shadow};
-  } @else {
-    --overlay--shadow: light-dark(#{$l-shadow}, #{$d-shadow});
-  }
-
-  @if $palettes {
-    @each $pal-name, $pal-config in $palettes {
-      $l-resolved: $pal-config;
-      @if map.has-key($pal-config, light) {
-        $l-resolved: map.get($pal-config, light);
-      }
-      $d-resolved: $pal-config;
-      @if map.has-key($pal-config, dark) {
-        $d-resolved: map.get($pal-config, dark);
-      }
-      @if map.has-key($adaptor, define-palette-before) {
-        @include meta.apply(map.get($adaptor, define-palette-before), $pal-name);
-      }
-
-      @include _pal.define-palette($pal-name, $l-resolved, $d-resolved);
-
-      [palette="#{$pal-name}"] {
-        @include _ap.apply-palette($pal-name);
-      }
-
-      @if map.has-key($adaptor, define-palette-after) {
-        @include meta.apply(map.get($adaptor, define-palette-after), $pal-name);
-      }
+  @if not _pal.is-core($name) and not list.index($_palette-rules-emitted, $name) {
+    $_palette-rules-emitted: list.append($_palette-rules-emitted, $name) !global;
+    [palette="#{$name}"] {
+      @include _ap.apply-palette($name);
     }
   }
 
-  // Elevation shadows (colors — light-dark() compatible).
-  // Always present — theme() provides defaults when not explicitly configured.
-  $l-el: map.get($light, elevation);
-  $d-el: map.get($dark, elevation);
-  @include _el.emit-tints($l-el);
-  @include _el.emit-shadows($l-el, $d-el, $dedupe);
+  @if list.length(map.keys($adaptor)) > 0 and not list.index($_palette-hooks-emitted, $name) {
+    $_palette-hooks-emitted: list.append($_palette-hooks-emitted, $name) !global;
+    @if map.has-key($adaptor, define-palette-before) {
+      @include meta.apply(map.get($adaptor, define-palette-before), $name);
+    }
+    @if map.has-key($adaptor, define-palette-after) {
+      @include meta.apply(map.get($adaptor, define-palette-after), $name);
+    }
+  }
 }
 
 // ─── Public: define-theme ─────────────────────────────────────────────────────
 //
+// Emits one rule, :where([theme="name"]):not(cp-theming-none) (plus
+// :where(:root) when $default), holding only what the author passed to
+// t.theme(): for each palette the light and dark colour of the colour role and
+// of any explicit $bg / $stroke / $focus (background and surface always carry
+// their bg pair: their base), each followed by its joined token; the brand
+// palette's pair when $brand was passed, or pointed at the primary's pair
+// when `primary` was passed and no brand; for each palette of the chain the
+// theme left out that follows from one it passed, the pair pointed at the
+// colour core generates (_palette.scss, "Generated palettes");
+// the passed keys of each sub-config; and the light and dark values of
+// mode-varying percentages. A default theme also derives its custom palette
+// names. No color-scheme, no body, no mode variants: define-core-theme() has those.
+//
+// $default — also apply on :where(:root), so any theme attribute beats it.
+// $dedupe  — accepted for compatibility; nothing is left to dedupe.
 // $adaptor — optional hooks map from an adapter package (e.g. theme-ng-material).
 // Supported keys (all optional):
-//   define-theme-before:   mixin($theme-name)  — called before theme vars are emitted
-//   define-theme-after:    mixin($theme-name)  — called after all theme vars are emitted
-//   define-palette-before: mixin($palette-name) — called before each palette is registered
-//   define-palette-after:  mixin($palette-name) — called after each palette is registered
+//   define-theme-before:   mixin($theme-name)  — called before the theme rule
+//   define-theme-after:    mixin($theme-name)  — called after the theme rule
+//   define-palette-before: mixin($palette-name) — called once per palette name, at root level
+//   define-palette-after:  mixin($palette-name) — called once per palette name, at root level
 @mixin define-theme($name, $theme, $default: false, $dedupe: true, $adaptor: ()) {
   $light: map.get($theme, light);
   $dark: map.get($theme, dark);
-  $lw: map.get($light, weights);
-  $dw: map.get($dark, weights);
-  $le: map.get($light, elevation);
-  $de: map.get($dark, elevation);
+  $palettes: map.get($light, palettes);
+  @if $palettes == null {
+    $palettes: ();
+  }
 
-  $selectors: '[theme="#{$name}"]';
-  @if $default {
-    $selectors: "#{$selectors}, body";
+  // $brand is the brand palette: one colour, the same in both modes.
+  $brand: map.get($theme, brand);
+  @if $brand != null {
+    @if map.has-key($palettes, brand) {
+      @error "Theme `#{$name}` passes the brand colour twice: as $brand and as the `brand` palette.";
+    }
+    $palettes: map.merge(
+      (
+        brand: _pal.config($brand),
+      ),
+      $palettes
+    );
   }
 
   @if map.has-key($adaptor, define-theme-before) {
     @include meta.apply(map.get($adaptor, define-theme-before), $name);
   }
 
+  @if $palettes {
+    @each $pal-name, $pal-config in $palettes {
+      @include _root-palette($pal-name, $adaptor);
+    }
+  }
+
+  // Specificity (0,0,1): `:not()` of a type selector no element has. The rule
+  // beats every zero-specificity rule of core and of other themes' defaults in
+  // any load order, and loses to an author's own `:root` or attribute rule
+  // wherever that is placed — including on the element that carries the theme
+  // attribute, where a plain `[theme="name"]` (0,1,0) would tie with `:root`
+  // and win on source order.
+  $selectors: ':where([theme="#{$name}"]):not(cp-theming-none)';
+  @if $default {
+    $selectors: "#{$selectors}, :where(:root)";
+  }
+
   #{$selectors} {
-    @include _mode-vars($light, $dark, $dedupe, $adaptor);
-    @include _ty.emit(map.get($theme, typography));
-    @include _dn.emit(map.get($theme, density));
-    @include _sh.emit(map.get($theme, shape));
-    @include _fo.emit(map.get($theme, focus));
-    @include _mo.emit(map.get($theme, motion));
-
-    $brand: map.get($theme, brand);
-    @if $brand != null {
-      --color--brand: #{$brand};
-    }
-
-    [themeMode="dark"] & {
-      color-scheme: dark;
-      @if $dedupe {
-        @include _weight-vars-diff($lw, $dw);
-      } @else {
-        @include _weight-vars($dw);
-      }
-      @include _el.emit-tints-diff($le, $de);
-    }
-    @media (prefers-color-scheme: dark) {
-      html:not([themeMode]) &,
-      [themeMode="auto"] & {
-        color-scheme: dark;
-        @if $dedupe {
-          @include _weight-vars-diff($lw, $dw);
-        } @else {
-          @include _weight-vars($dw);
+    // A default theme derives its custom palette names here, ahead of its
+    // explicit roles, because the shared derivation rule does not match :root
+    // (see _palette.scss define-custom-palette).
+    @if $default and $palettes {
+      @each $pal-name, $pal-config in $palettes {
+        @if not _pal.is-core($pal-name) {
+          @include _pal.derive-palette($pal-name);
         }
-        @include _el.emit-tints-diff($le, $de);
       }
     }
 
-    // 0,2,0 — handles global html[themeMode="light"] (body is child of html, not inside a themeMode="light" descendant)
-    [themeMode="light"] & {
-      color-scheme: light;
-    }
-    // 0,2,1 — handles forced-light panel inside body when html has no themeMode (auto+system=dark).
-    // html:not([themeMode]) [theme] in the media query above is also 0,2,1 but declared earlier,
-    // so this later rule wins for elements that also have a [themeMode="light"] ancestor.
-    // Also resets weight vars the media-query dark rule may have stamped.
-    html [themeMode="light"] & {
-      color-scheme: light;
-      @if $dedupe {
-        @include _weight-vars-diff($dw, $lw);
-      } @else {
-        @include _weight-vars($lw);
-      }
-      @include _el.emit-tints-diff($de, $le);
-    }
-    // Forced-dark nested inside a light ancestor — specificity 0,3,0 beats the 0,2,1 rule above.
-    [themeMode="light"] [themeMode="dark"] & {
-      color-scheme: dark;
-      @if $dedupe {
-        @include _weight-vars-diff($lw, $dw);
-      } @else {
-        @include _weight-vars($dw);
-      }
-      @include _el.emit-tints-diff($le, $de);
-    }
-
-    [themeMode="invert"] & {
-      color-scheme: dark;
-      @if $dedupe {
-        @include _weight-vars-diff($lw, $dw);
-      } @else {
-        @include _weight-vars($dw);
-      }
-      @include _el.emit-tints-diff($le, $de);
-    }
-    [themeMode="dark"] [themeMode="invert"] & {
-      color-scheme: light;
-      @if $dedupe {
-        @include _weight-vars-diff($dw, $lw);
-      } @else {
-        @include _weight-vars($lw);
-      }
-      @include _el.emit-tints-diff($de, $le);
-    }
-    @media (prefers-color-scheme: dark) {
-      html:not([themeMode]) [themeMode="invert"] &,
-      [themeMode="auto"] [themeMode="invert"] & {
-        color-scheme: light;
-        @if $dedupe {
-          @include _weight-vars-diff($dw, $lw);
-        } @else {
-          @include _weight-vars($lw);
+    @if $palettes {
+      @each $pal-name, $pal-config in $palettes {
+        $l-resolved: $pal-config;
+        @if map.has-key($pal-config, light) {
+          $l-resolved: map.get($pal-config, light);
         }
-        @include _el.emit-tints-diff($de, $le);
+        $d-resolved: $pal-config;
+        @if map.has-key($pal-config, dark) {
+          $d-resolved: map.get($pal-config, dark);
+        }
+        @include _pal.emit-palette($pal-name, $l-resolved, $d-resolved);
       }
+      // No brand of its own: the theme's brand palette is its primary.
+      @if map.has-key($palettes, primary) and not map.has-key($palettes, brand) {
+        $primary: map.get($palettes, primary);
+        $l-primary: $primary;
+        @if map.has-key($primary, light) {
+          $l-primary: map.get($primary, light);
+        }
+        $d-primary: $primary;
+        @if map.has-key($primary, dark) {
+          $d-primary: map.get($primary, dark);
+        }
+        @include _pal.emit-brand-from-primary($l-primary, $d-primary);
+      }
+      @include _pal.emit-generated(map.keys($palettes));
     }
+
+    @include _w.emit-theme(map.get($light, weights), map.get($dark, weights));
+    @include _ov.emit-theme(map.get($light, overlay), map.get($dark, overlay));
+    @include _el.emit-theme(map.get($light, elevation), map.get($dark, elevation));
+    @include _ty.emit-theme(map.get($theme, typography));
+    @include _dn.emit-theme(map.get($theme, density));
+    @include _sh.emit-theme(map.get($theme, shape));
+    @include _fo.emit-theme(map.get($theme, focus));
+    @include _mo.emit-theme(map.get($theme, motion));
   }
 
   @if map.has-key($adaptor, define-theme-after) {
     @include meta.apply(map.get($adaptor, define-theme-after), $name);
   }
+}
+
+// ─── Public: define-core-theme ────────────────────────────────────────────────
+// Everything theme-independent, emitted once. Call at the top level of a
+// stylesheet (the @property rules must be at root level), before any theme.
+//   1. @property registrations: each core palette role's light and dark
+//      colour (brand and tertiary included), and the scalars (weights,
+//      density, space, shape).
+//   2. :where(:root): color-scheme, the mode flag, the contrast step, the
+//      generated palettes as the default of the chain, and the default of
+//      every unregistered group (weights and elevation pairs,
+//      overlay, elevation, typography, focus geometry, motion).
+//   3. The themeMode rules.
+//   4. :where(:root, [theme]): the colour core generates for each palette of
+//      the chain (brand → primary → secondary, tertiary → background,
+//      surface), every derivation for the core palette names and the
+//      typography role fonts. :where(:root) in (2) points every pair of the
+//      chain at its generated colour; a theme rule does so for what it left
+//      out.
+//   5. :where(:root, [theme], [themeMode]): the mode-varying percentages picked
+//      from their pairs.
+//   6. The [palette="name"] rules for the core names, the apply layers, the
+//      elevation and density scopes.
+@mixin define-core-theme() {
+  @include _w.register-properties();
+  @include _dn.register-properties();
+  @include _sh.register-properties();
+  @include _pal.register-core-palettes();
+
+  :where(:root) {
+    @include _m.root-defaults();
+    @include _pal.root-defaults();
+    @include _w.emit-root-defaults();
+    @include _ov.emit-root-defaults();
+    @include _el.emit-root-defaults();
+    @include _ty.emit-root-defaults();
+    @include _fo.emit-root-defaults();
+    @include _mo.emit-root-defaults();
+  }
+
+  @include _m.rules();
+
+  :where(:root, [theme]) {
+    @include _pal.derive-core-palettes();
+    @include _ty.emit-derived();
+  }
+
+  :where(:root, [theme], [themeMode]) {
+    @include _w.emit-pick();
+    @include _el.emit-pick();
+  }
+
+  @include _ap.define-core-theme();
 }
 
 // ─── Apply mixins — re-exported for single @use 'theme' as t convenience ──────
@@ -552,16 +510,6 @@
     $inline-start: $inline-start,
     $inline-end: $inline-end
   );
-}
-@mixin define-core-theme() {
-  // Register all typed custom properties. @property rules are global to the
-  // document and must be at root level — this mixin should be called at the
-  // top level of a stylesheet, not inside a selector.
-  @include _w.register-properties();
-  @include _dn.register-properties();
-  @include _sh.register-properties();
-  @include _pal.register-core-palettes();
-  @include _ap.define-core-theme();
 }
 
 // ─── Public aliases ───────────────────────────────────────────────────────────

@@ -1,0 +1,25 @@
+// The four palettes every theme has without passing them.
+@each $name in error, warn, caution, pass {
+  .fill.#{$name} {
+    background: var(--color--#{$name});
+    color: var(--color--#{$name}--contrast);
+  }
+
+  // The colour as text, on the surface palette.
+  .words.#{$name} {
+    background: var(--color--surface);
+    color: var(--color--#{$name});
+  }
+}
+
+// Layout only.
+.fixed {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+p {
+  margin: 0;
+  padding: 18px 12px;
+  font-weight: 500;
+}

@@ -1,0 +1,28 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+@use "@cpangular/cp-theming-core/scss/presets/palettes" as p;
+
+$my-theme: t.theme(
+  $palettes: (
+    background: p.$default-background,
+    surface:    p.$default-surface,
+    primary:    t.light-dark(
+      t.palette(oklch(0.44 0.22 253)),
+      t.palette(oklch(0.72 0.17 253))
+    ),
+  ),
+  $weights:    t.weights($text-blend: 82%),
+  $typography: t.typography($plain-family: system-ui),
+  $density:    t.density($scale: 0),
+  $shape:      t.shape($md: 12px),
+  $focus:      t.focus($width: 3px),
+  $motion:     t.motion($duration-medium: 250ms),
+  $elevation:  t.elevation($shadow-color: oklch(0 0 0 / 30%)),
+  $overlay:    t.overlays($scrim: oklch(0 0 0 / 50%))
+);
+
+// Core first: the registrations, every default, every derivation and the
+// attribute rules, once for all themes.
+@include t.define-core-theme();
+
+// Then each theme: one rule that holds only what was passed above.
+@include t.define-theme("my-theme", $my-theme, $default: true);

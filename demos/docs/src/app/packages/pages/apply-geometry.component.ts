@@ -1,6 +1,14 @@
 import { Component, inject } from '@angular/core';
 import { ThemeExampleComponent } from '../../shared/theme-example.component';
 import { TocService } from '../../shell/toc.service';
+import shapeHtml from '../../../examples/apply-geometry/shape.html' with { loader: 'text' };
+import shapeScss from '../../../examples/apply-geometry/shape.scss' with { loader: 'text' };
+import radiusHtml from '../../../examples/apply-geometry/radius.html' with { loader: 'text' };
+import radiusScss from '../../../examples/apply-geometry/radius.scss' with { loader: 'text' };
+import paddingHtml from '../../../examples/apply-geometry/padding.html' with { loader: 'text' };
+import paddingScss from '../../../examples/apply-geometry/padding.scss' with { loader: 'text' };
+import combinedScss from '../../../examples/apply-geometry/combined.scss' with { loader: 'text' };
+import combinedHtml from '../../../examples/apply-geometry/combined.html' with { loader: 'text' };
 
 @Component({
   selector: 'cpa-apply-geometry-page',
@@ -32,28 +40,9 @@ import { TocService } from '../../shell/toc.service';
         </p>
         <cpa-theme-example
           title="Shape scale"
-          [attrsHtml]="shapeAttrsHtml"
-          [scssScss]="shapeScssScss"
-        >
-          <div demo class="demo-row">
-            <div class="demo-swatch" palette="primary" bg shape="xs">
-              <span class="demo-tag">shape="xs"</span>
-              <span class="demo-name">4px</span>
-            </div>
-            <div class="demo-swatch" palette="primary" bg shape="md">
-              <span class="demo-tag">shape="md"</span>
-              <span class="demo-name">12px</span>
-            </div>
-            <div class="demo-swatch" palette="primary" bg shape="xl">
-              <span class="demo-tag">shape="xl"</span>
-              <span class="demo-name">28px</span>
-            </div>
-            <div class="demo-swatch" palette="primary" bg shape="full">
-              <span class="demo-tag">shape="full"</span>
-              <span class="demo-name">Pill</span>
-            </div>
-          </div>
-        </cpa-theme-example>
+          [attrsHtml]="ex.shapeHtml"
+          [scssScss]="ex.shapeScss"
+        />
       </section>
 
       <section id="radius" class="page-section">
@@ -65,42 +54,9 @@ import { TocService } from '../../shell/toc.service';
         </p>
         <cpa-theme-example
           title="Custom radius"
-          [attrsHtml]="radiusAttrsHtml"
-          [scssScss]="radiusScssScss"
-        >
-          <div demo class="demo-row">
-            <div
-              class="demo-swatch"
-              palette="primary"
-              bg
-              container
-              style="--container--radius: 0px"
-            >
-              <span class="demo-tag">radius: 0px</span>
-              <span class="demo-name">Square</span>
-            </div>
-            <div
-              class="demo-swatch"
-              palette="primary"
-              bg
-              container
-              style="--container--radius: 20px"
-            >
-              <span class="demo-tag">radius: 20px</span>
-              <span class="demo-name">Rounded</span>
-            </div>
-            <div
-              class="demo-swatch"
-              palette="primary"
-              bg
-              container
-              style="--container--radius--top: 20px"
-            >
-              <span class="demo-tag">radius--top: 20px</span>
-              <span class="demo-name">Top only</span>
-            </div>
-          </div>
-        </cpa-theme-example>
+          [attrsHtml]="ex.radiusHtml"
+          [scssScss]="ex.radiusScss"
+        />
       </section>
 
       <section id="padding" class="page-section">
@@ -112,42 +68,9 @@ import { TocService } from '../../shell/toc.service';
         </p>
         <cpa-theme-example
           title="Padding scale"
-          [attrsHtml]="paddingAttrsHtml"
-          [scssScss]="paddingScssScss"
-        >
-          <div demo class="demo-row">
-            <div
-              class="demo-swatch"
-              palette="primary"
-              bg
-              container
-              style="--container--padding: 8px"
-            >
-              <span class="demo-tag">padding: 8px</span>
-              <span class="demo-name">Dense</span>
-            </div>
-            <div
-              class="demo-swatch"
-              palette="primary"
-              bg
-              container
-              style="--container--padding: 16px"
-            >
-              <span class="demo-tag">padding: 16px</span>
-              <span class="demo-name">Default</span>
-            </div>
-            <div
-              class="demo-swatch"
-              palette="primary"
-              bg
-              container
-              style="--container--padding: 32px"
-            >
-              <span class="demo-tag">padding: 32px</span>
-              <span class="demo-name">Relaxed</span>
-            </div>
-          </div>
-        </cpa-theme-example>
+          [attrsHtml]="ex.paddingHtml"
+          [scssScss]="ex.paddingScss"
+        />
       </section>
 
       <section id="combined" class="page-section">
@@ -157,30 +80,11 @@ import { TocService } from '../../shell/toc.service';
           shape with proportional padding for "card" shapes, and a tight scale for compact elements
           like chips or badges.
         </p>
-        <cpa-theme-example title="Card vs chip geometry" [scssScss]="combinedScssScss">
-          <div demo class="demo-row">
-            <div
-              class="demo-swatch"
-              palette="primary"
-              bg
-              shape="lg"
-              container
-              style="--container--padding: 24px; width:160px"
-            >
-              <span class="demo-tag">card style</span>
-              <span class="demo-name">shape="lg" + padding</span>
-            </div>
-            <span
-              palette="secondary"
-              filled
-              shape="full"
-              container
-              style="--container--padding-block: 6px; --container--padding-inline: 16px; font-size:13px; align-self:center"
-            >
-              chip style
-            </span>
-          </div>
-        </cpa-theme-example>
+        <cpa-theme-example
+          title="Card vs chip geometry"
+          [attrsHtml]="ex.combinedHtml"
+          [scssScss]="ex.combinedScss"
+        />
       </section>
     </article>
   `,
@@ -191,75 +95,16 @@ import { TocService } from '../../shell/toc.service';
   ],
 })
 export class ApplyGeometryPageComponent {
-  readonly shapeAttrsHtml = `<div palette="primary" bg shape="md">
-  Rounded with the md scale step
-</div>`;
-
-  readonly shapeScssScss = `@use '@cpangular/cp-theming-core/scss/theme' as t;
-
-.my-card {
-  @include t.apply-palette('primary');
-  @include t.bg();
-  @include t.shape('md');
-}`;
-
-  readonly radiusAttrsHtml = `<div palette="primary" bg container
-     style="--container--radius: 20px">
-  Custom 20px corners
-</div>`;
-
-  readonly radiusScssScss = `@use '@cpangular/cp-theming-core/scss/theme' as t;
-
-.my-card {
-  @include t.apply-palette('primary');
-  @include t.bg();
-  @include t.container();
-  @include t.radius(20px);
-}
-
-// Per-corner control
-.my-sheet {
-  @include t.container();
-  @include t.radius($top: 20px);
-}`;
-
-  readonly paddingAttrsHtml = `<div palette="primary" bg container
-     style="--container--padding: 24px">
-  Relaxed padding
-</div>`;
-
-  readonly paddingScssScss = `@use '@cpangular/cp-theming-core/scss/theme' as t;
-
-.my-card {
-  @include t.apply-palette('primary');
-  @include t.bg();
-  @include t.container();
-  @include t.padding(24px);
-}
-
-// Asymmetric padding
-.my-chip {
-  @include t.container();
-  @include t.padding(6px 16px);
-}`;
-
-  readonly combinedScssScss = `@use '@cpangular/cp-theming-core/scss/theme' as t;
-
-.card {
-  @include t.apply-palette('primary');
-  @include t.bg();
-  @include t.shape('lg');
-  @include t.container();
-  @include t.padding(24px);
-}
-
-.chip {
-  @include t.apply-palette('secondary');
-  @include t.filled();
-  @include t.shape('full');
-  @include t.container();
-  @include t.padding(6px 16px);
-}`;
+  protected readonly ex = {
+    shapeHtml,
+    shapeScss,
+    radiusHtml,
+    radiusScss,
+    paddingHtml,
+    paddingScss,
+    combinedScss,
+    combinedHtml,
+  };
 
   constructor() {
     inject(TocService).set([

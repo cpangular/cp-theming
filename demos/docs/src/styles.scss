@@ -1,116 +1,24 @@
+// The Getting Started example theme, so that page can render it live in
+// examples/getting-started/brand-chain.html. It is examples/getting-started/
+// custom-theme.scss without core (angular.json loads core.css) and without
+// $default (the docs' own themes are the presets); test/examples.test.ts fails
+// if the two theme rules differ. The package path resolves through this app's
+// node_modules, which angular.json names as a Sass include path.
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+@include t.define-theme("my-brand", t.theme($brand: #ff6a00));
+
+// The two themes of Learn chapter 10, whose live example Angular renders in
+// the page: examples/learn/10-material/theme.scss without core and without the
+// adapter, which angular.json loads. The same test holds them to that file.
+@include t.define-theme("harbour", t.theme($brand: #1565c0));
+@include t.define-theme("ember", t.theme($brand: #e65100));
+
 html,
 body {
   height: 100%;
   margin: 0;
   font-family: Roboto, "Helvetica Neue", sans-serif;
-}
-
-/**
- * When multiple theme presets are loaded simultaneously (docs app loads all four),
- * each preset's  `[theme=X], body { … }`  rule races on <body>; the last-loaded
- * preset wins, overriding the inherited values from <html theme="azure-blue">.
- *
- * This block (loaded last in the styles array) resets every registered theme
- * custom-property on <body> to `unset`, which equals `inherit` for @property
- * rules with `inherits: true`.  The ThemeService writes [theme] on <html>,
- * so the correct theme values flow down via inheritance.
- *
- * IMPORTANT: `@property { syntax: "<color>" }` custom properties are resolved
- * (light-dark() evaluated) at the ELEMENT where they are computed. When body
- * inherits via `unset`, it inherits the value already resolved at html's
- * color-scheme. We therefore ALSO set html's color-scheme explicitly below via
- * the `[themeMode]` attribute so that light-dark() on html always resolves to
- * the correct light or dark value regardless of system preference.
- */
-
-/*
- * Override html's color-scheme to match the explicit [themeMode] attribute.
- * These rules have equal specificity (0,1,0) to the preset's
- * `[theme=X] { color-scheme: light dark }` rule but appear later in the
- * stylesheet (loaded last), so they win and pin html to an explicit scheme.
- * Without this, html keeps `color-scheme: light dark` which means light-dark()
- * values follow the system preference even when the user has toggled a mode.
- *
- * [themeMode=auto] and [themeMode=<missing>] intentionally omitted — both
- * should keep `color-scheme: light dark` to follow the system preference.
- */
-[themeMode="light"] {
-  color-scheme: light;
-}
-[themeMode="dark"] {
-  color-scheme: dark;
-}
-body {
-  --color--primary: unset;
-  --color--primary--bg: unset;
-  --color--primary--focus: unset;
-  --color--primary--stroke: unset;
-  --color--secondary: unset;
-  --color--secondary--bg: unset;
-  --color--secondary--focus: unset;
-  --color--secondary--stroke: unset;
-  --color--surface: unset;
-  --color--surface--bg: unset;
-  --color--surface--focus: unset;
-  --color--surface--stroke: unset;
-  --color--background: unset;
-  --color--background--bg: unset;
-  --color--background--focus: unset;
-  --color--background--stroke: unset;
-  --color--error: unset;
-  --color--error--bg: unset;
-  --color--error--focus: unset;
-  --color--error--stroke: unset;
-  --color--warn: unset;
-  --color--warn--bg: unset;
-  --color--warn--focus: unset;
-  --color--warn--stroke: unset;
-  --color--pass: unset;
-  --color--pass--bg: unset;
-  --color--pass--focus: unset;
-  --color--pass--stroke: unset;
-  --color--caution: unset;
-  --color--caution--bg: unset;
-  --color--caution--focus: unset;
-  --color--caution--stroke: unset;
-  --color--brand: unset;
-  --container--text: unset;
-  --container--text-emphasis: unset;
-  --container--text-deemphasis: unset;
-  --container--stroke: unset;
-  --palette-color: unset;
-  --palette-color--bg: unset;
-  --palette-color--focus: unset;
-  --palette-color--stroke: unset;
-  --weight--tint-1: unset;
-  --weight--tint-2: unset;
-  --weight--tint-3: unset;
-  --weight--tint-4: unset;
-  --weight--tint-5: unset;
-  --weight--state-hover: unset;
-  --weight--state-focus: unset;
-  --weight--state-press: unset;
-  --weight--state-drag: unset;
-  --weight--text-blend: unset;
-  --weight--text-emphasis-blend: unset;
-  --weight--text-deemphasis-blend: unset;
-  --weight--text-primary-tint: unset;
-  --shape--xxs: unset;
-  --shape--xs: unset;
-  --shape--sm: unset;
-  --shape--md: unset;
-  --shape--lg: unset;
-  --shape--xl: unset;
-  --shape--xxl: unset;
-  --shape--full: unset;
-  --space--xxs: unset;
-  --space--xs: unset;
-  --space--sm: unset;
-  --space--md: unset;
-  --space--lg: unset;
-  --space--xl: unset;
-  --space--xxl: unset;
-  --density-scale: unset;
 }
 
 * {
@@ -154,80 +62,94 @@ pre {
   }
 }
 
-// ── highlight.js dark-mode overrides (mirrors github-dark) ─────────────────
-[themeMode="dark"] {
-  .hljs {
-    color: #c9d1d9;
-  }
+// ── highlight.js colours: GitHub light / GitHub dark, picked by the effective mode ───
+// github.min.css (loaded first) is light-only. These light-dark() pairs follow the
+// element's color-scheme, so they are right under themeMode="dark", "auto" with a
+// dark OS, and a nested themeMode, where a [themeMode="dark"] selector would not match.
+.hljs {
+  color: light-dark(#24292e, #c9d1d9);
+}
 
-  .hljs-doctag,
-  .hljs-keyword,
-  .hljs-meta .hljs-keyword,
-  .hljs-template-tag,
-  .hljs-template-variable,
-  .hljs-type,
-  .hljs-variable.language_ {
-    color: #ff7b72;
-  }
+.hljs-doctag,
+.hljs-keyword,
+.hljs-meta .hljs-keyword,
+.hljs-template-tag,
+.hljs-template-variable,
+.hljs-type,
+.hljs-variable.language_ {
+  color: light-dark(#d73a49, #ff7b72);
+}
 
-  .hljs-title,
-  .hljs-title.class_,
-  .hljs-title.class_.inherited__,
-  .hljs-title.function_ {
-    color: #d2a8ff;
-  }
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-title.function_ {
+  color: light-dark(#6f42c1, #d2a8ff);
+}
 
-  .hljs-attr,
-  .hljs-attribute,
-  .hljs-literal,
-  .hljs-meta,
-  .hljs-number,
-  .hljs-operator,
-  .hljs-variable,
-  .hljs-selector-attr,
-  .hljs-selector-class,
-  .hljs-selector-pseudo {
-    color: #79c0ff;
-  }
+.hljs-attr,
+.hljs-attribute,
+.hljs-literal,
+.hljs-meta,
+.hljs-number,
+.hljs-operator,
+.hljs-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  color: light-dark(#005cc5, #79c0ff);
+}
 
-  .hljs-meta .hljs-string,
-  .hljs-regexp,
-  .hljs-string {
-    color: #a5d6ff;
-  }
+.hljs-selector-pseudo {
+  color: light-dark(#22863a, #79c0ff);
+}
 
-  .hljs-built_in,
-  .hljs-symbol {
-    color: #ffa657;
-  }
+.hljs-meta .hljs-string,
+.hljs-regexp,
+.hljs-string {
+  color: light-dark(#032f62, #a5d6ff);
+}
 
-  .hljs-code,
-  .hljs-comment,
-  .hljs-formula {
-    color: #8b949e;
-  }
+.hljs-built_in,
+.hljs-symbol {
+  color: light-dark(#e36209, #ffa657);
+}
 
-  .hljs-name,
-  .hljs-quote,
-  .hljs-selector-tag,
-  .hljs-selector-id {
-    color: #7ee787;
-  }
+.hljs-code,
+.hljs-comment,
+.hljs-formula {
+  color: light-dark(#6a737d, #8b949e);
+}
 
-  .hljs-deletion {
-    color: #ffdcd7;
-    background-color: #67060c;
-  }
+.hljs-name,
+.hljs-quote,
+.hljs-selector-tag {
+  color: light-dark(#22863a, #7ee787);
+}
 
-  .hljs-addition {
-    color: #aff5b4;
-    background-color: #033a16;
-  }
+.hljs-subst,
+.hljs-emphasis,
+.hljs-strong {
+  color: light-dark(#24292e, #c9d1d9);
+}
 
-  .hljs-section {
-    color: #79c0ff;
-    font-weight: bold;
-  }
+.hljs-bullet {
+  color: light-dark(#735c0f, #f2cc60);
+}
+
+.hljs-section {
+  color: light-dark(#005cc5, #79c0ff);
+  font-weight: bold;
+}
+
+.hljs-deletion {
+  color: light-dark(#b31d28, #ffdcd7);
+  background-color: light-dark(#ffeef0, #67060c);
+}
+
+.hljs-addition {
+  color: light-dark(#22863a, #aff5b4);
+  background-color: light-dark(#f0fff4, #033a16);
 }
 
 h1,
@@ -239,6 +161,19 @@ h4 {
 
 a {
   color: var(--color--primary, currentColor);
+}
+
+// Learn: a chapter title wraps instead of being cut off.
+.sidenav--wide {
+  .mat-mdc-list-item {
+    height: auto;
+    min-height: 44px;
+    padding-block: 8px;
+  }
+
+  .mdc-list-item__primary-text {
+    white-space: normal;
+  }
 }
 
 // ── Sidenav nav item overrides ─────────────────────────────────────────────

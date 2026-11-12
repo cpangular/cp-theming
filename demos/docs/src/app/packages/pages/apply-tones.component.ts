@@ -1,6 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { ThemeExampleComponent } from '../../shared/theme-example.component';
 import { TocService } from '../../shell/toc.service';
+import relativeHtml from '../../../examples/apply-tones/relative.html' with { loader: 'text' };
+import relativeScss from '../../../examples/apply-tones/relative.scss' with { loader: 'text' };
 
 @Component({
   selector: 'cpa-apply-tones-page',
@@ -32,40 +34,9 @@ import { TocService } from '../../shell/toc.service';
         </p>
         <cpa-theme-example
           title="Mode-relative tone scale"
-          [attrsHtml]="relativeAttrsHtml"
-          [scssScss]="relativeScssScss"
-        >
-          <div demo class="demo-row">
-            <div class="demo-swatch" palette="primary" filled tone="lowest">
-              <span class="demo-tag">tone=&quot;lowest&quot;</span>
-              <span class="demo-name">Lowest</span>
-            </div>
-            <div class="demo-swatch" palette="primary" filled tone="lower">
-              <span class="demo-tag">tone=&quot;lower&quot;</span>
-              <span class="demo-name">Lower</span>
-            </div>
-            <div class="demo-swatch" palette="primary" filled tone="low">
-              <span class="demo-tag">tone=&quot;low&quot;</span>
-              <span class="demo-name">Low</span>
-            </div>
-            <div class="demo-swatch" palette="primary" filled>
-              <span class="demo-tag">(no tone)</span>
-              <span class="demo-name">Mid</span>
-            </div>
-            <div class="demo-swatch" palette="primary" filled tone="high">
-              <span class="demo-tag">tone=&quot;high&quot;</span>
-              <span class="demo-name">High</span>
-            </div>
-            <div class="demo-swatch" palette="primary" filled tone="higher">
-              <span class="demo-tag">tone=&quot;higher&quot;</span>
-              <span class="demo-name">Higher</span>
-            </div>
-            <div class="demo-swatch" palette="primary" filled tone="highest">
-              <span class="demo-tag">tone=&quot;highest&quot;</span>
-              <span class="demo-name">Highest</span>
-            </div>
-          </div>
-        </cpa-theme-example>
+          [attrsHtml]="ex.relativeHtml"
+          [scssScss]="ex.relativeScss"
+        />
       </section>
 
       <section id="across-palettes" class="page-section">
@@ -98,31 +69,7 @@ import { TocService } from '../../shell/toc.service';
   ],
 })
 export class ApplyTonesPageComponent {
-  readonly relativeAttrsHtml = `<div palette="primary" filled tone="low">
-  Low tone — lighter in light mode
-</div>
-
-<div palette="primary" filled>
-  Mid tone (no tone attribute)
-</div>
-
-<div palette="primary" filled tone="high">
-  High tone — darker in light mode
-</div>`;
-
-  readonly relativeScssScss = `@use '@cpangular/cp-theming-core/scss/theme' as t;
-
-.card-low {
-  @include t.apply-palette('primary');
-  @include t.tone('low');
-  @include t.filled();
-}
-
-.card-high {
-  @include t.apply-palette('primary');
-  @include t.tone('high');
-  @include t.filled();
-}`;
+  protected readonly ex = { relativeHtml, relativeScss };
 
   constructor() {
     inject(TocService).set([

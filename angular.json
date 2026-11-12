@@ -20,10 +20,16 @@
             "index": "demos/docs/src/index.html",
             "browser": "demos/docs/src/main.ts",
             "tsConfig": "demos/docs/tsconfig.app.json",
-            "assets": [],
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "demos/docs/.generated/learn-frames",
+                "output": "learn-frames"
+              }
+            ],
             "inlineStyleLanguage": "scss",
             "stylePreprocessorOptions": {
-              "includePaths": ["demos/docs/src/app/packages/pages"]
+              "includePaths": ["demos/docs/src/app/packages/pages", "demos/docs/node_modules"]
             },
             "styles": [
               "highlight.js/styles/github.min.css",
@@ -41,6 +47,11 @@
             "production": {
               "baseHref": "/cp-theming/",
               "outputHashing": "all",
+              "optimization": {
+                "scripts": true,
+                "fonts": true,
+                "styles": { "minify": true, "inlineCritical": false }
+              },
               "budgets": [
                 { "type": "initial", "maximumWarning": "1MB", "maximumError": "2MB" },
                 { "type": "anyComponentStyle", "maximumWarning": "8kB", "maximumError": "16kB" }

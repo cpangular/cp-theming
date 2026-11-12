@@ -1,12 +1,26 @@
 {
   "name": "@cpangular/cp-theming-ng-core",
-  "version": "0.1.0-dev.0",
+  "version": "0.0.0-MAIN",
   "description": "Angular signal-based wrapper for @cpangular/cp-theming-core.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cpangular/cp-theming.git",
+    "directory": "packages/theme-ng-core"
+  },
   "sideEffects": false,
+  "scripts": {
+    "build": "ng build theme-ng-core",
+    "github.actions.build": "pnpm run build",
+    "github.actions.pack": "gitflow pack"
+  },
+  "publishConfig": {
+    "directory": "../../dist/theme-ng-core",
+    "linkDirectory": false
+  },
   "peerDependencies": {
     "@angular/common": "^22.0.0",
     "@angular/core": "^22.0.0",
-    "@cpangular/cp-theming-core": "workspace:*"
+    "@cpangular/cp-theming-core": "workspace:^"
   },
   "dependencies": {
     "tslib": "^2.3.0"

@@ -1,0 +1,16 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+.ghost-primary {
+  @include t.apply-palette("primary");
+  @include t.outlined();
+}
+
+.ghost-secondary {
+  @include t.apply-palette("secondary");
+  @include t.outlined();
+}
+
+.ghost-error {
+  @include t.apply-palette("error");
+  @include t.outlined();
+}

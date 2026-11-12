@@ -1,0 +1,21 @@
+// Fixture: a theme defined with $adaptor: mat.adaptor(), including a custom
+// palette name, so the define-palette hooks fire for a non-core palette.
+@use "../../../theme-core/scss/theme" as t;
+@use "../../../theme-core/scss/presets/palettes" as p;
+@use "../../scss/material" as mat;
+
+$theme: t.theme(
+  $palettes: (
+    background: p.$default-background,
+    surface: p.$default-surface,
+    primary: t.light-dark(t.palette(oklch(0.43 0.19 253)), t.palette(oklch(0.72 0.17 253))),
+    secondary: t.light-dark(t.palette(oklch(0.46 0.27 264)), t.palette(oklch(0.71 0.21 264))),
+    accent: t.light-dark(t.palette(oklch(0.5 0.2 150)), t.palette(oklch(0.75 0.15 150))),
+    error: p.$default-error,
+    pass: p.$default-pass,
+    caution: p.$default-caution,
+    warn: p.$default-warn,
+  ),
+);
+
+@include t.define-theme("fixture-adaptor", $theme, $default: true, $adaptor: mat.adaptor());
