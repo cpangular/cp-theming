@@ -12,6 +12,7 @@
 // docs tests (test/learn.test.ts).
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
+import { VARIABLES_PAGE, sectionNames, variablesData } from './variables.ts';
 import {
   CHAPTERS,
   PATTERNS,
@@ -106,6 +107,12 @@ export function checkProse(n: number, file: string, template: string): string[] 
   return found;
 }
 
+/** A live example in a page: a frame, or a template Angular renders. */
+const LIVE = /<cpa-live-(?:example|template)\b/;
+
+/** The live example of a chapter whose example is an Angular template. */
+export const TEMPLATE_EXAMPLE = 'example.ng.html';
+
 /** What is missing from the shape every chapter page has. */
 export function checkShape(file: string, template: string): string[] {
   const found: string[] = [];
@@ -120,15 +127,19 @@ export function checkShape(file: string, template: string): string[] {
     const end = next ? template.indexOf(` ${next}`) : template.length;
     return start < 0 ? '' : template.slice(start, end < 0 ? template.length : end);
   };
-  if (!part('chapterExample', 'chapterIdea').includes('<cpa-live-example'))
+  // A frame (cpa-live-example) or, for Angular components, a template the
+  // page renders itself (cpa-live-template).
+  if (!LIVE.test(part('chapterExample', 'chapterIdea')))
     found.push(`${file}: the example part has no <cpa-live-example>`);
-  if (!part('chapterTry', 'chapterNow').includes('<cpa-live-example'))
+  if (!LIVE.test(part('chapterTry', 'chapterNow')))
     found.push(`${file}: the Try it part has no <cpa-live-example>`);
-  if (!part('chapterCode', 'chapterTry').match(/<cpa-code|<cpa-live-example/))
+  if (!part('chapterCode', 'chapterTry').match(/<cpa-code|<cpa-live-example|<cpa-live-template/))
     found.push(`${file}: the code part shows no code`);
   if (/<table\b/.test(template)) found.push(`${file}: a Learn page has no API tables`);
   return found;
 }
+
+let generated: Map<string, string[]> | undefined;
 
 /** Entries of REFS whose Reference section does not exist or does not name them. */
 export function checkRefs(): string[] {
@@ -147,6 +158,16 @@ export function checkRefs(): string[] {
     const source = readFileSync(file, 'utf8');
     if (!source.includes(`id="${ref.anchor}"`))
       found.push(`REFS: ${ref.name} links to ${ref.page}#${ref.anchor}, which is not on that page`);
+    // The CSS Variables page is generated: what a section holds is the data
+    // the build writes for it, not text in the page's source.
+    if (ref.page === VARIABLES_PAGE) {
+      generated ??= sectionNames(variablesData());
+      if (!generated.get(ref.anchor)?.some((name) => name.includes(ref.find)))
+        found.push(
+          `REFS: ${ref.page}#${ref.anchor} shows no variable with "${ref.find}" (${ref.name})`,
+        );
+      continue;
+    }
     if (!decode(source).includes(ref.find))
       found.push(`REFS: ${ref.page} does not mention "${ref.find}" (${ref.name})`);
   }
@@ -181,7 +202,10 @@ export function checkLearn(): string[] {
       found.push(`chapter ${chapter.n} is marked written and has no page (${rel(page)})`);
       return;
     }
-    for (const need of ['theme.scss', 'example.html'])
+    // The live example is a frame built from example.html, or (Angular
+    // components cannot run in a frame) a template the page renders.
+    const rendered = files.includes(TEMPLATE_EXAMPLE);
+    for (const need of ['theme.scss', rendered ? TEMPLATE_EXAMPLE : 'example.html'])
       if (!files.includes(need))
         found.push(`${rel(exampleFolder(chapter))} has no ${need}: there is no live example`);
 
@@ -196,6 +220,22 @@ export function checkLearn(): string[] {
     found.push(...checkProse(chapter.n, rel(page), `${template}\n${labelsOf(source)}`));
     found.push(...checkShape(rel(page), template));
 
+    const imports = (file: string) => source.includes(`/examples/learn/${chapter.folder}/${file}'`);
+    if (rendered) {
+      // The page shows the text of every file of the folder, and the template
+      // is the one a component of the chapter renders.
+      for (const file of files)
+        if (!imports(file)) found.push(`${rel(page)}: does not import ${file}`);
+      const examples = page.replace(/\.component\.ts$/, '.examples.ts');
+      const url = `/examples/learn/${chapter.folder}/${TEMPLATE_EXAMPLE}'`;
+      if (
+        !existsSync(examples) ||
+        !readFileSync(examples, 'utf8').includes(`templateUrl: '../../..${url}`)
+      )
+        found.push(`${rel(examples)}: no component renders ${TEMPLATE_EXAMPLE}`);
+      return;
+    }
+
     // The frames the page shows are the frames the folder holds, and the page
     // has the text of every file they are built from.
     const frames = frameNames(files);
@@ -205,8 +245,7 @@ export function checkLearn(): string[] {
     for (const frame of frames) {
       if (!shown.has(frame)) found.push(`${rel(page)}: the frame '${frame}' is never shown`);
       for (const file of Object.values(frameFiles(frame, files)))
-        if (!source.includes(`/examples/learn/${chapter.folder}/${file}'`))
-          found.push(`${rel(page)}: shows '${frame}' without importing ${file}`);
+        if (!imports(file)) found.push(`${rel(page)}: shows '${frame}' without importing ${file}`);
     }
   });
   return found;

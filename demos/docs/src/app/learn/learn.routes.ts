@@ -32,5 +32,32 @@ export const learnChildRoutes: Routes = [
     loadComponent: () =>
       import('./chapters/05-scopes.component').then((m) => m.ScopesChapterComponent),
   },
+  {
+    path: 'nested',
+    loadComponent: () =>
+      import('./chapters/06-nested.component').then((m) => m.NestedChapterComponent),
+  },
+  {
+    path: 'contrast',
+    loadComponent: () =>
+      import('./chapters/07-contrast.component').then((m) => m.ContrastChapterComponent),
+  },
+  {
+    path: 'everything-else',
+    loadComponent: () =>
+      import('./chapters/08-everything-else.component').then(
+        (m) => m.EverythingElseChapterComponent,
+      ),
+  },
+  {
+    path: 'runtime',
+    loadComponent: () =>
+      import('./chapters/09-runtime.component').then((m) => m.RuntimeChapterComponent),
+  },
+  {
+    path: 'material',
+    loadComponent: () =>
+      import('./chapters/10-material.component').then((m) => m.MaterialChapterComponent),
+  },
   { path: '**', redirectTo: '' },
 ];

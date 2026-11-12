@@ -70,7 +70,7 @@ export const CHAPTERS: Chapter[] = [
     folder: '06-nested',
     title: 'Themes inside themes',
     question: 'What does a nested theme inherit?',
-    written: false,
+    written: true,
   },
   {
     n: 7,
@@ -78,7 +78,7 @@ export const CHAPTERS: Chapter[] = [
     folder: '07-contrast',
     title: 'Readable by construction',
     question: 'Who chooses black or white text?',
-    written: false,
+    written: true,
   },
   {
     n: 8,
@@ -86,7 +86,7 @@ export const CHAPTERS: Chapter[] = [
     folder: '08-everything-else',
     title: 'Everything else a theme carries',
     question: 'What about spacing, shape, motion, elevation, weights and typography?',
-    written: false,
+    written: true,
   },
   {
     n: 9,
@@ -94,7 +94,7 @@ export const CHAPTERS: Chapter[] = [
     folder: '09-runtime',
     title: 'Switching at runtime',
     question: 'How does a user pick a theme or mode?',
-    written: false,
+    written: true,
   },
   {
     n: 10,
@@ -102,7 +102,7 @@ export const CHAPTERS: Chapter[] = [
     folder: '10-material',
     title: 'Angular Material',
     question: 'How do Material components get these colours?',
-    written: false,
+    written: true,
   },
 ];
 
@@ -163,14 +163,20 @@ export const PATTERNS: Pattern[] = [
   // 6 — nesting (a theme= element inside another is found by nestedTheme())
   { chapter: 6, what: '$default', pattern: /\$default\b/ },
 
-  // 7 — the contrast guarantee
+  // 7 — the contrast guarantee, and the four palettes with fixed meanings
   { chapter: 7, what: 'the contrast guarantee', pattern: /\bWCAG\b|\b4\.5:1/ },
+  {
+    chapter: 7,
+    what: 'a fixed palette (error, warn, caution, pass)',
+    pattern:
+      /--color--(?:error|warn|caution|pass)\b|\bpalette="(?:error|warn|caution|pass)"|\b(?:error|warn|caution|pass):\s*t\./,
+  },
 
   // 8 — everything else a theme carries
   {
     chapter: 8,
     what: 'a non-colour token',
-    pattern: /--(?:space|shape|weight|text|motion|density)--|--elevation-\d/,
+    pattern: /--(?:space|shape|weight|text|motion|density|focus|overlay)--|--elevation-\d/,
   },
   {
     chapter: 8,
@@ -180,7 +186,8 @@ export const PATTERNS: Pattern[] = [
   {
     chapter: 8,
     what: 'a non-colour config',
-    pattern: /\bt\.(?:weights|typography|density|shape|motion|elevation|overlays|focus)\(/,
+    pattern:
+      /\bt\.(?:weights|typography|density|shape|motion|elevation|overlays|focus|container|radius|padding)\(/,
   },
 
   // 9 — the runtime API
@@ -188,11 +195,13 @@ export const PATTERNS: Pattern[] = [
   {
     chapter: 9,
     what: 'the TypeScript or Angular API',
-    pattern: /\b(?:ThemeService|provideTheme|setTheme|setMode|themeHeadSnippet|localStorage)\b/,
+    pattern:
+      /\b(?:ThemeService|provideTheme|setTheme|setMode|getTheme|getMode|getEffectiveMode|watchTheme|watchMode|configurePersistence|restoreTheme|restoreMode|ThemeStorage|themeHeadSnippet|localStorage|sessionStorage)\b/,
   },
 
   // 10 — Angular Material
   { chapter: 10, what: 'mat-', pattern: /\bmat-[a-z]/ },
+  { chapter: 10, what: 'a Material directive', pattern: /\bmat[A-Z]\w+/ },
   { chapter: 10, what: '--mat-sys', pattern: /--mat-sys/ },
   { chapter: 10, what: 'the Material adapter', pattern: /cp-theming-ng-material/ },
 ];
@@ -470,6 +479,208 @@ export const REFS: Ref[] = [
     anchor: 'container-vars',
     find: '--container--',
   },
+
+  // 6 — nesting, $default, coexisting themes
+  { name: '$default', chapter: 6, page: 'core/theme', anchor: 'define-theme', find: '$default' },
+
+  // 8 — everything else a theme carries
+  {
+    name: '--space--{size}',
+    chapter: 8,
+    page: 'core/variables',
+    anchor: 'space-vars',
+    find: '--space--',
+  },
+  {
+    name: '--shape--{size}',
+    chapter: 8,
+    page: 'core/variables',
+    anchor: 'shape-vars',
+    find: '--shape--',
+  },
+  {
+    name: '--elevation-N--shadow',
+    chapter: 8,
+    page: 'core/variables',
+    anchor: 'elevation-vars',
+    find: '--elevation-',
+  },
+  {
+    name: '--motion--{name}',
+    chapter: 8,
+    page: 'core/variables',
+    anchor: 'motion-vars',
+    find: '--motion--',
+  },
+  {
+    name: '--weight--{name}',
+    chapter: 8,
+    page: 'core/variables',
+    anchor: 'weight-vars',
+    find: '--weight--',
+  },
+  {
+    name: '--text--{role}--{property}',
+    chapter: 8,
+    page: 'core/variables',
+    anchor: 'text-vars',
+    find: '--text--',
+  },
+  {
+    name: 'themeDensity',
+    chapter: 8,
+    page: 'core/density',
+    anchor: 'overview',
+    find: 'themeDensity',
+  },
+  {
+    name: 'container',
+    chapter: 8,
+    page: 'core/apply-geometry',
+    anchor: 'padding',
+    find: '<code>container</code>',
+  },
+  {
+    name: 'shape',
+    chapter: 8,
+    page: 'core/apply-geometry',
+    anchor: 'shape',
+    find: '<code>shape</code>',
+  },
+  {
+    name: 'elevated',
+    chapter: 8,
+    page: 'core/elevation',
+    anchor: 'overview',
+    find: 'elevated',
+  },
+  { name: 't.shape()', chapter: 8, page: 'core/shape', anchor: 'shape-fn', find: 'shape' },
+  { name: 't.density()', chapter: 8, page: 'core/density', anchor: 'density-fn', find: 'density' },
+  { name: 't.motion()', chapter: 8, page: 'core/motion', anchor: 'motion-fn', find: 'motion' },
+  { name: 't.weights()', chapter: 8, page: 'core/weights', anchor: 'weights-fn', find: 'weights' },
+  {
+    name: 't.typography()',
+    chapter: 8,
+    page: 'core/typography',
+    anchor: 'typography-fn',
+    find: 'typography',
+  },
+  {
+    name: 't.elevation()',
+    chapter: 8,
+    page: 'core/elevation',
+    anchor: 'elevation-fn',
+    find: 'elevation',
+  },
+
+  // 9 — the TypeScript and Angular APIs
+  {
+    name: 'setTheme()',
+    chapter: 9,
+    page: 'core/typescript-api',
+    anchor: 'theme-mgmt',
+    find: 'setTheme',
+  },
+  {
+    name: 'getTheme()',
+    chapter: 9,
+    page: 'core/typescript-api',
+    anchor: 'theme-mgmt',
+    find: 'getTheme',
+  },
+  {
+    name: 'watchTheme()',
+    chapter: 9,
+    page: 'core/typescript-api',
+    anchor: 'theme-mgmt',
+    find: 'watchTheme',
+  },
+  {
+    name: 'setMode()',
+    chapter: 9,
+    page: 'core/typescript-api',
+    anchor: 'mode-mgmt',
+    find: 'setMode',
+  },
+  {
+    name: 'getMode()',
+    chapter: 9,
+    page: 'core/typescript-api',
+    anchor: 'mode-mgmt',
+    find: 'getMode',
+  },
+  {
+    name: 'getEffectiveMode()',
+    chapter: 9,
+    page: 'core/typescript-api',
+    anchor: 'mode-mgmt',
+    find: 'getEffectiveMode',
+  },
+  {
+    name: 'watchMode()',
+    chapter: 9,
+    page: 'core/typescript-api',
+    anchor: 'mode-mgmt',
+    find: 'watchMode',
+  },
+  {
+    name: 'configurePersistence()',
+    chapter: 9,
+    page: 'core/typescript-api',
+    anchor: 'persistence',
+    find: 'configurePersistence',
+  },
+  {
+    name: 'themeHeadSnippet',
+    chapter: 9,
+    page: 'core/getting-started',
+    anchor: 'no-flash',
+    find: 'themeHeadSnippet',
+  },
+  {
+    name: 'provideTheme()',
+    chapter: 9,
+    page: 'ng-core/getting-started',
+    anchor: 'bootstrap',
+    find: 'provideTheme',
+  },
+  {
+    name: 'ThemeService',
+    chapter: 9,
+    page: 'ng-core/api',
+    anchor: 'theme-service',
+    find: 'ThemeService',
+  },
+
+  // 10 — the Material adapter, overlays, override patches
+  {
+    name: '--mat-sys-*',
+    chapter: 10,
+    page: 'ng-material/api',
+    anchor: 'scss-mixins',
+    find: '--mat-sys-*',
+  },
+  {
+    name: 'define-ng-material-core-theme()',
+    chapter: 10,
+    page: 'ng-material/api',
+    anchor: 'scss-mixins',
+    find: 'define-ng-material-core-theme',
+  },
+  {
+    name: 'apply-material-overrides()',
+    chapter: 10,
+    page: 'ng-material/api',
+    anchor: 'scss-mixins',
+    find: 'apply-material-overrides',
+  },
+  {
+    name: 'cpaOverlayScope',
+    chapter: 10,
+    page: 'ng-material/components',
+    anchor: 'overlays',
+    find: 'cpaOverlayScope',
+  },
 ];
 
 // ── Frames ───────────────────────────────────────────────────────────────────
@@ -479,24 +690,41 @@ export const REFS: Ref[] = [
 //   theme.scss      the chapter's theme: a complete stylesheet, core included
 //   example.html    the markup, placed in <body>
 //   example.scss    the example's own styles (optional)
+//   example.ts.txt  the example's script: TypeScript, a module at the end of
+//                   <body> (optional, chapter 9 on). It is `.txt` on disk
+//                   because the page imports it as text, and the Angular
+//                   build would compile a `.ts` file instead; the page shows
+//                   it as example.ts.
+//   head.html       what the example puts in <head>, ahead of the stylesheets
+//                   (optional, chapter 9 on)
 //
-// Any other name X with an X.html, X.scss or X.theme.scss is one more frame
-// (a "Try it" variation, or the same example written another way): it is the
-// example with the files X has swapped in.
+// Any other name X with an X.html, X.scss, X.ts.txt, X.theme.scss or
+// X.head.html is one more frame (a "Try it" variation, or the same example
+// written another way): it is the example with the files X has swapped in.
+//
+// TypeScript a chapter only shows (an excerpt of this site's own source) is
+// X.app.ts.txt: the second dot keeps it from being read as a frame.
 
 export interface FrameFiles {
   theme: string;
   html: string;
   /** Absent when neither the frame nor the example has a stylesheet. */
   styles?: string;
+  /** Absent when neither the frame nor the example has a script. */
+  script?: string;
+  /** Absent when neither the frame nor the example adds to `<head>`. */
+  head?: string;
 }
+
+/** Files of a folder that belong to every frame, not to a frame of that name. */
+const SHARED = ['theme.scss', 'head.html'];
 
 /** The frames a folder holds, `example` first, from its file names. */
 export function frameNames(files: string[]): string[] {
   const names = new Set<string>();
   for (const file of files) {
-    const m = /^([\w-]+)\.(?:theme\.scss|scss|html)$/.exec(file);
-    if (m && file !== 'theme.scss') names.add(m[1]);
+    const m = /^([\w-]+)\.(?:theme\.scss|head\.html|scss|html|ts\.txt)$/.exec(file);
+    if (m && !SHARED.includes(file)) names.add(m[1]);
   }
   names.delete('example');
   return ['example', ...[...names].sort()];
@@ -505,13 +733,25 @@ export function frameNames(files: string[]): string[] {
 /** The files a frame is built from: its own where it has one, the example's otherwise. */
 export function frameFiles(frame: string, files: string[]): FrameFiles {
   const pick = (own: string, shared: string) => (files.includes(own) ? own : shared);
-  const styles = pick(`${frame}.scss`, 'example.scss');
+  const optional = (key: 'styles' | 'script' | 'head', own: string, shared: string) => {
+    const file = pick(own, shared);
+    return files.includes(file) ? { [key]: file } : {};
+  };
   return {
     theme: pick(`${frame}.theme.scss`, 'theme.scss'),
     html: pick(`${frame}.html`, 'example.html'),
-    ...(files.includes(styles) ? { styles } : {}),
+    ...optional('styles', `${frame}.scss`, 'example.scss'),
+    ...optional('script', `${frame}.ts.txt`, 'example.ts.txt'),
+    ...optional('head', `${frame}.head.html`, 'head.html'),
   };
 }
 
+/** A file's name as a page shows it: a script is `.txt` on disk only. */
+export const shownName = (file: string) => file.replace(/\.ts\.txt$/, '.ts');
+
 /** Where the built frames are served from, relative to the site root. */
 export const FRAMES_PATH = 'learn-frames';
+
+/** The package a frame's script imports, and where the build puts its modules. */
+export const CORE_PACKAGE = '@cpangular/cp-theming-core';
+export const CORE_MODULES = 'core';

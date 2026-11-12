@@ -15,12 +15,23 @@
 //   4. every tab of a "Try it" loads its frame and marks the files it swapped;
 //   5. every Reference link of the prose leads to a section that exists.
 // Chapter 1 also moves its picker and expects the colours worked out from the
-// primary to change with it.
+// primary to change with it. Chapters 6 to 10 each have their own part:
+//   6   what a nested theme passes, generates and inherits is what is painted;
+//   7   across the lightness slider the text on a fill never reads below
+//       4.5:1, the text flips once, and the two cases outside the guarantee
+//       do go below;
+//   8   every slider changes what it says it changes;
+//   9   a picked theme and mode are on the frame's <html>, the buttons follow
+//       (watchMode), a reload brings them back, nothing of the site's own
+//       saved theme is touched, and the "not saved" variation forgets;
+//   10  the gallery's buttons are rendered three times in three different
+//       colours, and pointing at one names its Material variable and the
+//       cp-theming variable behind it.
 // Screenshots go to dist/docs-render/learn/. Exits 1 when an assertion fails.
 import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { chromium, firefox, webkit, type BrowserType, type Frame, type Page } from 'playwright';
-import { CHAPTERS, REFS, frameFiles } from '../src/app/learn/chapters.ts';
+import { CHAPTERS, REFS, frameFiles, shownName } from '../src/app/learn/chapters.ts';
 import { exampleFiles, exampleFolder } from '../scripts/lib/order.ts';
 import { BASE, blockFonts, repo, requireBuild, serve } from './lib/site.ts';
 
@@ -87,6 +98,7 @@ async function checkFrame(
   name: string,
   mode: string,
   label: string,
+  ownMode = false,
 ): Promise<Frame> {
   const frame = await frameOf(page, index, name);
   const state = await stateOf(frame);
@@ -96,8 +108,14 @@ async function checkFrame(
     `${label}: every stylesheet of the frame loaded with rules (${state.sheets.join(', ')})`,
   );
   expect(state.elements > 3, `${label}: the frame's <body> has the example's markup`);
-  expect(state.mode === mode, `${label}: the frame is in the site's mode (${state.mode})`);
-  expect(state.scheme === mode, `${label}: the frame's color-scheme is ${mode} (${state.scheme})`);
+  // An example that chooses its own mode (chapter 9) is left alone by the page.
+  if (!ownMode) {
+    expect(state.mode === mode, `${label}: the frame is in the site's mode (${state.mode})`);
+    expect(
+      state.scheme === mode,
+      `${label}: the frame's color-scheme is ${mode} (${state.scheme})`,
+    );
+  }
 
   const height = await page
     .locator('iframe.live-frame')
@@ -111,18 +129,20 @@ async function checkFrame(
   // The source beside it: one panel per file of the frame, with the file's text.
   const files = exampleFiles(CHAPTERS.find((c) => c.folder === folder)!);
   const use = frameFiles(name, files);
-  const block = page.locator('figure.live').nth(index);
+  const block = page.locator(FRAMED).nth(index);
   const tabs = (await block.locator('.live-file').allTextContents()).map((t) =>
     squash(t).replace(/ changed$/, ''),
   );
-  const wanted = [use.html, ...(use.styles ? [use.styles] : []), use.theme];
+  const wanted = [use.html, use.script, use.styles, use.head, use.theme].filter(
+    (file): file is string => !!file,
+  );
   expect(
-    tabs.join() === wanted.join(),
+    tabs.join() === wanted.map(shownName).join(),
     `${label}: the source tabs are the frame's files (${tabs.join(', ')})`,
   );
-  for (const file of wanted) {
-    await block.locator('.live-file', { hasText: file }).first().click();
-    await block.locator('.live-file--active', { hasText: file }).waitFor();
+  for (const [i, file] of wanted.entries()) {
+    await block.locator('.live-file').nth(i).click();
+    await block.locator('.live-file--active', { hasText: shownName(file) }).waitFor();
     const shown = squash(await block.locator('.live-pre:not(.live-pre--hidden)').innerText());
     const onDisk = squash(
       readFileSync(path.join(exampleFolder({ folder } as never), file), 'utf8'),
@@ -131,6 +151,292 @@ async function checkFrame(
   }
   await block.locator('.live-file').first().click();
   return frame;
+}
+
+/** A live example shown in a frame; chapter 10's is rendered by Angular in the page. */
+const FRAMED = 'figure.live:not(.live--template)';
+const RENDERED = 'figure.live.live--template';
+
+/** Sets a slider of a live example, as dragging it would. */
+async function slide(page: Page, block: number, control: number, value: number): Promise<void> {
+  await page
+    .locator(FRAMED)
+    .nth(block)
+    .locator('input[type=range]')
+    .nth(control)
+    .evaluate((el: HTMLInputElement, v) => {
+      el.value = String(v);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    }, value);
+}
+
+/** The contrast readouts of a live example, as numbers, in order. */
+async function readings(page: Page, block: number): Promise<number[]> {
+  const texts = await page
+    .locator(FRAMED)
+    .nth(block)
+    .locator('.live-measure strong')
+    .allTextContents();
+  return texts.map((t) => parseFloat(t));
+}
+
+/** The fill a cp-theming attribute paints: the element's ::before. */
+const fillOf = (frame: Frame, selector: string) =>
+  frame.evaluate(
+    (s) => getComputedStyle(document.querySelector(s)!, '::before').backgroundColor,
+    selector,
+  );
+
+// ── Chapter 6: passed, generated, inherited ──────────────────────────────────
+async function checkNested(frame: Frame, label: string): Promise<void> {
+  const of = (theme: string, palette: string) =>
+    fillOf(frame, `[theme="${theme}"] > .chain [palette="${palette}"]`);
+  const harbour = {
+    primary: await fillOf(frame, '.page > .chain [palette="primary"]'),
+    secondary: await fillOf(frame, '.page > .chain [palette="secondary"]'),
+    surface: await fillOf(frame, '.page > .chain [palette="surface"]'),
+  };
+  expect(
+    (await of('ember', 'primary')) !== harbour.primary &&
+      (await of('ember', 'surface')) !== harbour.surface,
+    `${label}: a nested brand regenerates everything, the surface too`,
+  );
+  expect(
+    (await of('moss', 'primary')) !== harbour.primary &&
+      (await of('moss', 'secondary')) !== harbour.secondary,
+    `${label}: a nested primary regenerates the accents`,
+  );
+  expect(
+    (await of('moss', 'surface')) === harbour.surface,
+    `${label}: a nested primary inherits the surface`,
+  );
+  expect(
+    (await of('moss', 'brand')) === (await of('moss', 'primary')),
+    `${label}: its brand palette is its primary`,
+  );
+  expect(
+    (await of('plum', 'secondary')) !== harbour.secondary &&
+      (await of('plum', 'primary')) === harbour.primary &&
+      (await of('plum', 'surface')) === harbour.surface,
+    `${label}: a nested secondary changes that palette and inherits the rest`,
+  );
+}
+
+// ── Chapter 7: the guarantee and its edge ────────────────────────────────────
+async function checkContrast(page: Page, frame: Frame, block: number, label: string) {
+  let lowest = Infinity;
+  let outside = Infinity;
+  let flips = 0;
+  let last = '';
+  for (let lightness = 5; lightness <= 95; lightness += 3) {
+    await slide(page, block, 0, lightness);
+    const [fill, steps, tint, words] = await readings(page, block);
+    lowest = Math.min(lowest, fill, steps);
+    outside = Math.min(outside, tint, words);
+    const text = await colourOf(frame, '.fill', 'color');
+    if (last && text !== last) flips++;
+    last = text;
+  }
+  expect(lowest >= 4.5, `${label}: text on a fill never reads below 4.5:1 (${lowest})`);
+  expect(lowest < 5, `${label}: the lowest ratio is near the switch (${lowest})`);
+  expect(flips === 1, `${label}: the text flips once across the slider (${flips})`);
+  expect(outside < 4.5, `${label}: a tint or the colour as text does go below (${outside})`);
+  const marked = await page.locator(FRAMED).nth(block).locator('.live-measure--low').count();
+  expect(marked > 0, `${label}: a ratio below 4.5 is marked`);
+}
+
+// ── Chapter 8: each slider and what it changes ───────────────────────────────
+async function checkSliders(page: Page, frame: Frame, label: string): Promise<void> {
+  const read = () =>
+    frame.evaluate(() => {
+      const card = document.querySelector('article')!;
+      const style = getComputedStyle(card);
+      return {
+        density: style.paddingTop,
+        corners: style.borderTopLeftRadius,
+        shadow: style.boxShadow,
+        pulse: getComputedStyle(card.querySelector('.status')!, '::before').animationDuration,
+        quiet: getComputedStyle(card.querySelector('.quiet')!).color,
+        title: getComputedStyle(card.querySelector('h4')!).fontSize,
+      };
+    });
+  const before = await read();
+  // In the order of the sliders: density, corners, shadow, pulse, quiet text, title size.
+  const moves: [keyof typeof before, number, string?][] = [
+    ['density', -3, '12px'],
+    ['corners', 28, '28px'],
+    ['shadow', 5],
+    ['pulse', 1500, '1.5s'],
+    ['quiet', 90],
+    ['title', 28, '28px'],
+  ];
+  for (const [i, [, value]] of moves.entries()) await slide(page, 0, i, value);
+  const after = await read();
+  for (const [what, , wanted] of moves) {
+    expect(
+      before[what] !== after[what],
+      `${label}: the ${what} slider changes it (${after[what]})`,
+    );
+    if (wanted) expect(after[what] === wanted, `${label}: ${what} is ${wanted} (${after[what]})`);
+  }
+}
+
+// ── Chapter 9: pick, save, reload ────────────────────────────────────────────
+async function checkRuntime(page: Page, label: string): Promise<void> {
+  const state = (frame: Frame) =>
+    frame.evaluate(() => ({
+      theme: document.documentElement.getAttribute('theme'),
+      mode: document.documentElement.getAttribute('themeMode'),
+      pressed: [...document.querySelectorAll('[aria-pressed=true]')].map((b) => b.textContent),
+      page: getComputedStyle(document.body).backgroundColor,
+    }));
+  const site = () =>
+    page.evaluate(() => ({
+      theme: document.documentElement.getAttribute('theme'),
+      saved: localStorage.getItem('cp-theming--theme'),
+      keys: Object.keys(localStorage).filter((k) => k.startsWith('learn-frame:')).length,
+    }));
+  const siteBefore = await site();
+
+  let frame = await frameOf(page, 0, 'example');
+  const start = await state(frame);
+  await frame.locator('button[data-theme=forest]').click();
+  await frame.locator('button[data-mode=dark]').click();
+  await frame.locator('button[data-mode=dark][aria-pressed=true]').waitFor();
+  const picked = await state(frame);
+  expect(
+    picked.theme === 'forest' && picked.mode === 'dark',
+    `${label}: a click sets theme and themeMode on <html> (${picked.theme}, ${picked.mode})`,
+  );
+  expect(
+    picked.pressed.join() === 'forest,dark',
+    `${label}: the buttons follow the attributes (${picked.pressed.join()})`,
+  );
+  expect(picked.page !== start.page, `${label}: the page is repainted (${picked.page})`);
+
+  await frame.locator('#reload').click();
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector<HTMLIFrameElement>('iframe.live-frame')
+        ?.contentDocument?.querySelector('[data-mode=dark][aria-pressed=true]') != null,
+  );
+  frame = await frameOf(page, 0, 'example');
+  const back = await state(frame);
+  expect(
+    back.theme === 'forest' && back.mode === 'dark' && back.page === picked.page,
+    `${label}: a reload brings the saved theme and mode back (${back.theme}, ${back.mode})`,
+  );
+
+  const siteAfter = await site();
+  expect(
+    siteAfter.theme === siteBefore.theme && siteAfter.saved === siteBefore.saved,
+    `${label}: the site's own theme and saved theme are untouched (${siteAfter.theme}, ${siteAfter.saved})`,
+  );
+  expect(siteAfter.keys > 0, `${label}: the example's choice is saved under its own keys`);
+
+  // "Not saved": the second tab of the Try it.
+  await page.locator(FRAMED).nth(1).locator('.live-tab').nth(1).click();
+  let unsaved = await frameOf(page, 1, 'try-unsaved');
+  await unsaved.locator('button[data-theme=sunset]').click();
+  await unsaved.locator('button[data-theme=sunset][aria-pressed=true]').waitFor();
+  await unsaved.locator('#reload').click();
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelectorAll<HTMLIFrameElement>('iframe.live-frame')[1]
+        ?.contentDocument?.querySelector('[data-theme=ocean][aria-pressed=true]') != null,
+  );
+  unsaved = await frameOf(page, 1, 'try-unsaved');
+  expect(
+    (await state(unsaved)).theme === null,
+    `${label}: with saving off a reload goes back to the default`,
+  );
+
+  // "One toggle": the first tab.
+  await page.locator(FRAMED).nth(1).locator('.live-tab').nth(0).click();
+  const toggle = await frameOf(page, 1, 'try-toggle');
+  const was = await toggle.locator('#toggle').textContent();
+  await toggle.locator('#toggle').click();
+  await toggle.locator('#toggle', { hasNotText: was ?? '' }).waitFor();
+  const now = await state(toggle);
+  expect(
+    now.mode === (was === 'Switch to dark' ? 'dark' : 'light'),
+    `${label}: the toggle sets the other mode (${was} → ${now.mode})`,
+  );
+}
+
+// ── Chapter 10: Angular Material, rendered in the page ───────────────────────
+async function checkMaterial(page: Page, folder: string, label: string): Promise<void> {
+  const block = page.locator(RENDERED).first();
+  const groups = block.locator('cpa-g-buttons');
+  expect((await groups.count()) === 3, `${label}: the gallery's buttons are rendered three times`);
+
+  const filled = (group: number) =>
+    groups
+      .nth(group)
+      .locator('button', { hasText: /^\s*Filled\s*$/ })
+      .first();
+  const fills: string[] = [];
+  const wanted = [
+    ['theme="harbour"', '--color--primary'],
+    ['theme="ember"', '--color--primary'],
+    ['palette="tertiary"', '--color--tertiary'],
+  ];
+  for (const [g, [scope, token]] of wanted.entries()) {
+    fills.push(await filled(g).evaluate((el) => getComputedStyle(el).backgroundColor));
+    await filled(g).hover();
+    await block.locator('.live-roles-name', { hasText: scope }).waitFor();
+    // The parts of a line are separate elements; the build drops the spaces between them.
+    const tight = (text: string) => text.replace(/\s+/g, '');
+    const lines = (await block.locator('.live-role').allTextContents()).map(tight);
+    expect(
+      lines.length === 2 &&
+        lines[0] === tight(`Fill --mat-sys-primary from ${token} in ${scope}`) &&
+        lines[1] === tight(`Text --mat-sys-on-primary from ${token}--contrast in ${scope}`),
+      `${label}: under ${scope} a filled button is ${token} (${lines.join(' / ')})`,
+    );
+  }
+  expect(
+    new Set(fills).size === 3 && fills.every((f) => !/rgba\(0, 0, 0, 0\)|transparent/.test(f)),
+    `${label}: the three scopes paint three colours (${fills.join(', ')})`,
+  );
+
+  // The source under it is the text of the files.
+  const files = await block.locator('.live-file').allTextContents();
+  expect(
+    files.map(squash).join() === 'example.ng.html,buttons.ng.html,theme.scss',
+    `${label}: the source tabs (${files.map(squash).join(', ')})`,
+  );
+  const onDisk: Record<string, string> = {
+    'example.ng.html': path.join(exampleFolder({ folder } as never), 'example.ng.html'),
+    'buttons.ng.html': path.join(repo, 'demos/docs/src/examples/components/buttons.ng.html'),
+    'theme.scss': path.join(exampleFolder({ folder } as never), 'theme.scss'),
+  };
+  for (const [i, name] of Object.keys(onDisk).entries()) {
+    await block.locator('.live-file').nth(i).click();
+    await block.locator('.live-file--active', { hasText: name }).waitFor();
+    const shown = squash(await block.locator('.live-pre:not(.live-pre--hidden)').innerText());
+    expect(shown === squash(readFileSync(onDisk[name], 'utf8')), `${label}: ${name} as on disk`);
+  }
+  await block.locator('.live-file').first().click();
+
+  // Try it: two examples of the gallery, one per tab.
+  const tryIt = page.locator(RENDERED).nth(1);
+  expect((await tryIt.locator('.live-tab').count()) === 2, `${label}: the Try it has two tabs`);
+  expect(
+    (await tryIt.locator('.live-render [palette="tertiary"] button').count()) > 0,
+    `${label}: the first tab renders the palette example`,
+  );
+  await tryIt.locator('.live-tab').nth(1).click();
+  await tryIt.locator('.live-render cpa-g-overlays').waitFor();
+  expect(
+    (await tryIt
+      .locator('.live-render [cpaoverlayscope], .live-render [cpaOverlayScope]')
+      .count()) > 0,
+    `${label}: the second tab renders the overlay example`,
+  );
+  await tryIt.locator('.live-tab').nth(0).click();
 }
 
 const colourOf = (frame: Frame, selector: string, property: string) =>
@@ -202,13 +508,16 @@ async function run(engine: string): Promise<void> {
       );
 
       // Every live example on the page, with the frame each one starts on.
-      const blocks = page.locator('figure.live');
+      const all = await page.locator('figure.live').count();
+      expect(all >= 2, `${label}: an example and a Try it (${all} live examples)`);
+      const blocks = page.locator(FRAMED);
       const count = await blocks.count();
-      expect(count >= 2, `${label}: an example and a Try it (${count} live examples)`);
+      // Chapter 9's examples choose their own mode.
+      const ownMode = chapter.n === 9;
       for (let i = 0; i < count; i++) {
         const src = (await blocks.nth(i).locator('iframe').getAttribute('src')) ?? '';
         const name = path.basename(src, '.html');
-        await checkFrame(page, i, chapter.folder, name, mode, `${label} #${i} ${name}`);
+        await checkFrame(page, i, chapter.folder, name, mode, `${label} #${i} ${name}`, ownMode);
       }
 
       await page
@@ -248,6 +557,29 @@ async function run(engine: string): Promise<void> {
         });
       }
 
+      if (chapter.n === 6) await checkNested(await frameOf(page, 0, 'example'), label);
+      if (chapter.n === 7) {
+        await checkContrast(page, await frameOf(page, 0, 'example'), 0, `${label} example`);
+        await blocks.first().screenshot({
+          path: path.join(outDir, `${engine}-${chapter.folder}-${mode}-slid.png`),
+        });
+      }
+      if (chapter.n === 8) {
+        await checkSliders(page, await frameOf(page, 0, 'example'), label);
+        await blocks.first().screenshot({
+          path: path.join(outDir, `${engine}-${chapter.folder}-${mode}-slid.png`),
+        });
+      }
+      if (chapter.n === 10) {
+        await checkMaterial(page, chapter.folder, label);
+        await page
+          .locator(RENDERED)
+          .first()
+          .screenshot({
+            path: path.join(outDir, `${engine}-${chapter.folder}-${mode}-hover.png`),
+          });
+      }
+
       // Each tab of every block with tabs.
       for (let i = 0; i < count; i++) {
         const tabs = blocks.nth(i).locator('.live-tab');
@@ -256,13 +588,14 @@ async function run(engine: string): Promise<void> {
           await tabs.nth(t).click();
           await page.waitForFunction(
             ([n, old]) =>
-              document.querySelectorAll('figure.live iframe')[n as number].getAttribute('src') !==
-              old,
+              document
+                .querySelectorAll('figure.live:not(.live--template) iframe')
+                [n as number].getAttribute('src') !== old,
             [i, was] as const,
           );
           const src = (await blocks.nth(i).locator('iframe').getAttribute('src')) ?? '';
           const name = path.basename(src, '.html');
-          await checkFrame(page, i, chapter.folder, name, mode, `${label} #${i} ${name}`);
+          await checkFrame(page, i, chapter.folder, name, mode, `${label} #${i} ${name}`, ownMode);
           const marked = await blocks.nth(i).locator('.live-file .live-changed').count();
           expect(marked > 0, `${label} #${i} ${name}: the swapped files are marked`);
           await blocks.nth(i).screenshot({
@@ -271,6 +604,9 @@ async function run(engine: string): Promise<void> {
         }
       }
     }
+
+    // Chapter 9 last, and once: what it saves stays saved for this browser.
+    if (chapter.n === 9) await checkRuntime(page, `${engine} ${chapter.folder}`);
 
     // The Reference links of the prose.
     const links = await page
@@ -290,7 +626,12 @@ async function run(engine: string): Promise<void> {
   }
 
   // One Reference link followed all the way: the section is on the page.
-  for (const ref of [REFS[0], REFS.find((r) => r.chapter === 5)!]) {
+  for (const ref of [
+    REFS[0],
+    REFS.find((r) => r.chapter === 5)!,
+    REFS.find((r) => r.name === '--space--{size}')!,
+    REFS.find((r) => r.chapter === 10)!,
+  ]) {
     await page.goto(`${origin}${BASE}packages/${ref.page}#${ref.anchor}`, {
       waitUntil: 'networkidle',
     });

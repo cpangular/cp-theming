@@ -269,7 +269,7 @@ $my-theme: t.theme(
 - Toolbar (every page): the logo (home), Learn, Reference, Explore, the theme selector and the
   light/dark toggle.
 - `/learn` — the chapter list; `/learn/{slug}` — a chapter. The sidebar lists the ten chapters
-  (`learn/chapters.ts`), the unwritten ones greyed. No "on this page" rail.
+  (`learn/chapters.ts`). No "on this page" rail.
 - `/explore/components`, `/explore/showcase` — the gallery and the showcase. The same pages stay
   routed under `/packages/ng-material/…`, unlisted: the browser checks open them there.
 - `/packages/:lib/…` — a sidebar on the left with a switch between the three packages, the page,
@@ -319,7 +319,7 @@ $my-theme: t.theme(
     paths the packages export; every file is imported by a page; no `<pre>` or string field of a
     page holds a Sass, CSS or attribute sample.
 - The other TypeScript, shell and JSON samples stay in the page templates; nothing checks them.
-- `demos/docs/test/render.ts` (local, `pnpm --filter docs render` after `npx ng build docs`):
+- `demos/docs/test/render.ts` (local, `pnpm --filter docs render` after `pnpm --filter docs build`):
   painted contrast measured from screenshots, over the built showcase in light and dark and
   (Phase 15) over the component gallery in every preset and both modes: as loaded, hovered,
   focused and with each overlay open. A component label below 4.5:1 fails the run; a docs caption
@@ -667,7 +667,7 @@ source set to `gh-pages`, and `pnpm gitflow deploy`, all the user's to do).
 ### 🟡 Phase 17 — Docs that teach (PORT-PLAN.md)
 
 A Learn track of ten chapters above the existing pages, which become the Reference. Done: the
-mechanics and chapters 1–5.
+mechanics, the ten chapters and the generated CSS Variables page.
 
 - `demos/docs/src/app/learn/chapters.ts` holds the chapter list and, next to it, the two tables of
   the order check: `PATTERNS` (text a chapter introduces) and `REFS` (the Reference entries prose
@@ -682,8 +682,23 @@ mechanics and chapters 1–5.
   `angular.json`); `cpa-live-example` shows it in an `<iframe>` beside the text of the same files.
 - The order check (`scripts/lib/order.ts`) runs in that script, so `pnpm --filter docs build`
   fails on a violation, and in `demos/docs/test/learn.test.ts`, so `pnpm test` and CI do too.
-- Browser check: `node demos/docs/test/learn.ts` (after `pnpm --filter docs build`).
+- From chapter 9 a frame may run a script: `example.ts.txt` (TypeScript, type-checked by the
+  examples test, run with its types taken off, importing the package by name through an import
+  map) and `head.html` (the head snippet). The docs add `frame-storage.js` to such a frame, which
+  keeps what it saves under the frame's own storage keys.
+- `cpa-live-example` has controls (a colour picker, sliders that set a custom property or an
+  attribute in the frame) and contrast readouts the page measures in the frame (chapters 7, 8).
+- Chapter 10's example is an Angular template (`example.ng.html`) rendered in the page by
+  `cpa-live-template` with the gallery's Buttons component. Pointing at a button reads, from the
+  stylesheets on the page, which `--mat-sys-*` variable paints it and which cp-theming variable
+  that is declared from (`learn/material-roles.ts`).
+- The Reference's CSS Variables page is generated: `demos/docs/scripts/variables.ts` reads the
+  compiled `core.css` and writes `demos/docs/.generated/variables.ts` (one live swatch per colour
+  token by palette and role, with a theme and mode switch; a table row per other variable). A
+  name with no place on the page fails the build and `demos/docs/test/variables.test.ts`.
+- Browser checks: `node demos/docs/test/learn.ts` and `node demos/docs/test/variables.ts` (after
+  `pnpm --filter docs build`).
 
-Not done: chapters 6–10, the CSS Variables page generated from `core.css`, the review pass.
+Not done: the review pass (one reader per chapter, Session 17).
 
 ---

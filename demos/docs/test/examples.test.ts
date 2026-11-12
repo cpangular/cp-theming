@@ -25,6 +25,17 @@
 //   name.ts.txt        TypeScript the docs show: the text is in a source file
 //                      of the docs app, verbatim
 //
+// A Learn chapter's folder may also hold (chapters.ts, "Frames"):
+//
+//   example.ts.txt     the script of a live example (and X.ts.txt for a
+//                      variation): TypeScript that type-checks against the
+//                      package it imports and needs nothing but its types
+//                      taken off to run. An excerpt of the docs app in such a
+//                      folder is X.app.ts.txt.
+//   head.html          what the example puts in <head>: may hold a <script>
+//                      (packages/theme-core/test/api/head-snippet.spec.ts
+//                      holds it to the exported snippet)
+//
 // The Learn track's live examples are in examples/learn/{chapter}/ and get the
 // same checks. The docs build also renders them (scripts/learn.ts), and
 // test/learn.test.ts holds them to the chapter order.
@@ -35,6 +46,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
+import ts from 'typescript';
 import {
   compileFile,
   docsDir,
@@ -77,7 +89,13 @@ const outputCss = all.filter((f) => f.endsWith('.output.css'));
 const plainCss = all.filter((f) => f.endsWith('.css') && !isDisplay(f) && !outputCss.includes(f));
 const templates = all.filter((f) => f.endsWith('.ng.html'));
 const html = all.filter((f) => f.endsWith('.html') && !isDisplay(f) && !templates.includes(f));
-const code = all.filter((f) => f.endsWith('.ts.txt'));
+// In a Learn folder X.ts.txt is the script of a frame; X.app.ts.txt, like any
+// .ts.txt elsewhere, is an excerpt of the docs app.
+const isScript = (f: string) => /^learn[\\/][^\\/]+[\\/][\w-]+\.ts\.txt$/.test(rel(f));
+const scripts = all.filter(isScript);
+const code = all.filter((f) => f.endsWith('.ts.txt') && !isScript(f));
+/** What a Learn example puts in <head>: head.html or X.head.html. */
+const isHead = (f: string) => /(?:^|\.)head\.html$/.test(path.basename(f));
 const display = all.filter(isDisplay);
 
 test('every example is a .scss, .css, .html or .ts.txt file in a page folder', () => {
@@ -234,14 +252,20 @@ for (const css of [...libraryCss, ...exampleCss]) {
 }
 for (const n of declared) known.add(n);
 
-/** What in an HTML example the library's CSS does not account for. */
-function unknownMarkup(source: string): string[] {
+/**
+ * What in an HTML example the library's CSS does not account for. `head` is
+ * for what an example puts in <head>, where a <script> belongs.
+ */
+function unknownMarkup(source: string, head = false): string[] {
   const unknown: string[] = [];
   for (const { tag, name, value } of attributesOf(source)) {
     if (name === '') {
-      if (!HTML_TAGS.has(tag.toLowerCase())) unknown.push(`<${tag}>`);
+      if (!HTML_TAGS.has(tag.toLowerCase()) && !(head && tag.toLowerCase() === 'script'))
+        unknown.push(`<${tag}>`);
       continue;
     }
+    // A data attribute is the page's own: it holds a value for a script.
+    if (name.toLowerCase().startsWith('data-')) continue;
     if (HTML_ATTRIBUTES.has(name.toLowerCase())) {
       if (name.toLowerCase() === 'style')
         for (const read of varReads(value ?? ''))
@@ -260,9 +284,16 @@ for (const file of html) {
   test(`${rel(file)}: every attribute and value is one the library's CSS selects on`, () => {
     const source = readFileSync(file, 'utf8');
     assert.ok(attributesOf(source).length > 0, 'has markup');
-    assert.deepEqual(unknownMarkup(source), []);
+    assert.deepEqual(unknownMarkup(source, isHead(file)), []);
   });
 }
+
+test("a <script> is refused in an example's markup and accepted in its head", () => {
+  assert.deepEqual(unknownMarkup('<script>x()</script>'), ['<script>']);
+  assert.deepEqual(unknownMarkup('<script>x()</script>', true), []);
+  assert.deepEqual(unknownMarkup('<button type="button" data-theme="ocean">x</button>'), []);
+  assert.deepEqual(unknownMarkup('<button onclick="x()">x</button>'), ['onclick="x()"']);
+});
 
 // ── Links ────────────────────────────────────────────────────────────────────
 // A relative `href` resolves against the page it is rendered in (or against the
@@ -447,6 +478,82 @@ for (const file of code) {
   });
 }
 
+// ── Scripts of the Learn examples ────────────────────────────────────────────
+// A frame's script is TypeScript that the build runs with its types taken off
+// (scripts/learn.ts). It has to type-check against the package it imports, as
+// it would in a reader's project, and to use erasable syntax only.
+
+/**
+ * Type-checks scripts given as text, each under the name it would have as a
+ * `.ts` file. Returns what the compiler says about each, by that name.
+ */
+function scriptDiagnostics(sources: Map<string, string>): Map<string, string[]> {
+  const options: ts.CompilerOptions = {
+    target: ts.ScriptTarget.ES2022,
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    lib: ['lib.es2022.d.ts', 'lib.dom.d.ts', 'lib.dom.iterable.d.ts'],
+    strict: true,
+    noEmit: true,
+    skipLibCheck: true,
+    types: [],
+    verbatimModuleSyntax: true,
+    erasableSyntaxOnly: true,
+    allowImportingTsExtensions: true,
+    // The package by its name, as a reader imports it: its source here.
+    paths: {
+      '@cpangular/cp-theming-core': [path.join(repoRoot, 'packages/theme-core/src/index.ts')],
+    },
+  };
+  const host = ts.createCompilerHost(options);
+  const text = (file: string) => sources.get(path.normalize(file));
+  const { fileExists, readFile, getSourceFile } = host;
+  host.fileExists = (file) => text(file) !== undefined || fileExists(file);
+  host.readFile = (file) => text(file) ?? readFile(file);
+  host.getSourceFile = (file, languageVersion, ...rest) =>
+    text(file) !== undefined
+      ? ts.createSourceFile(file, text(file)!, languageVersion, true)
+      : getSourceFile(file, languageVersion, ...rest);
+
+  const program = ts.createProgram([...sources.keys()], options, host);
+  const found = new Map<string, string[]>([...sources.keys()].map((f) => [f, []]));
+  for (const d of ts.getPreEmitDiagnostics(program)) {
+    // The package's own source is not what is checked here.
+    const of = d.file && found.get(path.normalize(d.file.fileName));
+    if (!of) continue;
+    const { line } = d.file!.getLineAndCharacterOfPosition(d.start ?? 0);
+    of.push(`${line + 1}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`);
+  }
+  return found;
+}
+
+/** A script's name as the `.ts` file it stands for. */
+const asTs = (file: string) => file.replace(/\.txt$/, '');
+const diagnostics = scriptDiagnostics(
+  new Map(scripts.map((f) => [asTs(f), readFileSync(f, 'utf8')])),
+);
+for (const file of scripts) {
+  test(`${rel(file)}: type-checks against the package and needs only its types taken off`, () => {
+    assert.ok(readFileSync(file, 'utf8').trim().length > 0, 'has text');
+    assert.deepEqual(diagnostics.get(asTs(file)), []);
+  });
+}
+
+test('the script check refuses a wrong call and syntax that is not erasable', () => {
+  const at = (name: string) => path.join(examplesDir, 'learn', '09-runtime', name);
+  const use = "import { setTheme } from '@cpangular/cp-theming-core';\n";
+  const found = scriptDiagnostics(
+    new Map([
+      [at('made-up-ok.ts'), `${use}setTheme('ocean');\n`],
+      [at('made-up-wrong.ts'), `${use}setTheme(1);\n`],
+      [at('made-up-enum.ts'), 'enum Mode {\n  A,\n}\nexport const mode = Mode.A;\n'],
+    ]),
+  );
+  assert.deepEqual(found.get(at('made-up-ok.ts')), []);
+  assert.equal(found.get(at('made-up-wrong.ts'))?.length, 1, 'a number as a theme name');
+  assert.ok((found.get(at('made-up-enum.ts'))?.length ?? 0) > 0, 'an enum is not erasable');
+});
+
 // ── The example theme the docs app renders ───────────────────────────────────
 
 // Getting Started shows custom-theme.scss and renders brand-chain.html with
@@ -483,6 +590,30 @@ test('the docs app defines the Getting Started theme exactly as the example show
   const live = readFileSync(path.join(examplesDir, 'getting-started', 'brand-chain.html'), 'utf8');
   assert.match(live, /theme="my-brand"/);
   assert.match(live, /palette="brand"/);
+});
+
+// Learn chapter 10 renders its example in the page (Angular Material cannot
+// run in a frame), with the two themes its theme.scss defines. src/styles.scss
+// defines them again for the app, and the rules have to be the same.
+test('the docs app defines the themes of Learn chapter 10 exactly as its stylesheet shows them', () => {
+  const themeRule = (css: string, name: string) =>
+    rules(css)
+      .filter((r) => new RegExp(`\\[theme=["']?${name}["']?\\]`).test(r.selector))
+      .map((r) => r.declarations);
+  const example = compiled.get(path.join(examplesDir, 'learn', '10-material', 'theme.scss'));
+  assert.ok(example, 'theme.scss compiles');
+  const app = docsStyleList().find((s) => s.entry.endsWith('docs/src/styles.scss'));
+  assert.ok(app, 'angular.json lists the docs stylesheet');
+  const template = readFileSync(
+    path.join(examplesDir, 'learn', '10-material', 'example.ng.html'),
+    'utf8',
+  );
+  const used = [...new Set([...template.matchAll(/\btheme="([\w-]+)"/g)].map((m) => m[1]))];
+  assert.ok(used.length >= 2, 'the example nests two themes');
+  for (const name of used) {
+    assert.equal(themeRule(example.css, name).length, 1, `theme.scss defines ${name}`);
+    assert.deepEqual(themeRule(app.compiled.css, name), themeRule(example.css, name), name);
+  }
 });
 
 // ── Display-only fragments ───────────────────────────────────────────────────

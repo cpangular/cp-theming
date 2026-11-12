@@ -1,0 +1,49 @@
+<!-- the same three themes, and harbour itself, inside ember -->
+<div theme="ember" palette="background" bg class="page">
+  <h4>theme="ember" passes a brand colour</h4>
+  <p class="chain">
+    <span palette="brand" filled>brand</span>
+    <span palette="primary" filled>primary</span>
+    <span palette="secondary" filled>secondary</span>
+    <span palette="tertiary" filled>tertiary</span>
+    <span palette="surface" bg>surface</span>
+  </p>
+
+  <div class="inside">
+    <!-- a brand: everything follows from it, so nothing is left to inherit -->
+    <section theme="harbour" palette="background" bg>
+      <h4>theme="harbour" passes a brand colour</h4>
+      <p class="chain">
+        <span palette="brand" filled>brand <em>passed</em></span>
+        <span palette="primary" filled>primary <em>generated</em></span>
+        <span palette="secondary" filled>secondary <em>generated</em></span>
+        <span palette="tertiary" filled>tertiary <em>generated</em></span>
+        <span palette="surface" bg>surface <em>generated</em></span>
+      </p>
+    </section>
+
+    <!-- a primary: the accents follow from it, the page colours do not -->
+    <section theme="moss" palette="background" bg>
+      <h4>theme="moss" passes a primary</h4>
+      <p class="chain">
+        <span palette="brand" filled>brand <em>its primary</em></span>
+        <span palette="primary" filled>primary <em>passed</em></span>
+        <span palette="secondary" filled>secondary <em>generated</em></span>
+        <span palette="tertiary" filled>tertiary <em>generated</em></span>
+        <span palette="surface" bg>surface <em>inherited</em></span>
+      </p>
+    </section>
+
+    <!-- a secondary: nothing follows from it -->
+    <section theme="plum" palette="background" bg>
+      <h4>theme="plum" passes a secondary</h4>
+      <p class="chain">
+        <span palette="brand" filled>brand <em>inherited</em></span>
+        <span palette="primary" filled>primary <em>inherited</em></span>
+        <span palette="secondary" filled>secondary <em>passed</em></span>
+        <span palette="tertiary" filled>tertiary <em>inherited</em></span>
+        <span palette="surface" bg>surface <em>inherited</em></span>
+      </p>
+    </section>
+  </div>
+</div>

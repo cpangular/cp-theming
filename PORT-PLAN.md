@@ -1158,7 +1158,89 @@ Found while writing, not changed:
   colour, not from the page), so in dark mode a ring drawn outside a pale button is hard to see
   against the page. Chapter 4's "A pale primary" tab shows it when the site is dark.
 
-Not done: chapters 6 to 10, the generated CSS Variables page, the review pass (Sessions 16, 17).
+**As landed: chapters 6 to 10 and the generated CSS Variables page (Session 16, 2026-11-12)**
+
+- The ten chapters are written and pass the order check. Chapters 6 to 9 are frames like 1 to 5;
+  chapter 10's example is rendered by Angular in the page.
+- New in the mechanics:
+  - `cpa-live-example` takes `controls` (a colour picker, or a slider that sets custom properties
+    or an attribute in the frame), `measures` (contrast ratios the page reads out of the frame and
+    shows under the controls) and `ownMode` (the page leaves the frame's `themeMode` alone). The
+    page still writes nothing into the example's files.
+  - A frame may run a script (from chapter 9): `example.ts.txt`, TypeScript that the build runs
+    with its types taken off, at the end of `<body>`; and `head.html`, placed in `<head>` ahead
+    of the stylesheets. The script imports `@cpangular/cp-theming-core` by name; an import map
+    in the frame points it at core's built modules, copied to `learn-frames/core/`. The file is
+    `.ts.txt` because the Angular build compiles a `.ts` file a page imports as text; the page
+    shows it as `example.ts`. An excerpt of the docs app in such a folder is `X.app.ts.txt`.
+  - `cpa-live-template` shows an Angular template rendered in the page with its source under it.
+  - Checks added: the examples test type-checks every frame script against core's source
+    (`erasableSyntaxOnly`), core's vitest holds every `head.html` to `themeHeadSnippet`, a test
+    keeps chapter 10's two themes in `src/styles.scss` equal to its `theme.scss`.
+- The CSS Variables page: `demos/docs/scripts/lib/variables.ts` reads the compiled `core.css`;
+  `scripts/variables.ts` writes `demos/docs/.generated/variables.ts`; the page imports it. 920
+  colour tokens as live swatches in ten palettes and three roles, with a theme and a mode switch;
+  226 other variables in eleven tables and the type scale as a grid. A name with no place stops
+  the build. The values now come from core: the old page had `--motion--duration-medium` 250ms
+  (it is 200ms), `--shape--xxl` 32px (48px), `--focus--width` 2px (3px) and the text weights as
+  0.87 / 1.0 / 0.55 (82% / 96% / 55%).
+- Browser checks: `demos/docs/test/learn.ts` (955 checks per engine) and
+  `demos/docs/test/variables.ts` (28 per engine), all passing in Chromium, Firefox and WebKit.
+  Screenshots of every chapter in light and dark in `dist/docs-render/learn/`.
+
+Judgment calls you may want to revisit:
+
+- **Chapter 6's third inner theme passes a secondary, not nothing.** A theme that passes nothing
+  emits no rule, so `theme="x"` for it is an attribute the library's CSS does not select on (the
+  examples check refuses it), and a theme with only a non-colour input needs chapter 8. The three
+  cases are now the top, the middle and the end of the chain: brand, primary, secondary.
+- **Chapter 7 introduces the four fixed palettes** (error, warn, caution, pass), in its Try it,
+  because the limit the plan names is about two of them. The pattern table gives them to
+  chapter 7.
+- **Chapter 7's ratios are measured by the page**, not by the example: the page paints the
+  computed colours of the frame on a canvas and applies the WCAG formula. There are four
+  readouts: the fill, the lowest of the six steps, text on a tint, the colour as text.
+- **Chapter 7's hue variation is a yellow and a blue written in `hsl()`.** With `oklch()` the
+  text flips at the same lightness for every hue (57% on the slider, measured), so a second hue
+  shows nothing; in `hsl()` the yellow flips at 24% and the blue at 69%.
+- **Chapter 8's card is `filled`, not `bg`**: only `filled` sets
+  `--container--text-deemphasis`. Its weight slider sets the light and the dark value of the
+  weight, as chapter 1's picker does for the colour.
+- **Chapter 9's example saves under its own storage keys.** A frame is served from the site's
+  address and would share its storage, so the docs link `frame-storage.js` first in such a frame:
+  the same two storage objects with every key under the frame's path. The chapter says so in one
+  sentence. The Angular half of the chapter is shown as excerpts of this site's own source
+  (`app.config.ts`, the theme switcher), not as a running example.
+- **Chapter 10's readout is read from the stylesheets on the page**: the rule that paints the
+  button names a `--mat-sys-*` variable, and the adapter's rule for that variable names the
+  cp-theming one. Nothing is listed by hand, so it follows Material and the adapter. Its
+  specificity ordering is approximate. The Try it reuses two examples of the gallery as they are.
+- **Chapter 10's two themes are defined twice**: in its `theme.scss` (shown) and in the docs
+  app's `src/styles.scss` (rendered), as the Getting Started theme is. A test keeps them equal.
+- **The variables data is imported, not fetched**: a bare `npx ng build docs` now fails until
+  `pnpm --filter docs generate` has run once. `pnpm --filter docs build`, `start`, `dev` and
+  `build:dev` run it. The README and the check headers say `pnpm --filter docs build`.
+- **A contrast token is a chip inside the swatch of its fill**, not a tile of its own; the light
+  and the dark value a theme sets have swatches too. The notes column of the tables is the one
+  hand-written part (`NOTES`, 25 entries; a note for a name core does not have fails).
+- Patterns added: the fixed palettes → 7; `--focus--`, `--overlay--`, the `container`, `radius`
+  and `padding` mixins → 8; `getTheme`, `getMode`, `getEffectiveMode`, the watch and persistence
+  functions, `sessionStorage` → 9; Material's attribute directives (`matButton`) → 10.
+
+Found while writing:
+
+- **Fixed: `watchMode()` never ran on an attribute change in a browser.** Its MutationObserver
+  was filtered on `themeMode`; an HTML document stores the attribute as `thememode`, and the
+  filter is compared with the stored name. Chapter 9's buttons did not follow the mode until a
+  reload. The filter now names both; `packages/theme-core/test/api/watch.spec.ts` fails without
+  it. `ThemeService` was unaffected for its own `setMode()` (it sets its signal itself) and
+  affected for a mode set by anything else.
+- Not changed: `setTheme(name, element)` saves the name under the one global key whatever
+  element it was given, so a theme set on a nested element comes back on `<html>` after a reload.
+- Not changed: the default warn and caution as text on the default surface are 4.18:1 and 3.86:1
+  in light mode (chapter 7's Try it shows them). This is the item already listed below.
+
+Not done: the review pass (Session 17).
 
 ## Decisions already made
 

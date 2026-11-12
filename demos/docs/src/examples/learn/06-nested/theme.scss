@@ -1,0 +1,30 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+// The outer theme passes a brand colour: all six palettes follow from it.
+$harbour: t.theme(
+  $brand: #1565c0,
+);
+
+// Three themes to nest inside it. Each passes one thing.
+$ember: t.theme(
+  $brand: #e65100,
+);
+
+$moss: t.theme(
+  $palettes: (
+    primary: t.palette(#2e7d32),
+  )
+);
+
+$plum: t.theme(
+  $palettes: (
+    secondary: t.palette(#ad1457),
+  )
+);
+
+// Core once, then every theme. They live side by side in one stylesheet.
+@include t.define-core-theme();
+@include t.define-theme("harbour", $harbour);
+@include t.define-theme("ember", $ember);
+@include t.define-theme("moss", $moss);
+@include t.define-theme("plum", $plum);

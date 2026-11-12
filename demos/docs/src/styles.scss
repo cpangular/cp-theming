@@ -8,6 +8,12 @@
 
 @include t.define-theme("my-brand", t.theme($brand: #ff6a00));
 
+// The two themes of Learn chapter 10, whose live example Angular renders in
+// the page: examples/learn/10-material/theme.scss without core and without the
+// adapter, which angular.json loads. The same test holds them to that file.
+@include t.define-theme("harbour", t.theme($brand: #1565c0));
+@include t.define-theme("ember", t.theme($brand: #e65100));
+
 html,
 body {
   height: 100%;

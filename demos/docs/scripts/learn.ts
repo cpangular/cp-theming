@@ -13,16 +13,38 @@
 // nothing else; the page sets light or dark on the frame's <html> to match
 // the site.
 //
+// From chapter 9 an example may run a script: example.ts.txt, a module at the
+// end of <body>, and head.html, which goes into <head> ahead of the stylesheets.
+// The script is TypeScript with its types taken off, nothing more. It imports
+// @cpangular/cp-theming-core by name, as a reader's would; here an import map
+// points that name at the package's built modules, copied beside the frames.
+// The docs add frame-storage.js to such a frame (see scripts/frame-storage.ts).
+//
 // Sass is compiled the way a consumer's is: `@cpangular/…` resolves through
 // the packages' `exports`. Every theme starts with define-core-theme(), so its
 // CSS starts with core's; that part is written once, as core.css, and each
 // frame links it ahead of the rest of its theme.
 import * as sass from 'sass';
-import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import ts from 'typescript';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 import { coreDir, exportsImporters, repoRoot } from '../../../packages/theme-core/test/lib/sass.ts';
-import { CHAPTERS, frameFiles, frameNames } from '../src/app/learn/chapters.ts';
-import { checkLearn, docsDir, exampleFiles, exampleFolder } from './lib/order.ts';
+import {
+  CHAPTERS,
+  CORE_MODULES,
+  CORE_PACKAGE,
+  frameFiles,
+  frameNames,
+} from '../src/app/learn/chapters.ts';
+import { TEMPLATE_EXAMPLE, checkLearn, docsDir, exampleFiles, exampleFolder } from './lib/order.ts';
 
 const violations = checkLearn();
 if (violations.length) {
@@ -57,10 +79,48 @@ copyFileSync(path.join(import.meta.dirname, 'frame.css'), path.join(out, 'frame.
 
 const sheet = (href: string) => `    <link rel="stylesheet" href="${href}" />`;
 
+/** TypeScript as the JavaScript it is once its types are taken off. */
+function strip(file: string): string {
+  return ts.transpileModule(readFileSync(file, 'utf8'), {
+    fileName: file,
+    compilerOptions: {
+      target: ts.ScriptTarget.ES2022,
+      module: ts.ModuleKind.ESNext,
+      verbatimModuleSyntax: true,
+    },
+  }).outputText;
+}
+
+/** What a frame with a script gets from the docs, once: the package and the storage shim. */
+let scriptsReady = false;
+function shareScripts(): void {
+  if (scriptsReady) return;
+  scriptsReady = true;
+  const built = path.join(coreDir, 'dist');
+  if (!existsSync(path.join(built, 'index.js'))) {
+    console.error(
+      `learn: ${path.relative(repoRoot, built)}/index.js is missing. ` +
+        `Run: pnpm --filter ${CORE_PACKAGE} build`,
+    );
+    process.exit(1);
+  }
+  mkdirSync(path.join(out, CORE_MODULES), { recursive: true });
+  for (const name of readdirSync(built).filter((f) => f.endsWith('.js')))
+    copyFileSync(path.join(built, name), path.join(out, CORE_MODULES, name));
+  writeFileSync(
+    path.join(out, 'frame-storage.js'),
+    strip(path.join(import.meta.dirname, 'frame-storage.ts')),
+  );
+}
+
+const importMap = JSON.stringify({ imports: { [CORE_PACKAGE]: `../${CORE_MODULES}/index.js` } });
+
 let frames = 0;
 for (const chapter of CHAPTERS.filter((c) => c.written)) {
   const dir = exampleFolder(chapter);
   const files = exampleFiles(chapter);
+  // An Angular template is rendered by the page, not in a frame.
+  if (files.includes(TEMPLATE_EXAMPLE)) continue;
   const target = path.join(out, chapter.folder);
   mkdirSync(target, { recursive: true });
 
@@ -86,6 +146,19 @@ for (const chapter of CHAPTERS.filter((c) => c.written)) {
       writeFileSync(path.join(target, name), compile(path.join(dir, use.styles)));
       links.push(sheet(name));
     }
+    const head: string[] = [];
+    const scripts: string[] = [];
+    if (use.script || use.head) {
+      shareScripts();
+      head.push('    <script src="../frame-storage.js"></script>');
+    }
+    if (use.head) head.push(readFileSync(path.join(dir, use.head), 'utf8').trimEnd());
+    if (use.script) {
+      const name = use.script.replace(/\.ts\.txt$/, '.js');
+      writeFileSync(path.join(target, name), strip(path.join(dir, use.script)));
+      links.push(`    <script type="importmap">${importMap}</script>`);
+      scripts.push(`    <script type="module" src="${name}"></script>`);
+    }
     const body = readFileSync(path.join(dir, use.html), 'utf8').trimEnd();
     writeFileSync(
       path.join(target, `${frame}.html`),
@@ -95,10 +168,12 @@ for (const chapter of CHAPTERS.filter((c) => c.written)) {
         '  <head>',
         '    <meta charset="utf-8" />',
         `    <title>${chapter.title}: ${frame}</title>`,
+        ...head,
         ...links,
         '  </head>',
         '  <body>',
         body,
+        ...scripts,
         '  </body>',
         '</html>',
         '',

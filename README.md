@@ -41,7 +41,7 @@ exact version (see the repository's Releases).
 
 | Demo | Description | Status |
 |---|---|---|
-| `demos/docs` | Angular 22 + Material 22 docs/showcase site | 🟡 In Progress — all pages built; every Sass, CSS and attribute sample is a real file under `demos/docs/src/examples/`, compiled and checked by `pnpm test` and rendered live from the same file; theme + mode switching working, saved theme and mode painted on the first frame (`node demos/docs/test/startup.ts`), a Components page in the ng-material section with every Angular Material 22 component family live (27 sections, the accent families repeated under `palette="secondary"`, `"tertiary"`, `"error"` and `"brand"`, and the overlays inside a nested `theme` and a nested `themeMode`; Phase 15 done), painted-contrast report over the showcase and the component gallery, where a component label below 4.5:1 is an error (`node demos/docs/test/render.ts`), pixel check of the palette chain on Getting Started and the showcase (`node demos/docs/test/chain.ts`); a Learn track (Phase 17, chapters 1–5 of 10) whose live examples are built into frames by `node demos/docs/scripts/learn.ts` and held to the chapter order by `demos/docs/test/learn.test.ts`; TypeScript, shell and JSON samples are still hand-written; its build (`pnpm --filter docs build`) includes `demo-core` under `demos/demo-core/`, linked from the home page and the core Getting Started page; released as a git-flow `static-site` artifact and deployed to GitHub Pages with `gitflow deploy` (see Docs site below; not deployed yet) |
+| `demos/docs` | Angular 22 + Material 22 docs/showcase site | 🟡 In Progress — all pages built; every Sass, CSS and attribute sample is a real file under `demos/docs/src/examples/`, compiled and checked by `pnpm test` and rendered live from the same file; theme + mode switching working, saved theme and mode painted on the first frame (`node demos/docs/test/startup.ts`), a Components page in the ng-material section with every Angular Material 22 component family live (27 sections, the accent families repeated under `palette="secondary"`, `"tertiary"`, `"error"` and `"brand"`, and the overlays inside a nested `theme` and a nested `themeMode`; Phase 15 done), painted-contrast report over the showcase and the component gallery, where a component label below 4.5:1 is an error (`node demos/docs/test/render.ts`), pixel check of the palette chain on Getting Started and the showcase (`node demos/docs/test/chain.ts`); a Learn track (Phase 17, ten chapters; the review pass is not done) whose live examples are built into frames by `node demos/docs/scripts/learn.ts` and held to the chapter order by `demos/docs/test/learn.test.ts`; a CSS Variables reference page generated from the compiled `core.css` (`node demos/docs/scripts/variables.ts`), one live swatch per colour token; TypeScript, shell and JSON samples outside the Learn track are still hand-written; its build (`pnpm --filter docs build`) includes `demo-core` under `demos/demo-core/`, linked from the home page and the core Getting Started page; released as a git-flow `static-site` artifact and deployed to GitHub Pages with `gitflow deploy` (see Docs site below; not deployed yet) |
 | `demos/demo-core` | Vanilla TS + Vite | 🟡 In Progress — builds again (root `pnpm build` and CI build it): two themes, modes, tones, nested themes and density through the public `theme` module only (`t.apply-palette()`, `t.tone()`, `t.bg()`, `t.filled()`, `t.outlined()`, `t.container()`); the docs build copies it into the site as the live demo. Still a single hand-written page with no tests of its own |
 | `demos/demo-material` | Angular + Material adapter | ⬛ Stub |
 | `demos/demo-brand-core` | Example brand theme pack | ⬛ Stub |
@@ -72,7 +72,7 @@ exact version (see the repository's Releases).
 | 14d | A theme without a brand uses its primary as the brand: the brand pair of such a theme points at its primary pair, so `palette="brand"` on a preset paints the preset's primary; with no theme the brand stays grey | ✅ Done |
 | 15 | Material component gallery in the ng-material docs (Components page, every family an example file, `render.ts` screenshots it per preset and mode with overlays open and fails a component label below 4.5:1) | ✅ Done |
 | 16 | Wrap-up: the docs site as a git-flow `static-site` artifact deployed to GitHub Pages (`pages.yml` deleted), `demos/demo-core` building again and hosted inside the docs site, gallery demo links as same-page anchors with a check that refuses a relative `href` | ✅ Done — in the repo; the first deploy has not been run |
-| 17 | Docs that teach: a Learn track of ten chapters with live examples, the existing pages as the Reference underneath | 🟡 In Progress — the mechanics and chapters 1–5 are done: Learn / Reference / Explore navigation with Learn first on the home page, the chapter page shape, live examples as files under `demos/docs/src/examples/learn/` that the docs build renders into `<iframe>` documents with their source beside them, and the order check, which fails the build. Chapters 6–10, the generated CSS Variables page and the review pass are not written |
+| 17 | Docs that teach: a Learn track of ten chapters with live examples, the existing pages as the Reference underneath | 🟡 In Progress — the ten chapters are written and pass the order check: Learn / Reference / Explore navigation with Learn first on the home page, the chapter page shape, live examples as files under `demos/docs/src/examples/learn/` that the docs build renders into `<iframe>` documents with their source beside them (chapter 9's with a script, chapter 10's rendered by Angular from the Components gallery), the order check, which fails the build, and the Reference's CSS Variables page generated from the compiled `core.css`. The review pass (one reader per chapter) is not done |
 
 Phases 8–17 are specified in [PORT-PLAN.md](PORT-PLAN.md); 14, 14b, 14c, 14d and 15 were done before 13.
 
@@ -157,23 +157,28 @@ pnpm --filter @cpangular/cp-theming-ng-core build   # the Angular wrapper (ng-pa
 pnpm --filter @cpangular/cp-theming-core render
 
 # Browser check of startup: saved theme and mode painted before the docs bundle runs (local only)
-npx ng build docs && node demos/docs/test/startup.ts
+pnpm --filter docs build && node demos/docs/test/startup.ts
 
 # Painted contrast over the built showcase and the component gallery: every preset, light and dark,
 # as loaded, hovered, focused and with overlays open; screenshots in dist/docs-render/ (local only).
 # A component label below 4.5:1 fails the run. About 14 minutes per engine for the gallery.
-npx ng build docs && node demos/docs/test/render.ts chromium firefox --jobs=8
+pnpm --filter docs build && node demos/docs/test/render.ts chromium firefox --jobs=8
 # One part of it: --only=gallery|showcase --preset=rose-red --mode=dark --section=card,buttons
 
 # Pixel check of the palette chain on the built docs: the brand swatch, three accents per preset (local only)
-npx ng build docs && node demos/docs/test/chain.ts
+pnpm --filter docs build && node demos/docs/test/chain.ts
 
-# The Learn track. `pnpm --filter docs build` runs the order check and writes the example frames
-# before `ng build`; a bare `npx ng build docs` does neither, so run the script first.
-node demos/docs/scripts/learn.ts   # order check + frames into demos/docs/.generated/learn-frames
-# Browser check: every chapter's examples rendered, source beside them, Reference links;
-# screenshots in dist/docs-render/learn/ (local only)
+# The generated parts of the docs. `pnpm --filter docs build` (and its start / dev / build:dev)
+# runs both before `ng build`; a bare `npx ng build docs` does neither, and fails without the
+# second, so run them first: `pnpm --filter docs generate`.
+node demos/docs/scripts/learn.ts       # order check + frames into demos/docs/.generated/learn-frames
+node demos/docs/scripts/variables.ts   # the CSS Variables page's data, read from compiled core.css
+# Browser check of the Learn track: every chapter's examples rendered, source beside them,
+# Reference links, and what chapters 6–10 claim; screenshots in dist/docs-render/learn/ (local only)
 pnpm --filter docs build && node demos/docs/test/learn.ts chromium firefox webkit
+# Browser check of the CSS Variables page: a swatch per colour token, the theme and mode switch,
+# the tables; screenshots in dist/docs-render/variables/ (local only)
+node demos/docs/test/variables.ts chromium firefox webkit
 ```
 
 ---

@@ -30,7 +30,7 @@ import tryTwoHtml from '../../../examples/learn/01-one-colour/try-two.html' with
           chapter="01-one-colour"
           [files]="files"
           [frames]="example"
-          [control]="picker"
+          [controls]="[picker]"
         />
       </div>
 

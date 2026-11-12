@@ -1,0 +1,65 @@
+/* A fill and the text that belongs on it: black or white, chosen for you. */
+.fill {
+  background: var(--color--primary);
+  color: var(--color--primary--contrast);
+}
+
+/* The same for every step. */
+.darkest {
+  background: var(--color--primary--darkest);
+  color: var(--color--primary--darkest--contrast);
+}
+.darker {
+  background: var(--color--primary--darker);
+  color: var(--color--primary--darker--contrast);
+}
+.dark {
+  background: var(--color--primary--dark);
+  color: var(--color--primary--dark--contrast);
+}
+.light {
+  background: var(--color--primary--light);
+  color: var(--color--primary--light--contrast);
+}
+.lighter {
+  background: var(--color--primary--lighter);
+  color: var(--color--primary--lighter--contrast);
+}
+.lightest {
+  background: var(--color--primary--lightest);
+  color: var(--color--primary--lightest--contrast);
+}
+
+/* A tint lets the page show through, so what is behind this text is a mix. */
+.wash {
+  background: var(--color--primary--tint-4);
+  color: var(--color--background--contrast);
+}
+
+/* No fill at all: the colour is the text, and the page is behind it. */
+.words {
+  color: var(--color--primary);
+}
+
+/* Layout only. */
+p {
+  margin: 0 0 12px;
+  padding: 14px 12px;
+  font-weight: 500;
+}
+.fill {
+  margin-bottom: 0;
+  padding-block: 26px;
+}
+.steps {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  margin-bottom: 12px;
+}
+.steps p {
+  margin: 0;
+  font: 12px/1.4 ui-monospace, monospace;
+}
+.words {
+  margin: 0;
+}

@@ -7,6 +7,7 @@
 // <cpa-ref>, which links it. The tables are in src/app/learn/chapters.ts.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import {
   CHAPTERS,
   PATTERNS,
@@ -14,14 +15,18 @@ import {
   frameFiles,
   frameNames,
   nestedTheme,
+  shownName,
 } from '../src/app/learn/chapters.ts';
 import {
   SLOTS,
+  TEMPLATE_EXAMPLE,
   checkExample,
   checkLearn,
   checkProse,
   checkRefs,
   checkShape,
+  exampleFiles,
+  pageFile,
   templateOf,
 } from '../scripts/lib/order.ts';
 
@@ -59,10 +64,19 @@ test('an example that uses a later chapter is refused', () => {
     [4, 'a.scss', '.a { @include t.bg(); }', 5],
     [4, 'a.scss', '.a { color: var(--palette-color); }', 5],
     [5, 'theme.scss', '@include t.define-theme("x", $t, $default: true);', 6],
+    [6, 'a.scss', '.a { color: var(--color--warn); }', 7],
+    [6, 'a.html', '<p palette="error" filled>x</p>', 7],
+    [6, 'theme.scss', '$t: t.theme($palettes: (error: t.palette(red)));', 7],
     [5, 'a.scss', '.a { padding: var(--space--lg); }', 8],
+    [7, 'a.scss', '.a { outline-width: var(--focus--width); }', 8],
     [5, 'a.html', '<div palette="primary" bg container></div>', 8],
+    [7, 'a.scss', '.a { @include t.container(); }', 8],
     [5, 'a.html', '<script>setTheme("x")</script>', 9],
+    [8, 'a.ts.txt', 'watchMode(() => getEffectiveMode());', 9],
+    [8, 'a.ts.txt', 'configurePersistence(ThemeStorage.LOCAL);', 9],
     [5, 'a.html', '<mat-card></mat-card>', 10],
+    [9, 'a.ng.html', '<button matButton="filled">x</button>', 10],
+    [9, 'a.scss', '.a { color: var(--mat-sys-primary); }', 10],
   ];
   for (const [n, file, text, later] of cases) {
     const found = checkExample(n, file, text);
@@ -130,6 +144,12 @@ test('a chapter page without one of its parts is refused', () => {
       )
       .join('\n');
   assert.deepEqual(checkShape('p', page(SLOTS)), []);
+  // A template Angular renders in the page counts as the live example.
+  assert.deepEqual(
+    checkShape('p', page(SLOTS).replaceAll('cpa-live-example', 'cpa-live-template')),
+    [],
+  );
+  assert.ok(checkShape('p', page(SLOTS).replaceAll('<cpa-live-example />', '')).length > 0);
   for (const missing of SLOTS)
     assert.ok(checkShape('p', page(SLOTS.filter((s) => s !== missing))).length > 0, missing);
   assert.ok(checkShape('p', page([...SLOTS].reverse())).length > 0, 'out of order');
@@ -171,4 +191,42 @@ test('a frame is the example with the files of its own name swapped in', () => {
     theme: 'theme.scss',
     html: 'example.html',
   });
+});
+
+test('a frame may have a script and a head, and an excerpt is not a frame', () => {
+  const files = [
+    'example.html',
+    'example.ts.txt',
+    'head.html',
+    'provide.app.ts.txt',
+    'theme.scss',
+    'try-a.ts.txt',
+    'try-b.head.html',
+  ];
+  assert.deepEqual(frameNames(files), ['example', 'try-a', 'try-b']);
+  assert.deepEqual(frameFiles('example', files), {
+    theme: 'theme.scss',
+    html: 'example.html',
+    script: 'example.ts.txt',
+    head: 'head.html',
+  });
+  assert.equal(frameFiles('try-a', files).script, 'try-a.ts.txt');
+  assert.equal(frameFiles('try-a', files).head, 'head.html');
+  assert.equal(frameFiles('try-b', files).script, 'example.ts.txt');
+  assert.equal(frameFiles('try-b', files).head, 'try-b.head.html');
+  assert.equal(shownName('example.ts.txt'), 'example.ts');
+  assert.equal(shownName('provide.app.ts.txt'), 'provide.app.ts');
+  assert.equal(shownName('example.html'), 'example.html');
+});
+
+test('every chapter is written, with a page and a live example', () => {
+  for (const chapter of CHAPTERS) {
+    assert.ok(chapter.written, `chapter ${chapter.n}`);
+    assert.ok(existsSync(pageFile(chapter)), `${chapter.folder}: a page`);
+    const files = exampleFiles(chapter);
+    assert.ok(
+      files.includes('example.html') || files.includes(TEMPLATE_EXAMPLE),
+      `${chapter.folder}: a live example`,
+    );
+  }
 });

@@ -1,0 +1,44 @@
+/* A choice, and the one that is in force. */
+.row button {
+  border: 1px solid var(--color--surface--stroke);
+  border-radius: var(--shape--full);
+  background: none;
+  color: inherit;
+}
+.row button[aria-pressed="true"] {
+  border-color: var(--color--primary);
+  background: var(--color--primary);
+  color: var(--color--primary--contrast);
+}
+
+/* Layout only. */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space--sm);
+  margin: 0 0 var(--space--md);
+}
+.row strong {
+  width: 4em;
+}
+button {
+  padding: var(--space--xs) var(--space--md);
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+article {
+  max-width: 320px;
+  margin-bottom: var(--space--lg);
+}
+article h4,
+article p {
+  margin: 0 0 var(--space--xs);
+}
+article button {
+  margin-top: var(--space--sm);
+}
+#state {
+  font: 12px/1.4 ui-monospace, monospace;
+}

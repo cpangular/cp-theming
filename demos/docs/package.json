@@ -6,11 +6,13 @@
   "scripts": {
     "predev": "lsof -ti :4200 | xargs kill -9 2>/dev/null || true",
     "learn": "node scripts/learn.ts",
-    "start": "node scripts/learn.ts && ng serve docs",
-    "dev": "node scripts/learn.ts && ng serve docs --configuration development",
+    "variables": "node scripts/variables.ts",
+    "generate": "node scripts/learn.ts && node scripts/variables.ts",
+    "start": "pnpm run generate && ng serve docs",
+    "dev": "pnpm run generate && ng serve docs --configuration development",
     "build": "wireit",
     "build.site": "wireit",
-    "build:dev": "node scripts/learn.ts && ng build docs --configuration development",
+    "build:dev": "pnpm run generate && ng build docs --configuration development",
     "test": "node --test \"test/*.test.ts\"",
     "render": "node test/render.ts",
     "chain": "node test/chain.ts",
@@ -44,7 +46,7 @@
       ]
     },
     "build.site": {
-      "command": "node scripts/learn.ts && ng build docs --configuration production && node scripts/assemble.ts",
+      "command": "node scripts/learn.ts && node scripts/variables.ts && ng build docs --configuration production && node scripts/assemble.ts",
       "dependencies": [
         "../../packages/theme-core:build",
         "../../packages/theme-ng-material:build",
