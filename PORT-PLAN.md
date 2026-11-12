@@ -978,6 +978,102 @@ build` at the root builds demo-core and the docs build includes it; the home pag
 the link works on the deployed site; the examples check passes with the href rule; the README
 rows are updated.
 
+### Phase 17 — Docs that teach (added 2026-11-12)
+
+The site today is reference material: pages grouped by module, prose followed by code blocks that
+say which function to call. Decided 2026-11-12: it gets a **Learn** track, read in order, in the
+manner of the best software docs (the React, Svelte and Stripe guides): each chapter is built
+around one idea, shows it working before it names anything, explains the idea in plain words, gives
+the smallest code that produces what was shown, and ends with what the reader can now do. The
+existing pages become the **Reference** track underneath it. The spike's rule applies again, with
+the order coming from the teaching: a chapter uses only what earlier chapters taught, and the
+build fails otherwise.
+
+**Site structure**
+
+- Top navigation: **Learn**, **Reference** (the current core / ng-core / ng-material sections), and
+  the Components gallery and Showcase as **Explore**. The home page leads with Learn.
+- A Learn chapter is a page with: the question it answers (one sentence under the title), a live
+  example rendered in the page, the idea in plain words (what problem it solves, how to think
+  about it, what it rules out), the minimal code, a "Try it" variation the reader can switch in
+  the live example, and "You can now…" as the last line. No API tables on Learn pages; every
+  function or variable named links to its Reference entry.
+- Prose is written for someone who knows CSS and has never seen cp-theming. No sentence may
+  depend on a term the chapter has not introduced. One idea per chapter; if a chapter needs two,
+  it is two chapters.
+
+**Chapters** (order is the dependency order; each line is the question the chapter answers)
+
+1. **One colour, a whole palette.** What does cp-theming do with a colour I give it? Live: a
+   colour picker driving `--color--primary` on a `[theme]` element; the ladder, contrast text,
+   bg, stroke and focus ring update as it moves. Idea: the browser derives everything, at runtime,
+   so a theme is a few inputs and nested themes or runtime changes just work. Rules out Sass
+   colour math and pre-computed shades. Code: `t.theme($palettes: (primary: t.palette(…)))`
+   with `define-core-theme` and `define-theme`. Introduces: theme, palette, the `--color--{name}`
+   tokens, `--contrast`.
+2. **Light and dark are one theme.** Why don't I write a dark theme? Live: the same card under
+   `themeMode` light / dark / auto on different elements, including a dark card inside a light
+   page. Idea: every value resolves where it is used, so a mode is a property of an element, not
+   of the page. Code: `t.light-dark()`, `themeMode`. Introduces: modes, `--high` / `--low`.
+3. **Pass what you have, the rest is generated.** I only have a brand colour; what happens?
+   Live: a brand swatch and the primary, secondary, tertiary, background and surface generated
+   from it, with the brand too bright to read as text and the primary readable. Idea: the chain
+   brand → primary → accents → neutrals, what is adjusted and what never is, how to override one
+   link. Code: `t.theme($brand: …)`, passing `secondary` explicitly. Introduces: brand, the
+   generation chain.
+4. **Roles, not shades.** Why `bg`, `stroke`, `contrast` instead of "a bit lighter"? Live: one
+   component on three palettes, each role labelled. Idea: a role names a job (fill, border, text
+   on it); the theme decides the colour, the component decides the job. Introduces: the role
+   tokens, `--tint-N`, focus per palette.
+5. **Scopes and surfaces.** How do I colour a piece of the page? Live: `palette=` selecting a
+   palette, `bg` / `filled` / `outlined` painting it, `tone=` sliding it, composed. Idea: the
+   attribute layers and what text colour each gives you and why. Code: the same in Sass with
+   `t.apply-palette()`, `t.bg()`, `t.filled()`, `t.outlined()`, `t.tone()`. Introduces:
+   `--palette-color*`, `--container--*`.
+6. **Themes inside themes.** What does a nested theme inherit? Live: three nested themes side by
+   side — passes only primary, passes only brand, passes nothing — inside an outer theme. Idea:
+   a theme declares only what it passes; what follows from that is regenerated, the rest is
+   inherited. Introduces: nesting, `$default`, coexisting themes.
+7. **Readable by construction.** Who chooses black or white text? Live: a lightness slider across
+   the contrast step, with the ratio shown. Idea: the step at the WCAG crossover, what it
+   guarantees (every opaque colour reads at 4.5:1 or better) and what it doesn't (translucent
+   fills, the `warn`/`caution` presets on the surface). Introduces: the guarantee, where it ends.
+8. **Everything else a theme carries.** Spacing, shape, motion, elevation, weights, typography:
+   one live panel with sliders. Idea: these are inputs like colours, with the same inheritance.
+   Introduces: `--space--*`, `--shape--*`, density scopes, `--elevation-N--shadow`, `--weight--*`.
+9. **Switching at runtime.** How does a user pick a theme or mode? Live: a switcher with
+   persistence and a reload. Idea: it is an attribute on an element plus a saved value; the head
+   snippet applies it before first paint. Code: the TypeScript API, `provideTheme()`, the
+   `ThemeService` signals. Introduces: the TS and Angular APIs.
+10. **Angular Material.** How do Material components get these colours? Live: the gallery's
+    buttons under two nested themes and a `[palette]` scope, with a Material role and the
+    cp-theming token it comes from shown on hover. Idea: Material reads `--mat-sys-*`; the
+    adapter computes those from Material's own role tables and your tokens, so nothing is
+    hand-mapped and nested scopes follow. Introduces: the adapter, overlays, override patches.
+
+**Mechanics**
+
+- Every live example, Sass ones included, is a file under `demos/docs/src/examples/learn/NN-…/`
+  (`.html` plus optional `.scss`) rendered inside an `<iframe>` built by the docs build with core,
+  the chapter's own compiled theme and the example's CSS, and its source shown beside it from the
+  same file. "Try it" variations are alternative files for the same frame. The examples check
+  (Phase 7 resumed) runs over them.
+- The order check: a pattern table next to the chapter list (`themeMode` → 2, `$brand` → 3,
+  `palette=` / `t.bg()` → 5, nested `theme=` → 6, `--space--` / `--shape--` → 8, `<script` /
+  `ThemeService` → 9, `mat-` / `--mat-sys` → 10, and so on). An example of chapter N that
+  matches a later chapter's pattern fails the build; so does prose that names a Reference entry
+  before its chapter.
+- The Reference's CSS Variables page is generated from the compiled `core.css`, one live swatch
+  per colour token, with a theme and mode switch, instead of the hand-written table.
+- Review: once written, one Opus reader per chapter, given only that chapter and the "Introduces"
+  lines of the chapters before it, lists every term, variable, mixin or attribute used before it
+  was taught and every explanation that is not plain; a second pass fixes the list.
+
+Done when: the ten chapters are written and pass the order check; every live example renders in
+the page with its source beside it; the Reference variables page is generated; the readers' lists
+are closed; a reader who starts at chapter 1 meets no term before it is explained (the review
+pass is the test).
+
 ## Decisions already made
 
 So they are not reopened. Tell me if you want any reversed.
