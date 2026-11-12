@@ -1,0 +1,17 @@
+var r=`/* src/styles.css */
+@import "@cpangular/cp-theming-core/css/core";
+@import "@cpangular/cp-theming-core/css/presets/azure-blue";
+`;var a=`// src/styles.scss
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+// Pass what you have. Here that is one colour: the brand colour, exactly as
+// the guidelines give it. Any CSS colour works: oklch(), hex, rgb(), hsl(),
+// a named colour.
+$my-theme: t.theme(
+  $brand: #ff6a00,
+);
+
+// Core first, then every theme.
+@include t.define-core-theme();
+@include t.define-theme("my-brand", $my-theme, $default: true);
+`;export{a,r};

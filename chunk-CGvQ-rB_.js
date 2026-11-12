@@ -1,0 +1,24 @@
+var a=`@use "@cpangular/cp-theming-core/scss/theme" as t;
+@use "@cpangular/cp-theming-ng-material/scss/material" as mat;
+
+$my-theme: t.theme(
+  $palettes: (
+    primary: t.light-dark(
+      t.palette(oklch(0.44 0.22 253)),
+      t.palette(oklch(0.72 0.17 253))
+    ),
+    // a custom palette name
+    accent: t.light-dark(
+      t.palette(oklch(0.50 0.20 150)),
+      t.palette(oklch(0.75 0.15 150))
+    ),
+  )
+);
+
+// define-palette-after($name) runs once for each palette name of the theme.
+// mat.adaptor() uses it to emit, for every custom name,
+//   [palette="accent"] { --mat-sys-primary: var(--color--accent); \u2026 }
+// so Material components follow that palette attribute too. The core names
+// get the same rule from mat.define-ng-material-core-theme().
+@include t.define-theme("my-theme", $my-theme, $adaptor: mat.adaptor());
+`;export{a};

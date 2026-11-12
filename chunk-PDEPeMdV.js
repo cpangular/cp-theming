@@ -1,0 +1,2 @@
+import {U as Ua,n as ni,T as Td,R as Rd,a2 as pv,o as xd,z as zI,a3 as gS,F as vv}from'./main-PSPEVRAY.js';var r=class t{code=Ua.required();lang=Ua("scss");text=ni(()=>this.code().trimEnd());static \u0275fac=function(e){return new(e||t)};static \u0275cmp=Td({type:t,selectors:[["cpa-code"]],inputs:{code:[1,"code"],lang:[1,"lang"]},decls:2,vars:3,consts:[[3,"textContent"]],template:function(e,o){e&1&&(Rd(0,"pre"),pv(1,"code",0),xd()),e&2&&(zI(),gS("language-"+o.lang()),vv("textContent",o.text()));},styles:[`cpa-code{display:block}
+`],encapsulation:2})};export{r};

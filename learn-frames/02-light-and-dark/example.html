@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Light and dark are one theme: example</title>
+    <link rel="stylesheet" href="../frame.css" />
+    <link rel="stylesheet" href="../core.css" />
+    <link rel="stylesheet" href="theme.css" />
+    <link rel="stylesheet" href="example.css" />
+  </head>
+  <body>
+<div theme="ocean" class="pages">
+  <section themeMode="light">
+    <h4>themeMode="light"</h4>
+    <div class="card">
+      <strong>Invoice 1042</strong>
+      <span>Due on Friday</span>
+      <button>Pay</button>
+    </div>
+
+    <!-- the same card, dark, inside the light section -->
+    <div class="card" themeMode="dark">
+      <strong>Invoice 1042</strong>
+      <span>Due on Friday</span>
+      <button>Pay</button>
+    </div>
+  </section>
+
+  <section themeMode="dark">
+    <h4>themeMode="dark"</h4>
+    <div class="card">
+      <strong>Invoice 1042</strong>
+      <span>Due on Friday</span>
+      <button>Pay</button>
+    </div>
+  </section>
+
+  <!-- auto: whatever the device is set to -->
+  <section themeMode="auto">
+    <h4>themeMode="auto"</h4>
+    <div class="card">
+      <strong>Invoice 1042</strong>
+      <span>Due on Friday</span>
+      <button>Pay</button>
+    </div>
+  </section>
+</div>
+  </body>
+</html>

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cp-theming - demo-core</title>
+    <style>
+      /* Demo chrome — not part of the theme system */
+      body { padding: 2rem; }
+      h1, h2, h3 { margin: 0 0 0.5rem; }
+      section { margin-bottom: 2rem; }
+      .row { display: flex; flex-wrap: wrap; align-items: flex-start; }
+      .controls {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        display: flex;
+        gap: 0.5rem;
+        z-index: 100;
+      }
+      .controls button, .controls select {
+        padding: 0.4rem 0.8rem;
+        border-radius: 0.25rem;
+        border: 1px solid #999;
+        background: #eee;
+        color: #333;
+        cursor: pointer;
+        font-size: 0.8rem;
+      }
+      .label {
+        font-size: 0.7rem;
+        opacity: 0.6;
+        margin-top: 0.25rem;
+      }
+    </style>
+    <script type="module" crossorigin src="./assets/index-ClnTRYgT.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Bkq-wswX.css">
+  </head>
+  <body>
+    <!-- Mode + theme toggle controls -->
+    <div class="controls">
+      <select id="theme-select" onchange="window.switchTheme(this.value)">
+        <!-- populated by main.ts via getAvailableThemes() -->
+      </select>
+      <button onclick="window.switchMode('light')">Light</button>
+      <button onclick="window.switchMode('auto')">Auto</button>
+      <button onclick="window.switchMode('dark')">Dark</button>
+    </div>
+
+    <h1>cp-theming — demo-core</h1>
+    <p class="text--deemphasis">
+      All colour derivatives are computed at runtime via CSS relative colour syntax.
+      Toggle light / dark / auto above — no page reload, no CSS recalculation needed.
+    </p>
+
+    <!-- ── Containers ──────────────────────────────────────────────────── -->
+    <section>
+      <h2>Palette Containers</h2>
+      <div class="row">
+        <div class="card card--primary">
+          <h3>Primary</h3>
+          <p>Default container — bg + blended text.</p>
+          <p class="text--emphasis">Emphasis text</p>
+          <div class="text--deemphasis">Deemphasis text</div>
+        </div>
+        <div class="card card--filled">
+          <h3>Primary · filled</h3>
+          <p>The palette's own colour with contrast text.</p>
+          <p class="text--emphasis">Emphasis text</p>
+          <div class="text--deemphasis">Deemphasis text</div>
+        </div>
+        <div class="card card--primary-high">
+          <h3>Primary · high</h3>
+          <p>Mode-relative: darker in light mode, lighter in dark mode.</p>
+        </div>
+        <div class="card card--primary-low">
+          <h3>Primary · low</h3>
+          <p>Mode-relative: lighter in light mode, darker in dark mode.</p>
+        </div>
+        <div class="card card--secondary">
+          <h3>Secondary</h3>
+          <p>Secondary palette container.</p>
+        </div>
+        <div class="card card--error">
+          <h3>Error</h3>
+          <p>Error palette container.</p>
+        </div>
+        <div class="card card--surface">
+          <h3>Surface</h3>
+          <p>Slightly more tinted than background. Good for cards, panels.</p>
+          <p class="text--emphasis">Emphasis text</p>
+          <div class="text--deemphasis">Deemphasis text</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Outlined ────────────────────────────────────────────────────── -->
+    <section>
+      <h2>Outlined</h2>
+      <div class="row">
+        <div class="card--outlined">
+          <h3>Primary outlined</h3>
+          <p>No fill — a border in the palette's stroke role and palette colour text.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Buttons ─────────────────────────────────────────────────────── -->
+    <section>
+      <h2>Buttons</h2>
+      <div class="row" style="gap: 0.75rem; padding: 1rem; align-items: center; flex-wrap: wrap;">
+        <div>
+          <button class="btn btn--primary">Filled (lightness shift)</button>
+          <p class="label">hover = tone(high)</p>
+        </div>
+        <div>
+          <button class="btn btn--outlined">Outlined</button>
+          <p class="label">hover = bg()</p>
+        </div>
+        <div>
+          <button class="btn btn--state-layer">State Layer</button>
+          <p class="label">
+            hover/press = contrast overlay at --weight--state-* opacity<br />
+            works on any bg, no pre-computation
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Tonal combinations ──────────────────────────────────────────── -->
+    <section>
+      <h2>Tonal variants</h2>
+      <p class="text--deemphasis">
+        <code>palette</code> selects the palette. <code>tone</code> shifts all palette vars to a
+        modifier step. <code>bg</code> paints the palette's bg role and <code>container</code> gives
+        the box its padding and radius. All four compose independently.
+      </p>
+
+      <style>
+        .tone-table { border-collapse: collapse; width: 100%; margin-bottom: 1.5rem; }
+        .tone-table th { font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.5rem; text-align: center; opacity: 0.7; }
+        .tone-table th.row-label { text-align: right; padding-right: 0.75rem; }
+        .tone-table td { padding: 0.25rem; }
+        .tone-table td > div { --container--radius: 0.375rem; --container--padding-block: 0.5rem; --container--padding-inline: 0.5rem; font-size: 0.72rem; text-align: left; line-height: 1.3; }
+        .tone-table td > div strong { display: block; font-weight: 700; margin-bottom: 0.2rem; }
+        .tone-table td > div .t-em  { display: block; font-weight: 600; }
+        .tone-table td > div .t-de  { display: block; font-weight: 400; }
+      </style>
+
+      <p style="font-size:0.8rem; font-weight:600; margin: 0.5rem 0 0.25rem 0;">Mode-relative: high is darker in light mode and lighter in dark mode</p>
+      <table class="tone-table">
+        <thead><tr>
+          <th></th>
+          <th>higher</th><th>high</th><th>base</th><th>low</th><th>lower</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <th class="row-label">primary</th>
+            <td><div palette="primary" tone="higher" bg container><span class="t-em text--emphasis">Emphasis</span><strong>higher</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="primary" tone="high"   bg container><span class="t-em text--emphasis">Emphasis</span><strong>high</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="primary"               bg container><span class="t-em text--emphasis">Emphasis</span><strong>base</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="primary" tone="low"    bg container><span class="t-em text--emphasis">Emphasis</span><strong>low</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="primary" tone="lower"  bg container><span class="t-em text--emphasis">Emphasis</span><strong>lower</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+          </tr>
+          <tr>
+            <th class="row-label">secondary</th>
+            <td><div palette="secondary" tone="higher" bg container><span class="t-em text--emphasis">Emphasis</span><strong>higher</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="secondary" tone="high"   bg container><span class="t-em text--emphasis">Emphasis</span><strong>high</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="secondary"               bg container><span class="t-em text--emphasis">Emphasis</span><strong>base</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="secondary" tone="low"    bg container><span class="t-em text--emphasis">Emphasis</span><strong>low</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="secondary" tone="lower"  bg container><span class="t-em text--emphasis">Emphasis</span><strong>lower</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+          </tr>
+          <tr>
+            <th class="row-label">error</th>
+            <td><div palette="error" tone="higher" bg container><span class="t-em text--emphasis">Emphasis</span><strong>higher</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="error" tone="high"   bg container><span class="t-em text--emphasis">Emphasis</span><strong>high</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="error"               bg container><span class="t-em text--emphasis">Emphasis</span><strong>base</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="error" tone="low"    bg container><span class="t-em text--emphasis">Emphasis</span><strong>low</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="error" tone="lower"  bg container><span class="t-em text--emphasis">Emphasis</span><strong>lower</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+          </tr>
+          <tr>
+            <th class="row-label">surface</th>
+            <td><div palette="surface" tone="higher" bg container><span class="t-em text--emphasis">Emphasis</span><strong>higher</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="surface" tone="high"   bg container><span class="t-em text--emphasis">Emphasis</span><strong>high</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="surface"               bg container><span class="t-em text--emphasis">Emphasis</span><strong>base</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="surface" tone="low"    bg container><span class="t-em text--emphasis">Emphasis</span><strong>low</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+            <td><div palette="surface" tone="lower"  bg container><span class="t-em text--emphasis">Emphasis</span><strong>lower</strong><span class="t-de text--deemphasis">Deemphasis</span></div></td>
+          </tr>
+        </tbody>
+      </table>
+
+    </section>
+
+    <!-- ── Colour swatches ─────────────────────────────────────────────── -->
+    <section>
+      <h2>Primary palette — all roles &amp; modifiers</h2>
+
+      <h3 style="padding: 0 1rem; margin-bottom: 0.25rem;">color role</h3>
+      <div class="swatch-grid">
+        <div class="swatch" style="background:var(--color--primary--lighter);color:var(--color--primary--lighter--contrast)">lighter</div>
+        <div class="swatch" style="background:var(--color--primary--light);color:var(--color--primary--light--contrast)">light</div>
+        <div class="swatch" style="background:var(--color--primary);color:var(--color--primary--contrast)">base</div>
+        <div class="swatch" style="background:var(--color--primary--dark);color:var(--color--primary--dark--contrast)">dark</div>
+        <div class="swatch" style="background:var(--color--primary--darker);color:var(--color--primary--darker--contrast)">darker</div>
+        <div class="swatch" style="background:var(--color--primary--low);color:var(--color--primary--low--contrast)">low ↕</div>
+        <div class="swatch" style="background:var(--color--primary--lower);color:var(--color--primary--lower--contrast)">lower ↕</div>
+        <div class="swatch" style="background:var(--color--primary--high);color:var(--color--primary--high--contrast)">high ↕</div>
+        <div class="swatch" style="background:var(--color--primary--higher);color:var(--color--primary--higher--contrast)">higher ↕</div>
+      </div>
+      <p class="label" style="padding: 0 1rem;">↕ = mode-relative: flips between light/dark steps depending on mode</p>
+
+      <h3 style="padding: 0 1rem; margin: 1rem 0 0.25rem;">All palettes — base colour</h3>
+      <div class="swatch-grid">
+        <div class="swatch" style="background:var(--color--background);color:var(--color--background--contrast)">bg</div>
+        <div class="swatch" style="background:var(--color--primary);color:var(--color--primary--contrast)">primary</div>
+        <div class="swatch" style="background:var(--color--secondary);color:var(--color--secondary--contrast)">secondary</div>
+        <div class="swatch" style="background:var(--color--error);color:var(--color--error--contrast)">error</div>
+      </div>
+
+      <h3 style="padding: 0 1rem; margin: 1rem 0 0.25rem;">Palette tints</h3>
+      <p class="label" style="padding: 0 1rem;">Controlled by <code>--weight--tint-1</code> through <code>--weight--tint-5</code> per mode.</p>
+      <div style="display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem;">
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <span style="width: 72px; font-size: 0.7rem;">primary</span>
+          <div class="swatch" style="background:var(--color--primary--tint-1)">1</div>
+          <div class="swatch" style="background:var(--color--primary--tint-2)">2</div>
+          <div class="swatch" style="background:var(--color--primary--tint-3)">3</div>
+          <div class="swatch" style="background:var(--color--primary--tint-4)">4</div>
+          <div class="swatch" style="background:var(--color--primary--tint-5)">5</div>
+          <div class="swatch" style="background:var(--color--primary);color:var(--color--primary--contrast)">100%</div>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <span style="width: 72px; font-size: 0.7rem;">secondary</span>
+          <div class="swatch" style="background:var(--color--secondary--tint-1)">1</div>
+          <div class="swatch" style="background:var(--color--secondary--tint-2)">2</div>
+          <div class="swatch" style="background:var(--color--secondary--tint-3)">3</div>
+          <div class="swatch" style="background:var(--color--secondary--tint-4)">4</div>
+          <div class="swatch" style="background:var(--color--secondary--tint-5)">5</div>
+          <div class="swatch" style="background:var(--color--secondary);color:var(--color--secondary--contrast)">100%</div>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <span style="width: 72px; font-size: 0.7rem;">error</span>
+          <div class="swatch" style="background:var(--color--error--tint-1)">1</div>
+          <div class="swatch" style="background:var(--color--error--tint-2)">2</div>
+          <div class="swatch" style="background:var(--color--error--tint-3)">3</div>
+          <div class="swatch" style="background:var(--color--error--tint-4)">4</div>
+          <div class="swatch" style="background:var(--color--error--tint-5)">5</div>
+          <div class="swatch" style="background:var(--color--error);color:var(--color--error--contrast)">100%</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Nested theme ───────────────────────────────────────────────── -->
+    <section>
+      <h2>Nested theme — "ocean" containing "ember"</h2>
+      <p class="text--deemphasis">
+        The inner element has <code>[theme="ember"]</code>. It gets its own full palette scope —
+        all vars, blend amounts, and mode-relative pointers are independent from the outer theme.
+      </p>
+
+      <div class="card card--primary">
+        <h3>ocean · primary container</h3>
+        <div class="text--deemphasis">Outer theme: ocean</div>
+
+        <div theme="ember" style="--container--radius:0.75rem; --container--padding-block:1.5rem; --container--padding-inline:1.5rem; margin:0.75rem 0 0;">
+          <h3>ember · background container</h3>
+          <p class="text--deemphasis">
+            Inner theme: ember — mode toggle above affects both themes simultaneously
+          </p>
+
+          <div class="row" style="gap:0.5rem; margin-top:0.75rem;">
+            <div class="card card--primary" style="margin:0; flex:1;">
+              <strong>ember · primary</strong>
+              <div class="text--deemphasis">warm red</div>
+            </div>
+            <div class="card card--secondary" style="margin:0; flex:1;">
+              <strong>ember · secondary</strong>
+              <div class="text--deemphasis">amber</div>
+            </div>
+            <div class="card card--error" style="margin:0; flex:1;">
+              <strong>ember · error</strong>
+              <div class="text--deemphasis">deep red</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Forced light/dark modes ────────────────────────────────────── -->
+    <section>
+      <h2>Forced light / dark modes</h2>
+      <p class="text--deemphasis">
+        Any element can pin its subtree to a specific mode using <code>themeMode="light"</code>,
+        <code>themeMode="dark"</code>, or <code>themeMode="invert"</code> — regardless of the
+        global toggle above.
+      </p>
+
+      <div class="row">
+
+        <!-- Forced light -->
+        <div themeMode="light" style="flex:1; min-width:260px; margin:1rem;">
+          <div data-forced-theme-panel theme="ocean" style="--container--radius:0.75rem; --container--padding-block:1.5rem; --container--padding-inline:1.5rem;">
+            <h3><code>themeMode="light"</code></h3>
+            <div class="text--deemphasis">Always light, even when the page is in dark mode.</div>
+            <div class="row" style="gap:0.5rem; margin-top:0.75rem;">
+              <div class="card card--primary" style="margin:0; flex:1;">
+                <strong>Primary</strong>
+                <div class="text--deemphasis">forced light</div>
+              </div>
+              <div class="card card--surface" style="margin:0; flex:1;">
+                <strong>Surface</strong>
+                <div class="text--deemphasis">forced light</div>
+              </div>
+            </div>
+            <div style="margin-top:0.75rem; display:flex; gap:0.5rem;">
+              <button class="btn btn--primary">Filled</button>
+              <button class="btn btn--outlined">Outlined</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Forced dark -->
+        <div themeMode="dark" style="flex:1; min-width:260px; margin:1rem;">
+          <div data-forced-theme-panel theme="ocean" style="--container--radius:0.75rem; --container--padding-block:1.5rem; --container--padding-inline:1.5rem;">
+            <h3><code>themeMode="dark"</code></h3>
+            <div class="text--deemphasis">Always dark, even when the page is in light mode.</div>
+            <div class="row" style="gap:0.5rem; margin-top:0.75rem;">
+              <div class="card card--primary" style="margin:0; flex:1;">
+                <strong>Primary</strong>
+                <div class="text--deemphasis">forced dark</div>
+              </div>
+              <div class="card card--surface" style="margin:0; flex:1;">
+                <strong>Surface</strong>
+                <div class="text--deemphasis">forced dark</div>
+              </div>
+            </div>
+            <div style="margin-top:0.75rem; display:flex; gap:0.5rem;">
+              <button class="btn btn--primary">Filled</button>
+              <button class="btn btn--outlined">Outlined</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inverted -->
+        <div themeMode="invert" style="flex:1; min-width:260px; margin:1rem;">
+          <div data-forced-theme-panel theme="ocean" style="--container--radius:0.75rem; --container--padding-block:1.5rem; --container--padding-inline:1.5rem;">
+            <h3><code>themeMode="invert"</code></h3>
+            <div class="text--deemphasis">Always the opposite of the current global mode.</div>
+            <div class="row" style="gap:0.5rem; margin-top:0.75rem;">
+              <div class="card card--primary" style="margin:0; flex:1;">
+                <strong>Primary</strong>
+                <div class="text--deemphasis">inverted</div>
+              </div>
+              <div class="card card--surface" style="margin:0; flex:1;">
+                <strong>Surface</strong>
+                <div class="text--deemphasis">inverted</div>
+              </div>
+            </div>
+            <div style="margin-top:0.75rem; display:flex; gap:0.5rem;">
+              <button class="btn btn--primary">Filled</button>
+              <button class="btn btn--outlined">Outlined</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── Density ─────────────────────────────────────────────────── -->
+    <section>
+      <h2>Density</h2>
+      <p class="text--deemphasis">
+        Use <code>[themeDensity="-2"]</code> on any ancestor to shift
+        <code>--density-scale</code> in that subtree. Container padding uses
+        <code>--space--lg</code> by default, which is density-reactive.
+        Supports <code>-5</code> (most compact) to <code>5</code> (most spacious).
+      </p>
+
+      <style>
+        .density-row { display: flex; gap: 0.5rem; align-items: flex-start; flex-wrap: wrap; margin-bottom: 0.75rem; }
+        .density-col { flex: 1; min-width: 140px; }
+        .density-col > .density-scale-label { display: block; font-size: 0.7rem; font-weight: 700; opacity: 0.55; margin-bottom: 0.25rem; }
+      </style>
+
+      <!-- Basic density scaling -->
+      <div class="density-row">
+        <div class="density-col" themeDensity="0">
+          <span class="density-scale-label">scale 0 (default)</span>
+          <div class="card card--primary" style="margin:0">
+            <strong>Default</strong>
+            <div class="text--deemphasis">24px (scale 0)</div>
+          </div>
+        </div>
+        <div class="density-col" themeDensity="-1">
+          <span class="density-scale-label">scale −1</span>
+          <div class="card card--primary" style="margin:0">
+            <strong>Compact −1</strong>
+            <div class="text--deemphasis">20px (scale −1)</div>
+          </div>
+        </div>
+        <div class="density-col" themeDensity="-2">
+          <span class="density-scale-label">scale −2</span>
+          <div class="card card--primary" style="margin:0">
+            <strong>Compact −2</strong>
+            <div class="text--deemphasis">16px (scale −2)</div>
+          </div>
+        </div>
+        <div class="density-col" themeDensity="-3">
+          <span class="density-scale-label">scale −3</span>
+          <div class="card card--primary" style="margin:0">
+            <strong>Compact −3</strong>
+            <div class="text--deemphasis">12px — radius floor (scale −3)</div>
+          </div>
+        </div>
+        <div class="density-col" themeDensity="-4">
+          <span class="density-scale-label">scale −4</span>
+          <div class="card card--primary" style="margin:0">
+            <strong>Compact −4</strong>
+            <div class="text--deemphasis">12px — radius floor (scale −4)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Density + stroke: inset stroke width added to padding -->
+      <p class="text--deemphasis" style="margin: 0.5rem 0 0.25rem;">
+        With a 2px inset stroke — padding increases by the stroke width so content clears the border.
+      </p>
+      <div class="density-row">
+        <div class="density-col" themeDensity="0">
+          <span class="density-scale-label">scale 0</span>
+          <div class="card--outlined" style="--stroke-width:2px; margin:0">
+            <strong>Outlined 0</strong>
+            <div class="text--deemphasis">24px + 2px = 26px</div>
+          </div>
+        </div>
+        <div class="density-col" themeDensity="-1">
+          <span class="density-scale-label">scale −1</span>
+          <div class="card--outlined" style="--stroke-width:2px; margin:0">
+            <strong>Outlined −1</strong>
+            <div class="text--deemphasis">20px + 2px = 22px</div>
+          </div>
+        </div>
+        <div class="density-col" themeDensity="-2">
+          <span class="density-scale-label">scale −2</span>
+          <div class="card--outlined" style="--stroke-width:2px; margin:0">
+            <strong>Outlined −2</strong>
+            <div class="text--deemphasis">16px + 2px = 18px</div>
+          </div>
+        </div>
+        <div class="density-col" themeDensity="-3">
+          <span class="density-scale-label">scale −3</span>
+          <div class="card--outlined" style="--stroke-width:2px; margin:0">
+            <strong>Outlined −3</strong>
+            <div class="text--deemphasis">12px + 2px = 14px</div>
+          </div>
+        </div>
+        <div class="density-col" themeDensity="-4">
+          <span class="density-scale-label">scale −4</span>
+          <div class="card--outlined" style="--stroke-width:2px; margin:0">
+            <strong>Outlined −4</strong>
+            <div class="text--deemphasis">8px + 2px = 10px</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </body>
+</html>
