@@ -1,0 +1,9 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+// All this theme passes is the brand colour.
+$sunny: t.theme(
+  $brand: #ffb300,
+);
+
+@include t.define-core-theme();
+@include t.define-theme("sunny", $sunny);

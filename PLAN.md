@@ -261,11 +261,20 @@ $my-theme: t.theme(
 **Navigation, as the code has it** (`app.routes.ts`, `packages/packages.routes.ts`,
 `packages/packages-layout.component.ts`):
 
-- `/` — home: one card per package and a "Get started" link to `/packages/core/getting-started`.
-- Toolbar (every page): the logo (home), one link per package (`/packages/core`,
-  `/packages/ng-core`, `/packages/ng-material`), the theme selector and the light/dark toggle.
-- `/packages/:lib/…` — a sidebar on the left, the page, and an "on this page" rail on the right
-  that each page fills through `TocService`. `/packages/:lib` redirects to `categories`.
+- Three tracks (Phase 17), all in the layout of `packages-layout.component.ts`: **Learn**
+  (`/learn`), **Reference** (`/packages/:lib`, the addresses it always had) and **Explore**
+  (`/explore`).
+- `/` — home: Learn first (a "Start learning" button to chapter 1 and the chapter list), then the
+  Reference (one card per package), then Explore (Components, Showcase, the hosted demo-core).
+- Toolbar (every page): the logo (home), Learn, Reference, Explore, the theme selector and the
+  light/dark toggle.
+- `/learn` — the chapter list; `/learn/{slug}` — a chapter. The sidebar lists the ten chapters
+  (`learn/chapters.ts`), the unwritten ones greyed. No "on this page" rail.
+- `/explore/components`, `/explore/showcase` — the gallery and the showcase. The same pages stay
+  routed under `/packages/ng-material/…`, unlisted: the browser checks open them there.
+- `/packages/:lib/…` — a sidebar on the left with a switch between the three packages, the page,
+  and an "on this page" rail on the right that each page fills through `TocService`.
+  `/packages/:lib` redirects to `categories`.
 - Sidebar for **core** (18 pages, in this order):
   - Getting Started
   - _SCSS API_: Palette, Theme, Weights, Typography, Density, Shape, Focus, Motion, Elevation, Overlay
@@ -655,8 +664,26 @@ source set to `gh-pages`, and `pnpm gitflow deploy`, all the user's to do).
 - The home page and the core Getting Started page link to the hosted demo-core; the home page
   says the three Angular demos are stubs.
 
-### ⬛ Phase 17 — Docs that teach (PORT-PLAN.md)
+### 🟡 Phase 17 — Docs that teach (PORT-PLAN.md)
 
-Not started. A Learn track of ten chapters above the existing pages, which become the Reference.
+A Learn track of ten chapters above the existing pages, which become the Reference. Done: the
+mechanics and chapters 1–5.
+
+- `demos/docs/src/app/learn/chapters.ts` holds the chapter list and, next to it, the two tables of
+  the order check: `PATTERNS` (text a chapter introduces) and `REFS` (the Reference entries prose
+  may name, each with its chapter and the section it links to).
+- A chapter is a page in `src/app/learn/chapters/NN-name.component.ts` that fills the five parts of
+  `cpa-chapter` (example, idea, code, Try it, "You can now"). It names library entries with
+  `<cpa-ref name="…" />`, which links them to the Reference.
+- A live example is a set of files in `src/examples/learn/NN-name/`: `theme.scss` (a complete
+  stylesheet, core included), `example.html`, an optional `example.scss`, and any `X.html`,
+  `X.scss` or `X.theme.scss` for a variation `X`. `demos/docs/scripts/learn.ts` compiles them and
+  writes one HTML document per frame to `demos/docs/.generated/learn-frames/` (an `assets` entry of
+  `angular.json`); `cpa-live-example` shows it in an `<iframe>` beside the text of the same files.
+- The order check (`scripts/lib/order.ts`) runs in that script, so `pnpm --filter docs build`
+  fails on a violation, and in `demos/docs/test/learn.test.ts`, so `pnpm test` and CI do too.
+- Browser check: `node demos/docs/test/learn.ts` (after `pnpm --filter docs build`).
+
+Not done: chapters 6–10, the CSS Variables page generated from `core.css`, the review pass.
 
 ---

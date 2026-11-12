@@ -1,0 +1,60 @@
+// One component, written once, for three palettes. Sass repeats the rule
+// with each name in place of #{$name}.
+@each $name in primary, secondary, tertiary {
+  .notice.#{$name} {
+    // bg: a fill.  stroke: a border on it.  bg--contrast: text on it.
+    background: var(--color--#{$name}--bg);
+    border: 1px solid var(--color--#{$name}--stroke);
+    color: var(--color--#{$name}--bg--contrast);
+
+    // The colour itself, for the one part that should stand out…
+    button {
+      background: var(--color--#{$name});
+      // …with contrast as the text on it.
+      color: var(--color--#{$name}--contrast);
+    }
+
+    // focus: a ring that shows against this palette.
+    button:focus-visible,
+    button.focused {
+      outline: 3px solid var(--color--#{$name}--focus);
+    }
+
+    // tint-2: the colour at 20% strength, a wash over whatever is behind.
+    .tag {
+      background: var(--color--#{$name}--tint-2);
+    }
+  }
+}
+
+// Layout only.
+.row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.notice {
+  padding: 14px;
+  border-radius: 8px;
+}
+.notice h4 {
+  margin: 0;
+}
+.notice p {
+  margin: 6px 0 12px;
+  font-size: 13px;
+}
+.notice .tag {
+  display: table;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+}
+.notice button {
+  margin: 12px 8px 0 0;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  outline-offset: 2px;
+}

@@ -1,5 +1,17 @@
 import { Routes } from '@angular/router';
 
+const components = () =>
+  import('./pages/components.component').then((m) => m.ComponentsPageComponent);
+const showcase = () => import('./pages/showcase.component').then((m) => m.ShowcasePageComponent);
+
+// Explore: the two pages to look around in. They also stay reachable under
+// /packages/ng-material, where the browser checks open them.
+export const exploreChildRoutes: Routes = [
+  { path: '', redirectTo: 'components', pathMatch: 'full' },
+  { path: 'components', loadComponent: components },
+  { path: 'showcase', loadComponent: showcase },
+];
+
 export const packagesChildRoutes: Routes = [
   {
     path: '',
@@ -31,12 +43,11 @@ export const packagesChildRoutes: Routes = [
   },
   {
     path: 'showcase',
-    loadComponent: () => import('./pages/showcase.component').then((m) => m.ShowcasePageComponent),
+    loadComponent: showcase,
   },
   {
     path: 'components',
-    loadComponent: () =>
-      import('./pages/components.component').then((m) => m.ComponentsPageComponent),
+    loadComponent: components,
   },
   // core module pages
   {

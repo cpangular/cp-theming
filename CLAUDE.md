@@ -4,7 +4,7 @@ See [.github/copilot-instructions.md](.github/copilot-instructions.md) for the f
 project context, conventions, non-negotiable design decisions, and what is stub vs real.
 
 See [PLAN.md](PLAN.md) for the full architecture, current status, and development phases, and
-[PORT-PLAN.md](PORT-PLAN.md) for phases 8–14.
+[PORT-PLAN.md](PORT-PLAN.md) for phases 8–17.
 
 ## Quick Context
 
@@ -102,6 +102,19 @@ This is a CSS-variable-based theming system. Key facts:
   `packages-layout.component.ts` handles the click. An example's `href` is a fragment, an
   absolute path or a URL (a check fails anything else). demo-core uses the public `theme` module
   only; root `pnpm build` builds core and demo-core.
+- Learn track (Phase 17, chapters 1–5 written): `demos/docs/src/app/learn/chapters.ts` is the
+  chapter list plus the order check's tables, `PATTERNS` (text a chapter introduces) and `REFS`
+  (Reference entries prose may name, with the chapter and the section each links to). A chapter
+  is `learn/chapters/NN-name.component.ts`: the five parts of `cpa-chapter` (`chapterExample`,
+  `chapterIdea`, `chapterCode`, `chapterTry`, `chapterNow`), library names only through
+  `<cpa-ref name="…" />`. Its live examples are files in `src/examples/learn/NN-name/`:
+  `theme.scss` (complete, core included), `example.html`, optional `example.scss`, and
+  `X.html` / `X.scss` / `X.theme.scss` for a variation frame `X`. `demos/docs/scripts/learn.ts`
+  runs the order check (exit 1 on a violation) and writes the frames to
+  `demos/docs/.generated/learn-frames/`; `pnpm --filter docs build` runs it, a bare
+  `npx ng build docs` does not. A chapter may use only what earlier chapters introduced: when
+  one needs something new, add it to `PATTERNS` / `REFS` under that chapter. Checks:
+  `demos/docs/test/learn.test.ts` (in `pnpm test`), `node demos/docs/test/learn.ts` (browser).
 - A box-shadow token cannot be wrapped in `light-dark()` (colours only): `--elevation-N--shadow`
   is `<geometry> light-dark(<colour>, <colour>)`; a harness check fails a list inside `light-dark()`.
 - Focus ring color is **per-palette**, auto-derived via CSS relative color.

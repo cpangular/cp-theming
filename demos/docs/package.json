@@ -5,11 +5,12 @@
   "description": "cp-theming documentation site",
   "scripts": {
     "predev": "lsof -ti :4200 | xargs kill -9 2>/dev/null || true",
-    "start": "ng serve docs",
-    "dev": "ng serve docs --configuration development",
+    "learn": "node scripts/learn.ts",
+    "start": "node scripts/learn.ts && ng serve docs",
+    "dev": "node scripts/learn.ts && ng serve docs --configuration development",
     "build": "wireit",
     "build.site": "wireit",
-    "build:dev": "ng build docs --configuration development",
+    "build:dev": "node scripts/learn.ts && ng build docs --configuration development",
     "test": "node --test \"test/*.test.ts\"",
     "render": "node test/render.ts",
     "chain": "node test/chain.ts",
@@ -43,7 +44,7 @@
       ]
     },
     "build.site": {
-      "command": "ng build docs --configuration production && node scripts/assemble.ts",
+      "command": "node scripts/learn.ts && ng build docs --configuration production && node scripts/assemble.ts",
       "dependencies": [
         "../../packages/theme-core:build",
         "../../packages/theme-ng-material:build",

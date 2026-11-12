@@ -1,0 +1,11 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+// One colour passed; secondary and tertiary are generated from it.
+$studio: t.theme(
+  $palettes: (
+    primary: t.palette(#7a3fd1),
+  )
+);
+
+@include t.define-core-theme();
+@include t.define-theme("studio", $studio);

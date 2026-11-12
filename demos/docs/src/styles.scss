@@ -157,6 +157,19 @@ a {
   color: var(--color--primary, currentColor);
 }
 
+// Learn: a chapter title wraps instead of being cut off.
+.sidenav--wide {
+  .mat-mdc-list-item {
+    height: auto;
+    min-height: 44px;
+    padding-block: 8px;
+  }
+
+  .mdc-list-item__primary-text {
+    white-space: normal;
+  }
+}
+
 // ── Sidenav nav item overrides ─────────────────────────────────────────────
 
 // Remove the rounded corners Material applies to the sidenav panel

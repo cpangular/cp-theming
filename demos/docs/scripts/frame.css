@@ -1,0 +1,19 @@
+/* The docs' own part of a Learn frame: the page the example sits on. Linked
+   first, so the example's files win. The colours are core's defaults for a
+   page with no theme: a neutral grey, light or dark. */
+html {
+  font-family: Roboto, "Helvetica Neue", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+  padding: 20px;
+  background: var(--color--background);
+  color: var(--color--background--contrast);
+}
+
+* {
+  box-sizing: border-box;
+}

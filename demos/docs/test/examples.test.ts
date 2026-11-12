@@ -25,6 +25,10 @@
 //   name.ts.txt        TypeScript the docs show: the text is in a source file
 //                      of the docs app, verbatim
 //
+// The Learn track's live examples are in examples/learn/{chapter}/ and get the
+// same checks. The docs build also renders them (scripts/learn.ts), and
+// test/learn.test.ts holds them to the chapter order.
+//
 // Every file, display-only or not, may only name custom properties the library
 // declares or reads and `@cpangular/…` paths the packages export.
 import { test } from 'node:test';
@@ -78,7 +82,10 @@ const display = all.filter(isDisplay);
 
 test('every example is a .scss, .css, .html or .ts.txt file in a page folder', () => {
   assert.ok(all.length > 0, 'examples exist');
-  const odd = all.filter((f) => !/^[\w-]+[\\/][\w.-]+\.(scss|css|html|ts\.txt)$/.test(rel(f)));
+  // {page}/{file}, or learn/{chapter}/{file} for a Learn chapter.
+  const odd = all.filter(
+    (f) => !/^(?:learn[\\/]\d\d-[\w-]+|[\w-]+)[\\/][\w.-]+\.(scss|css|html|ts\.txt)$/.test(rel(f)),
+  );
   assert.deepEqual(odd.map(rel), []);
 });
 
@@ -505,7 +512,11 @@ for (const file of all) {
     const source = file.endsWith('.html')
       ? readFileSync(file, 'utf8').replace(/<!--|-->/g, ' ')
       : readFileSync(file, 'utf8');
-    const names = [...source.matchAll(/(?<![\w-])--[a-z][\w-]*/g)]
+    // A name Sass builds (`--color--#{$name}--bg`) is not one to look up: the
+    // compiled file's var() reads are checked above.
+    const names = [
+      ...source.replace(/--[\w-]*#\{[^}]*\}[\w-]*/g, '').matchAll(/(?<![\w-])--[a-z][\w-]*/g),
+    ]
       .map((m) => m[0])
       .filter((n) => !n.endsWith('-')); // `--palette-color--*` in a comment
     assert.deepEqual([...new Set(names.filter((n) => !known.has(n)))], []);

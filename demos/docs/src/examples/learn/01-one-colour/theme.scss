@@ -1,0 +1,13 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+// A theme that passes one colour. Any CSS colour works: hex, rgb(), hsl(),
+// oklch(), a named colour.
+$ocean: t.theme(
+  $palettes: (
+    primary: t.palette(#2f6fde),
+  )
+);
+
+// Core once, then the theme.
+@include t.define-core-theme();
+@include t.define-theme("ocean", $ocean);

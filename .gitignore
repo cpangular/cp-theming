@@ -5,6 +5,9 @@ node_modules/
 # All dist/ folders — compiled output is not committed; generate via pnpm build.
 dist/
 
+# The Learn track's built example frames (demos/docs/scripts/learn.ts)
+demos/docs/.generated/
+
 # TypeScript incremental build info
 *.tsbuildinfo
 

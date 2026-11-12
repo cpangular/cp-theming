@@ -1,0 +1,12 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+// The brand colour, and a secondary of our own. The rest is still generated.
+$sunny: t.theme(
+  $brand: #ffb300,
+  $palettes: (
+    secondary: t.palette(#00695c),
+  ),
+);
+
+@include t.define-core-theme();
+@include t.define-theme("sunny", $sunny);

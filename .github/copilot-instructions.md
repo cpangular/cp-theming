@@ -158,6 +158,17 @@ demos/demo-brand-material/                                 — Example brand+mat
   only (`gallery-layout.scss` may not declare a colour). `*.ts.txt` is TypeScript the docs show,
   verbatim from a source file of the docs app. Never colour a gallery example: fix the adapter or
   add a measured patch to `apply-material-overrides()`.
+- Learn track (PORT-PLAN.md Phase 17): `demos/docs/src/app/learn/chapters.ts` holds the chapter
+  list and the order check's tables (`PATTERNS`, `REFS`). A chapter uses only what earlier
+  chapters introduced: its example files (`demos/docs/src/examples/learn/NN-name/`) and its prose
+  match no pattern of a later chapter, and its prose names library entries only through
+  `<cpa-ref name="…" />`, each introduced by that chapter or an earlier one. The check is
+  `demos/docs/scripts/lib/order.ts`, run by `demos/docs/scripts/learn.ts` (the first step of
+  `pnpm --filter docs build`, which also writes the example frames to
+  `demos/docs/.generated/learn-frames/`) and by `demos/docs/test/learn.test.ts`. A bare
+  `npx ng build docs` does not build the frames. Browser check: `demos/docs/test/learn.ts`
+  (Playwright, local only), after `pnpm --filter docs build`: every chapter in light and dark,
+  each frame rendered with its source beside it, every Reference link.
 - The docs read the adapter's built CSS (`packages/theme-ng-material/dist/*.css`): after a change
   in its `scss/`, run `pnpm --filter @cpangular/cp-theming-ng-material build` before
   `npx ng build docs`. Root `pnpm build` builds core and `demos/demo-core`, not the adapter.

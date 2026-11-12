@@ -1102,6 +1102,64 @@ the page with its source beside it; the Reference variables page is generated; t
 are closed; a reader who starts at chapter 1 meets no term before it is explained (the review
 pass is the test).
 
+**As landed: the mechanics and chapters 1 to 5 (Session 15, 2026-11-12)**
+
+- Navigation: Learn (`/learn`), Reference (`/packages/:lib`, unchanged addresses, with a package
+  switch in the sidebar) and Explore (`/explore/components`, `/explore/showcase`). The home page
+  starts with Learn. The gallery and the showcase also stay routed under `/packages/ng-material`,
+  unlisted, because `render.ts` and `chain.ts` open them there.
+- Tables: `demos/docs/src/app/learn/chapters.ts` has the chapter list, `PATTERNS` and `REFS`.
+  The check is `demos/docs/scripts/lib/order.ts`: example files and prose against the patterns of
+  later chapters; `<cpa-ref>` names against `REFS` (the chapter that introduces each, and a
+  Reference section that exists and mentions it); a `<code>` that names a library entry without
+  `<cpa-ref>`; the five parts of a page; the frames a page shows against the files it imports.
+  It runs in `scripts/learn.ts` (first step of `pnpm --filter docs build`, exit 1) and in
+  `test/learn.test.ts` (`pnpm test`, CI), which also shows the check refusing each kind of
+  violation.
+- Frames: `scripts/learn.ts` writes `demos/docs/.generated/learn-frames/{chapter}/{frame}.html`
+  (git-ignored; an `assets` entry of `angular.json`). A chapter's `theme.scss` is a complete
+  stylesheet with `define-core-theme()`, as a reader would write it; its compiled CSS starts with
+  core's, which is written once as `core.css` and linked ahead of the rest. The docs add
+  `scripts/frame.css` (font, margin, the page colours) and the page sets `themeMode` on the
+  frame's `<html>` to the site's mode. A bare `npx ng build docs` does not run the script: use
+  `pnpm --filter docs build`, or run `node demos/docs/scripts/learn.ts` first.
+- Browser check: `demos/docs/test/learn.ts`. 491 checks per engine, all passing in Chromium,
+  Firefox and WebKit; screenshots of every chapter in light and dark in `dist/docs-render/learn/`.
+
+Judgment calls you may want to revisit:
+
+- **"Try it" is a second frame**, under the code, with one tab per variation and the swapped
+  files marked. The plan says "a variation the reader can switch in the live example"; with one
+  frame at the top of the page the reader would switch it from four screens further down.
+- **Chapter 1's picker sets the primary's light and dark value**
+  (`--color--primary--mode-light` / `--mode-dark`) on the `[theme]` element, not
+  `--color--primary`. Setting the joined token re-derives the steps, contrasts and tints but not
+  bg, stroke or focus (`_palette.scss`, `derive-palette`), and the plan wants all of them to
+  move. The prose says the picker changes "the colour this theme is given".
+- **Chapter 1 shows the soft background, border and focus ring** (the plan's live example) and
+  its stylesheet therefore reads `--color--primary--bg`, `--stroke` and `--focus`, three chapters
+  before roles are taught. The prose names them in plain words only; `REFS` gives those entries
+  to chapter 4, and chapter 4's pattern is `--tint-N` alone.
+- **Chapter 2 uses the primary palette only** (fill, border, text all from it): `surface` is
+  chapter 3. Chapters 4 and 5 use primary, secondary and tertiary, which chapter 3 taught.
+- **Chapter 5 has no `container` and no `shape`** (chapter 8), so its fills are square and extend
+  slightly past their element, as `bg()` does without a container.
+- Patterns added to the plan's list: `light-dark(`, `--high` / `--low`, `--mode-light`,
+  `color-scheme` → 2; `--color--brand`, the generated palette names as variables or as keys of
+  `$palettes` → 3; `--tint-N` → 4; `tone=`, the surface attributes, the apply mixins,
+  `--palette-color`, `--container--` → 5; `$default` → 6; `WCAG`, `4.5:1` → 7; the non-colour
+  tokens, attributes and config functions → 8; the TypeScript names → 9.
+
+Found while writing, not changed:
+
+- The Reference's Surface Types page says a layer needs a palette "on the same element (or an
+  ancestor)". The selectors are `[palette][bg]` and so on: the same element only.
+- The focus colour of a light palette is near-black in both modes (lightness is inverted from the
+  colour, not from the page), so in dark mode a ring drawn outside a pale button is hard to see
+  against the page. Chapter 4's "A pale primary" tab shows it when the site is dark.
+
+Not done: chapters 6 to 10, the generated CSS Variables page, the review pass (Sessions 16, 17).
+
 ## Decisions already made
 
 So they are not reopened. Tell me if you want any reversed.
