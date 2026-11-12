@@ -6,6 +6,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 interface Category {
   title: string;
   route: string;
+  /** Section id on the target page; the card scrolls to it. */
+  fragment?: string;
   description: string;
 }
 
@@ -91,37 +93,78 @@ const CORE_CATEGORIES: Category[] = [
 
 const NG_CORE_CATEGORIES: Category[] = [
   {
+    title: 'Getting Started',
+    route: 'getting-started',
+    description:
+      'Install, load the CSS, add provideTheme() to your app config, and apply the saved theme and mode before first paint.',
+  },
+  {
     title: 'ThemeService',
     route: 'api',
+    fragment: 'theme-service',
     description:
-      'Signal-based Angular service exposing theme, mode, effectiveMode, and availableThemes as readonly signals. No RxJS, no zones required.',
+      'Signal-based Angular service exposing theme, mode, effectiveMode and availableThemes as readonly signals. No RxJS, no zones required.',
   },
   {
     title: 'Directives',
     route: 'api',
+    fragment: 'theme-directive',
     description:
-      '[theme] and [themeMode] attribute directives for scoping themes and overriding light/dark mode for a DOM subtree.',
+      '[theme], [themeMode] and [themeDensity] attribute directives for scoping a theme, a mode or a density to a DOM subtree.',
+  },
+  {
+    title: 'Guides',
+    route: 'guides',
+    description:
+      'Signal reactivity, scoping a theme or mode to a subtree with the directives, and persisting the selection across sessions.',
   },
 ];
 
 const NG_MATERIAL_CATEGORIES: Category[] = [
   {
-    title: 'Core Mappings',
-    route: 'api',
+    title: 'Getting Started',
+    route: 'getting-started',
     description:
-      '166 --mat-sys-* → var(--color--*) token mappings that wire all Angular Material M3 component tokens to cp-theming palettes.',
+      'Install alongside Angular Material, load material-core.css after core and your theme, and drop the prebuilt Material theme.',
+  },
+  {
+    title: 'Components',
+    route: 'components',
+    description:
+      'Every Angular Material component live under the adapter, in the current theme and mode, with the accent components repeated under each palette scope and the overlays inside nested scopes.',
+  },
+  {
+    title: 'Showcase',
+    route: 'showcase',
+    description:
+      'The four presets side by side, density scopes from 0 to -4, relative density chaining, and the active palette swatches.',
+  },
+  {
+    title: 'Mixins',
+    route: 'api',
+    fragment: 'scss-mixins',
+    description:
+      "define-ng-material-core-theme() computes the --mat-sys-* tokens from Angular Material's role tables; apply-material-overrides() and apply-material-density-scopes() add the component patches and the [themeDensity] scopes.",
   },
   {
     title: 'Adaptor',
     route: 'api',
+    fragment: 'adaptor',
     description:
-      'adaptor() hook for t.define-theme() — automatically emits [palette="name"] override rules so Material components respond to the palette attribute.',
+      'adaptor() hook for t.define-theme(): emits the [palette="name"] rules so Material components follow the palette attribute.',
   },
   {
-    title: 'Material Density',
+    title: 'Precompiled CSS',
     route: 'api',
+    fragment: 'css-exports',
     description:
-      'Per-element density size control: [themeDensity="-N"] rules compact buttons, inputs, lists, toolbar, tabs, chips, and steppers independently.',
+      'material-core.css and material-overrides.css for projects without Sass, and the order to load them in.',
+  },
+  {
+    title: 'Guides',
+    route: 'guides',
+    description:
+      'How the tokens follow nested themes and modes, what the overlays need, and how to add a component override with a measured reason.',
   },
 ];
 
@@ -147,7 +190,7 @@ const LIB_META: Record<
     title: '@cpangular/cp-theming-ng-material',
     subtitle: 'Angular Material 22 · M3 adapter',
     intro:
-      'SCSS adapter mapping the cp-theming CSS variable system to Angular Material 22 system tokens. Ships precompiled CSS — no Sass setup required in consumer projects.',
+      "Angular Material 22 under cp-theming: the --mat-sys-* tokens are computed from Material's own role tables, so every component follows the theme, mode and palette scope of the element it sits in. Ships precompiled CSS — no Sass setup required.",
     categories: NG_MATERIAL_CATEGORIES,
   },
 };
@@ -167,7 +210,7 @@ const LIB_META: Record<
         <p class="categories-intro">{{ meta().intro }}</p>
         <div class="categories-grid">
           @for (cat of meta().categories; track cat.route + cat.title) {
-            <a class="category-card" [routerLink]="['..', cat.route]">
+            <a class="category-card" [routerLink]="['..', cat.route]" [fragment]="cat.fragment">
               <span class="category-name">{{ cat.title }}</span>
               <span class="category-desc">{{ cat.description }}</span>
             </a>

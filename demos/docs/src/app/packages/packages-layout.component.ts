@@ -222,10 +222,23 @@ export class PackagesLayoutComponent implements AfterViewInit {
         filter((e) => e instanceof NavigationEnd),
         takeUntilDestroyed(destroyRef),
       )
-      .subscribe(() => setTimeout(highlightCode, 0));
+      .subscribe(() => {
+        setTimeout(highlightCode, 0);
+        setTimeout(() => this._scrollToFragment(router.parseUrl(router.url).fragment), 50);
+      });
   }
 
   ngAfterViewInit(): void {
     this.pageScrollEl = this._pageScrollRef.nativeElement;
+  }
+
+  /** Scrolls the page container (not the window) to the section the URL fragment names. */
+  private _scrollToFragment(fragment: string | null): void {
+    const container = this.pageScrollEl;
+    if (!fragment || !container) return;
+    const el = document.getElementById(fragment);
+    if (!el) return;
+    const top = el.getBoundingClientRect().top - container.getBoundingClientRect().top;
+    container.scrollBy({ top: top - 24, behavior: 'smooth' });
   }
 }
