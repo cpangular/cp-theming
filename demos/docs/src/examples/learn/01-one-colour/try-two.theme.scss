@@ -1,0 +1,18 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+// Two themes in one stylesheet. Core is still included once.
+$ocean: t.theme(
+  $palettes: (
+    primary: t.palette(#2f6fde),
+  )
+);
+
+$forest: t.theme(
+  $palettes: (
+    primary: t.palette(#2e7d4f),
+  )
+);
+
+@include t.define-core-theme();
+@include t.define-theme("ocean", $ocean);
+@include t.define-theme("forest", $forest);

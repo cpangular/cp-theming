@@ -1,0 +1,11 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+// A much lighter primary. The component's stylesheet is unchanged.
+$studio: t.theme(
+  $palettes: (
+    primary: t.palette(#ffd54a),
+  )
+);
+
+@include t.define-core-theme();
+@include t.define-theme("studio", $studio);

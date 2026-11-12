@@ -1,0 +1,13 @@
+// All of these are set by the nearest palette scope around the element
+.card-label {
+  color: var(--palette-color);
+  font-weight: 600;
+}
+
+.card-accent {
+  color: var(--palette-color--high);
+}
+
+.card-divider {
+  border-top: 1px solid var(--palette-color--stroke);
+}

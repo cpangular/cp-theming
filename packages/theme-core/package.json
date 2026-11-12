@@ -1,7 +1,12 @@
 {
   "name": "@cpangular/cp-theming-core",
-  "version": "0.1.0-dev.0",
+  "version": "0.0.0-MAIN",
   "description": "CSS variable-based theming system. Framework-agnostic core.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cpangular/cp-theming.git",
+    "directory": "packages/theme-core"
+  },
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
@@ -12,9 +17,35 @@
     "./css/presets/cyan-orange": "./dist/presets/cyan-orange.css",
     "./css/presets/magenta-violet": "./dist/presets/magenta-violet.css"
   },
+  "files": [
+    "dist",
+    "scss",
+    "!dist/render.html"
+  ],
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./scss/*": "./scss/*",
+      "./css/core": "./dist/core.css",
+      "./css/presets/azure-blue": "./dist/presets/azure-blue.css",
+      "./css/presets/rose-red": "./dist/presets/rose-red.css",
+      "./css/presets/cyan-orange": "./dist/presets/cyan-orange.css",
+      "./css/presets/magenta-violet": "./dist/presets/magenta-violet.css"
+    }
+  },
   "scripts": {
     "build": "wireit",
-    "dev": "wireit"
+    "dev": "wireit",
+    "test": "wireit",
+    "test.css": "wireit",
+    "test.api": "wireit",
+    "render": "node test/render.ts",
+    "github.actions.build": "wireit",
+    "github.actions.test": "wireit",
+    "github.actions.pack": "gitflow pack"
   },
   "wireit": {
     "build": {
@@ -61,9 +92,53 @@
     "dev.ts": {
       "command": "tsc --build --watch --pretty",
       "service": true
+    },
+    "test": {
+      "dependencies": [
+        "test.css",
+        "test.api"
+      ]
+    },
+    "test.css": {
+      "command": "node --test \"test/css/*.test.ts\"",
+      "files": [
+        "scss/**/*.scss",
+        "test/css/**",
+        "test/lib/**",
+        "test/fixtures/**",
+        "../theme-ng-material/scss/**/*.scss",
+        "../../demos/docs/src/**/*.scss",
+        "../../angular.json",
+        "package.json"
+      ],
+      "output": []
+    },
+    "test.api": {
+      "command": "vitest run",
+      "files": [
+        "src/**/*.ts",
+        "test/api/**",
+        "test/lib/**",
+        "scss/**/*.scss",
+        "vitest.config.ts",
+        "../../demos/docs/src/index.html",
+        "package.json"
+      ],
+      "output": []
+    },
+    "github.actions.build": {
+      "dependencies": [
+        "build"
+      ]
+    },
+    "github.actions.test": {
+      "dependencies": [
+        "test"
+      ]
     }
   },
   "devDependencies": {
+    "colorjs.io": "^0.7.1",
     "sass": "^1.101.0",
     "typescript": "^5.8.0",
     "wireit": "^0.14.12"

@@ -1,0 +1,10 @@
+  setTheme(value: string): void {
+    this.themeService.setTheme(value);
+  }
+
+  cycleMode(): void {
+    const current = this.themeService.mode();
+    const idx = MODE_CYCLE.indexOf(current);
+    const next = MODE_CYCLE[(idx + 1) % MODE_CYCLE.length];
+    this.themeService.setMode(next);
+  }

@@ -75,8 +75,10 @@ const TOC = [
             >
             <div class="api-member-body">
               <p class="api-member-desc">
-                Scan loaded stylesheets and return all registered theme definitions found via
-                <code>&#64;property</code> registry.
+                Scan the loaded stylesheets and return one entry per theme name found in a
+                <code>[theme="name"]</code> selector: the rules <code>t.define-theme()</code>
+                emits (themes are not meant to be typed as CSS by hand). A cross-origin stylesheet
+                cannot be read and is skipped.
               </p>
             </div>
           </div>
@@ -195,6 +197,20 @@ const TOC = [
               <p class="api-member-desc">
                 Wire theme and mode to a storage adapter. Pass <code>localStorage</code>,
                 <code>sessionStorage</code>, or a custom <code>ThemeStorage</code> implementation.
+              </p>
+            </div>
+          </div>
+          <div class="api-member-card">
+            <span class="api-signature-row"
+              ><span class="api-sig-name">themeHeadSnippet</span
+              ><span class="api-sig-punct">: </span><span class="api-sig-return">string</span></span
+            >
+            <div class="api-member-body">
+              <p class="api-member-desc">
+                JavaScript text for an inline <code>&lt;script&gt;</code> in
+                <code>&lt;head&gt;</code>: applies the saved theme and mode to
+                <code>&lt;html&gt;</code> before first paint. See Getting Started, "No flash on
+                reload".
               </p>
             </div>
           </div>

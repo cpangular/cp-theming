@@ -1,0 +1,12 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+// No brand: a primary of our own. The brand palette is that primary, and
+// secondary and tertiary are generated from it.
+$sunny: t.theme(
+  $palettes: (
+    primary: t.palette(#00695c),
+  )
+);
+
+@include t.define-core-theme();
+@include t.define-theme("sunny", $sunny);

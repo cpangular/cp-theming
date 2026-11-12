@@ -1,29 +1,91 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Palette — internal module. Use via @use 'theme' as t; t.palette(...).
+//
+// Cascade (Phase 9):
+//   • Registered (@property <color>): each role's light and dark colour,
+//     --color--{name}[--role]--mode-light / --mode-dark. These are what a
+//     theme switch transitions.
+//   • Not registered: the role tokens --color--{name}[--role], declared as
+//     light-dark(var(…--mode-light), var(…--mode-dark)) so they resolve where
+//     they are used, and every derivation (ladders, contrasts, aliases, tints).
+//   • A theme rule declares only the pairs its author passed (plus the join);
+//     define-core-theme() derives everything else once on :where(:root, [theme]).
+//
+// Chain (Phase 14): brand → primary → secondary, tertiary → background, surface.
+//   • A theme passes whichever of these it has. Core generates each one it
+//     left out, on the same shared selector, from the nearest thing the theme
+//     passed (see "Generated palettes" below).
+//   • The brand colour is never adjusted: --color--brand is the brand palette's
+//     colour as passed. The primary generated from it is.
+//   • error, warn, caution and pass do not derive from anything: a theme that
+//     leaves one out gets the registered initial value, $semantic-defaults.
 // ─────────────────────────────────────────────────────────────────────────────
 @use "sass:map";
 @use "sass:list";
+@use "sass:meta";
+@use "sass:string";
 @use "variables" as vars;
+@use "mode" as _m;
 
-// ─── Core palette registration ────────────────────────────────────────────────
-// These names are pre-registered once in define-core-theme().
-// initial-values form a print-ready greyscale theme (no color — safe fallback).
-$_core-palette-names: background, surface, primary, secondary, error, warn, caution, pass;
+// ─── Core palette names ───────────────────────────────────────────────────────
+// Registered and derived once by define-core-theme().
+$core-palette-names:
+  background, surface, brand, primary, secondary, tertiary, error, warn, caution, pass;
+$roles: color, bg, stroke, focus;
 
-// Grayscale initial values per palette role (color, bg, stroke, focus).
-// Designed as a legible black-on-white print fallback.
-$_core-grayscale: (
-  background: (
-    color: oklch(0.97 0 0),
-    bg: oklch(1 0 0),
-    stroke: oklch(0.65 0 0),
-    focus: oklch(0.2 0 0),
+// The colours of the semantic palettes when a theme does not pass them: the
+// registered initial values of their colour pairs. They are fixed, not derived
+// from brand or primary. The presets pass the same ones
+// (presets/_palettes.scss builds $default-error and friends from this map).
+//
+// pass    — green  145° — success, confirmation
+// caution — yellow 103° — advisory, needs attention (amber-gold, to stay readable on white)
+// warn    — orange  55° — warning, degraded state
+// error   — red     27° — failure, destructive action
+$semantic-defaults: (
+  error: (
+    light: oklch(0.52 0.22 27),
+    dark: oklch(0.7 0.2 27),
   ),
+  warn: (
+    light: oklch(0.55 0.18 55),
+    dark: oklch(0.76 0.16 55),
+  ),
+  caution: (
+    light: oklch(0.55 0.16 103),
+    dark: oklch(0.82 0.15 103),
+  ),
+  pass: (
+    light: oklch(0.48 0.18 145),
+    dark: oklch(0.72 0.16 145),
+  ),
+);
+
+// Initial values per palette role (colour, bg, stroke, focus): what a pair holds
+// when nothing declares it. With no theme loaded core still generates primary,
+// the accents and the neutrals from the brand pair (see "Generated palettes"),
+// so the grey brand below makes all of them grey: a legible black-on-white
+// print fallback. The colour role of a semantic palette is $semantic-defaults,
+// one value per mode; its other roles are always derived from it.
+$_core-initial: (
+  // background/surface: bg is the base (core joins the pair, no theme → initial).
+  background: (
+      color: oklch(0.97 0 0),
+      bg: oklch(0.97 0 0),
+      stroke: oklch(0.65 0 0),
+      focus: oklch(0.2 0 0),
+    ),
   surface: (
     color: oklch(0.93 0 0),
-    bg: oklch(0.95 0 0),
+    bg: oklch(0.93 0 0),
     stroke: oklch(0.6 0 0),
     focus: oklch(0.2 0 0),
+  ),
+  brand: (
+    color: oklch(0.2 0 0),
+    bg: oklch(0.92 0 0),
+    stroke: oklch(0.2 0 0),
+    focus: oklch(0.5 0 0),
   ),
   primary: (
     color: oklch(0.2 0 0),
@@ -37,132 +99,161 @@ $_core-grayscale: (
     stroke: oklch(0.4 0 0),
     focus: oklch(0.65 0 0),
   ),
+  tertiary: (
+    color: oklch(0.45 0 0),
+    bg: oklch(0.92 0 0),
+    stroke: oklch(0.45 0 0),
+    focus: oklch(0.68 0 0),
+  ),
   error: (
-    color: oklch(0.15 0 0),
+    color: map.get($semantic-defaults, error),
     bg: oklch(0.92 0 0),
     stroke: oklch(0.15 0 0),
     focus: oklch(0.45 0 0),
   ),
   warn: (
-    color: oklch(0.3 0 0),
+    color: map.get($semantic-defaults, warn),
     bg: oklch(0.92 0 0),
     stroke: oklch(0.3 0 0),
     focus: oklch(0.55 0 0),
   ),
   caution: (
-    color: oklch(0.5 0 0),
+    color: map.get($semantic-defaults, caution),
     bg: oklch(0.92 0 0),
     stroke: oklch(0.5 0 0),
     focus: oklch(0.68 0 0),
   ),
   pass: (
-    color: oklch(0.35 0 0),
+    color: map.get($semantic-defaults, pass),
     bg: oklch(0.92 0 0),
     stroke: oklch(0.35 0 0),
     focus: oklch(0.6 0 0),
-  ),
+  )
 );
 
-// Dedup list — non-core palettes that have already been registered.
+// Custom palette names cannot carry their real colour as an initial value
+// (initial-value may not use var(), and from-var() palettes are expressions),
+// so they fall back to transparent — invisible rather than garish.
+$_custom-initial: (
+  color: transparent,
+  bg: transparent,
+  stroke: transparent,
+  focus: oklch(0.3 0 0),
+);
+
+// Dedup list — custom palette names whose root-level pieces are already emitted.
 $_registered-palette-names: ();
 
-// Internal: emit 4 @property rules for one palette name.
-// Must be called at root level (or inside @at-root).
-@mixin _register-palette-properties($name, $color-iv, $bg-iv, $stroke-iv, $focus-iv) {
-  @property --color--#{$name} {
-    syntax: "<color>";
-    inherits: true;
-    initial-value: #{$color-iv};
+@function is-core($name) {
+  @return list.index($core-palette-names, $name) != null;
+}
+
+// The role token. The 'color' role is the palette's identity — no role suffix.
+@function token($name, $role) {
+  @if $role == color {
+    @return --color--#{$name};
   }
-  @property --color--#{$name}--bg {
-    syntax: "<color>";
-    inherits: true;
-    initial-value: #{$bg-iv};
-  }
-  @property --color--#{$name}--stroke {
-    syntax: "<color>";
-    inherits: true;
-    initial-value: #{$stroke-iv};
-  }
-  @property --color--#{$name}--focus {
-    syntax: "<color>";
-    inherits: true;
-    initial-value: #{$focus-iv};
+  @return --color--#{$name}--#{$role};
+}
+
+// ─── Registration ─────────────────────────────────────────────────────────────
+// Eight @property rules per palette: four roles × light and dark.
+// Must be emitted at root level. An initial value is one colour for both modes
+// or a (light, dark) map.
+@mixin _register-palette-properties($name, $initial) {
+  @each $role in $roles {
+    @each $mode in light, dark {
+      $value: map.get($initial, $role);
+      @if meta.type-of($value) == map {
+        $value: map.get($value, $mode);
+      }
+      @property #{token($name, $role)}--mode-#{$mode} {
+        syntax: "<color>";
+        inherits: true;
+        initial-value: #{$value};
+      }
+    }
   }
 }
 
-// Public: emit @property registrations for all core palette names.
+// Public: registrations for the core palette names. --color--brand is the
+// brand palette's colour role, so it is registered as a pair like the others.
 // Called once from define-core-theme() at root level.
 @mixin register-core-palettes() {
-  @each $name in $_core-palette-names {
-    $iv: map.get($_core-grayscale, $name);
-    @include _register-palette-properties(
-      $name,
-      map.get($iv, color),
-      map.get($iv, bg),
-      map.get($iv, stroke),
-      map.get($iv, focus)
-    );
+  @each $name in $core-palette-names {
+    @include _register-palette-properties($name, map.get($_core-initial, $name));
   }
 }
 
-// config() — builds a single-variation palette config map.
-// Re-exported as t.palette() by _theme.scss.
-// $focus — explicit focus ring color for this palette variation.
-// Overrides the auto-derived focus color. Use inside t.light-dark() so you
-// can provide different values per mode:
-//   t.light-dark(
-//     t.palette(oklch(0.55 0.18 240)),
-//     t.palette(oklch(0.65 0.16 240), $focus: oklch(0.85 0.18 60)),
-//   )
-// If null, focus is auto-derived at CSS runtime from the color role.
-@function config($base, $color: null, $bg: null, $stroke: null, $focus: null) {
-  @return (base: $base, color: $color, bg: $bg, stroke: $stroke, focus: $focus);
+// ─── Derivations (core, once) ─────────────────────────────────────────────────
+
+// Joins a role's registered pair into its token.
+@mixin _join($name, $role) {
+  $t: token($name, $role);
+  #{$t}: light-dark(var(#{$t}--mode-light), var(#{$t}--mode-dark));
 }
 
-// Internal: resolve a role from a config, falling back to base
-@function _resolve-role($config, $role) {
-  $val: map.get($config, $role);
-  $resolved: map.get($config, base);
-  @if $val != null {
-    $resolved: $val;
+// ─── Contrast ─────────────────────────────────────────────────────────────────
+// --contrast is black or white text, whichever reads on its colour.
+//
+// WCAG relative luminance Y is a weighted sum of the linear-sRGB channels.
+// Black and white text give equal contrast at Y = 0.179, so text is white
+// below that and black above it, which keeps every opaque colour at 4.5:1 or
+// better (worst case 4.58:1). Each channel is clamped to 0–1 first: a colour
+// outside sRGB is painted clipped, and the choice has to match what is painted.
+//
+// $_contrast-step is that choice as a number: 1 (white) or 0 (black); the 1e6
+// gain makes it a hard switch. It reads r, g and b, so it only means something
+// inside `color(from … srgb-linear …)`. Core declares it once on :where(:root)
+// as a private variable and every --contrast substitutes it, instead of
+// repeating the expression three times in each of the 168 contrast
+// declarations (about 50 KB of core.css).
+$_contrast-step-var: --theme--_contrast-step;
+$_luminance: "(0.2126 * clamp(0, r, 1) + 0.7152 * clamp(0, g, 1) + 0.0722 * clamp(0, b, 1))";
+$_contrast-step: string.unquote("clamp(0, (0.179 - #{$_luminance}) * 1e6, 1)");
+
+// Called once from define-core-theme() inside :where(:root): the contrast
+// step, and every pair of the palette chain pointed at its generated colour
+// (see "Generated palettes"), which a theme that passes the palette replaces.
+@mixin root-defaults() {
+  #{$_contrast-step-var}: #{$_contrast-step};
+  @each $name in $_generated-names {
+    @include _use-generated($name);
   }
-  @return $resolved;
 }
 
-// Internal: output all modifier vars + their contrasts for one role
+// The contrast colour of $origin: the step on all three linear-sRGB channels
+// (black or white), read back as an oklch lightness so the token stays an
+// oklch value, alpha 1.
+@function _contrast-of($origin) {
+  $s: var(#{$_contrast-step-var});
+  @return string.unquote(
+    "oklch(from color(from #{$origin} srgb-linear #{$s} #{$s} #{$s}) l 0 0 / 1)"
+  );
+}
+
+// All modifier vars + their contrasts for one role.
 @mixin _role-derivatives($palette, $role) {
-  // The 'color' role is the palette's primary identity — it gets no role suffix.
-  // All other roles (bg, stroke) keep their suffix: --color--{name}--{role}
-  $p: --color--#{$palette}--#{$role};
-  @if $role == color {
-    $p: --color--#{$palette};
-  }
+  $p: token($palette, $role);
 
-  // contrast (black or white — whichever has highest contrast against the role value).
-  // Chroma-aware: a saturated color reads perceptually darker than its raw oklch
-  // L suggests (e.g. red 0.54/0.22 looks dark), so bias the black↔white threshold
-  // up by 0.25·chroma before comparing against 0.5. Keeps amber/yellow (low-ish
-  // chroma, L~0.55) on black text while flipping saturated red/green to white.
-  $cl: "clamp(0, (0.5 - l + 0.25 * c) * 99999, 1)";
-
-  #{$p}--contrast: oklch(from var(#{$p}) #{$cl} 0 0);
+  // contrast — black or white by the luminance step (see Contrast above).
+  #{$p}--contrast: _contrast-of(var(#{$p}));
 
   // absolute lightness steps — 7-level ladder (±3 from base)
-  #{$p}--dark: oklch(from var(#{$p}) clamp(0, calc(l - #{vars.$theme-step-1}), 1) c h);
-  #{$p}--darker: oklch(from var(#{$p}) clamp(0, calc(l - #{vars.$theme-step-2}), 1) c h);
-  #{$p}--darkest: oklch(from var(#{$p}) clamp(0, calc(l - #{vars.$theme-step-3}), 1) c h);
-  #{$p}--light: oklch(from var(#{$p}) clamp(0, calc(l + #{vars.$theme-step-1}), 1) c h);
-  #{$p}--lighter: oklch(from var(#{$p}) clamp(0, calc(l + #{vars.$theme-step-2}), 1) c h);
-  #{$p}--lightest: oklch(from var(#{$p}) clamp(0, calc(l + #{vars.$theme-step-3}), 1) c h);
+  #{$p}--dark: oklch(from var(#{$p}) clamp(0, calc(l - #{vars.$theme-step-1}), 1) c h / 1);
+  #{$p}--darker: oklch(from var(#{$p}) clamp(0, calc(l - #{vars.$theme-step-2}), 1) c h / 1);
+  #{$p}--darkest: oklch(from var(#{$p}) clamp(0, calc(l - #{vars.$theme-step-3}), 1) c h / 1);
+  #{$p}--light: oklch(from var(#{$p}) clamp(0, calc(l + #{vars.$theme-step-1}), 1) c h / 1);
+  #{$p}--lighter: oklch(from var(#{$p}) clamp(0, calc(l + #{vars.$theme-step-2}), 1) c h / 1);
+  #{$p}--lightest: oklch(from var(#{$p}) clamp(0, calc(l + #{vars.$theme-step-3}), 1) c h / 1);
 
   // modifier contrasts
-  #{$p}--dark--contrast: oklch(from var(#{$p}--dark) #{$cl} 0 0);
-  #{$p}--darker--contrast: oklch(from var(#{$p}--darker) #{$cl} 0 0);
-  #{$p}--darkest--contrast: oklch(from var(#{$p}--darkest) #{$cl} 0 0);
-  #{$p}--light--contrast: oklch(from var(#{$p}--light) #{$cl} 0 0);
-  #{$p}--lighter--contrast: oklch(from var(#{$p}--lighter) #{$cl} 0 0);
-  #{$p}--lightest--contrast: oklch(from var(#{$p}--lightest) #{$cl} 0 0);
+  #{$p}--dark--contrast: _contrast-of(var(#{$p}--dark));
+  #{$p}--darker--contrast: _contrast-of(var(#{$p}--darker));
+  #{$p}--darkest--contrast: _contrast-of(var(#{$p}--darkest));
+  #{$p}--light--contrast: _contrast-of(var(#{$p}--light));
+  #{$p}--lighter--contrast: _contrast-of(var(#{$p}--lighter));
+  #{$p}--lightest--contrast: _contrast-of(var(#{$p}--lightest));
 
   // mode-relative aliases — light-dark() flips direction automatically with color-scheme
   // light mode: high → darker,  low → lighter
@@ -188,119 +279,369 @@ $_registered-palette-names: ();
   );
 }
 
-// Internal: emit light-dark() only when values differ; plain value when identical
-@function _ld($l, $d) {
-  @if $l == $d {
-    @return $l;
-  }
-  @return light-dark(#{$l}, #{$d});
-}
+// Public: everything core derives for one palette name. Emitted on the shared
+// selector :where(:root, [theme]) so a nested theme re-derives from its own
+// colour role and does not inherit an outer theme's explicit $bg / $stroke / $focus
+// (a theme rule's explicit role beats these zero-specificity declarations).
+//
+// The auto bg, stroke and focus are derived INTO their registered pairs, from
+// the colour role's pair, and then joined like every other role. So a theme
+// switch between a theme that leaves a role to core and one that passes it
+// explicitly interpolates between two real colours (the pair never sits at its
+// greyscale initial value), and the auto value still follows a transition of
+// the colour pair. The cost: a hand-written `--color--x: …` on the joined
+// token re-derives the ladder, contrasts and tints, but not bg, stroke or
+// focus. Set the pair (`--color--x--mode-light` / `--mode-dark`) to re-derive
+// everything.
+@mixin derive-palette($name) {
+  $c: token($name, color);
+  @include _join($name, color);
 
-// Public: define a palette from light + dark config maps
-// Outputs all vars once using light-dark() — color-scheme controls which resolves.
-// Identical light/dark values are emitted as a single value (no light-dark wrapper).
-@mixin define-palette($name, $light, $dark) {
-  // Auto-register non-core palette names the first time they appear.
-  // Core names are pre-registered by register-core-palettes() in define-core-theme().
-  // Uses transparent as initial-value — safe for any color (renders invisible, not garish).
-  // initial-value cannot use var() (spec §4.1), so we can't use the actual base here
-  // for from-var()/from-brand() derived palettes; transparent is the correct fallback.
-  @if not
-    list.index($_core-palette-names, $name) and not
-    list.index($_registered-palette-names, $name)
-  {
-    $_registered-palette-names: list.append($_registered-palette-names, $name) !global;
-    @at-root {
-      @include _register-palette-properties(
-        $name,
-        transparent,
-        transparent,
-        transparent,
-        oklch(0.3 0 0)
-      );
-    }
-  }
-
-  $l-base: map.get($light, base);
-  $d-base: map.get($dark, base);
-  $l-color: _resolve-role($light, color);
-  $d-color: _resolve-role($dark, color);
-
-  // color role: use base directly unless an explicit $color override was given
-  @if $l-color == $l-base and $d-color == $d-base {
-    --color--#{$name}: #{_ld($l-base, $d-base)};
-  } @else {
-    --color--#{$name}: #{_ld($l-color, $d-color)};
-  }
-
-  // bg role — the solid tonal background for this palette.
-  // Auto-derived at CSS runtime unless an explicit override is given: an opaque
-  // same-hue tint produced from the color role via relative oklch — high lightness
-  // (light mode) / low lightness (dark mode) with reduced chroma, keeping the
-  // palette's own hue. This is the fill bg() paints and the stroke filled()
-  // outlines with, so it is computed once here rather than at each apply site.
-  // background/surface ARE backgrounds, so their bg role stays the base color.
-  $l-bg: map.get($light, bg);
-  $d-bg: map.get($dark, bg);
-  @if $l-bg == null and $d-bg == null and $name != background and $name != surface {
-    --color--#{$name}--bg: light-dark(
-      oklch(from var(--color--#{$name}) 0.92 calc(c * var(--bg-chroma, 0.4)) h),
-      oklch(from var(--color--#{$name}) 0.24 calc(c * var(--bg-chroma, 0.4)) h)
+  // bg role — the solid tonal background for this palette: an opaque same-hue
+  // tint of the colour role, high lightness in light mode / low in dark mode,
+  // with reduced chroma. This is the fill bg() paints and the stroke filled()
+  // outlines with. background/surface ARE backgrounds, so their bg is the base:
+  // their pair is written by the theme rule (emit-palette), or generated with
+  // their colour pair when the theme left them out, and only joined here, so a
+  // nested theme that does not pass them inherits the outer base rather than
+  // re-deriving from an outer `$color` override.
+  $bg: token($name, bg);
+  @if $name != background and $name != surface {
+    #{$bg}--mode-light: oklch(
+      from var(#{$c}--mode-light) 0.92 calc(c * var(--bg-chroma, 0.4)) h / 1
     );
-  } @else {
-    --color--#{$name}--bg: #{_ld(_resolve-role($light, bg), _resolve-role($dark, bg))};
+    #{$bg}--mode-dark: oklch(from var(#{$c}--mode-dark) 0.24 calc(c * var(--bg-chroma, 0.4)) h / 1);
   }
+  @include _join($name, bg);
 
-  // Stroke — auto-derived at CSS runtime unless an explicit override is given.
-  // Formula: clamp the base color's lightness into the visible mid-tone band (0.42–0.60).
-  // This ensures the stroke is always visible against its palette surface:
-  //   light surfaces (L≈0.93) → stroke at L≈0.60 (darkened into mid-range)
-  //   dark  surfaces (L≈0.24) → stroke at L≈0.42 (lightened into mid-range)
-  //   mid-tone accents (L≈0.43) → stroke unchanged (already in range)
-  // Three levels are emitted automatically by _role-derivatives below:
-  //   --color--{name}--stroke--low   — subtle divider   (mode-aware lighter step)
-  //   --color--{name}--stroke        — normal border     (this value)
-  //   --color--{name}--stroke--high  — emphasized border (mode-aware darker step)
-  $l-stroke: map.get($light, stroke);
-  $d-stroke: map.get($dark, stroke);
-  @if $l-stroke == null and $d-stroke == null {
-    --color--#{$name}--stroke: oklch(from var(--color--#{$name}) clamp(0.42, l, 0.6) c h);
-  } @else {
-    $lstr: if($l-stroke != null, $l-stroke, $d-stroke);
-    $dstr: if($d-stroke != null, $d-stroke, $l-stroke);
-    --color--#{$name}--stroke: #{_ld($lstr, $dstr)};
+  // Stroke — the colour role's lightness clamped into the visible mid-tone band
+  // (0.42–0.60), so it shows against its palette surface:
+  //   light surfaces (L≈0.93) → L≈0.60, dark surfaces (L≈0.24) → L≈0.42,
+  //   mid-tone accents (L≈0.43) → unchanged.
+  // _role-derivatives adds --stroke--low (subtle divider) and --stroke--high.
+  // Focus ring — per palette: inverted lightness + 60° hue shift, always distinct.
+  @each $mode in light, dark {
+    #{token($name, stroke)}--mode-#{$mode}: oklch(
+      from var(#{$c}--mode-#{$mode}) clamp(0.42, l, 0.6) c h / 1
+    );
+    #{token($name, focus)}--mode-#{$mode}: oklch(
+      from var(#{$c}--mode-#{$mode}) clamp(0.1, calc(1 - l), 0.9) c calc(h + 60) / 1
+    );
   }
+  @include _join($name, stroke);
+  @include _join($name, focus);
 
   @include _role-derivatives($name, color);
   @include _role-derivatives($name, bg);
   @include _role-derivatives($name, stroke);
 
-  // Palette tints — transparent versions of the color role
-  --color--#{$name}--tint-1: oklch(from var(--color--#{$name}) l c h / var(--weight--tint-1, 10%));
-  --color--#{$name}--tint-2: oklch(from var(--color--#{$name}) l c h / var(--weight--tint-2, 20%));
-  --color--#{$name}--tint-3: oklch(from var(--color--#{$name}) l c h / var(--weight--tint-3, 38%));
-  --color--#{$name}--tint-4: oklch(from var(--color--#{$name}) l c h / var(--weight--tint-4, 60%));
-  --color--#{$name}--tint-5: oklch(from var(--color--#{$name}) l c h / var(--weight--tint-5, 80%));
+  // Palette tints — transparent versions of the colour role. The alpha is a
+  // mode-varying weight; a percentage substituted here would freeze at this
+  // element, so each side of the light-dark() reads its own mode's weight and
+  // the tint resolves where it is used, like every other derivative.
+  @include _tint($c, 1, 10%);
+  @include _tint($c, 2, 20%);
+  @include _tint($c, 3, 38%);
+  @include _tint($c, 4, 60%);
+  @include _tint($c, 5, 80%);
+}
 
-  // Focus ring color — per-palette, adapts to mode via the resolved color var.
-  // Auto-derive: invert lightness + 60° hue shift → always visually distinct.
-  // Override by passing $focus to t.palette() inside t.light-dark().
+@mixin _tint($c, $n, $fallback) {
+  #{$c}--tint-#{$n}: light-dark(
+    oklch(from var(#{$c}) l c h / var(--weight--tint-#{$n}--mode-light, #{$fallback})),
+    oklch(from var(#{$c}) l c h / var(--weight--tint-#{$n}--mode-dark, #{$fallback}))
+  );
+}
+
+@mixin derive-core-palettes() {
+  @include _generated-colours();
+  @each $name in $core-palette-names {
+    @include derive-palette($name);
+  }
+}
+
+// ─── Generated palettes (Phase 14) ────────────────────────────────────────────
+// The chain: brand → primary → secondary, tertiary → background, surface.
+// A theme passes whichever of these it has; the others are generated from the
+// nearest thing it passed.
+//
+//   primary     from the brand pair, moved into the band that reads on a
+//               near-white or near-black page (what palette-from-brand() does).
+//               The brand colour itself is never adjusted.
+//   secondary   primary's hue, one third of its chroma (0.04 at least), same
+//               lightness.
+//   tertiary    primary's hue + 60°, half its chroma (0.08 at least), same
+//               lightness. Neither floor exceeds the primary's own chroma.
+//   The three accents then give up chroma until the screen can show them
+//   (_in-gamut(), below), so the hue that was asked for is the hue painted.
+//   background, surface
+//               tinted neutrals of the brand hue (what background-from-brand()
+//               and surface-from-brand() do).
+//
+// Core declares each generated colour once, on the shared selector
+// :where(:root, [theme]), as a private variable ($_generated-var), so it is
+// worked out again on every [theme] element from the brand and primary pairs
+// in force there. A registered pair takes it by reference:
+//
+//   • :where(:root) points every pair of the chain at its generated colour
+//     (root-defaults()). With no theme at all the brand pair is its grey
+//     initial value, so they are all grey.
+//   • A theme rule points a pair at it for each palette the theme left out
+//     that is downstream of something it passed (emit-generated()): brand for
+//     primary and the neutrals, brand or primary for the accents. The rule has
+//     specificity (0,0,1), so on <html theme="…"> this beats the palettes of a
+//     default theme loaded beside it (every preset is one).
+//   • A theme rule that passes `primary` and no `brand` points the brand pair
+//     at its primary pair (emit-brand-from-primary(), Phase 14d): without a
+//     brand of its own, a theme's brand palette is its primary. On <html> the
+//     root's neutrals follow, as a trace of the primary's hue.
+//   • Nothing else declares the pair, so everywhere else it inherits. A nested
+//     theme that passes only `primary` gets its own secondary and tertiary and
+//     keeps the outer background and surface; one that passes no colour keeps
+//     every colour of the theme around it.
+//
+// A hand-written rule that sets a pair re-derives that palette's own roles,
+// ladder and contrasts as before. On :root, where every pair of the chain is a
+// reference, the palettes downstream of it follow too; on a nested [theme]
+// element they do not: set those pairs as well, or use define-theme().
+$_generated-names: primary, secondary, tertiary, background, surface;
+
+@function _generated-var($name, $mode) {
+  @return --theme--_generated--#{$name}--#{$mode};
+}
+
+// The generated colours. Emitted on the shared selector by derive-core-palettes().
+@mixin _generated-colours() {
+  $brand: token(brand, color);
+  $primary: token(primary, color);
+
+  #{_generated-var(primary, light)}: _readable-light(var(#{$brand}--mode-light));
+  #{_generated-var(primary, dark)}: _readable-dark(var(#{$brand}--mode-dark));
+
+  @each $mode in light, dark {
+    $from: var(#{$primary}--mode-#{$mode});
+    #{_generated-var(secondary, $mode)}: _in-gamut(
+      "oklch(from #{$from} l #{_accent-chroma(3, 0.04)} h / 1)"
+    );
+    #{_generated-var(tertiary, $mode)}: _in-gamut(
+      "oklch(from #{$from} l #{_accent-chroma(2, 0.08)} calc(h + 60) / 1)"
+    );
+  }
+
+  @each $name, $neutral in $_neutrals {
+    @each $mode in light, dark {
+      #{_generated-var($name, $mode)}: _tinted-neutral(
+        var(#{$brand}--mode-#{$mode}),
+        map.get($neutral, $mode),
+        map.get($neutral, tint)
+      );
+    }
+  }
+}
+
+// The chroma of a generated accent: the primary's divided by $divisor, but not
+// below $floor, so a muted primary still gives an accent with a colour
+// (cyan-orange's tertiary was a slate grey at half of 0.1). The floor never
+// lifts it above the primary's own chroma: a grey primary has no hue to take,
+// so its accents stay grey, like the neutrals of a grey brand.
+@function _accent-chroma($divisor, $floor) {
+  @return string.unquote("min(c, max(c / #{$divisor}, #{$floor}))");
+}
+
+// ─── Gamut correction (Phase 14c) ─────────────────────────────────────────────
+// A generated colour can ask for more chroma than sRGB holds at its lightness:
+// oklch(0.45 0.2 45), the light primary of an orange brand, is outside it. A
+// browser then clips each sRGB channel on its own, which moves the hue (that
+// orange is painted #a60000, a red, 16° away). _in-gamut() wraps a colour
+// expression so that it gives up chroma instead and keeps its lightness and
+// hue.
+//
+// CSS has no way to read a channel out of a colour except inside a relative
+// colour, so one pass is two of them, and $colour is written once:
+//
+//   inner  color(from $colour srgb r g b / <factor>) is the same colour, with
+//          a factor in its alpha channel: 1 − 2 × the overshoot, where the
+//          overshoot is how far the worst sRGB channel lies outside 0–1. A
+//          colour inside sRGB has factor 1.
+//   outer  oklch(from <inner> l calc(c * alpha) h / 1) scales the chroma by
+//          that factor and is opaque again.
+//
+// Each pass lands closer to the gamut's edge, from outside; four are nested.
+// The overshoot counts up to 0.25 only, so one pass halves the chroma at most:
+// without that limit the alpha reaches 0 at an overshoot of 0.5 and the colour
+// turns grey (a vivid teal brand in dark mode did). Measured over the hue
+// wheel at chroma 0.22: within the bands the primary is generated in
+// (lightness 0.35–0.45 and 0.65–0.82) the painted hue stays within 1° of the
+// one asked for (47° without the correction), and within 2° from 0.35 to 0.85.
+// Darker or lighter than that four passes do not get all the way: an accent
+// generated from a very dark or very light primary of your own is closer to
+// its hue than before, not on it.
+//
+// A colour already inside sRGB comes back unchanged, a grey stays grey.
+$_gamut-factor: "calc(1 - 2 * clamp(0, max(r - 1, g - 1, b - 1, -1 * r, -1 * g, -1 * b), 0.25))";
+$_gamut-passes: 4;
+
+@function _in-gamut($colour) {
+  @for $i from 1 through $_gamut-passes {
+    $colour: "oklch(from color(from #{$colour} srgb r g b / #{$_gamut-factor}) l calc(c * alpha) h / 1)";
+  }
+  @return string.unquote($colour);
+}
+
+// Points the registered pair of one chain palette at its generated colour.
+// background and surface are backgrounds: their bg pair is the base too (see
+// emit-palette), so it takes the same colour. $join adds the joined token, as
+// a theme rule does for every pair it declares; on the root the shared rule
+// has it.
+@mixin _use-generated($name, $join: false) {
+  $roles: (color);
+  @if $name == background or $name == surface {
+    $roles: (color, bg);
+  }
+  @each $role in $roles {
+    @each $mode in light, dark {
+      #{token($name, $role)}--mode-#{$mode}: var(#{_generated-var($name, $mode)});
+    }
+    @if $join {
+      @include _join($name, $role);
+    }
+  }
+}
+
+// Public: what a theme rule adds for the palettes it left out. $passed is the
+// list of palette names the theme passed.
+@mixin emit-generated($passed) {
+  $brand: list.index($passed, brand) != null;
+  $primary: list.index($passed, primary) != null;
+  @each $name in $_generated-names {
+    $upstream: $brand;
+    @if $name == secondary or $name == tertiary {
+      $upstream: $brand or $primary;
+    }
+    @if $upstream and not list.index($passed, $name) {
+      @include _use-generated($name, $join: true);
+    }
+  }
+}
+
+// Public: the brand palette of a theme that passes `primary` and no `brand`
+// (Phase 14d): its primary, exactly as that primary is, passed role by role.
+// The brand pair takes the primary pair by reference, and so does the pair of
+// each role the theme gave its primary explicitly ($bg, $stroke, $focus); the
+// roles it left to core are derived from the brand pair on the shared
+// selector, which is now the primary pair, so they agree too. $light and $dark
+// are the primary's config per mode.
+//
+// The other direction is emit-generated(): a theme with `brand` and no
+// `primary` points primary at the colour generated from the brand. A theme
+// with both points neither, one with neither inherits both, and :where(:root)
+// only ever points primary at the brand (root-defaults()), never the brand at
+// primary: with nothing loaded the brand is its grey initial value and
+// nothing reads in a circle.
+@mixin emit-brand-from-primary($light, $dark) {
+  @each $role in $roles {
+    @if $role == color or map.get($light, $role) != null or map.get($dark, $role) != null {
+      @each $mode in light, dark {
+        #{token(brand, $role)}--mode-#{$mode}: var(#{token(primary, $role)}--mode-#{$mode});
+      }
+      @include _join(brand, $role);
+    }
+  }
+}
+
+// Public: the root-level pieces of a custom palette name, once per compilation:
+// its eight registrations and its derivations on :where([theme]). Core names
+// already have both from define-core-theme(). Call at root level.
+//
+// The derivations deliberately do not match :root. The dedup only lasts for
+// one compilation, so a second, separately compiled theme stylesheet that uses
+// the same name emits them again, later in the cascade; on :where(:root) that
+// copy would beat a default theme's explicit $bg / $stroke / $focus (both are
+// zero specificity, so order decides). define-theme() instead derives a custom
+// name inside the default theme's own rule, ahead of the explicit roles.
+@mixin define-custom-palette($name) {
+  @if not is-core($name) and not list.index($_registered-palette-names, $name) {
+    $_registered-palette-names: list.append($_registered-palette-names, $name) !global;
+    @include _register-palette-properties($name, $_custom-initial);
+    :where([theme]) {
+      @include derive-palette($name);
+    }
+  }
+}
+
+// ─── Authoring ────────────────────────────────────────────────────────────────
+
+// config() — builds a single-variation palette config map.
+// Re-exported as t.palette() by _theme.scss.
+// $focus — explicit focus ring color for this palette variation.
+// Overrides the auto-derived focus color. Use inside t.light-dark() so you
+// can provide different values per mode:
+//   t.light-dark(
+//     t.palette(oklch(0.55 0.18 240)),
+//     t.palette(oklch(0.65 0.16 240), $focus: oklch(0.85 0.18 60)),
+//   )
+// If null, focus is auto-derived at CSS runtime from the color role.
+@function config($base, $color: null, $bg: null, $stroke: null, $focus: null) {
+  @return (base: $base, color: $color, bg: $bg, stroke: $stroke, focus: $focus);
+}
+
+// Internal: resolve a role from a config, falling back to base
+@function _resolve-role($config, $role) {
+  $val: map.get($config, $role);
+  $resolved: map.get($config, base);
+  @if $val != null {
+    $resolved: $val;
+  }
+  @return $resolved;
+}
+
+// Internal: the registered pair of one role followed by its joined token.
+@mixin _pair($name, $role, $l, $d) {
+  $t: token($name, $role);
+  #{$t}--mode-light: #{$l};
+  #{$t}--mode-dark: #{$d};
+  @include _join($name, $role);
+}
+
+// Internal: a role given in one mode only applies to both.
+@mixin _explicit-pair($name, $role, $l, $d) {
+  @if $l == null {
+    $l: $d;
+  }
+  @if $d == null {
+    $d: $l;
+  }
+  @include _pair($name, $role, $l, $d);
+}
+
+// Public: what a theme rule holds for one palette — the light and dark colour
+// of the colour role, and of any explicit $bg / $stroke / $focus. Everything
+// else is derived by core.
+@mixin emit-palette($name, $light, $dark) {
+  @include _pair($name, color, _resolve-role($light, color), _resolve-role($dark, color));
+
+  $l-bg: map.get($light, bg);
+  $d-bg: map.get($dark, bg);
+  @if $l-bg != null or $d-bg != null {
+    @include _explicit-pair($name, bg, $l-bg, $d-bg);
+  } @else if $name == background or $name == surface {
+    // background/surface ARE backgrounds: their bg role is their base, even
+    // under a $color override. Core only joins this pair (derive-palette), so
+    // it is written whenever the palette is passed and inherited by nested
+    // themes that do not pass it.
+    @include _pair($name, bg, map.get($light, base), map.get($dark, base));
+  }
+
+  $l-stroke: map.get($light, stroke);
+  $d-stroke: map.get($dark, stroke);
+  @if $l-stroke != null or $d-stroke != null {
+    @include _explicit-pair($name, stroke, $l-stroke, $d-stroke);
+  }
+
   $l-focus: map.get($light, focus);
   $d-focus: map.get($dark, focus);
   @if $l-focus != null or $d-focus != null {
-    $lf: $l-focus;
-    $df: $d-focus;
-    @if $lf == null {
-      $lf: $df;
-    }
-    @if $df == null {
-      $df: $lf;
-    }
-    --color--#{$name}--focus: #{_ld($lf, $df)};
-  } @else {
-    --color--#{$name}--focus: oklch(
-      from var(--color--#{$name}) clamp(0.1, calc(1 - l), 0.9) c calc(h + 60)
-    );
+    @include _explicit-pair($name, focus, $l-focus, $d-focus);
   }
 }
 
@@ -308,33 +649,48 @@ $_registered-palette-names: ();
 // Returns a light-dark palette config pair that derives its color at runtime
 // from a CSS custom property using relative color syntax.
 //
-// Light: clamps lightness 0.35–0.50 — contrast-safe on near-white (oklch ~0.97).
+// Light: clamps lightness 0.35–0.45 — 4.5:1 on the generated background (L 0.97)
+//        and surface (L 0.93) for every hue; at 0.50 the cyans and greens
+//        outside sRGB fell to 3.7:1 on the surface.
 // Dark:  clamps lightness 0.65–0.82 — contrast-safe on near-black (oklch ~0.18).
-// Chroma is capped at 0.22 to avoid oversaturation.
+// Chroma is capped at 0.22 to avoid oversaturation, and then lowered as far as
+// sRGB needs at that lightness (_in-gamut()), so the hue is the origin's.
 //
 // NOTE: hues 75°–125° (yellow range) are a known rough edge in oklch. For full
 // accuracy on arbitrary brand colors, compute via JS (HCT) and pass a literal.
 @function from-var(
   $var,
   $light-l-min: 0.35,
-  $light-l-max: 0.5,
+  $light-l-max: 0.45,
   $dark-l-min: 0.65,
   $dark-l-max: 0.82,
   $c-max: 0.22
 ) {
-  $light-base: unquote(
-    "oklch(from var(#{$var}) clamp(#{$light-l-min},l,#{$light-l-max}) clamp(0,c,#{$c-max}) h)"
+  @return (
+    light: config(_readable-light(var(#{$var}), $light-l-min, $light-l-max, $c-max)),
+    dark: config(_readable-dark(var(#{$var}), $dark-l-min, $dark-l-max, $c-max))
   );
-  $dark-base: unquote(
-    "oklch(from var(#{$var}) clamp(#{$dark-l-min},l,#{$dark-l-max}) clamp(0,calc(c*0.9),#{$c-max}) h)"
+}
+
+// The colour $origin moved into the band that reads on a near-white page
+// (light) or a near-black one (dark). Used by from-var() and by the primary
+// core generates from the brand pair, so the two give the same colour.
+@function _readable-light($origin, $l-min: 0.35, $l-max: 0.45, $c-max: 0.22) {
+  @return _in-gamut(
+    "oklch(from #{$origin} clamp(#{$l-min},l,#{$l-max}) clamp(0,c,#{$c-max}) h / 1)"
   );
-  @return (light: config($light-base), dark: config($dark-base));
+}
+
+@function _readable-dark($origin, $l-min: 0.65, $l-max: 0.82, $c-max: 0.22) {
+  @return _in-gamut(
+    "oklch(from #{$origin} clamp(#{$l-min},l,#{$l-max}) clamp(0,calc(c*0.9),#{$c-max}) h / 1)"
+  );
 }
 
 // Convenience: derive from the standard --color--brand var.
 @function from-brand(
   $light-l-min: 0.35,
-  $light-l-max: 0.5,
+  $light-l-max: 0.45,
   $dark-l-min: 0.65,
   $dark-l-max: 0.82,
   $c-max: 0.22
@@ -358,16 +714,44 @@ $_registered-palette-names: ();
 // surface:    slightly more chroma than background — sits visually above it.
 //
 // $c-tint: chroma amount. 0.006 = barely perceptible, 0.015 = noticeable but neutral.
+// It is a ceiling, min(c, $c-tint): a grey origin has no hue to take, so it
+// gives a grey neutral instead of a tint of whatever hue the browser reports
+// for it.
+//
+// $_neutrals holds the lightness per mode and the default tint; core generates
+// a theme's missing background and surface from the brand pair with the same
+// numbers (_generated-colours), so the two paths give the same colour.
+$_neutrals: (
+  background: (
+    light: 0.97,
+    dark: 0.17,
+    tint: 0.006,
+  ),
+  surface: (
+    light: 0.93,
+    dark: 0.22,
+    tint: 0.01,
+  ),
+);
+
+@function _tinted-neutral($origin, $l, $c-tint) {
+  @return string.unquote("oklch(from #{$origin} #{$l} min(c, #{$c-tint}) h / 1)");
+}
+
+@function _neutral-from-var($name, $var, $c-tint) {
+  $n: map.get($_neutrals, $name);
+  @return (
+    light: config(_tinted-neutral(var(#{$var}), map.get($n, light), $c-tint)),
+    dark: config(_tinted-neutral(var(#{$var}), map.get($n, dark), $c-tint))
+  );
+}
+
 @function background-from-var($var, $c-tint: 0.006) {
-  $light-base: unquote("oklch(from var(#{$var}) 0.97 #{$c-tint} h)");
-  $dark-base: unquote("oklch(from var(#{$var}) 0.17 #{$c-tint} h)");
-  @return (light: config($light-base), dark: config($dark-base));
+  @return _neutral-from-var(background, $var, $c-tint);
 }
 
 @function surface-from-var($var, $c-tint: 0.01) {
-  $light-base: unquote("oklch(from var(#{$var}) 0.93 #{$c-tint} h)");
-  $dark-base: unquote("oklch(from var(#{$var}) 0.22 #{$c-tint} h)");
-  @return (light: config($light-base), dark: config($dark-base));
+  @return _neutral-from-var(surface, $var, $c-tint);
 }
 
 // Convenience: derive tinted background/surface from --color--brand.

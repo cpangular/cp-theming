@@ -15,6 +15,7 @@ import { filter } from 'rxjs';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { TableOfContentsComponent } from '../shell/table-of-contents.component';
+import { CHAPTERS } from '../learn/chapters';
 
 import hljs from 'highlight.js/lib/core';
 import scss from 'highlight.js/lib/languages/scss';
@@ -32,7 +33,11 @@ hljs.registerLanguage('html', xml);
 hljs.registerLanguage('bash', bash);
 hljs.registerLanguage('json', json);
 
+// The layout of all three tracks: `lib` is a package of the Reference
+// (/packages/:lib), `learn` or `explore`.
 const LIB_TITLES: Record<string, string> = {
+  learn: 'Learn',
+  explore: 'Explore',
   core: '@cpangular/cp-theming-core',
   'ng-core': '@cpangular/cp-theming-ng-core',
   'ng-material': '@cpangular/cp-theming-ng-material',
@@ -42,7 +47,31 @@ interface NavItem {
   path: string;
   label: string;
   section?: string;
+  /** Listed, not linked: a Learn chapter that is not written yet. */
+  disabled?: boolean;
 }
+
+// The Reference is three packages; the sidebar switches between them.
+const PACKAGES: { lib: string; label: string }[] = [
+  { lib: 'core', label: 'core' },
+  { lib: 'ng-core', label: 'ng-core' },
+  { lib: 'ng-material', label: 'ng-material' },
+];
+
+const LEARN_NAV: NavItem[] = [
+  { path: './', label: 'Start here' },
+  ...CHAPTERS.map((c, i) => ({
+    path: c.slug,
+    label: `${c.n}. ${c.title}`,
+    disabled: !c.written,
+    ...(i === 0 ? { section: 'Chapters' } : {}),
+  })),
+];
+
+const EXPLORE_NAV: NavItem[] = [
+  { path: 'components', label: 'Components' },
+  { path: 'showcase', label: 'Showcase' },
+];
 
 const CORE_NAV: NavItem[] = [
   { path: 'getting-started', label: 'Getting Started' },
@@ -72,7 +101,11 @@ const FLAT_NAV: NavItem[] = [
   { path: 'guides', label: 'Guides' },
 ];
 
+// The Components gallery and the Showcase are the Explore track; their routes
+// under /packages/ng-material stay, unlisted.
 const LIB_NAV: Record<string, NavItem[]> = {
+  learn: LEARN_NAV,
+  explore: EXPLORE_NAV,
   core: CORE_NAV,
   'ng-core': FLAT_NAV,
   'ng-material': FLAT_NAV,
@@ -91,33 +124,53 @@ const LIB_NAV: Record<string, NavItem[]> = {
   ],
   template: `
     <mat-sidenav-container class="layout-container">
-      <mat-sidenav class="sidenav" mode="side" opened>
+      <mat-sidenav class="sidenav" [class.sidenav--wide]="lib() === 'learn'" mode="side" opened>
+        @if (isPackage()) {
+          <div class="pkg-switch">
+            @for (p of packages; track p.lib) {
+              <a
+                class="pkg-switch-link"
+                [class.pkg-switch-link--active]="p.lib === lib()"
+                [routerLink]="'/packages/' + p.lib"
+                >{{ p.label }}</a
+              >
+            }
+          </div>
+        }
         <span class="pkg-label">{{ libTitle() }}</span>
         <mat-nav-list>
           @for (item of nav(); track item.path) {
             @if (item.section) {
               <div class="nav-section-header">{{ item.section }}</div>
             }
-            <a
-              mat-list-item
-              [routerLink]="item.path"
-              routerLinkActive="nav-active"
-              [routerLinkActiveOptions]="{ exact: true }"
-            >
-              <span matListItemTitle>{{ item.label }}</span>
-            </a>
+            @if (item.disabled) {
+              <mat-list-item class="nav-disabled" disabled>
+                <span matListItemTitle>{{ item.label }}</span>
+              </mat-list-item>
+            } @else {
+              <a
+                mat-list-item
+                [routerLink]="item.path"
+                routerLinkActive="nav-active"
+                [routerLinkActiveOptions]="{ exact: true }"
+              >
+                <span matListItemTitle>{{ item.label }}</span>
+              </a>
+            }
           }
         </mat-nav-list>
       </mat-sidenav>
 
       <mat-sidenav-content>
-        <div #pageScroll class="page-scroll">
+        <div #pageScroll class="page-scroll" (click)="onPageClick($event)">
           <div class="page-main">
             <router-outlet />
           </div>
-          <aside class="toc-rail">
-            <cpa-toc [scrollEl]="pageScrollEl" />
-          </aside>
+          @if (lib() !== 'learn') {
+            <aside class="toc-rail">
+              <cpa-toc [scrollEl]="pageScrollEl" />
+            </aside>
+          }
         </div>
       </mat-sidenav-content>
     </mat-sidenav-container>
@@ -138,6 +191,42 @@ const LIB_NAV: Record<string, NavItem[]> = {
         width: 248px;
         padding-top: 8px;
         border-right: 1px solid var(--color--surface--stroke);
+      }
+
+      /* Learn: room for a chapter title on one line. */
+      .sidenav--wide {
+        width: 320px;
+      }
+
+      .pkg-switch {
+        display: flex;
+        gap: 4px;
+        margin: 12px 12px 0;
+        padding: 3px;
+        border-radius: 10px;
+        background: var(--color--surface--bg);
+      }
+
+      .pkg-switch-link {
+        flex: 1;
+        padding: 5px 0;
+        border-radius: 7px;
+        text-align: center;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--color--background--contrast);
+        opacity: 0.7;
+      }
+
+      .pkg-switch-link--active {
+        opacity: 1;
+        color: var(--color--primary--contrast);
+        background: var(--color--primary);
+      }
+
+      .nav-disabled {
+        opacity: 0.45;
       }
 
       .pkg-label {
@@ -194,12 +283,16 @@ export class PackagesLayoutComponent implements AfterViewInit {
   readonly lib = input<string>('core');
   readonly libTitle = computed(() => LIB_TITLES[this.lib()] ?? this.lib());
   readonly nav = computed(() => LIB_NAV[this.lib()] ?? FLAT_NAV);
+  readonly packages = PACKAGES;
+  readonly isPackage = computed(() => PACKAGES.some((p) => p.lib === this.lib()));
 
   @ViewChild('pageScroll') private readonly _pageScrollRef!: ElementRef<HTMLElement>;
   pageScrollEl: HTMLElement | null = null;
 
+  private readonly _router = inject(Router);
+
   constructor() {
-    const router = inject(Router);
+    const router = this._router;
     const destroyRef = inject(DestroyRef);
     const highlightCode = () =>
       document
@@ -211,10 +304,39 @@ export class PackagesLayoutComponent implements AfterViewInit {
         filter((e) => e instanceof NavigationEnd),
         takeUntilDestroyed(destroyRef),
       )
-      .subscribe(() => setTimeout(highlightCode, 0));
+      .subscribe(() => {
+        setTimeout(highlightCode, 0);
+        setTimeout(() => this._scrollToFragment(router.parseUrl(router.url).fragment), 50);
+      });
   }
 
   ngAfterViewInit(): void {
     this.pageScrollEl = this._pageScrollRef.nativeElement;
+  }
+
+  /**
+   * Keeps `href="#section"` on this page. The site has a `<base href>`, and a
+   * fragment-only link resolves against it: without this the browser would
+   * load the site root with that fragment.
+   */
+  onPageClick(event: MouseEvent): void {
+    if (event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const link = (event.target as Element | null)?.closest?.('a[href^="#"]');
+    const fragment = link?.getAttribute('href')?.slice(1);
+    if (!link || !fragment) return;
+    event.preventDefault();
+    void this._router.navigate([], { fragment, queryParamsHandling: 'preserve' });
+    this._scrollToFragment(fragment);
+  }
+
+  /** Scrolls the page container (not the window) to the section the URL fragment names. */
+  private _scrollToFragment(fragment: string | null): void {
+    const container = this.pageScrollEl;
+    if (!fragment || !container) return;
+    const el = document.getElementById(fragment);
+    if (!el) return;
+    const top = el.getBoundingClientRect().top - container.getBoundingClientRect().top;
+    container.scrollBy({ top: top - 24, behavior: 'smooth' });
   }
 }

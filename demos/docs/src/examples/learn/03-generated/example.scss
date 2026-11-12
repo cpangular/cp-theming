@@ -1,0 +1,57 @@
+.page {
+  background: var(--color--background);
+  color: var(--color--background--contrast);
+}
+
+.in-brand {
+  color: var(--color--brand);
+}
+.in-primary {
+  color: var(--color--primary);
+}
+
+/* Each palette's colour, with the text that reads on it. */
+.brand {
+  background: var(--color--brand);
+  color: var(--color--brand--contrast);
+}
+.primary {
+  background: var(--color--primary);
+  color: var(--color--primary--contrast);
+}
+.secondary {
+  background: var(--color--secondary);
+  color: var(--color--secondary--contrast);
+}
+.tertiary {
+  background: var(--color--tertiary);
+  color: var(--color--tertiary--contrast);
+}
+.background {
+  background: var(--color--background);
+  color: var(--color--background--contrast);
+}
+.surface {
+  background: var(--color--surface);
+  color: var(--color--surface--contrast);
+}
+
+/* Layout only. */
+.page {
+  padding: 20px;
+}
+p {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 500;
+}
+.chain {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  margin-top: 16px;
+  border: 1px solid var(--color--surface--stroke);
+}
+.chain span {
+  padding: 26px 10px 10px;
+  font: 12px/1.4 ui-monospace, monospace;
+}

@@ -1,0 +1,19 @@
+<button matButton="outlined" [matMenuTriggerFor]="menu">Open menu</button>
+
+<mat-menu #menu>
+  <button mat-menu-item>
+    <mat-icon>edit</mat-icon>
+    <span>Edit</span>
+  </button>
+  <button mat-menu-item disabled>
+    <mat-icon>block</mat-icon>
+    <span>Disabled</span>
+  </button>
+  <mat-divider />
+  <button mat-menu-item [matMenuTriggerFor]="more">More</button>
+</mat-menu>
+
+<mat-menu #more>
+  <button mat-menu-item>Share</button>
+  <button mat-menu-item>Archive</button>
+</mat-menu>

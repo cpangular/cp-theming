@@ -1,12 +1,14 @@
-import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { MatToolbar } from '@angular/material/toolbar';
 import { ThemeSwitcherComponent } from './theme-switcher.component';
 
 @Component({
   selector: 'cpa-navbar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, MatToolbar, ThemeSwitcherComponent],
+  imports: [RouterLink, MatToolbar, ThemeSwitcherComponent],
   template: `
     <mat-toolbar class="navbar">
       <a class="logo" routerLink="/">
@@ -15,45 +17,11 @@ import { ThemeSwitcherComponent } from './theme-switcher.component';
       </a>
 
       <nav class="main-nav">
-        <a
-          class="nav-link"
-          routerLink="/packages/core"
-          routerLinkActive="nav-active"
-          [routerLinkActiveOptions]="{
-            paths: 'subset',
-            queryParams: 'ignored',
-            fragment: 'ignored',
-            matrixParams: 'ignored',
-          }"
-        >
-          cp-theming-core
-        </a>
-        <a
-          class="nav-link"
-          routerLink="/packages/ng-core"
-          routerLinkActive="nav-active"
-          [routerLinkActiveOptions]="{
-            paths: 'subset',
-            queryParams: 'ignored',
-            fragment: 'ignored',
-            matrixParams: 'ignored',
-          }"
-        >
-          cp-theming-ng-core
-        </a>
-        <a
-          class="nav-link"
-          routerLink="/packages/ng-material"
-          routerLinkActive="nav-active"
-          [routerLinkActiveOptions]="{
-            paths: 'subset',
-            queryParams: 'ignored',
-            fragment: 'ignored',
-            matrixParams: 'ignored',
-          }"
-        >
-          cp-theming-ng-material
-        </a>
+        @for (t of tracks; track t.path) {
+          <a class="nav-link" [routerLink]="t.link" [class.nav-active]="track() === t.path">
+            {{ t.label }}
+          </a>
+        }
       </nav>
 
       <span class="spacer"></span>
@@ -104,7 +72,7 @@ import { ThemeSwitcherComponent } from './theme-switcher.component';
         text-decoration: none;
         padding: 6px 12px;
         border-radius: 20px;
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 500;
         opacity: 0.75;
         transition:
@@ -129,4 +97,22 @@ import { ThemeSwitcherComponent } from './theme-switcher.component';
     `,
   ],
 })
-export class NavbarComponent {}
+export class NavbarComponent {
+  // The three tracks (PORT-PLAN.md, Phase 17). `path` is the first segment of
+  // the track's URLs; the Reference keeps its /packages/… addresses.
+  protected readonly tracks = [
+    { path: 'learn', label: 'Learn', link: '/learn' },
+    { path: 'packages', label: 'Reference', link: '/packages/core' },
+    { path: 'explore', label: 'Explore', link: '/explore' },
+  ];
+
+  private readonly router = inject(Router);
+  private readonly url = toSignal(
+    this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      map((e) => e.urlAfterRedirects),
+    ),
+    { initialValue: this.router.url },
+  );
+  protected readonly track = computed(() => this.url().split(/[/?#]/)[1] ?? '');
+}

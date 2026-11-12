@@ -1,6 +1,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Shape — M3 corner radius scale.
-// Static — not light/dark varying, not density-affected.
+// Static — not light/dark varying, not density-affected. The defaults are the
+// registered initial values, so core declares nothing for them; a theme
+// declares only the sizes its author passed.
 // ─────────────────────────────────────────────────────────────────────────────
 @use "sass:map";
 
@@ -15,6 +17,7 @@ $_defaults: (
   full: 9999px,
 );
 
+// Returns only what was passed.
 @function config(
   $xxs: null,
   $xs: null,
@@ -25,86 +28,48 @@ $_defaults: (
   $xxl: null,
   $full: null
 ) {
-  $overrides: ();
+  $result: ();
   @if $xxs != null {
-    $overrides: map.set($overrides, xxs, $xxs);
+    $result: map.set($result, xxs, $xxs);
   }
   @if $xs != null {
-    $overrides: map.set($overrides, xs, $xs);
+    $result: map.set($result, xs, $xs);
   }
   @if $sm != null {
-    $overrides: map.set($overrides, sm, $sm);
+    $result: map.set($result, sm, $sm);
   }
   @if $md != null {
-    $overrides: map.set($overrides, md, $md);
+    $result: map.set($result, md, $md);
   }
   @if $lg != null {
-    $overrides: map.set($overrides, lg, $lg);
+    $result: map.set($result, lg, $lg);
   }
   @if $xl != null {
-    $overrides: map.set($overrides, xl, $xl);
+    $result: map.set($result, xl, $xl);
   }
   @if $xxl != null {
-    $overrides: map.set($overrides, xxl, $xxl);
+    $result: map.set($result, xxl, $xxl);
   }
   @if $full != null {
-    $overrides: map.set($overrides, full, $full);
+    $result: map.set($result, full, $full);
   }
-  @return map.merge($_defaults, $overrides);
+  @return $result;
 }
 
-@mixin emit($config) {
-  --shape--xxs: #{map.get($config, xxs)};
-  --shape--xs: #{map.get($config, xs)};
-  --shape--sm: #{map.get($config, sm)};
-  --shape--md: #{map.get($config, md)};
-  --shape--lg: #{map.get($config, lg)};
-  --shape--xl: #{map.get($config, xl)};
-  --shape--xxl: #{map.get($config, xxl)};
-  --shape--full: #{map.get($config, full)};
+@mixin emit-theme($config) {
+  @each $size, $val in $config {
+    --shape--#{$size}: #{$val};
+  }
 }
 
 // Register all --shape--* vars as <length> so they can be animated.
-// initial-values match the default scale.
+// initial-values are the default scale.
 @mixin register-properties() {
-  @property --shape--xxs {
-    syntax: "<length>";
-    inherits: true;
-    initial-value: 2px;
-  }
-  @property --shape--xs {
-    syntax: "<length>";
-    inherits: true;
-    initial-value: 4px;
-  }
-  @property --shape--sm {
-    syntax: "<length>";
-    inherits: true;
-    initial-value: 8px;
-  }
-  @property --shape--md {
-    syntax: "<length>";
-    inherits: true;
-    initial-value: 12px;
-  }
-  @property --shape--lg {
-    syntax: "<length>";
-    inherits: true;
-    initial-value: 16px;
-  }
-  @property --shape--xl {
-    syntax: "<length>";
-    inherits: true;
-    initial-value: 28px;
-  }
-  @property --shape--xxl {
-    syntax: "<length>";
-    inherits: true;
-    initial-value: 48px;
-  }
-  @property --shape--full {
-    syntax: "<length>";
-    inherits: true;
-    initial-value: 9999px;
+  @each $size, $val in $_defaults {
+    @property --shape--#{$size} {
+      syntax: "<length>";
+      inherits: true;
+      initial-value: #{$val};
+    }
   }
 }

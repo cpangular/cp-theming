@@ -1,0 +1,29 @@
+<mat-chip-set aria-label="Tags">
+  <mat-chip>Chip</mat-chip>
+  <mat-chip><mat-icon matChipAvatar>face</mat-icon>With avatar</mat-chip>
+  <mat-chip disabled>Disabled</mat-chip>
+</mat-chip-set>
+
+<!-- Filter chips -->
+<mat-chip-listbox multiple aria-label="Filters">
+  <mat-chip-option selected>Selected</mat-chip-option>
+  <mat-chip-option>Filter</mat-chip-option>
+  <mat-chip-option disabled>Disabled</mat-chip-option>
+  <mat-chip-option selected disabled>Selected, disabled</mat-chip-option>
+</mat-chip-listbox>
+
+<!-- Input chips -->
+<mat-form-field class="g-wide" appearance="outline" subscriptSizing="dynamic">
+  <mat-label>Recipients</mat-label>
+  <mat-chip-grid #recipients aria-label="Recipients">
+    <mat-chip-row>
+      Ada
+      <button matChipRemove aria-label="Remove Ada"><mat-icon>cancel</mat-icon></button>
+    </mat-chip-row>
+    <mat-chip-row>
+      Grace
+      <button matChipRemove aria-label="Remove Grace"><mat-icon>cancel</mat-icon></button>
+    </mat-chip-row>
+  </mat-chip-grid>
+  <input placeholder="Add a recipient" [matChipInputFor]="recipients" />
+</mat-form-field>

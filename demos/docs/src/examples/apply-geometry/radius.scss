@@ -1,0 +1,16 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+.my-card {
+  @include t.apply-palette("primary");
+  @include t.bg();
+  @include t.radius(20px);
+  @include t.container();
+}
+
+// Per-corner control
+.my-sheet {
+  @include t.apply-palette("primary");
+  @include t.bg();
+  @include t.radius($top: 20px);
+  @include t.container();
+}

@@ -1,0 +1,13 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+$my-theme: t.theme(
+  $palettes: (
+    primary: t.palette(oklch(0.44 0.22 253)),
+  ),
+  $typography: t.typography(
+    $plain-family: "Inter, system-ui, sans-serif",
+    $brand-family: '"Playfair Display", serif'
+  )
+);
+
+@include t.define-theme("my-theme", $my-theme);

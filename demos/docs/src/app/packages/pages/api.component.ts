@@ -2,6 +2,11 @@ import { Component, computed, inject, effect } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { TocService } from '../../shell/toc.service';
+import { CodeComponent } from '../../shared/code.component';
+import adaptorScss from '../../../examples/theme/adaptor.scss' with { loader: 'text' };
+import adaptorUsageDisplayHtml from '../../../examples/api/adaptor-usage.display.html' with {
+  loader: 'text',
+};
 
 const CORE_TOC = [
   { label: 'Mixins', anchor: 'scss-mixins-core' },
@@ -26,6 +31,7 @@ const NG_MATERIAL_TOC = [
 @Component({
   selector: 'cpa-api-page',
   standalone: true,
+  imports: [CodeComponent],
   template: `
     <article class="doc-page">
       <header class="page-header">
@@ -47,32 +53,27 @@ const NG_MATERIAL_TOC = [
             <div class="api-symbol">
               <h3 class="api-symbol-name">define-core-theme</h3>
               <p class="api-symbol-desc">
-                Emit shared <code>&#64;property</code> registrations for all palette color roles,
-                and the attribute-selector rules (<code>[theme]</code>, <code>[palette]</code>,
-                <code>[themeDensity]</code>) that activate scoped token inheritance. Call once at
-                root — never more than once per stylesheet.
+                Emit everything that does not depend on a theme, once: the
+                <code>&#64;property</code> registrations (each core palette role's light and dark
+                color, and the weight, density, space and shape scalars), every default, the
+                <code>themeMode</code> rules, every derivation, the palettes a theme left out, and
+                the attribute rules (<code>[palette]</code>, the surface layers,
+                <code>[elevated]</code>, <code>[themeDensity]</code>). Call it once, at the top
+                level of a stylesheet, before any theme.
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"
                   ><span class="api-sig-kw">&#64;include t.</span
                   ><span class="api-sig-name">define-core-theme</span
-                  ><span class="api-sig-punct">(</span><span class="api-sig-param">$selector</span
-                  ><span class="api-sig-punct">: </span><span class="api-sig-default">':root'</span
-                  ><span class="api-sig-punct">)</span></span
+                  ><span class="api-sig-punct">()</span></span
                 >
                 <div class="api-member-body">
-                  <h5 class="api-params-heading">Parameters</h5>
-                  <div class="api-param-row">
-                    <div>
-                      <span class="api-param-name">$selector</span
-                      ><span class="api-param-type">string</span
-                      ><span class="api-param-default">default ':root'</span>
-                    </div>
-                    <div class="api-param-desc">
-                      CSS selector to emit <code>&#64;property</code> declarations on. Override only
-                      if your app root is not <code>:root</code>.
-                    </div>
-                  </div>
+                  <p class="api-member-desc">
+                    No parameters. The registrations are top-level <code>&#64;property</code> rules
+                    and the defaults and derivations sit on <code>:where(:root)</code> and
+                    <code>:where(:root, [theme])</code>, at zero specificity, so a theme rule and
+                    your own <code>:root</code> rule both win over them.
+                  </p>
                 </div>
               </div>
             </div>
@@ -80,9 +81,11 @@ const NG_MATERIAL_TOC = [
             <div class="api-symbol">
               <h3 class="api-symbol-name">define-theme</h3>
               <p class="api-symbol-desc">
-                Emit all CSS variable declarations for a named theme scoped to
-                <code>[theme="$name"]</code>. Multiple themes can coexist — the active one is
-                selected by setting the <code>theme</code> attribute on any ancestor element.
+                Emit one rule for a named theme, scoped to <code>[theme="$name"]</code>, holding
+                only what was passed to <code>t.theme()</code>. Multiple themes can coexist — the
+                active one is selected by setting the <code>theme</code> attribute on any ancestor
+                element. Themes come from this mixin; a <code>[theme="name"]</code> rule is not
+                meant to be typed as CSS by hand (see the Theme page).
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"
@@ -124,8 +127,8 @@ const NG_MATERIAL_TOC = [
                       ><span class="api-param-default">default false</span>
                     </div>
                     <div class="api-param-desc">
-                      Also emit on <code>:root</code> so the theme applies without any
-                      <code>[theme]</code> attribute present.
+                      Also apply on <code>:where(:root)</code>, so the theme applies without any
+                      <code>theme</code> attribute and any <code>theme</code> attribute beats it.
                     </div>
                   </div>
                   <div class="api-param-row">
@@ -135,8 +138,8 @@ const NG_MATERIAL_TOC = [
                       ><span class="api-param-default">default true</span>
                     </div>
                     <div class="api-param-desc">
-                      Skip properties whose light and dark values are identical — reduces output CSS
-                      size.
+                      Accepted for compatibility. A theme rule holds only what was passed, so
+                      nothing is left to dedupe.
                     </div>
                   </div>
                   <div class="api-param-row">
@@ -163,8 +166,9 @@ const NG_MATERIAL_TOC = [
             <div class="api-symbol">
               <h3 class="api-symbol-name">theme</h3>
               <p class="api-symbol-desc">
-                Assemble a theme config map from typed sub-configs. Only <code>$palettes</code>
-                is required — all other parameters have well-considered defaults.
+                Assemble a theme config map from typed sub-configs. Nothing is required: pass
+                <code>$brand</code>, some palettes, or both, and core generates the palettes you
+                leave out.
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"
@@ -189,7 +193,11 @@ const NG_MATERIAL_TOC = [
                     </div>
                     <div class="api-param-desc">
                       Map of palette name → <code>t.palette()</code> or
-                      <code>t.light-dark()</code> pair. Required.
+                      <code>t.light-dark()</code> pair. Optional; a palette left out is generated
+                      (<code>primary</code>, <code>secondary</code>, <code>tertiary</code>,
+                      <code>background</code>, <code>surface</code>) or a fixed default
+                      (<code>error</code>, <code>warn</code>, <code>caution</code>,
+                      <code>pass</code>).
                     </div>
                   </div>
                   <div class="api-param-row">
@@ -199,8 +207,9 @@ const NG_MATERIAL_TOC = [
                       ><span class="api-param-default">default null</span>
                     </div>
                     <div class="api-param-desc">
-                      Brand color emitted as <code>--color--brand</code>. Required for
-                      <code>t.palette-from-brand()</code>.
+                      The brand color, exactly as given: the <code>brand</code> palette,
+                      <code>--color--brand</code>. Never adjusted. A primary, background and surface
+                      the theme does not pass are generated from it.
                     </div>
                   </div>
                   <div class="api-param-row">
@@ -437,9 +446,10 @@ const NG_MATERIAL_TOC = [
               <p class="api-symbol-desc">
                 Derive a palette from the theme's <code>$brand</code> color at runtime using CSS
                 relative color. Returns a <code>t.light-dark()</code> pair with lightness clamped to
-                appropriate ranges per mode. Requires <code>$brand</code> to be set on
-                <code>t.theme()</code>. See also <code>t.palette-from-var($var)</code> for an
-                explicit CSS variable name.
+                appropriate ranges per mode. Core generates <code>primary</code> this way when a
+                theme leaves it out, so the function is for other numbers or another palette name.
+                Requires <code>$brand</code> to be set on <code>t.theme()</code>. See also
+                <code>t.palette-from-var($var)</code> for an explicit CSS variable name.
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"
@@ -491,7 +501,8 @@ const NG_MATERIAL_TOC = [
                     </div>
                     <div class="api-param-desc">
                       Maximum chroma cap. Prevents overly saturated results when the brand color is
-                      very vivid.
+                      very vivid. The result has less chroma than this where the screen cannot show
+                      it at that lightness, so its hue stays the brand's.
                     </div>
                   </div>
                 </div>
@@ -1084,8 +1095,10 @@ const NG_MATERIAL_TOC = [
                 >
                 <div class="api-member-body">
                   <p class="api-member-desc">
-                    Scan loaded stylesheets and return all registered theme definitions found via
-                    <code>&#64;property</code> registry.
+                    Scan the loaded stylesheets and return one entry per theme name found in a
+                    <code>[theme="name"]</code> selector: the rules
+                    <code>t.define-theme()</code> emits. A cross-origin stylesheet cannot be read
+                    and is skipped.
                   </p>
                 </div>
               </div>
@@ -1297,8 +1310,8 @@ const NG_MATERIAL_TOC = [
                       ><span class="prop-type">Signal&lt;ThemeDef[]&gt;</span>
                     </td>
                     <td>
-                      Themes discovered in loaded stylesheets via
-                      <code>&#64;property</code> registry scan.
+                      Theme names found in the <code>[theme="name"]</code> selectors of the loaded
+                      stylesheets.
                     </td>
                   </tr>
                 </tbody>
@@ -1456,11 +1469,18 @@ const NG_MATERIAL_TOC = [
             <div class="api-symbol">
               <h3 class="api-symbol-name">define-ng-material-core-theme</h3>
               <p class="api-symbol-desc">
-                Emit 166 <code>--mat-sys-*</code> → <code>var(--color--*)</code> mappings at
-                <code>:root</code>, wiring Angular Material's entire M3 token system to cp-theming
-                palettes. Also re-emits color tokens at the <code>[theme]</code>
-                level to work around Chromium's eager-resolution of
-                <code>&#64;property</code>-registered variables in nested theme scopes.
+                Declare every <code>--mat-sys-*</code> token Angular Material reads, on
+                <code>:root</code> and on every <code>[theme]</code> element, so a nested theme
+                re-evaluates them. The colour roles come from Angular Material's own role tables:
+                roles cp-theming has a token for (<code>primary</code>, <code>on-primary</code>,
+                <code>surface</code>, <code>on-surface</code>, …) point at it, the other accent
+                roles are the theme's colour at the M3 tone the table names, and the surface
+                containers, <code>surface-dim</code> and <code>surface-bright</code> are offsets
+                from <code>--color--surface</code>. Typography reads <code>--text--*</code>. Also
+                emits <code>[palette="name"]</code> rules for the core accent palettes
+                (<code>primary</code>, <code>secondary</code>, <code>error</code>,
+                <code>warn</code>, <code>caution</code>, <code>pass</code>), so the
+                <code>palette</code> attribute recolors the Material components inside it.
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"
@@ -1470,8 +1490,8 @@ const NG_MATERIAL_TOC = [
                 >
                 <div class="api-member-body">
                   <p class="api-member-desc">
-                    No parameters. Call once after <code>t.define-core-theme()</code> and before any
-                    <code>t.define-theme()</code> calls.
+                    No parameters. Call once, after <code>t.define-core-theme()</code> and your
+                    <code>t.define-theme()</code> calls: the load order is core, themes, adapter.
                   </p>
                 </div>
               </div>
@@ -1480,9 +1500,12 @@ const NG_MATERIAL_TOC = [
             <div class="api-symbol">
               <h3 class="api-symbol-name">material-palette</h3>
               <p class="api-symbol-desc">
-                Override <code>--mat-sys-primary*</code> tokens to point at a cp-theming named
-                palette, recoloring all Angular Material components inside that CSS scope. Scope
-                tightly — the override inherits to all descendants via the normal CSS cascade.
+                Override the roles Angular Material derives from its primary palette
+                (<code>--mat-sys-primary</code>, <code>on-primary</code>, the container pair, the
+                fixed roles, <code>inverse-primary</code>, <code>surface-tint</code>) to come from a
+                cp-theming named palette, recoloring all Angular Material components inside that CSS
+                scope. Scope tightly — the override inherits to all descendants via the normal CSS
+                cascade.
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"
@@ -1510,8 +1533,14 @@ const NG_MATERIAL_TOC = [
             <div class="api-symbol">
               <h3 class="api-symbol-name">apply-material-overrides</h3>
               <p class="api-symbol-desc">
-                Emit surgical component-level token patches for cases where <code>--mat-sys-*</code>
-                tokens are insufficient. These are targeted fixes, not a wholesale M2→M3 shim.
+                Emit component-level patches for the cases where a component's own default does not
+                work with cp-theming's roles. Today: the slide toggle's selected icon; the accent in
+                a label (text, outlined and elevated buttons, the focused and invalid states of a
+                form field, a step in error), held to a readable lightness; the container of the
+                filled form field and of the filled card; the text Material leaves to inherit
+                (hints, list subheaders, tab and step content), which gets a surface role; and the
+                scrim under a grid tile's header and footer. These are targeted fixes, each with its
+                measured reason in the source, not a wholesale M2→M3 shim.
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"
@@ -1553,14 +1582,15 @@ const NG_MATERIAL_TOC = [
               <h3 class="api-symbol-name">adaptor</h3>
               <p class="api-symbol-desc">
                 Returns a hooks map for <code>t.define-theme($adaptor: mat.adaptor())</code>. Causes
-                every palette defined in your theme to automatically emit
-                <code>[palette="name"] &#123; --mat-sys-primary: ... &#125;</code> override rules —
-                so the <code>palette</code> attribute on any HTML element recolors all Material
-                components inside it without wrapper classes.
+                every custom palette name defined in your theme to emit a
+                <code>[palette="name"] &#123; --mat-sys-primary: ... &#125;</code> override rule —
+                so the <code>palette</code> attribute recolors the Material components inside it
+                without wrapper classes. The core accent palettes need no adaptor:
+                <code>define-ng-material-core-theme()</code> emits their rules.
               </p>
               <p class="api-symbol-desc">
-                <code>surface</code> and <code>background</code> palettes are automatically skipped
-                — they are neutral and must not remap Material's primary color role.
+                <code>surface</code> and <code>background</code> get no rule — they are neutral and
+                must not remap Material's primary color role.
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"
@@ -1573,14 +1603,9 @@ const NG_MATERIAL_TOC = [
                     No parameters. Returns a hook map for use with <code>t.define-theme()</code>.
                   </p>
                   <h5 class="api-returns-heading">Example</h5>
-                  <pre><code>&#64;include t.define-theme('my-app', $config,
-  $default: true,
-  $adaptor: mat.adaptor(),
-);
-
-// In templates — no wrappers needed:
-// &lt;button mat-flat-button palette="warn"&gt;Delete&lt;/button&gt;
-// &lt;mat-checkbox palette="pass"&gt;Confirmed&lt;/mat-checkbox&gt;</code></pre>
+                  <cpa-code [code]="ex.adaptorScss" lang="scss" />
+                  <p class="api-member-desc">In a template:</p>
+                  <cpa-code [code]="ex.adaptorUsageDisplayHtml" lang="html" />
                 </div>
               </div>
             </div>
@@ -1609,7 +1634,8 @@ const NG_MATERIAL_TOC = [
                     >
                   </td>
                   <td>
-                    All 166 <code>--mat-sys-*</code> → <code>var(--color--*)</code> token mappings.
+                    Every <code>--mat-sys-*</code> token Angular Material reads, declared from the
+                    cp-theming variables.
                   </td>
                 </tr>
                 <tr>
@@ -1651,6 +1677,7 @@ const NG_MATERIAL_TOC = [
   ],
 })
 export class ApiPageComponent {
+  protected readonly ex = { adaptorScss, adaptorUsageDisplayHtml };
   private readonly _toc = inject(TocService);
   private readonly _parentParams = toSignal(inject(ActivatedRoute).parent!.params);
   readonly lib = computed(() => (this._parentParams()?.['lib'] as string) ?? 'core');

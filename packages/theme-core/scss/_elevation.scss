@@ -1,73 +1,188 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Elevation — 6 levels (0-5), each with:
-//   shadow: CSS box-shadow (color — usable with light-dark()).
-//   tint:   % of primary color to mix into surface bg (percentage — not
-//           compatible with light-dark(); needs dark-scope override pattern).
+//   shadow: CSS box-shadow. Its colour may differ by mode; it is emitted as
+//           `<geometry> light-dark(<light colour>, <dark colour>)`, because
+//           light-dark() only accepts colours — wrapped around a whole
+//           box-shadow it is invalid and the shadow computes to `none`.
+//   tint:   % of primary color to mix into surface bg (a percentage — stored
+//           as a light/dark pair and picked with the mode flag, see _mode.scss).
 //
 // Light/dark varying — use via:
 //   t.light-dark(t.elevation(), t.elevation($shadow-color: oklch(0 0 0 / 50%)))
 //
-// Defaults: light uses 30% opacity shadows; dark should use 50%+ opacity.
+// Defaults: light uses 30% opacity shadows; dark uses 50% (shadows need more
+// opacity on dark surfaces). Core declares these once; a theme declares only
+// the levels its author's $shadow-color or $levels touch. A level's light and
+// dark shadow may differ in their colours only: same offsets, blur and spread.
 // ─────────────────────────────────────────────────────────────────────────────
-@use 'sass:map';
+@use "sass:list";
+@use "sass:map";
+@use "sass:meta";
+@use "mode" as _m;
 
-$_defaults: (
-  0: (shadow: none,                               tint: 0%),
-  1: (shadow: 0 1px  2px oklch(0 0 0 / 30%),     tint: 5%),
-  2: (shadow: 0 2px  6px oklch(0 0 0 / 30%),     tint: 8%),
-  3: (shadow: 0 4px  8px oklch(0 0 0 / 30%),     tint: 11%),
-  4: (shadow: 0 6px 12px oklch(0 0 0 / 30%),     tint: 12%),
-  5: (shadow: 0 8px 16px oklch(0 0 0 / 30%),     tint: 14%),
+$_geometry: (
+  1: 0 1px 2px,
+  2: 0 2px 6px,
+  3: 0 4px 8px,
+  4: 0 6px 12px,
+  5: 0 8px 16px,
+);
+$_tints: (
+  0: 0%,
+  1: 5%,
+  2: 8%,
+  3: 11%,
+  4: 12%,
+  5: 14%,
+);
+$_shadow-color: (
+  light: oklch(0 0 0 / 30%),
+  dark: oklch(0 0 0 / 50%),
 );
 
-// config($shadow-color) — rescales shadow opacity across all 6 levels.
-// config($levels: (...)) — per-level overrides (merged onto defaults).
+// config($shadow-color) — rescales shadow opacity across levels 1–5.
+// config($levels: (N: (shadow: …, tint: …))) — per-level overrides.
+// Returns only what was passed.
 @function config($shadow-color: null, $levels: null) {
-  $result: $_defaults;
+  $result: ();
   @if $shadow-color != null {
-    $result: (
-      0: (shadow: none,                               tint: 0%),
-      1: (shadow: 0 1px  2px #{$shadow-color},        tint: 5%),
-      2: (shadow: 0 2px  6px #{$shadow-color},        tint: 8%),
-      3: (shadow: 0 4px  8px #{$shadow-color},        tint: 11%),
-      4: (shadow: 0 6px 12px #{$shadow-color},        tint: 12%),
-      5: (shadow: 0 8px 16px #{$shadow-color},        tint: 14%),
-    );
+    $result: map.set($result, shadow-color, $shadow-color);
   }
-  @if $levels != null { $result: map.merge($result, $levels); }
+  @if $levels != null {
+    $result: map.set($result, levels, $levels);
+  }
   @return $result;
 }
 
-// Emit tint vars (percentages — cannot use light-dark()).
-// Call in the base/light scope.
-@mixin emit-tints($config) {
-  @each $level, $vals in $config {
-    --elevation-#{$level}--tint: #{map.get($vals, tint)};
-  }
+// A level's geometry followed by a colour, as a space-separated list.
+@function _shadow($level, $color) {
+  @return list.append(map.get($_geometry, $level), $color, $separator: space);
 }
 
-// Emit only tint vars that changed between light and dark.
-// Call in every dark-scope override block.
-@mixin emit-tints-diff($lc, $dc) {
-  @each $level, $lvals in $lc {
-    $dvals: map.get($dc, $level);
-    @if $dvals != null {
-      $lt: map.get($lvals, tint);
-      $dt: map.get($dvals, tint);
-      @if $lt != $dt { --elevation-#{$level}--tint: #{$dt}; }
+@function _default-shadow($level, $mode) {
+  @if $level == 0 {
+    @return none;
+  }
+  @return _shadow($level, map.get($_shadow-color, $mode));
+}
+
+// Whether two box-shadow values differ in their colours only, so that one
+// declaration can serve both modes: the same list shape, and every pair of
+// items equal or both colour-like (anything but a number, a list or `none`).
+@function _compatible($l, $d) {
+  @if $l == $d {
+    @return true;
+  }
+  $lt: meta.type-of($l);
+  $dt: meta.type-of($d);
+  @if $lt == list or $dt == list {
+    @if $lt != $dt or list.length($l) != list.length($d) or list.separator($l) != list.separator($d)
+    {
+      @return false;
     }
+    @for $i from 1 through list.length($l) {
+      @if not _compatible(list.nth($l, $i), list.nth($d, $i)) {
+        @return false;
+      }
+    }
+    @return true;
+  }
+  @return $lt != number and $dt != number and $l != none and $d != none;
+}
+
+// One box-shadow value for both modes, from two compatible values: they are
+// walked side by side and light-dark() goes around each colour that differs.
+@function _by-mode($l, $d) {
+  @if $l == $d {
+    @return $l;
+  }
+  @if meta.type-of($l) == list {
+    $out: ();
+    @for $i from 1 through list.length($l) {
+      $out: list.append(
+        $out,
+        _by-mode(list.nth($l, $i), list.nth($d, $i)),
+        $separator: list.separator($l)
+      );
+    }
+    @return $out;
+  }
+  @return light-dark(#{$l}, #{$d});
+}
+
+// The shadow of the mode an author did not pass: the default when it differs
+// from the passed one in colour only, otherwise the passed shadow itself (a
+// box-shadow cannot change its geometry by mode).
+@function _other-mode($passed, $default) {
+  @if _compatible($passed, $default) {
+    @return $default;
+  }
+  @return $passed;
+}
+
+// The shadow a config gives a level, or null when the config leaves it alone.
+@function _shadow-of($config, $level) {
+  $levels: map.get($config, levels);
+  @if $levels != null and map.has-key($levels, $level, shadow) {
+    @return map.get($levels, $level, shadow);
+  }
+  $color: map.get($config, shadow-color);
+  @if $color != null and $level != 0 {
+    @return _shadow($level, $color);
+  }
+  @return null;
+}
+
+@function _tint-of($config, $level) {
+  $levels: map.get($config, levels);
+  @if $levels != null and map.has-key($levels, $level, tint) {
+    @return map.get($levels, $level, tint);
+  }
+  @return null;
+}
+
+// Core: default shadows (colour by mode) and default tint pairs. Once, on :where(:root).
+@mixin emit-root-defaults() {
+  @for $level from 0 through 5 {
+    --elevation-#{$level}--shadow: #{_by-mode(
+        _default-shadow($level, light),
+        _default-shadow($level, dark)
+      )};
+  }
+  @for $level from 0 through 5 {
+    $t: map.get($_tints, $level);
+    @include _m.pair(--elevation-#{$level}--tint, $t, $t);
   }
 }
 
-// Emit shadow vars with light-dark() (valid — shadows are colors/none).
-// Call once in the base scope.
-@mixin emit-shadows($lc, $dc, $dedupe: true) {
-  @each $level, $lvals in $lc {
-    $dvals: map.get($dc, $level);
-    $ls: map.get($lvals, shadow);
-    $ds: $ls;
-    @if $dvals != null { $ds: map.get($dvals, shadow); }
-    @if $dedupe and $ls == $ds { --elevation-#{$level}--shadow: #{$ls}; }
-    @else                      { --elevation-#{$level}--shadow: light-dark(#{$ls}, #{$ds}); }
+// Core: pick every tint from its pair. Once, on :where(:root, [theme], [themeMode]).
+@mixin emit-pick() {
+  @for $level from 0 through 5 {
+    @include _m.pick(--elevation-#{$level}--tint);
+  }
+}
+
+// Theme: the shadows and tint sides the author's configs touch.
+@mixin emit-theme($light, $dark) {
+  @for $level from 0 through 5 {
+    $ls: _shadow-of($light, $level);
+    $ds: _shadow-of($dark, $level);
+    @if $ls != null or $ds != null {
+      @if $ls == null {
+        $ls: _other-mode($ds, _default-shadow($level, light));
+      }
+      @if $ds == null {
+        $ds: _other-mode($ls, _default-shadow($level, dark));
+      }
+      @if not _compatible($ls, $ds) {
+        @error "Elevation level #{$level}: the light shadow `#{$ls}` and the dark shadow `#{$ds}` differ in more than their colours. light-dark() can only switch a colour, so give both modes the same offsets, blur and spread.";
+      }
+      --elevation-#{$level}--shadow: #{_by-mode($ls, $ds)};
+    }
+    @include _m.pair(
+      --elevation-#{$level}--tint,
+      _tint-of($light, $level),
+      _tint-of($dark, $level)
+    );
   }
 }

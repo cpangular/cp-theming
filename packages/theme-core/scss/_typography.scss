@@ -4,10 +4,22 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // M3 roles: display, headline, title, body, label × large, medium, small
 // CSS output: --text--{role}-{size}--{font|size|line-height|weight|tracking}
+// Core declares the whole scale once; the per-role --font tokens are derived
+// from --text--plain-family / --text--brand-family (display and headline use
+// the brand family) on :where(:root, [theme]). A theme declares only what its
+// author passed.
 // ─────────────────────────────────────────────────────────────────────────────
 @use "sass:map";
 @use "sass:list";
 @use "sass:string";
+
+$_families: (
+  plain-family: system-ui,
+  brand-family: system-ui,
+  bold-weight: 700,
+  medium-weight: 500,
+  regular-weight: 400,
+);
 
 // M3 type scale defaults (AM v22 / Material Design 3)
 $_scale: (
@@ -103,55 +115,81 @@ $_scale: (
   ),
 );
 
+// Returns only what was passed. When $plain-family is given without a
+// $brand-family, display and headline follow the plain family.
 @function config(
-  $plain-family: system-ui,
+  $plain-family: null,
   $brand-family: null,
-  $bold-weight: 700,
-  $medium-weight: 500,
-  $regular-weight: 400,
+  $bold-weight: null,
+  $medium-weight: null,
+  $regular-weight: null,
   $scale-overrides: null
 ) {
-  $brand: $plain-family;
+  $result: ();
+  @if $plain-family != null {
+    $result: map.set($result, plain-family, $plain-family);
+  }
   @if $brand-family != null {
-    $brand: $brand-family;
+    $result: map.set($result, brand-family, $brand-family);
+  } @else if $plain-family != null {
+    $result: map.set($result, brand-family, $plain-family);
   }
-  $scale: $_scale;
+  @if $bold-weight != null {
+    $result: map.set($result, bold-weight, $bold-weight);
+  }
+  @if $medium-weight != null {
+    $result: map.set($result, medium-weight, $medium-weight);
+  }
+  @if $regular-weight != null {
+    $result: map.set($result, regular-weight, $regular-weight);
+  }
   @if $scale-overrides != null {
-    $scale: map.merge($_scale, $scale-overrides);
+    $result: map.set($result, scale, $scale-overrides);
   }
-  @return (
-    plain-family: $plain-family,
-    brand-family: $brand,
-    bold-weight: $bold-weight,
-    medium-weight: $medium-weight,
-    regular-weight: $regular-weight,
-    scale: $scale
-  );
+  @return $result;
 }
 
-// Internal: emit all type scale vars
-@mixin emit($config) {
-  $plain: map.get($config, plain-family);
-  $brand: map.get($config, brand-family);
-  $scale: map.get($config, scale);
+@function _uses-brand($role) {
+  @return string.slice("#{$role}", 1, 7) == "display" or string.slice("#{$role}", 1, 8) ==
+    "headline";
+}
 
-  --text--plain-family: #{$plain};
-  --text--brand-family: #{$brand};
-  --text--bold-weight: #{map.get($config, bold-weight)};
-  --text--medium-weight: #{map.get($config, medium-weight)};
-  --text--regular-weight: #{map.get($config, regular-weight)};
-
-  @each $role, $props in $scale {
-    $font: $plain;
-    // display and headline use brand family
-    @if string.slice("#{$role}", 1, 7) == "display" or string.slice("#{$role}", 1, 8) == "headline"
-    {
-      $font: $brand;
+// Core: families, weights and the full scale. Once, on :where(:root).
+@mixin emit-root-defaults() {
+  @each $key, $val in $_families {
+    --text--#{$key}: #{$val};
+  }
+  @each $role, $props in $_scale {
+    @each $prop, $val in $props {
+      --text--#{$role}--#{$prop}: #{$val};
     }
-    --text--#{$role}--font: #{$font};
-    --text--#{$role}--size: #{map.get($props, size)};
-    --text--#{$role}--line-height: #{map.get($props, line-height)};
-    --text--#{$role}--weight: #{map.get($props, weight)};
-    --text--#{$role}--tracking: #{map.get($props, tracking)};
+  }
+}
+
+// Core: each role's font follows its family. Once, on :where(:root, [theme]).
+@mixin emit-derived() {
+  @each $role, $props in $_scale {
+    @if _uses-brand($role) {
+      --text--#{$role}--font: var(--text--brand-family);
+    } @else {
+      --text--#{$role}--font: var(--text--plain-family);
+    }
+  }
+}
+
+// Theme: only what was passed.
+@mixin emit-theme($config) {
+  @each $key, $val in $config {
+    @if $key != scale {
+      --text--#{$key}: #{$val};
+    }
+  }
+  $scale: map.get($config, scale);
+  @if $scale != null {
+    @each $role, $props in $scale {
+      @each $prop, $val in $props {
+        --text--#{$role}--#{$prop}: #{$val};
+      }
+    }
   }
 }

@@ -1,0 +1,3 @@
+  readonly themeService = inject(ThemeService);
+
+  readonly modeMeta = computed(() => MODE_META[this.themeService.mode()]);

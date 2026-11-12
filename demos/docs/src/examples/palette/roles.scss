@@ -1,0 +1,16 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+$my-theme: t.theme(
+  $palettes: (
+    // Override individual roles
+    primary: t.palette(
+      $base:   oklch(0.55 0.18 240),
+      $color:  oklch(0.50 0.20 240),   // identity colour (defaults to $base)
+      $bg:     oklch(0.88 0.06 240),   // tonal background role
+      $stroke: oklch(0.45 0.16 240),   // border role
+      $focus:  oklch(0.40 0.22 240)    // focus ring
+    ),
+  )
+);
+
+@include t.define-theme("my-theme", $my-theme);

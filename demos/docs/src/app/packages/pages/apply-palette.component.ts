@@ -1,11 +1,20 @@
 import { Component, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { ThemeExampleComponent } from '../../shared/theme-example.component';
 import { TocService } from '../../shell/toc.service';
+import scopesHtml from '../../../examples/apply-palette/scopes.html' with { loader: 'text' };
+import scopesClassesHtml from '../../../examples/apply-palette/scopes.classes.html' with {
+  loader: 'text',
+};
+import scopesScss from '../../../examples/apply-palette/scopes.scss' with { loader: 'text' };
+import nestedHtml from '../../../examples/apply-palette/nested.html' with { loader: 'text' };
+import varsHtml from '../../../examples/apply-palette/vars.html' with { loader: 'text' };
+import varsScss from '../../../examples/apply-palette/vars.scss' with { loader: 'text' };
 
 @Component({
   selector: 'cpa-apply-palette-page',
   standalone: true,
-  imports: [ThemeExampleComponent],
+  imports: [ThemeExampleComponent, RouterLink],
   template: `
     <article class="doc-page">
       <header class="page-header">
@@ -23,7 +32,7 @@ import { TocService } from '../../shell/toc.service';
         <p>
           On its own the attribute sets the palette's identity color as the text color for the
           element and its descendants. Pair it with a
-          <a href="apply-surfaces">surface layer</a> to add backgrounds and borders.
+          <a routerLink="../apply-surfaces">surface layer</a> to add backgrounds and borders.
         </p>
       </section>
 
@@ -35,17 +44,11 @@ import { TocService } from '../../shell/toc.service';
         </p>
         <cpa-theme-example
           title="Applying palette scopes"
-          [attrsHtml]="ex1AttrsHtml"
-          [scssHtml]="ex1ScssHtml"
-          [scssScss]="ex1ScssScss"
-        >
-          <div demo>
-            <div palette="primary">Primary palette text</div>
-            <div palette="secondary">Secondary palette text</div>
-            <div palette="error">Error palette text</div>
-            <div palette="pass">Pass palette text</div>
-          </div>
-        </cpa-theme-example>
+          layout="column"
+          [attrsHtml]="ex.scopesHtml"
+          [scssHtml]="ex.scopesClassesHtml"
+          [scssScss]="ex.scopesScss"
+        />
       </section>
 
       <section id="inheritance" class="page-section">
@@ -54,17 +57,11 @@ import { TocService } from '../../shell/toc.service';
           Palette variables inherit through the CSS cascade. An inner
           <code>palette</code> attribute overrides the outer one for that subtree.
         </p>
-        <cpa-theme-example title="Nested palette scopes" [attrsHtml]="ex2AttrsHtml">
-          <div demo>
-            <div palette="primary">
-              <div>Primary scope</div>
-              <div palette="secondary">
-                <div>Secondary override</div>
-              </div>
-              <div>Back to primary</div>
-            </div>
-          </div>
-        </cpa-theme-example>
+        <cpa-theme-example
+          title="Nested palette scopes"
+          layout="column"
+          [attrsHtml]="ex.nestedHtml"
+        />
       </section>
 
       <section id="using-vars" class="page-section">
@@ -78,26 +75,10 @@ import { TocService } from '../../shell/toc.service';
         </p>
         <cpa-theme-example
           title="Referencing palette vars in child styles"
-          [attrsHtml]="ex3AttrsHtml"
-          [attrsScss]="ex3AttrsScss"
-        >
-          <div demo>
-            <div palette="primary" style="display:flex;flex-direction:column;gap:10px;width:100%">
-              <span style="font-family:'Roboto Mono',monospace;color: var(--palette-color)"
-                >--palette-color</span
-              >
-              <span style="font-family:'Roboto Mono',monospace;color: var(--palette-color--high)"
-                >--palette-color--high</span
-              >
-              <span style="font-family:'Roboto Mono',monospace;color: var(--palette-color--low)"
-                >--palette-color--low</span
-              >
-              <hr
-                style="width:100%;border:0;border-top:2px solid var(--palette-color--stroke);margin:4px 0"
-              />
-            </div>
-          </div>
-        </cpa-theme-example>
+          layout="column"
+          [attrsHtml]="ex.varsHtml"
+          [attrsScss]="ex.varsScss"
+        />
       </section>
 
       <section id="color-properties" class="page-section">
@@ -231,67 +212,14 @@ import { TocService } from '../../shell/toc.service';
   ],
 })
 export class ApplyPalettePageComponent {
-  readonly ex1AttrsHtml = `<!-- identity text color is applied; --palette-color--* vars now available -->
-<div palette="primary">Primary palette text</div>
-
-<div palette="secondary">Secondary palette text</div>
-
-<div palette="error">Error palette text</div>`;
-
-  readonly ex1ScssHtml = `<section class="primary-region">
-  <h2>Primary heading</h2>
-</section>
-
-<aside class="secondary-region">
-  <h2>Secondary heading</h2>
-</aside>`;
-
-  readonly ex1ScssScss = `@use '@cpangular/cp-theming-core/scss/theme' as t;
-
-.primary-region {
-  @include t.apply-palette('primary');
-  // identity text color set here; --palette-color--* vars
-  // available here and in all descendant elements
-}
-
-.secondary-region {
-  @include t.apply-palette('secondary');
-}`;
-
-  readonly ex2AttrsHtml = `<div palette="primary">
-  <!-- palette-color is primary here -->
-  <div>Primary scope</div>
-
-  <div palette="secondary">
-    <!-- palette-color is now secondary -->
-    <div>Secondary override</div>
-  </div>
-
-  <!-- palette-color is primary again -->
-  <div>Back to primary</div>
-</div>`;
-
-  readonly ex3AttrsHtml = `<div palette="primary">
-  <!-- All these vars are available once palette scope is active -->
-  <span style="color: var(--palette-color)">--palette-color</span>
-  <span style="color: var(--palette-color--high)">--palette-color--high</span>
-  <span style="color: var(--palette-color--low)">--palette-color--low</span>
-  <hr style="border-color: var(--palette-color--stroke)">
-</div>`;
-
-  readonly ex3AttrsScss = `// All these vars are set by the nearest palette scope ancestor
-.card-label {
-  color: var(--palette-color);
-  font-weight: 600;
-}
-
-.card-accent {
-  color: var(--palette-color--high);
-}
-
-.card-divider {
-  border-top: 1px solid var(--palette-color--stroke);
-}`;
+  protected readonly ex = {
+    scopesHtml,
+    scopesClassesHtml,
+    scopesScss,
+    nestedHtml,
+    varsHtml,
+    varsScss,
+  };
 
   readonly paletteOptions = ['primary', 'secondary', 'error', 'warn', 'caution', 'pass'];
   readonly selectedPalette = signal('primary');

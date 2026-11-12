@@ -1,6 +1,6 @@
 # CSS custom property reference
 
-All CSS custom properties emitted by `@cpangular/cp-theming-core`. Properties are scoped to the theme root element (`[theme="name"]` / `body` when `$default: true`) unless noted otherwise.
+All CSS custom properties emitted by `@cpangular/cp-theming-core`. A theme rule (`:where([theme="name"]):not(cp-theming-none)`, specificity (0,0,1), plus `:where(:root)` when `$default: true`) declares only what its author passed: the registered light and dark colour of each role (`--color--{name}[--role]--mode-light` / `--mode-dark`) with its joined token (`$brand` is the `brand` palette), a reference to core's generated colour for each chain palette the theme left out that follows from one it passed, the passed sub-config keys and the light/dark pairs of mode-varying percentages. Every derivation below, and the generated colour of each chain palette (primary, secondary, tertiary, background, surface), is declared once by `define-core-theme()` on `:where(:root, [theme])`; the defaults on `:where(:root)`.
 
 ---
 
@@ -61,7 +61,7 @@ Same full set of derivatives, prefixed with `--color--{name}--stroke`:
 
 ### Tints
 
-Transparent versions of the identity color role. Opacity is controlled by the `--weight--tint-N` variables.
+Transparent versions of the identity color role. Opacity is the mode-varying `--weight--tint-N` weight. A tint reads the weight's `--weight--tint-N--mode-light` / `--mode-dark` pair inside `light-dark()`, so it follows a nested `themeMode`; override the pair, not the picked `--weight--tint-N` token, to change a tint's opacity.
 
 | Variable | Default opacity |
 |----------|----------------|
@@ -81,7 +81,7 @@ Transparent versions of the identity color role. Opacity is controlled by the `-
 
 | Variable | Description |
 |----------|-------------|
-| `--color--brand` | Emitted when `$brand` is passed to `t.theme()`. Used as source hue for `*-from-brand()` helpers. Can be overridden at runtime via JavaScript. |
+| `--color--brand` | The `brand` palette's colour role: the brand colour exactly as `$brand` (or `brand: t.palette(…)`) gave it, never adjusted; in a theme that passes `primary` and no brand, that primary. `brand` is a core palette, so every variable in the tables above exists for it. It is the join of the registered pair `--color--brand--mode-light` / `--mode-dark`; set the pair at runtime to regenerate the primary, accents and neutrals a theme did not pass. The `*-from-brand()` helpers read `--color--brand` itself. |
 
 ---
 
@@ -272,11 +272,11 @@ Use with `--palette-color--focus` (set by `apply-palette`):
 
 ## Elevation
 
-6 levels (0–5). Each level has a shadow var and a tint var. Shadows use `light-dark()` — values adjust automatically with `color-scheme`. Tints are percentages and cannot use `light-dark()`.
+6 levels (0–5). Each level has a shadow var and a tint var. A shadow's colour uses `light-dark()` — it adjusts automatically with `color-scheme`; its offsets and blur are the same in both modes. Tints are percentages and cannot use `light-dark()`.
 
 | Variable | Level 0 | Level 1 | Level 5 |
 |----------|---------|---------|---------|
-| `--elevation-{N}--shadow` | none | 0 1px 2px … | 0 8px 16px … |
+| `--elevation-{N}--shadow` | none | 0 1px 2px light-dark(…) | 0 8px 16px light-dark(…) |
 | `--elevation-{N}--tint` | 0% | 5% | 14% |
 
 Use in component CSS:
@@ -295,18 +295,27 @@ Or use the HTML attribute emitted by `define-core-theme()`:
 
 ## Animation and CSS transitions
 
-All custom properties listed in this reference are registered as typed CSS properties via `@property`, emitted by `define-core-theme()`. This enables:
+`define-core-theme()` registers what animation needs and nothing derived: the light and dark colour of each core palette role (`--color--{name}[--bg|--stroke|--focus]--mode-light` / `--mode-dark`), for the ten core palettes (`brand` and `tertiary` included), and the scalars `--weight--*`, `--density-scale`, `--space--*`, `--shape--*` — 109 properties. The role tokens and every derivative are plain custom properties holding `light-dark()` and `oklch(from …)` expressions that resolve where they are used.
 
-### Transitioning custom properties directly
+### Crossfading a theme switch
+
+Transition the registered pairs on the element whose `theme` changes; everything derived from them follows (ladder steps, contrasts, nested themes, dark subtrees). Include a palette's `--bg`, `--stroke` and `--focus` pairs when either theme passes those roles explicitly — core derives the auto values into the same pairs, so the switch interpolates between two real colours:
 
 ```css
-[palette] {
+html {
   transition:
-    --palette-color 200ms ease,
-    --palette-color--bg 200ms ease,
-    --container--text 200ms ease;
+    --color--primary--mode-light 400ms,
+    --color--primary--mode-dark 400ms,
+    --color--surface--mode-light 400ms,
+    --color--surface--mode-dark 400ms;
 }
 ```
+
+```js
+document.documentElement.setAttribute('theme', 'rose-red'); // crossfades
+```
+
+A light/dark flip and a `palette` attribute change are instant at the variable level; elements that transition `background-color` or `color` still fade.
 
 ### Animating weights (hover/press state fades)
 
@@ -335,19 +344,22 @@ All custom properties listed in this reference are registered as typed CSS prope
 }
 ```
 
-### Animating palette switches
-
-Because `--palette-color`, `--palette-color--bg` etc. are typed `<color>`, changing the `[palette]` attribute can be transitioned via JavaScript:
-
-```js
-el.style.transition = '--palette-color 300ms, --palette-color--bg 300ms';
-el.setAttribute('palette', 'secondary');
-```
-
-### Why derivatives don't need registration
+### Why derivatives are not registered
 
 Derivative vars (`--contrast`, `--dark`, `--high`, etc.) are computed using CSS relative color syntax:
 ```css
---color--primary--dark: oklch(from var(--color--primary) clamp(0, calc(l - 0.12), 1) c h);
+--color--primary--dark: oklch(from var(--color--primary) clamp(0, calc(l - 0.12), 1) c h / 1);
 ```
-When `--color--primary` transitions (as a registered `<color>`), the browser re-evaluates this expression on every animation frame — the derivative animates automatically without needing its own `@property` declaration.
+and `--color--primary` is `light-dark(var(--color--primary--mode-light), var(--color--primary--mode-dark))`. Unregistered, both stay expressions until an element uses them, so a `themeMode` on any element flips them, and when the registered pair transitions the browser re-evaluates them on every frame. Registering them would freeze them to a colour on the element where they are declared.
+
+### Reading a value from JavaScript
+
+`getComputedStyle(el).getPropertyValue('--color--primary')` returns the expression, not a colour. To get the painted colour, read a real property of an element that uses it:
+
+```js
+const probe = document.createElement('span');
+probe.style.color = 'var(--color--primary)';
+el.appendChild(probe);
+const colour = getComputedStyle(probe).color;
+probe.remove();
+```

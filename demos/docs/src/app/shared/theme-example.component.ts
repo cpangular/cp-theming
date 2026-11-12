@@ -1,13 +1,5 @@
-import {
-  AfterContentInit,
-  Component,
-  ElementRef,
-  ViewChild,
-  ViewEncapsulation,
-  computed,
-  input,
-  signal,
-} from '@angular/core';
+import { Component, ViewEncapsulation, computed, inject, input, signal } from '@angular/core';
+import { DomSanitizer } from '@angular/platform-browser';
 
 interface FileTab {
   id: string;
@@ -25,9 +17,15 @@ interface Method {
 /**
  * Reusable example block for theming docs pages.
  *
+ * Every input is the text of a real file under `src/examples/{page}/`, imported
+ * by the page with `with { loader: 'text' }` and checked by
+ * `demos/docs/test/examples.test.ts`.
+ *
  * Layout (matches material.angular.dev style):
  *   [Method tabs]          - e.g. "Attributes" | "SCSS" (only shown if >1 method)
- *   {live example}         - the rendered demo (shared [demo] slot)
+ *   {live example}         - `attrsHtml` itself, rendered: the markup shown is
+ *                            the markup running. Sass examples are compiled by
+ *                            the harness, not injected into the page.
  *   [File tabs]            - e.g. "HTML" | "SCSS" (only shown if the method has >1 file)
  *   {code for active file}
  *
@@ -59,10 +57,14 @@ interface Method {
         </div>
       }
 
-      <!-- Live example -->
-      <div class="tex-preview" #preview [class.tex-preview--empty]="!hasDemo()">
-        <ng-content select="[demo]"></ng-content>
-      </div>
+      <!-- Live example: the attribute example's own .html -->
+      @if (attrsHtml()) {
+        <div
+          class="tex-preview"
+          [class.tex-preview--column]="layout() === 'column'"
+          [innerHTML]="liveHtml()"
+        ></div>
+      }
 
       <!-- Code: file sub-tabs + panels -->
       <div class="tex-impl">
@@ -154,18 +156,17 @@ interface Method {
       .tex-preview {
         padding: 28px 24px;
         display: flex;
-        gap: 12px;
+        gap: 16px;
         flex-wrap: wrap;
-        align-items: flex-start;
+        align-items: center;
         min-height: 80px;
+        border-bottom: 1px solid var(--color--surface--stroke, rgba(0, 0, 0, 0.12));
       }
 
-      .tex-preview--empty {
-        display: none;
-      }
-
-      .tex-impl {
-        border-top: 1px solid var(--color--surface--stroke, rgba(0, 0, 0, 0.12));
+      .tex-preview--column {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
       }
 
       /* File sub-tabs — secondary selector inside the active method */
@@ -217,25 +218,32 @@ interface Method {
     `,
   ],
 })
-export class ThemeExampleComponent implements AfterContentInit {
+export class ThemeExampleComponent {
+  private readonly sanitizer = inject(DomSanitizer);
+
   readonly title = input<string>('');
 
-  @ViewChild('preview', { static: true }) private previewRef!: ElementRef<HTMLElement>;
-
-  /** True when something is projected into the [demo] slot. */
-  readonly hasDemo = signal(false);
+  /** How the live example lays out its top-level elements. */
+  readonly layout = input<'row' | 'column'>('row');
 
   /** Method labels (override defaults if desired). */
   readonly attrsLabel = input<string>('Attributes');
   readonly scssLabel = input<string>('SCSS');
 
-  /** Attributes-method files. */
+  /** Attributes-method files. `attrsHtml` is also what the live example renders. */
   readonly attrsHtml = input<string>('');
   readonly attrsScss = input<string>('');
 
   /** SCSS-method files. */
   readonly scssHtml = input<string>('');
   readonly scssScss = input<string>('');
+
+  /**
+   * The attribute example as live markup. The sanitizer would strip the very
+   * attributes the example is about (`palette`, `theme`, `style`); the text is a
+   * file of this repository imported at build time, never user input.
+   */
+  readonly liveHtml = computed(() => this.sanitizer.bypassSecurityTrustHtml(this.attrsHtml()));
 
   private readonly _method = signal<'attrs' | 'scss' | null>(null);
   private readonly _fileSelection = signal<string>('');
@@ -245,16 +253,36 @@ export class ThemeExampleComponent implements AfterContentInit {
 
     const attrsFiles: FileTab[] = [];
     if (this.attrsHtml())
-      attrsFiles.push({ id: 'attrs-html', label: 'HTML', lang: 'html', code: this.attrsHtml() });
+      attrsFiles.push({
+        id: 'attrs-html',
+        label: 'HTML',
+        lang: 'html',
+        code: this.attrsHtml().trimEnd(),
+      });
     if (this.attrsScss())
-      attrsFiles.push({ id: 'attrs-scss', label: 'SCSS', lang: 'scss', code: this.attrsScss() });
+      attrsFiles.push({
+        id: 'attrs-scss',
+        label: 'SCSS',
+        lang: 'scss',
+        code: this.attrsScss().trimEnd(),
+      });
     if (attrsFiles.length) list.push({ id: 'attrs', label: this.attrsLabel(), files: attrsFiles });
 
     const scssFiles: FileTab[] = [];
     if (this.scssHtml())
-      scssFiles.push({ id: 'scss-html', label: 'HTML', lang: 'html', code: this.scssHtml() });
+      scssFiles.push({
+        id: 'scss-html',
+        label: 'HTML',
+        lang: 'html',
+        code: this.scssHtml().trimEnd(),
+      });
     if (this.scssScss())
-      scssFiles.push({ id: 'scss-scss', label: 'SCSS', lang: 'scss', code: this.scssScss() });
+      scssFiles.push({
+        id: 'scss-scss',
+        label: 'SCSS',
+        lang: 'scss',
+        code: this.scssScss().trimEnd(),
+      });
     if (scssFiles.length) list.push({ id: 'scss', label: this.scssLabel(), files: scssFiles });
 
     return list;
@@ -285,9 +313,5 @@ export class ThemeExampleComponent implements AfterContentInit {
 
   selectFile(id: string): void {
     this._fileSelection.set(id);
-  }
-
-  ngAfterContentInit(): void {
-    this.hasDemo.set((this.previewRef?.nativeElement?.children.length ?? 0) > 0);
   }
 }

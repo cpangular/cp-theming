@@ -1,6 +1,6 @@
 {
   "name": "demo-brand-core",
-  "version": "0.0.0",
+  "version": "0.0.0-MAIN",
   "private": true,
   "description": "Example: how a company creates their own theme pack using cp-theming-core.",
   "type": "module",

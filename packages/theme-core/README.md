@@ -6,6 +6,14 @@ A CSS-variable-based theming system. Themes are defined in SCSS and compile to C
 
 ## Getting Started
 
+The package is published to GitHub Packages, which needs the scope's registry line and a token in
+your `.npmrc`, even for a public package:
+
+```ini
+@cpangular:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
 ```bash
 npm install @cpangular/cp-theming-core
 ```
@@ -14,9 +22,9 @@ npm install @cpangular/cp-theming-core
 @use '@cpangular/cp-theming-core/scss/theme' as t;
 @use '@cpangular/cp-theming-core/scss/presets' as presets;
 
-// Emit a preset theme on body + all @property registrations
-@include t.define-theme('azure-blue', presets.$azure-blue, $default: true);
+// Core first (registrations, defaults, every derivation — once), then the theme
 @include t.define-core-theme();
+@include t.define-theme('azure-blue', presets.$azure-blue, $default: true);
 ```
 
 ```html
@@ -44,8 +52,8 @@ Pre-built themes matching the Angular Material M3 palette system:
 Or via pre-compiled CSS (no SCSS required):
 
 ```html
-<link rel="stylesheet" href="node_modules/@cpangular/cp-theming-core/dist/css/azure-blue.css">
 <link rel="stylesheet" href="node_modules/@cpangular/cp-theming-core/dist/core.css">
+<link rel="stylesheet" href="node_modules/@cpangular/cp-theming-core/dist/presets/azure-blue.css">
 ```
 
 ---
@@ -58,11 +66,10 @@ Every theme is built with `t.theme()` and emitted with `t.define-theme()`.
 @use '@cpangular/cp-theming-core/scss/theme' as t;
 
 $my-theme: t.theme(
-  $brand:   oklch(0.44 0.22 253),        // optional — used by *-from-brand() helpers
+  $brand:   oklch(0.44 0.22 253),        // the brand colour, kept exact: the `brand` palette
   $palettes: (
-    background: t.background-from-brand(),
-    surface:    t.surface-from-brand(),
-    primary:    t.palette-from-brand(),
+    // primary, tertiary, background and surface are left out: core generates
+    // them from the brand. Everything below is optional too.
     secondary:  t.light-dark(
                   t.palette(oklch(0.46 0.27 264)),
                   t.palette(oklch(0.71 0.21 264)),
@@ -80,21 +87,22 @@ $my-theme: t.theme(
   $motion:     t.motion(),
 );
 
-// Emit under [theme="my-theme"] and body ($default: true)
-@include t.define-theme('my-theme', $my-theme, $default: true);
-
-// Emit @property registrations + attribute/class rules — call once per stylesheet
+// Core: @property registrations, defaults, mode rules and every derivation — once, first
 @include t.define-core-theme();
+
+// The theme: one rule, [theme="my-theme"] (plus :where(:root) for $default: true),
+// holding only what was passed above
+@include t.define-theme('my-theme', $my-theme, $default: true);
 ```
 
-`define-core-theme()` is theme-independent — use the pre-built `dist/core.css` instead of calling it if preferred.
+`define-core-theme()` is theme-independent — load the pre-built `dist/core.css` before your theme CSS instead of calling it if preferred. A theme declares only what its author passed, so a nested theme inherits the rest from the theme around it.
 
 ### Multiple themes
 
 ```scss
+@include t.define-core-theme();
 @include t.define-theme('light-theme', $light-theme, $default: true);
 @include t.define-theme('dark-theme', $dark-theme);
-@include t.define-core-theme();
 ```
 
 ```html
@@ -121,11 +129,22 @@ primary: t.light-dark(
   t.palette(oklch(0.72 0.16 240)),   // dark mode
 ),
 
-// Brand-derived (auto-generates palette from --color--brand)
-primary:    t.palette-from-brand(),
-background: t.background-from-brand(),
-surface:    t.surface-from-brand(),
+// Brand-derived with your own numbers (core generates these three from
+// $brand by itself when the theme leaves them out)
+primary:    t.palette-from-brand($light-l-max: 0.42),
+background: t.background-from-brand($c-tint: 0.012),
+surface:    t.surface-from-brand($c-tint: 0.02),
 ```
+
+### Pass what you have
+
+Colours follow the chain **brand → primary → secondary, tertiary → background, surface**. A theme passes whichever it has and core generates the rest, in the browser, from the nearest one it passed:
+
+- only `$brand` → primary (the brand, moved into the lightness that reads on the page), secondary, tertiary, background and surface are all generated; the `brand` palette stays the exact colour;
+- only `primary` → secondary (same hue, a third of the chroma, 0.04 at least) and tertiary (hue + 60°, half the chroma, 0.08 at least) are generated;
+- `primary` and `secondary` → tertiary is generated; pass all three and none is.
+
+`error`, `warn`, `caution` and `pass` have fixed defaults. A nested theme generates what follows from what it passes and inherits the rest. Details: [docs/palettes.md](docs/palettes.md#brand-accents-and-neutrals-pass-what-you-have).
 
 ### Custom palette roles
 
@@ -143,7 +162,7 @@ primary: t.palette(
 
 ### Core palette names
 
-These names are pre-registered automatically: `primary`, `secondary`, `error`, `warn`, `caution`, `pass`, `surface`, `background`. Any additional names in your `$palettes` map are registered on demand.
+These names are registered and derived once by `define-core-theme()`: `brand`, `primary`, `secondary`, `tertiary`, `error`, `warn`, `caution`, `pass`, `surface`, `background`. Any additional name in your `$palettes` map gets its registrations, derivations (on `:where([theme])`) and `[palette]` rule once per compiled stylesheet, at root level, from the first `define-theme()` that uses it; a `$default` theme also derives the name inside its own rule.
 
 ### Emitted CSS variables (per palette)
 
@@ -284,7 +303,7 @@ $typography: t.typography(
 )
 ```
 
-Emits `--typescale--{role}-{size}--{font|size|line-height|weight|tracking}` for all 15 M3 scales (`display-large` … `label-small`).
+Emits `--text--{role}-{size}--{font|size|line-height|weight|tracking}` for all 15 M3 scales (`display-large` … `label-small`).
 
 ### `t.density()`
 

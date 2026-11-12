@@ -2,3 +2,5 @@ dist/
 node_modules/
 .wireit/
 *.min.css
+# Docs examples are shown to readers as written; their layout is part of the sample.
+demos/docs/src/examples/

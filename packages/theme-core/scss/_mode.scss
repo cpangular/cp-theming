@@ -1,0 +1,90 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Mode — internal module. The light/dark machinery every other module uses.
+//
+// Colours vary by mode through CSS light-dark(); the role tokens are plain
+// (unregistered) custom properties holding `light-dark(var(--x--mode-light),
+// var(--x--mode-dark))`, so they resolve against the color-scheme of the element
+// that USES them. That is what lets `themeMode` work on any element.
+//
+// Percentages cannot use light-dark() (it only accepts <color>), so every
+// mode-varying percentage is stored as a light and a dark value and picked
+// arithmetically with a private 0/1 flag that the mode rules set.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Private 0/1 flag: 1 when the element's effective mode is dark.
+$flag: --theme--_dark;
+
+// light-dark() only when the values differ; a plain value when identical.
+@function ld($l, $d) {
+  @if $l == $d {
+    @return $l;
+  }
+  @return light-dark(#{$l}, #{$d});
+}
+
+// The two mode values of a percentage token. Emits only the sides given.
+@mixin pair($token, $light: null, $dark: null) {
+  @if $light != null {
+    #{$token}--mode-light: #{$light};
+  }
+  @if $dark != null {
+    #{$token}--mode-dark: #{$dark};
+  }
+}
+
+// Picks a percentage token from its pair and the mode flag:
+//   light + (dark − light) × flag
+@mixin pick($token) {
+  #{$token}: calc(
+    var(#{$token}--mode-light) + (var(#{$token}--mode-dark) - var(#{$token}--mode-light)) *
+      var(#{$flag})
+  );
+}
+
+// Defaults for the root: follow the OS until a themeMode says otherwise.
+@mixin root-defaults() {
+  color-scheme: light dark;
+  #{$flag}: 0;
+}
+
+// The themeMode rules, emitted once by define-core-theme(). Every selector is
+// zero-specificity, so order decides between them and any author rule wins.
+//
+//   light / dark   — the element's own attribute decides
+//   auto / absent  — follows prefers-color-scheme (auto on any element, absent on html)
+//   invert         — dark, unless a dark ancestor (explicit, or auto under a dark OS)
+//                    makes it light. An invert inside an explicit light ancestor
+//                    that is itself inside dark still reads the dark ancestor;
+//                    fixing that needs @scope (see PORT-PLAN.md, "Found on the way").
+@mixin rules() {
+  :where([themeMode="light"]) {
+    color-scheme: light;
+    #{$flag}: 0;
+  }
+  :where([themeMode="dark"]) {
+    color-scheme: dark;
+    #{$flag}: 1;
+  }
+  :where([themeMode="auto"]) {
+    color-scheme: light dark;
+    #{$flag}: 0;
+  }
+  :where([themeMode="invert"]) {
+    color-scheme: dark;
+    #{$flag}: 1;
+  }
+  :where([themeMode="dark"] [themeMode="invert"]) {
+    color-scheme: light;
+    #{$flag}: 0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :where(:root:not([themeMode]), [themeMode="auto"]) {
+      color-scheme: dark;
+      #{$flag}: 1;
+    }
+    :where(:root:not([themeMode]) [themeMode="invert"], [themeMode="auto"] [themeMode="invert"]) {
+      color-scheme: light;
+      #{$flag}: 0;
+    }
+  }
+}

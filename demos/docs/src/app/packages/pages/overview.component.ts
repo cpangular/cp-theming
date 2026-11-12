@@ -1,6 +1,11 @@
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { CodeComponent } from '../../shared/code.component';
+import presetCss from '../../../examples/getting-started/preset.css' with { loader: 'text' };
+import customThemeScss from '../../../examples/getting-started/custom-theme.scss' with {
+  loader: 'text',
+};
 
 const LIB_OVERVIEW: Record<
   string,
@@ -42,7 +47,7 @@ const LIB_OVERVIEW: Record<
 @Component({
   selector: 'cpa-overview-page',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, CodeComponent],
   template: `
     @if (lib() === 'core') {
       <article class="doc-page">
@@ -108,22 +113,14 @@ const LIB_OVERVIEW: Record<
         <section class="page-section">
           <h2>Installation</h2>
           <pre class="code-block"><code>npm install &#64;cpangular/cp-theming-core</code></pre>
-          <p>Then load the preset and core CSS in your stylesheet or <code>angular.json</code>:</p>
-          <pre class="code-block"><code>&#64;cpangular/cp-theming-core/dist/presets/azure-blue.css
-&#64;cpangular/cp-theming-core/dist/core.css</code></pre>
+          <p>Then load core and a preset from your stylesheet, core first:</p>
+          <cpa-code [code]="ex.presetCss" lang="css" />
         </section>
 
         <section class="page-section">
           <h2>SCSS authoring</h2>
           <p>One import gives you the full API:</p>
-          <pre class="code-block"><code>&#64;use '&#64;cpangular/cp-theming-core/scss/theme' as t;
-
-&#64;include t.define-theme('my-theme', t.theme(
-  background: t.light-dark(t.palette(oklch(0.97 0.004 253)), t.palette(oklch(0.18 0.014 253))),
-  surface:    t.light-dark(t.palette(oklch(0.93 0.008 253)), t.palette(oklch(0.24 0.018 253))),
-  primary:    t.light-dark(t.palette(oklch(0.43 0.19 253)),  t.palette(oklch(0.72 0.17 253))),
-));
-&#64;include t.define-core-theme();</code></pre>
+          <cpa-code [code]="ex.customThemeScss" lang="scss" />
         </section>
 
         <section class="page-section">
@@ -189,7 +186,7 @@ setTheme('rose-red');       // apply a preset
 setMode(ThemeMode.DARK);    // force dark mode
 setMode(ThemeMode.AUTO);    // follow OS preference
 
-const themes = getAvailableThemes(); // ['azure-blue', 'rose-red', …]</code></pre>
+const themes = getAvailableThemes(); // [&#123; name: 'azure-blue' &#125;, &#123; name: 'rose-red' &#125;, …]</code></pre>
         </section>
       </article>
     } @else {
@@ -296,6 +293,7 @@ const themes = getAvailableThemes(); // ['azure-blue', 'rose-red', …]</code></
   ],
 })
 export class OverviewPageComponent {
+  protected readonly ex = { presetCss, customThemeScss };
   private readonly _parentParams = toSignal(inject(ActivatedRoute).parent!.params);
   readonly lib = computed(() => (this._parentParams()?.['lib'] as string) ?? 'core');
   readonly content = () =>

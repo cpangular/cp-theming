@@ -1,0 +1,29 @@
+/* presets/azure-blue.css — the theme rule holds what its author passed:
+   the light and the dark colour, and the token that joins them. */
+:where([theme=azure-blue]):not(cp-theming-none), :where(:root) {
+  --color--primary--mode-light: oklch(43% 0.19 253deg);
+  --color--primary--mode-dark: oklch(72% 0.17 253deg);
+  --color--primary: light-dark(var(--color--primary--mode-light), var(--color--primary--mode-dark));
+}
+
+/* core.css — 1 (white text) when the colour's relative luminance is below
+   0.179, else 0 (black text). r, g and b are the linear-sRGB channels. */
+:where(:root) {
+  --theme--_contrast-step: clamp(0, (0.179 - (0.2126 * clamp(0, r, 1) + 0.7152 * clamp(0, g, 1) + 0.0722 * clamp(0, b, 1))) * 1e6, 1);
+}
+
+/* core.css — every derivation, once for all themes. The browser computes
+   each one from the theme's colour on the element that uses it. */
+:where(:root, [theme]) {
+  --color--primary--dark: oklch(from var(--color--primary) clamp(0, l - 0.12, 1) c h/1);
+  --color--primary--light: oklch(from var(--color--primary) clamp(0, l + 0.12, 1) c h/1);
+  --color--primary--high: light-dark(var(--color--primary--dark), var(--color--primary--light));
+  --color--primary--contrast: oklch(from color(from var(--color--primary) srgb-linear var(--theme--_contrast-step) var(--theme--_contrast-step) var(--theme--_contrast-step)) l 0 0 / 1);
+
+  --color--primary--bg--mode-light: oklch(from var(--color--primary--mode-light) 0.92 calc(c * var(--bg-chroma, 0.4)) h/1);
+  --color--primary--bg--mode-dark: oklch(from var(--color--primary--mode-dark) 0.24 calc(c * var(--bg-chroma, 0.4)) h/1);
+  --color--primary--stroke--mode-light: oklch(from var(--color--primary--mode-light) clamp(0.42, l, 0.6) c h/1);
+  --color--primary--focus--mode-light: oklch(from var(--color--primary--mode-light) clamp(0.1, 1 - l, 0.9) c calc(h + 60)/1);
+
+  --color--primary--tint-1: light-dark(oklch(from var(--color--primary) l c h/var(--weight--tint-1--mode-light, 10%)), oklch(from var(--color--primary) l c h/var(--weight--tint-1--mode-dark, 10%)));
+}

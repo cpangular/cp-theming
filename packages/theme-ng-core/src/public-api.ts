@@ -14,5 +14,6 @@ export {
   ThemeMode,
   ThemeStorage,
   enableRelativeDensity,
+  themeHeadSnippet,
   type ThemeDef,
 } from '@cpangular/cp-theming-core';

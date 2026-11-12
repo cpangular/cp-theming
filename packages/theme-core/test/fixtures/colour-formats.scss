@@ -1,0 +1,20 @@
+// Fixture: palette and brand colours written as hex, rgb() and hsl().
+// Authors may pass any CSS colour; the library derives every variant in oklch
+// at runtime, so the same checks must hold for these as for oklch inputs.
+@use "../../scss/theme" as t;
+
+$theme: t.theme(
+  $brand: #0b57d0,
+  $palettes: (
+    background: t.light-dark(t.palette(#f7f9fc), t.palette(#15181d)),
+    surface: t.light-dark(t.palette(rgb(236 240 246)), t.palette(rgb(32 36 43))),
+    primary: t.light-dark(t.palette(#0b57d0), t.palette(#a8c7fa)),
+    secondary: t.light-dark(t.palette(rgb(91 95 230)), t.palette(rgb(190 194 255))),
+    error: t.light-dark(t.palette(hsl(0 72% 42%)), t.palette(hsl(0 90% 80%))),
+    pass: t.light-dark(t.palette(hsl(145 60% 32%)), t.palette(hsl(145 45% 70%))),
+    caution: t.light-dark(t.palette(#8a6d00), t.palette(#f2d36b)),
+    warn: t.light-dark(t.palette(rgb(176 86 0)), t.palette(rgb(255 183 110))),
+  ),
+);
+
+@include t.define-theme("fixture-colour-formats", $theme);

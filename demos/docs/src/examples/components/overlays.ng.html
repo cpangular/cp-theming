@@ -1,0 +1,41 @@
+<div class="g-row">
+  <mat-form-field class="g-field" appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Select</mat-label>
+    <mat-select value="pear">
+      <mat-option value="apple">Apple</mat-option>
+      <mat-option value="pear">Pear</mat-option>
+      <mat-option value="plum" disabled>Plum</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field class="g-field" appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Autocomplete</mat-label>
+    <input matInput [matAutocomplete]="fruit" />
+    <mat-autocomplete #fruit>
+      <mat-option value="Peach">Peach</mat-option>
+      <mat-option value="Pear">Pear</mat-option>
+      <mat-option value="Persimmon" disabled>Persimmon</mat-option>
+    </mat-autocomplete>
+  </mat-form-field>
+
+  <mat-form-field class="g-field" appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Date</mat-label>
+    <input matInput [matDatepicker]="picker" [value]="date" />
+    <mat-datepicker-toggle matIconSuffix [for]="picker" />
+    <mat-datepicker #picker />
+  </mat-form-field>
+</div>
+
+<div class="g-row">
+  <button matButton="outlined" [matMenuTriggerFor]="menu">Open menu</button>
+  <mat-menu #menu>
+    <button mat-menu-item>Edit</button>
+    <button mat-menu-item disabled>Disabled</button>
+    <button mat-menu-item>Archive</button>
+  </mat-menu>
+
+  <button matButton="outlined" (click)="openDialog()">Open dialog</button>
+  <button matButton="outlined" (click)="openBottomSheet()">Open bottom sheet</button>
+  <button matButton="outlined" (click)="showSnackbar()">Show snackbar</button>
+  <button matButton="outlined" matTooltip="Opened from this scope">Tooltip</button>
+</div>

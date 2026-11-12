@@ -1,0 +1,16 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+.my-card {
+  @include t.apply-palette("primary");
+  @include t.bg();
+  @include t.padding(24px);
+  @include t.container();
+}
+
+// A different padding per axis
+.my-chip {
+  @include t.apply-palette("primary");
+  @include t.bg();
+  @include t.padding($block: 6px, $inline: 16px);
+  @include t.container();
+}

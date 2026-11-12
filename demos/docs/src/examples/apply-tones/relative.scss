@@ -1,0 +1,14 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+// tone() goes after apply-palette() and before the fill
+.card-low {
+  @include t.apply-palette("primary");
+  @include t.tone("low");
+  @include t.filled();
+}
+
+.card-high {
+  @include t.apply-palette("primary");
+  @include t.tone("high");
+  @include t.filled();
+}

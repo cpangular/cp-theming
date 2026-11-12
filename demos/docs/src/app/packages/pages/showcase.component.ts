@@ -42,7 +42,8 @@ import { ThemeDirective, ThemeDensityDirective } from '@cpangular/cp-theming-ng-
           <p class="section-desc">
             All four presets side-by-side. Each column scopes a different
             <code>[theme]</code> — the Material components inside inherit the correct palette
-            automatically via the CSS cascade.
+            automatically via the CSS cascade. The presets pass a primary and a secondary; the
+            tertiary in each column is generated from its primary.
           </p>
 
           <div class="preset-grid">
@@ -60,6 +61,18 @@ import { ThemeDirective, ThemeDensityDirective } from '@cpangular/cp-theming-ng-
                   <button mat-icon-button aria-label="favorite">
                     <mat-icon>favorite</mat-icon>
                   </button>
+                </div>
+
+                <mat-divider />
+
+                <!-- The three accents. A preset passes primary and secondary;
+                     its tertiary is generated from primary. -->
+                <div class="demo-group">
+                  @for (accent of accents; track accent.palette) {
+                    <button mat-flat-button [attr.palette]="accent.palette">
+                      {{ accent.label }}
+                    </button>
+                  }
                 </div>
 
                 <mat-divider />
@@ -366,11 +379,19 @@ export class ShowcasePageComponent {
     { scale: '-4', label: 'Dense' },
   ];
 
+  readonly accents = [
+    { palette: 'primary', label: 'Primary' },
+    { palette: 'secondary', label: 'Secondary' },
+    { palette: 'tertiary', label: 'Tertiary' },
+  ];
+
   readonly paletteRoles = [
     { var: '--color--primary', label: '--color--primary' },
     { var: '--color--primary--bg', label: '--color--primary--bg' },
     { var: '--color--secondary', label: '--color--secondary' },
     { var: '--color--secondary--bg', label: '--color--secondary--bg' },
+    { var: '--color--tertiary', label: '--color--tertiary' },
+    { var: '--color--tertiary--bg', label: '--color--tertiary--bg' },
     { var: '--color--error', label: '--color--error' },
     { var: '--color--surface', label: '--color--surface' },
     { var: '--color--surface--bg', label: '--color--surface--bg' },

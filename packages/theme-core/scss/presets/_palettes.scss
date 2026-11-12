@@ -4,7 +4,9 @@
 // converted to oklch. Light mode uses the "40" tone as the identity color;
 // dark mode uses the "80" tone (as M3 recommends for dark surfaces).
 // ─────────────────────────────────────────────────────────────────────────────
+@use "sass:map";
 @use "../theme" as t;
+@use "../palette" as _pal;
 
 // ── Neutral defaults ──────────────────────────────────────────────────────────
 // Achromatic (chroma ≈ 0) background and surface for use when no theme-specific
@@ -18,14 +20,18 @@ $default-surface: t.light-dark(t.palette(oklch(0.93 0.003 0)), t.palette(oklch(0
 // Light: darkened enough for contrast on near-white (oklch ~0.97).
 // Dark: lightened enough for contrast on near-black (oklch ~0.18).
 //
-// pass    — green  145° — success, confirmation
-// caution — yellow 103° — advisory, needs attention (uses amber-gold to stay readable on white)
-// warn    — orange  55° — warning, degraded state
-// error   — red     27° — failure, destructive action
-$default-pass: t.light-dark(t.palette(oklch(0.48 0.18 145)), t.palette(oklch(0.72 0.16 145)));
-$default-caution: t.light-dark(t.palette(oklch(0.55 0.16 103)), t.palette(oklch(0.82 0.15 103)));
-$default-warn: t.light-dark(t.palette(oklch(0.55 0.18 55)), t.palette(oklch(0.76 0.16 55)));
-$default-error: t.light-dark(t.palette(oklch(0.52 0.22 27)), t.palette(oklch(0.7 0.2 27)));
+// These are core's own defaults (_palette.scss, $semantic-defaults): a theme
+// that leaves a semantic palette out gets the same colour, so passing one of
+// these is only needed to state it.
+@function _semantic($name) {
+  $pair: map.get(_pal.$semantic-defaults, $name);
+  @return t.light-dark(t.palette(map.get($pair, light)), t.palette(map.get($pair, dark)));
+}
+
+$default-pass: _semantic(pass);
+$default-caution: _semantic(caution);
+$default-warn: _semantic(warn);
+$default-error: _semantic(error);
 
 // ── azure-blue ────────────────────────────────────────────────────────────────
 // primary: azure  (#005cbb → oklch ~0.43 0.19 253°)

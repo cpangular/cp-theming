@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { ThemeExampleComponent } from '../../shared/theme-example.component';
 import { TocService } from '../../shell/toc.service';
+import transitionScss from '../../../examples/motion/transition.scss' with { loader: 'text' };
 
 const TOC = [
   { label: 'Overview', anchor: 'overview' },
@@ -26,7 +27,7 @@ const TOC = [
           cover the range from micro-interactions to page-level transitions. Four named easings
           follow Material Design conventions for entering, exiting, and in-place transitions.
         </p>
-        <cpa-theme-example title="Using motion tokens" [scssScss]="motionScssScss" />
+        <cpa-theme-example title="Using motion tokens" [scssScss]="ex.transitionScss" />
       </section>
 
       <section id="api" class="page-section">
@@ -185,9 +186,7 @@ const TOC = [
   ],
 })
 export class MotionPageComponent {
-  readonly motionScssScss = `.my-element {
-  transition: background-color var(--motion--duration-medium) var(--motion--easing-standard);
-}`;
+  protected readonly ex = { transitionScss };
 
   constructor() {
     inject(TocService).set(TOC);

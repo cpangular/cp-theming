@@ -2,10 +2,11 @@ import {
   APP_INITIALIZER,
   ENVIRONMENT_INITIALIZER,
   EnvironmentProviders,
+  PLATFORM_ID,
   inject,
   makeEnvironmentProviders,
 } from '@angular/core';
-import { DOCUMENT } from '@angular/common';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import {
   ThemeStorage,
   configurePersistence,
@@ -47,6 +48,11 @@ export interface ThemeProviderConfig {
  *   ],
  * };
  * ```
+ *
+ * Outside a browser (server rendering) it configures nothing and touches no
+ * storage. To apply the saved theme before first paint, also put
+ * `themeHeadSnippet` from `@cpangular/cp-theming-core` in an inline script in
+ * `<head>`.
  */
 export function provideTheme(config: ThemeProviderConfig = {}): EnvironmentProviders {
   const { storage = ThemeStorage.LOCAL, restore = true, relativeDensity = true } = config;
@@ -66,7 +72,12 @@ export function provideTheme(config: ThemeProviderConfig = {}): EnvironmentProvi
       useFactory: () => {
         const doc = inject(DOCUMENT);
         const root = doc.documentElement;
+        const isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
         return () => {
+          // Storage and MutationObserver exist only in a browser. On a server the
+          // HTML keeps the attributes it was written with; the head snippet
+          // (themeHeadSnippet) applies the saved ones in the browser before first paint.
+          if (!isBrowser) return;
           configurePersistence(storage);
           if (restore) {
             restoreTheme(root);

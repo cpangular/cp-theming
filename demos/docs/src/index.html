@@ -2,6 +2,9 @@
 <html lang="en" theme="azure-blue" themeMode="light">
   <head>
     <meta charset="utf-8" />
+    <!-- themeHeadSnippet from @cpangular/cp-theming-core: applies the saved theme and mode
+         before first paint. packages/theme-core/test/api/head-snippet.spec.ts fails if it drifts. -->
+    <script>(function(){try{var d=document.documentElement,p=localStorage.getItem("cp-theming--persist"),s=p==="local"?localStorage:p==="session"?sessionStorage:null;if(!s)return;var t=s.getItem("cp-theming--theme"),m=s.getItem("cp-theming--mode");if(t)d.setAttribute("theme",t);if(m==="auto"||m==="light"||m==="dark"||m==="invert")d.setAttribute("themeMode",m)}catch(e){}})();</script>
     <title>cp-theming</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

@@ -1,0 +1,212 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// _roles.scss — internal to the Material adapter.
+//
+// The --mat-sys-* colour roles, computed from Angular Material's own role
+// tables (md-sys-color-values-light / -dark), so the adapter declares exactly
+// the roles the installed Material version defines.
+//
+// The tables take a palette map — (primary: (0: …, 10: …, … 100: …), secondary,
+// tertiary, error, neutral, neutral-variant) — and read one tone per role.
+// Here every tone is a browser-derived expression:
+//   - an accent tone is the cp-theming colour at that M3 tone (m3-tone());
+//   - a neutral tone is --color--surface moved by the tone's distance from the
+//     tone M3 gives its own surface (98 in the light table, 6 in the dark one),
+//     so --mat-sys-surface stays --color--surface and the containers, dim and
+//     bright keep M3's order around it.
+// Roles cp-theming already has a token for are written out in $_direct and
+// replace the table's value. `outline` is not one of them: it is the boundary
+// of outlined buttons, fields and chips, and --color--surface--stroke is too
+// quiet for that in dark mode (about 2:1 on the surface), so it comes from the
+// tables like the other neutrals (4.5:1 light, 6:1 dark in the presets).
+//
+// The Sass path below is not in Material's `exports` map. It resolves under a
+// node_modules load path and under Sass's package importer; the harness fails
+// if a later Material major moves the file.
+// ─────────────────────────────────────────────────────────────────────────────
+@use "sass:list";
+@use "sass:map";
+@use "sass:string";
+@use "@angular/material/core/tokens/m3/md-sys-color" as md;
+@use "m3-tone" as tone;
+
+// The core palette names the adapter remaps itself ([palette="name"] rules in
+// define-ng-material-core-theme()), and the neutral ones no remap is emitted
+// for: pointing --mat-sys-primary at a neutral would break Material's surface
+// hierarchy.
+$accent-names: brand, primary, secondary, tertiary, error, warn, caution, pass;
+$neutral-names: surface, background;
+
+// M3's own surface tone in each table.
+$_surface-tone: (
+  light: 98,
+  dark: 6,
+);
+
+// ─── Roles cp-theming already has a token for ─────────────────────────────────
+
+// The four roles of one accent: $role, on-$role, $role-container,
+// on-$role-container, from palette $name.
+//
+// The container is the palette's bg role. In dark mode it is one ladder step
+// lighter (--bg--light): the bg tint itself sits at the lightness of a dark
+// surface, so a selected chip, an activated list item or a tonal button would
+// not show against it (1.00–1.07:1 in the presets; 1.5:1 with the step).
+@function _accent($role, $name) {
+  $c: --color--#{$name};
+  @return (
+    #{$role}: var(#{$c}),
+    on-#{$role}: var(#{$c}--contrast),
+    #{$role}-container: string.unquote("light-dark(var(#{$c}--bg), var(#{$c}--bg--light))"),
+    on-#{$role}-container: string.unquote(
+        "light-dark(var(#{$c}--bg--contrast), var(#{$c}--bg--light--contrast))"
+      )
+  );
+}
+
+// The three accents and error map to the cp-theming palette of the same name.
+// A theme that passes no `tertiary` (or no `secondary`) still has one: core
+// generates it from primary.
+$_direct: map.merge(
+  map.merge(
+    map.merge(_accent(primary, primary), _accent(secondary, secondary)),
+    map.merge(_accent(tertiary, tertiary), _accent(error, error))
+  ),
+  (
+    surface: var(--color--surface),
+    on-surface: var(--color--surface--contrast),
+    background: var(--color--background),
+    on-background: var(--color--background--contrast),
+    outline-variant: var(--color--surface--stroke--low),
+    scrim: var(--overlay--scrim),
+    shadow: var(--overlay--shadow),
+  )
+);
+
+// ─── Palette maps in the shape the tables read ────────────────────────────────
+
+// Every whole tone of an accent, from the colour $origin.
+@function _accent-tones($origin) {
+  $tones: ();
+  @for $t from 0 through 100 {
+    $tones: map.set($tones, $t, tone.m3-tone($origin, $t));
+  }
+  @return $tones;
+}
+
+// Every whole neutral tone for one table, as an offset from --color--surface.
+@function _neutral-tones($mode) {
+  $tones: ();
+  @for $t from 0 through 100 {
+    $tones: map.set(
+      $tones,
+      $t,
+      tone.m3-tone-offset(var(--color--surface), $t, map.get($_surface-tone, $mode))
+    );
+  }
+  @return $tones;
+}
+
+// ─── Tables → roles ───────────────────────────────────────────────────────────
+
+// Joins the two tables: role → light-dark(l, d), or the value itself when both
+// modes agree. A role neither table could resolve is left out when
+// $partial, and is an error otherwise.
+@function _zip($light, $dark, $partial: false) {
+  @each $role in map.keys($dark) {
+    @if not map.has-key($light, $role) {
+      @error "Angular Material's dark role table lists `#{$role}`, its light table does not.";
+    }
+  }
+  $roles: ();
+  @each $role, $l in $light {
+    $d: map.get($dark, $role);
+    @if $l == null and $d == null {
+      @if not $partial {
+        @error "Angular Material's role table reads a palette or tone for `#{$role}` that the adapter does not provide.";
+      }
+    } @else if $l == null or $d == null {
+      @error "Angular Material's role tables resolve `#{$role}` in one mode only.";
+    } @else if $l == $d {
+      $roles: map.set($roles, $role, $l);
+    } @else {
+      $roles: map.set($roles, $role, string.unquote("light-dark(#{$l}, #{$d})"));
+    }
+  }
+  @return $roles;
+}
+
+// Replaces table values with the directly mapped ones. A direct role the
+// tables no longer list means Material renamed or dropped it.
+@function _with-direct($roles, $direct) {
+  @each $role, $value in $direct {
+    @if not map.has-key($roles, $role) {
+      @error "Angular Material's role tables no longer define `#{$role}`.";
+    }
+    $roles: map.set($roles, $role, $value);
+  }
+  @return $roles;
+}
+
+// Every --mat-sys-* colour role: role → value.
+@function system-roles() {
+  $primary: _accent-tones(var(--color--primary));
+  $secondary: _accent-tones(var(--color--secondary));
+  $tertiary: _accent-tones(var(--color--tertiary));
+  $error: _accent-tones(var(--color--error));
+  $light: _neutral-tones(light);
+  $dark: _neutral-tones(dark);
+
+  $accents: (
+    primary: $primary,
+    secondary: $secondary,
+    tertiary: $tertiary,
+    error: $error,
+  );
+  $roles: _zip(
+    md.md-sys-color-values-light(
+      map.merge(
+        $accents,
+        (
+          neutral: $light,
+          neutral-variant: $light,
+        )
+      )
+    ),
+    md.md-sys-color-values-dark(
+      map.merge(
+        $accents,
+        (
+          neutral: $dark,
+          neutral-variant: $dark,
+        )
+      )
+    )
+  );
+  @return _with-direct($roles, $_direct);
+}
+
+// The two palette tones Material declares outside the tables and its
+// components read (native select option text, sidenav scrim): role → value.
+@function system-tones() {
+  $light: _neutral-tones(light);
+  $dark: _neutral-tones(dark);
+  @return (
+    neutral10: string.unquote("light-dark(#{map.get($light, 10)}, #{map.get($dark, 10)})"),
+    neutral-variant20: string.unquote("light-dark(#{map.get($light, 20)}, #{map.get($dark, 20)})")
+  );
+}
+
+// The roles the tables derive from the primary palette, with palette $name in
+// its place: what a [palette="name"] scope has to re-declare. Only the primary
+// palette is passed, so every other role resolves to nothing and is left out.
+@function palette-roles($name) {
+  $palettes: (
+    primary: _accent-tones(var(--color--#{$name})),
+  );
+  $roles: _zip(
+    md.md-sys-color-values-light($palettes),
+    md.md-sys-color-values-dark($palettes),
+    $partial: true
+  );
+  @return _with-direct($roles, _accent(primary, $name));
+}

@@ -1,0 +1,59 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// _m3-tone.scss — internal to the Material adapter.
+//
+// Material's role tables name colours by M3 tone number (0–100, CIE L*).
+// These functions turn a tone number into an oklch lightness, so a role can be
+// derived from a cp-theming colour at that tone. Sass only computes the plain
+// numbers; the colour itself is still derived by the browser with
+// `oklch(from …)`, like core's ladder steps.
+//
+// Named m3-tone because `tone` already means something else in cp-theming
+// (t.tone() / the [tone] attribute).
+// ─────────────────────────────────────────────────────────────────────────────
+@use "sass:math";
+@use "sass:string";
+
+// No sRGB colour needs more chroma than this at any tone; capping the origin
+// first keeps a very saturated colour from dominating after the scale below.
+$_chroma-cap: 0.27;
+
+@function _round($n) {
+  @return math.div(math.round($n * 10000), 10000);
+}
+
+// The oklch lightness of M3 tone $tone. For a grey, oklch L is the cube root of
+// the luminance Y, and Y follows from L*: ((T + 16) / 116)³ above T = 8,
+// T / 903.3 below it.
+@function lightness($tone) {
+  @if $tone > 8 {
+    @return math.div($tone + 16, 116);
+  }
+  @return math.pow(math.div($tone, 903.3), math.div(1, 3));
+}
+
+// $origin at M3 tone $tone: the tone's lightness, the origin's hue, and its
+// chroma scaled by k = min(1, 4L(1 − L)) so the colour stays paintable near
+// black and white (k is 1 at mid lightness and 0 at both ends). Alpha is 1.
+@function m3-tone($origin, $tone) {
+  $l: lightness($tone);
+  $k: math.min(1, 4 * $l * (1 - $l));
+  @return string.unquote(
+    "oklch(from #{$origin} #{_round($l)} calc(min(c, #{$_chroma-cap}) * #{_round($k)}) h / 1)"
+  );
+}
+
+// $origin moved by the lightness distance between tone $tone and tone $anchor,
+// hue and chroma kept. With $anchor the tone M3 gives its own surface, a
+// neutral tone becomes "the surface, moved as far as M3 moves it", so M3's
+// order holds around whatever the surface colour is. Distance 0 is $origin.
+@function m3-tone-offset($origin, $tone, $anchor) {
+  $d: _round(lightness($tone) - lightness($anchor));
+  @if $d == 0 {
+    @return $origin;
+  }
+  $op: "+";
+  @if $d < 0 {
+    $op: "-";
+  }
+  @return string.unquote("oklch(from #{$origin} clamp(0, l #{$op} #{math.abs($d)}, 1) c h / 1)");
+}

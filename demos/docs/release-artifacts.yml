@@ -1,0 +1,11 @@
+# The docs site, deployed to GitHub Pages by git-flow's gh-pages method.
+# `ng build` writes to the workspace root (dist/docs), so the site's directory is
+# two levels up. pagesRoot: the site is served from the root of the Pages site
+# (https://cpangular.github.io/cp-theming/), which is the production baseHref.
+artifacts:
+  - type: static-site
+    name: '${PACKAGE_NAME}'
+    directory: ../..
+    packDir: dist/docs/browser
+    pagesRoot: true
+    deploy: [gh-pages]

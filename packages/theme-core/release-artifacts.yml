@@ -1,0 +1,5 @@
+artifacts:
+  - type: npm
+    name: '${PACKAGE_NAME}'
+    registries:
+      - github-npm

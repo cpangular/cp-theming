@@ -1,25 +1,60 @@
 {
   "name": "@cpangular/cp-theming-ng-material",
-  "version": "0.1.0-dev.0",
+  "version": "0.0.0-MAIN",
   "description": "Angular Material M3 adapter for @cpangular/cp-theming-core. Maps --color--* vars to --mat-sys-* tokens.",
-  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cpangular/cp-theming.git",
+    "directory": "packages/theme-ng-material"
+  },
   "exports": {
     "./scss/*": "./scss/*",
     "./css/material-core": "./dist/material-core.css",
     "./css/material-overrides": "./dist/material-overrides.css"
   },
+  "files": [
+    "dist",
+    "scss"
+  ],
   "scripts": {
-    "build": "wireit"
+    "build": "wireit",
+    "test": "wireit",
+    "github.actions.build": "wireit",
+    "github.actions.test": "wireit",
+    "github.actions.pack": "gitflow pack"
   },
   "wireit": {
     "build": {
-      "command": "sass --style=expanded scss/material-core.scss:dist/material-core.css scss/material-overrides.scss:dist/material-overrides.css",
+      "command": "sass --style=expanded --load-path=node_modules scss/material-core.scss:dist/material-core.css scss/material-overrides.scss:dist/material-overrides.css",
       "files": [
-        "scss/**/*.scss"
+        "scss/**/*.scss",
+        "../../pnpm-lock.yaml"
       ],
       "output": [
         "dist/**/*.css",
         "dist/**/*.css.map"
+      ]
+    },
+    "test": {
+      "command": "node --test \"test/css/*.test.ts\"",
+      "files": [
+        "scss/**/*.scss",
+        "test/**",
+        "../theme-core/scss/**/*.scss",
+        "../theme-core/test/lib/**",
+        "../../pnpm-lock.yaml",
+        "package.json"
+      ],
+      "output": []
+    },
+    "github.actions.build": {
+      "dependencies": [
+        "build"
+      ]
+    },
+    "github.actions.test": {
+      "dependencies": [
+        "test"
       ]
     }
   },
@@ -27,8 +62,8 @@
     "@angular/common": "^22.0.0",
     "@angular/core": "^22.0.0",
     "@angular/material": "^22.0.0",
-    "@cpangular/cp-theming-ng-core": "workspace:*",
-    "@cpangular/cp-theming-core": "workspace:*"
+    "@cpangular/cp-theming-ng-core": "workspace:^",
+    "@cpangular/cp-theming-core": "workspace:^"
   },
   "dependencies": {
     "tslib": "^2.3.0"

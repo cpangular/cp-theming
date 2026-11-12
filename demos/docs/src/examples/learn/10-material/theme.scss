@@ -1,0 +1,21 @@
+// styles.scss: core, then the themes, then the adapter
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+@use "@cpangular/cp-theming-ng-material/scss/material" as mat;
+
+$harbour: t.theme(
+  $brand: #1565c0,
+);
+$ember: t.theme(
+  $brand: #e65100,
+);
+
+@include t.define-core-theme();
+@include t.define-theme("harbour", $harbour);
+@include t.define-theme("ember", $ember);
+
+// The adapter: every --mat-sys-* variable Angular Material reads, worked out
+// from the theme's own variables.
+@include mat.define-ng-material-core-theme();
+
+// Optional: measured corrections for the few components that need one.
+@include mat.apply-material-overrides();

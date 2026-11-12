@@ -1,0 +1,33 @@
+<div class="g-row">
+  <button matButton>Text</button>
+  <button matButton="filled">Filled</button>
+  <button matButton="tonal">Tonal</button>
+  <button matButton="outlined">Outlined</button>
+  <button matButton="elevated">Elevated</button>
+</div>
+
+<div class="g-row">
+  <button matButton disabled>Text</button>
+  <button matButton="filled" disabled>Filled</button>
+  <button matButton="tonal" disabled>Tonal</button>
+  <button matButton="outlined" disabled>Outlined</button>
+  <button matButton="elevated" disabled>Elevated</button>
+</div>
+
+<div class="g-row">
+  <button matButton="filled"><mat-icon>add</mat-icon>With icon</button>
+  <button matIconButton aria-label="Favourite"><mat-icon>favorite</mat-icon></button>
+  <button matIconButton disabled aria-label="Favourite, disabled">
+    <mat-icon>favorite</mat-icon>
+  </button>
+  <button matFab aria-label="Edit"><mat-icon>edit</mat-icon></button>
+  <button matMiniFab aria-label="Add"><mat-icon>add</mat-icon></button>
+  <button matFab extended><mat-icon>navigation</mat-icon>Extended</button>
+  <button matFab extended disabled><mat-icon>navigation</mat-icon>Disabled</button>
+</div>
+
+<mat-button-toggle-group value="left" aria-label="Alignment">
+  <mat-button-toggle value="left">Left</mat-button-toggle>
+  <mat-button-toggle value="centre">Centre</mat-button-toggle>
+  <mat-button-toggle value="right" disabled>Right</mat-button-toggle>
+</mat-button-toggle-group>

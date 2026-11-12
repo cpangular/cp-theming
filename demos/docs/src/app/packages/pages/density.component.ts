@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { ThemeExampleComponent } from '../../shared/theme-example.component';
 import { TocService } from '../../shell/toc.service';
+import scopesHtml from '../../../examples/density/scopes.html' with { loader: 'text' };
 
 const TOC = [
   { label: 'Overview', anchor: 'overview' },
@@ -27,14 +28,7 @@ const TOC = [
           density in your theme config, or override per-subtree with <code>[themeDensity]</code> —
           useful for compact toolbars or data-dense tables.
         </p>
-        <cpa-theme-example title="Density scopes" [attrsHtml]="densityAttrsHtml">
-          <div demo class="demo-row">
-            <div palette="primary" filled container shape="md" themeDensity="0">scale 0</div>
-            <div palette="primary" filled container shape="md" themeDensity="-2">scale -2</div>
-            <div palette="primary" filled container shape="md" themeDensity="-4">scale -4</div>
-            <div palette="primary" filled container shape="md" themeDensity="-5">scale -5</div>
-          </div>
-        </cpa-theme-example>
+        <cpa-theme-example title="Density scopes" [attrsHtml]="ex.scopesHtml" />
       </section>
 
       <section id="api" class="page-section">
@@ -142,11 +136,7 @@ const TOC = [
   ],
 })
 export class DensityPageComponent {
-  readonly densityAttrsHtml = `<!-- --space--* tokens recalculate inside each scope, so container() padding shrinks -->
-<div palette="primary" filled container shape="md" themeDensity="0">scale 0</div>
-<div palette="primary" filled container shape="md" themeDensity="-2">scale -2</div>
-<div palette="primary" filled container shape="md" themeDensity="-4">scale -4</div>
-<div palette="primary" filled container shape="md" themeDensity="-5">scale -5</div>`;
+  protected readonly ex = { scopesHtml };
 
   constructor() {
     inject(TocService).set(TOC);

@@ -1,11 +1,15 @@
 {
   "name": "cp-theming-workspace",
+  "version": "0.0.0-MAIN",
   "private": true,
   "packageManager": "pnpm@11.5.0",
   "scripts": {
     "build": "wireit",
     "build.core": "wireit",
+    "build.demo-core": "wireit",
+    "test": "wireit",
     "fix": "wireit",
+    "gitflow": "gitflow",
     "prepare": "wireit",
     "git.remove-tags": "git tag | xargs -r git tag -d",
     "clean": "wireit",
@@ -89,11 +93,31 @@
     },
     "build": {
       "dependencies": [
-        "build.core"
+        "build.core",
+        "build.demo-core"
       ]
     },
     "build.core": {
       "command": "pnpm --filter @cpangular/cp-theming-core build"
+    },
+    "build.demo-core": {
+      "command": "pnpm --filter demo-core build"
+    },
+    "test": {
+      "dependencies": [
+        "test.core",
+        "test.material",
+        "test.docs"
+      ]
+    },
+    "test.core": {
+      "command": "pnpm --filter @cpangular/cp-theming-core test"
+    },
+    "test.material": {
+      "command": "pnpm --filter @cpangular/cp-theming-ng-material test"
+    },
+    "test.docs": {
+      "command": "pnpm --filter docs test"
     }
   },
   "devDependencies": {
@@ -109,10 +133,14 @@
     "@angular/material": "^22.0.0",
     "@angular/platform-browser": "^22.0.2",
     "@angular/router": "^22.0.2",
+    "@cpdevtools/git-flow": "^1.3.0",
+    "@cpdevtools/git-flow-cli": "^1.3.0",
+    "@types/node": "^24.19.2",
     "husky": "^9.0.0",
     "jsdom": "^28.0.0",
     "lint-staged": "^15.0.0",
     "ng-packagr": "^22.0.0",
+    "playwright": "1.65.0",
     "prettier": "^3.0.0",
     "typescript": "^6.0.3",
     "vitest": "^4.0.8",

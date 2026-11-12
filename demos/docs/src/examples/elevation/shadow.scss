@@ -1,0 +1,4 @@
+// Without the attribute: read a level's shadow variable directly
+.my-card {
+  box-shadow: var(--elevation-2--shadow);
+}
