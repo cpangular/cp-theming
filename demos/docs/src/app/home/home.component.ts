@@ -163,8 +163,17 @@ import { CHAPTERS } from '../learn/chapters';
   `,
   styles: [
     `
+      /* The app shell is a flex column that clips overflow; the host must take
+         the remaining height for this wrapper to be the page's scroll container. */
+      :host {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+      }
       .home-scroll {
-        height: 100%;
+        flex: 1;
+        min-height: 0;
         overflow-y: auto;
       }
 
