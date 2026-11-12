@@ -1,0 +1,12 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+// A colour and nothing else. Spacing, corners, shadows, timing, weights and
+// type are left out, so each has its default.
+$studio: t.theme(
+  $palettes: (
+    primary: t.palette(#7a3fd1),
+  )
+);
+
+@include t.define-core-theme();
+@include t.define-theme("studio", $studio);

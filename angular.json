@@ -20,7 +20,13 @@
             "index": "demos/docs/src/index.html",
             "browser": "demos/docs/src/main.ts",
             "tsConfig": "demos/docs/tsconfig.app.json",
-            "assets": [],
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "demos/docs/.generated/learn-frames",
+                "output": "learn-frames"
+              }
+            ],
             "inlineStyleLanguage": "scss",
             "stylePreprocessorOptions": {
               "includePaths": ["demos/docs/src/app/packages/pages", "demos/docs/node_modules"]

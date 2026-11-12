@@ -37,6 +37,10 @@ How to set things in the VS Code extension (Claude Code chat panel):
 | 11 | Phase 15 Material component gallery | Fable 5.1 | high | Auto |
 | 12 | Phase 14d brand defaults to primary | Fable 5.1 | medium | Auto |
 | 13 | Phase 13 release | Fable 5.1 | medium | Auto |
+| 14 | Phase 16 wrap-up | Fable 5.1 | medium | Auto |
+| 15 | Phase 17 Learn track: mechanics + chapters 1–5 | Fable 5.1 | high | Auto |
+| 16 | Phase 17 Learn track: chapters 6–10 + reference | Fable 5.1 | high | Auto |
+| 17 | Phase 17 review (ultracode) | Fable 5.1 | high | Auto |
 
 Subagent models are chosen inside the workflow prompts: Opus at high effort for critique, Sonnet at
 medium for reading and sweeps. You do not set these.
@@ -123,4 +127,28 @@ Work in /devcontainer/repos/cp-theming on branch feature/port-spike-findings. Re
 
 ```
 Work in /devcontainer/repos/cp-theming on branch feature/port-spike-findings. Read CLAUDE.md, .github/copilot-instructions.md and PORT-PLAN.md Phase 13, then the READMEs of https://github.com/cpdevtools/git-flow-template and https://github.com/cpdevtools/git-flow. Settings: publish to GitHub Packages only; first version 0.1.0-alpha.0 (work out from the git-flow docs how that maps onto .publish/versions.yml and a feature/ branch, and tell me if it cannot be expressed exactly); peers between the three packages use workspace:^; docs deploy to GitHub Pages. Add only what git-flow needs, as the phase lists; keep the wireit root scripts; do not adopt the template's deps.yml, syncpack or devutil root scripts. Set up packaging for the three packages exactly as the phase describes and run gitflow pack; show me each tarball's file list and its package.json exports and peerDependencies. Check with gh whether the repo is public yet: if it is, add the static-site artifact for demos/docs with the gh-pages method; if not, leave pages.yml on manual trigger and tell me. Commit and push without asking, then tell me whether git-flow opened the draft release PR and whether the test workflow is green, and fix anything red. Do not merge into main, do not run gitflow version, and do not merge the release PR.
+```
+
+## Session 14 — Phase 16 wrap-up
+
+```
+Work in /devcontainer/repos/cp-theming on branch feature/port-spike-findings. Read CLAUDE.md, .github/copilot-instructions.md and PORT-PLAN.md Phase 16, and the Deployment page of the cpdevtools/git-flow wiki for the static-site artifact (gh api repos/cpdevtools/git-flow/contents/wiki or the README's link; read-only). Do the four items: the static-site artifact for demos/docs with gh-pages deploy and pages.yml deleted; demos/demo-core building again through the public theme module with a github.actions.build script; the gallery demo hrefs as same-page anchors with the examples check refusing other relative hrefs; demo-core's build copied into the docs output under demos/demo-core/ and linked from the home page and the core Getting Started page, with a line about the three stub demos. Run pnpm build at the root, pnpm test, and the docs examples check. When the Done-when holds, update the README and PLAN.md status tables, commit and push without asking, then tell me whether the draft release PR lists the docs artifact and whether the test workflow is green; fix anything red. Do not merge any PR.
+```
+
+## Session 15 — Phase 17 Learn track: mechanics and chapters 1–5
+
+```
+Work in /devcontainer/repos/cp-theming on branch feature/port-spike-findings. Read CLAUDE.md, .github/copilot-instructions.md, PORT-PLAN.md Phase 17 and the existing demos/docs app. Build the Learn track's mechanics first: the Learn / Reference / Explore navigation with Learn first on the home page; the chapter page shape (question, live example, idea, minimal code, Try it, You can now); live examples as files under demos/docs/src/examples/learn/ rendered in an iframe built by the docs build (core + the chapter's compiled theme + the example's CSS) with the source shown beside it from the same file, Sass examples included; the order check with the pattern table, failing the build. Then write chapters 1 to 5 exactly as PORT-PLAN.md describes them: example first, then the idea in plain words for someone who knows CSS and has never seen cp-theming, then the smallest code, and nothing a later chapter introduces. Every function or variable named links to its Reference entry. Build the site, open each chapter in Playwright and screenshot it with its example rendered. When the Done-when for these chapters holds, commit and push without asking, then tell me how to view it and which chapter you are least sure reads clearly.
+```
+
+## Session 16 — Phase 17 Learn track: chapters 6–10 and the generated reference
+
+```
+Work in /devcontainer/repos/cp-theming on branch feature/port-spike-findings. Read CLAUDE.md, .github/copilot-instructions.md, PORT-PLAN.md Phase 17 and chapters 1 to 5 as written in demos/docs. Write chapters 6 to 10 the same way, each using only what the chapters before it introduced; chapter 10's live example comes from the Components gallery. Replace the hand-written CSS Variables reference page with one generated from the compiled core.css at build time: one live swatch per colour token, grouped by palette and role, with a theme and mode switch; keep the non-colour variables in generated tables. Run the order check, the examples check and pnpm test, build the site and screenshot every chapter. When the Done-when holds, commit and push without asking.
+```
+
+## Session 17 — Phase 17 review (ultracode)
+
+```
+ultracode. Work in /devcontainer/repos/cp-theming on branch feature/port-spike-findings. Read PORT-PLAN.md Phase 17 and the ten Learn chapters in demos/docs. Run a workflow: one Opus reader (high effort) per chapter, given only that chapter's text and examples and the "Introduces" lines of the chapters before it, told it knows CSS and has never seen cp-theming, asked to list every term, variable, mixin or attribute the chapter uses before teaching it, every sentence it had to read twice, every claim the live example does not actually show, and every place code appears before the idea it belongs to. Then one Opus synthesizer merges the lists into fixes. Apply the fixes, rebuild, re-run the order and examples checks, then commit and push without asking, and tell me the three weakest chapters after the fixes.
 ```

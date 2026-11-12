@@ -1,0 +1,70 @@
+/* The colour itself. Its text is its contrast: black or white, whichever reads. */
+.given {
+  background: var(--color--primary);
+  color: var(--color--primary--contrast);
+}
+
+/* Each step has a contrast of its own. */
+.darkest {
+  background: var(--color--primary--darkest);
+  color: var(--color--primary--darkest--contrast);
+}
+.darker {
+  background: var(--color--primary--darker);
+  color: var(--color--primary--darker--contrast);
+}
+.dark {
+  background: var(--color--primary--dark);
+  color: var(--color--primary--dark--contrast);
+}
+.light {
+  background: var(--color--primary--light);
+  color: var(--color--primary--light--contrast);
+}
+.lighter {
+  background: var(--color--primary--lighter);
+  color: var(--color--primary--lighter--contrast);
+}
+.lightest {
+  background: var(--color--primary--lightest);
+  color: var(--color--primary--lightest--contrast);
+}
+
+/* The soft background (bg), with a contrast of its own. */
+.soft {
+  background: var(--color--primary--bg);
+  color: var(--color--primary--bg--contrast);
+}
+/* The border colour (stroke). */
+.border {
+  border: 2px solid var(--color--primary--stroke);
+}
+/* The focus ring (focus). Its lightness is the opposite of the colour's and its
+   hue is turned part of the way round, so it shows against the colour. That is
+   why it is drawn on the colour here. */
+.ring {
+  background: var(--color--primary);
+  color: var(--color--primary--contrast);
+  outline: 3px solid var(--color--primary--focus);
+  outline-offset: -8px;
+}
+
+/* Layout only. */
+p {
+  margin: 0;
+  padding: 14px 8px;
+  font: 12px/1.4 ui-monospace, monospace;
+}
+.given {
+  padding-block: 30px;
+}
+.steps {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+}
+.uses {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}

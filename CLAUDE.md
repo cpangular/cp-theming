@@ -4,7 +4,7 @@ See [.github/copilot-instructions.md](.github/copilot-instructions.md) for the f
 project context, conventions, non-negotiable design decisions, and what is stub vs real.
 
 See [PLAN.md](PLAN.md) for the full architecture, current status, and development phases, and
-[PORT-PLAN.md](PORT-PLAN.md) for phases 8–14.
+[PORT-PLAN.md](PORT-PLAN.md) for phases 8–17.
 
 ## Quick Context
 
@@ -63,7 +63,7 @@ This is a CSS-variable-based theming system. Key facts:
   guarded. `themeHeadSnippet` (inline `<head>` script, built from `src/storage-keys.ts`) applies the
   saved theme and mode before first paint; `demos/docs/src/index.html` carries a copy that a vitest
   check compares with the export. Browser check: `node demos/docs/test/startup.ts` (needs
-  `npx ng build docs`). The docs build keeps critical-CSS inlining off: it drops the theme rules
+  `pnpm --filter docs build`). The docs build keeps critical-CSS inlining off: it drops the theme rules
   from the first frame.
 - Docs examples (Phase 7 resumed): every Sass, CSS and attribute sample the docs show is a file
   in `demos/docs/src/examples/{page}/`, imported as text (`with { loader: 'text' }`) and shown by
@@ -91,6 +91,54 @@ This is a CSS-variable-based theming system. Key facts:
   Never merge it, never merge into `main`. theme-core packs with `publishConfig.exports`,
   theme-ng-core with `publishConfig.directory` (ng-packagr output; its production tsconfig reads
   core's built types, so build core first), theme-ng-material as plain Sass/CSS.
+- Docs site and demo-core (Phase 16): `demos/docs` is a git-flow `static-site` artifact
+  (`pagesRoot`, `deploy: [gh-pages]`). `pnpm --filter docs build` builds core, the adapter and
+  `demos/demo-core`, runs the production `ng build`, then `demos/docs/scripts/assemble.ts` copies
+  demo-core to `dist/docs/browser/demos/demo-core/` and writes `404.html`. Merging a release PR
+  attaches the site to the release; it does not deploy. `pnpm gitflow deploy` (the user runs it)
+  dispatches `.github/workflows/deploy-production.yml`, which commits the site to `gh-pages`.
+  The site has a `<base href>`: a link to a file of the site is relative to the site root
+  (`demos/demo-core/index.html`), and `href="#section"` stays on the page only because
+  `packages-layout.component.ts` handles the click. An example's `href` is a fragment, an
+  absolute path or a URL (a check fails anything else). demo-core uses the public `theme` module
+  only; root `pnpm build` builds core and demo-core.
+- Learn track (Phase 17, ten chapters written; the review pass is Session 17):
+  `demos/docs/src/app/learn/chapters.ts` is the chapter list plus the order check's tables,
+  `PATTERNS` (text a chapter introduces) and `REFS` (Reference entries prose may name, with the
+  chapter and the section each links to). A chapter is `learn/chapters/NN-name.component.ts`: the
+  five parts of `cpa-chapter` (`chapterExample`, `chapterIdea`, `chapterCode`, `chapterTry`,
+  `chapterNow`), library names only through `<cpa-ref name="…" />`. Its live examples are files
+  in `src/examples/learn/NN-name/`: `theme.scss` (complete, core included), `example.html`,
+  optional `example.scss`, and `X.html` / `X.scss` / `X.theme.scss` for a variation frame `X`.
+  From chapter 9 a frame may run a script: `example.ts.txt` (TypeScript; `.txt` because the
+  Angular build would compile a `.ts` it imports as text; the examples test type-checks it against
+  core's source and the build runs it with its types taken off) and `head.html` (goes into
+  `<head>`; a vitest check holds it to `themeHeadSnippet`). `X.app.ts.txt` is an excerpt of the
+  docs app, not a frame. A frame with a script also gets the docs' `frame-storage.js`, which keeps
+  its saved theme under its own storage keys so it cannot change the site's. Chapter 10's example
+  is an Angular template, `example.ng.html`, rendered in the page by `cpa-live-template` through
+  `chapters/10-material.examples.ts`; its two themes are defined again in `src/styles.scss` and a
+  test keeps them equal to the chapter's `theme.scss`. `cpa-live-example` takes `controls` (a
+  colour picker or a slider that sets custom properties or an attribute in the frame), `measures`
+  (contrast ratios the page reads out of the frame) and `ownMode`. `demos/docs/scripts/learn.ts`
+  runs the order check (exit 1 on a violation) and writes the frames to
+  `demos/docs/.generated/learn-frames/`. A chapter may use only what earlier chapters introduced:
+  when one needs something new, add it to `PATTERNS` / `REFS` under that chapter. Checks:
+  `demos/docs/test/learn.test.ts` (in `pnpm test`), `node demos/docs/test/learn.ts` (browser:
+  every chapter in light and dark, and what each of chapters 6–10 claims).
+- CSS Variables page (Phase 17): generated. `demos/docs/scripts/variables.ts` reads the compiled
+  `core.css` (`scripts/lib/variables.ts`) and writes `demos/docs/.generated/variables.ts`, which
+  `pages/variables.component.ts` imports: one live swatch per colour token by palette and role
+  (`variables/colour-swatches.component.ts`, with a theme and mode switch), one table row per
+  other variable. A name that fits nowhere throws, which fails the build and
+  `test/variables.test.ts`: give a new token family a place in `TABLES`. `NOTES` there is the
+  only hand-written part. Never list a variable in the page's template.
+- The docs need both generated parts before `ng build` / `ng serve`: `pnpm --filter docs build`
+  (and `start`, `dev`, `build:dev`) run them; before a bare `npx ng build docs`, run
+  `pnpm --filter docs generate` once. Browser check of the page: `node demos/docs/test/variables.ts`.
+- `watchMode()` observes `themeMode` and `thememode`: an HTML document stores an attribute's name
+  in lower case, and a MutationObserver filter is compared with the stored name
+  (`test/api/watch.spec.ts`).
 - A box-shadow token cannot be wrapped in `light-dark()` (colours only): `--elevation-N--shadow`
   is `<geometry> light-dark(<colour>, <colour>)`; a harness check fails a list inside `light-dark()`.
 - Focus ring color is **per-palette**, auto-derived via CSS relative color.

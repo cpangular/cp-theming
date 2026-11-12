@@ -18,10 +18,12 @@ body {
 }
 
 // Any element with [theme], or <body> when a $default: true theme is active,
-// becomes a background-palette container.
+// becomes a background-palette container: bg() paints the background palette
+// and gives it contrast text.
 [theme],
 body {
   @include t.apply-palette(background);
+  @include t.bg();
   @include t.container();
 }
 

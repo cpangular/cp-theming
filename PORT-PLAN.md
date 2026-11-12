@@ -939,8 +939,366 @@ As done (2026-11-11):
 - The repo is still private, so there is no `static-site` artifact and `pages.yml` stays on
   manual trigger. Its install step now passes `GITHUB_TOKEN`, which the `@cpdevtools` registry
   lines in `.npmrc` need.
+- theme-ng-core's `publishConfig` also has `linkDirectory: false`. Without it pnpm links the
+  workspace copy to `dist/theme-ng-core`, which does not exist before a build; with it the demos
+  and tests keep resolving the source. The lockfile records the publish directory
+  (`publishDirectory`), and a frozen install fails if it does not.
+- The first push created `release/feature/port-spike-findings` at the same commit, so there was
+  nothing to compare; the draft release PR (#1) opened on the second push. The test workflow is
+  green and builds theme-ng-core with ng-packagr.
 
 ---
+
+### Phase 16 — Wrap-up: docs deploy, demo-core, gallery hrefs (added 2026-11-11)
+
+The repo is public since 2026-11-11. Three leftovers, none of them a spike finding:
+
+1. **Docs deploy.** Add git-flow's `static-site` artifact for `demos/docs` (directory `../..`,
+   packDir `dist/docs/browser`, `deploy: [gh-pages]`, `pagesRoot: true` so the production
+   `baseHref` `/cp-theming/` stays valid), with the docs build as its `github.actions.build`.
+   Delete `pages.yml`. Record in the README where the docs are served from and that a release
+   PR merge deploys them.
+2. **`demos/demo-core` builds again.** `src/scss/components.scss` calls `a.container(high)` and
+   `a.container(low)`; the mixin takes no argument since June. Use `t.container()` with
+   `t.tone(high)` / `t.tone(low)`, through the public `theme` module like `base.scss` does. Give it
+   `github.actions.build` so CI builds it, and move its README row from Broken to In Progress.
+3. **Gallery demo hrefs.** `demos/docs/src/examples/components/sidenav.ng.html` and the list
+   example carry `href="packages/ng-material/components#…"`, which a direct request resolves
+   under the current page. Use `href="#sidenav"` / `href="#list"` (same-page anchors), and let the
+   examples check refuse an `href` that is neither a fragment, an absolute path nor a URL.
+
+4. **The demos are reachable.** Nothing links to the demos today and none is hosted. The docs
+   build copies `demo-core`'s Vite output to `dist/docs/browser/demos/demo-core/` (its own
+   `base`), and the home page and the core Getting Started page link to it as "Live demo: vanilla
+   TypeScript + Vite". The three Angular demos are stubs; they get a line on the home page saying
+   so, no link, until they exist.
+
+Done when: a push opens or refreshes the draft release PR with the docs artifact listed; `pnpm
+build` at the root builds demo-core and the docs build includes it; the home page links to it and
+the link works on the deployed site; the examples check passes with the href rule; the README
+rows are updated.
+
+**As landed (2026-11-12)**
+
+- Item 1 differs from the text above in one way: a release PR merge does not deploy. git-flow
+  keeps publishing and deploying apart (wiki, Deployment), so the merge attaches `docs-site.zip`
+  and `deploy-gh-pages.zip` to the `docs` release, and `pnpm gitflow deploy` dispatches
+  `.github/workflows/deploy-production.yml`, which runs the bundle in the job and commits the
+  site to `gh-pages`. That workflow is written from the wiki's snippet; the template repository
+  does not ship the `deploy-gh-pages.yml.example` the wiki names. It has not run yet: nothing is
+  merged, and the Pages source is not set to `gh-pages`.
+- The docs `github.actions.build` is `pnpm --filter docs build`: wireit builds core, the adapter
+  and demo-core, then the production `ng build`, then `demos/docs/scripts/assemble.ts` (the demo
+  copied in, and the `404.html` that `pages.yml` used to write). `gitflow pack` in `demos/docs`
+  produces `docs-site.zip` with the demo inside.
+- Item 2 was larger than two calls. demo-core also used a `danger` palette, the absolute tones
+  (`darker` … `lighter`) and `a.stroke()`, none of which exist, and `container` no longer paints.
+  Its Sass now goes through `t` only, the cards use `t.bg()` (one `t.filled()` card shows the
+  emphasis tiers), the markup says `bg container` and `error`, and the absolute tone table is
+  gone. Vite builds with `base: './'`.
+- Item 3: with the site's `<base href>`, the old `packages/ng-material/components#sidenav`
+  resolved correctly and a bare `#sidenav` would have loaded the home page. The examples carry
+  `#sidenav` / `#list` as planned, and `packages-layout.component.ts` keeps a fragment-only click
+  on the page (router navigation with the fragment, then the existing scroll). Checked in
+  Chromium on the built site: the URL becomes `…/components#sidenav` with no page load.
+- Item 4: the links are `demos/demo-core/index.html` (relative to the site root through the
+  base), opened in a new tab. Checked on the built site served under `/cp-theming/`: both links
+  open the demo, it loads without a failed request, and switches theme and mode.
+- Not checked: the link on the deployed site (there is no deployed site yet).
+
+### Phase 17 — Docs that teach (added 2026-11-12)
+
+The site today is reference material: pages grouped by module, prose followed by code blocks that
+say which function to call. Decided 2026-11-12: it gets a **Learn** track, read in order, in the
+manner of the best software docs (the React, Svelte and Stripe guides): each chapter is built
+around one idea, shows it working before it names anything, explains the idea in plain words, gives
+the smallest code that produces what was shown, and ends with what the reader can now do. The
+existing pages become the **Reference** track underneath it. The spike's rule applies again, with
+the order coming from the teaching: a chapter uses only what earlier chapters taught, and the
+build fails otherwise.
+
+**Site structure**
+
+- Top navigation: **Learn**, **Reference** (the current core / ng-core / ng-material sections), and
+  the Components gallery and Showcase as **Explore**. The home page leads with Learn.
+- A Learn chapter is a page with: the question it answers (one sentence under the title), a live
+  example rendered in the page, the idea in plain words (what problem it solves, how to think
+  about it, what it rules out), the minimal code, a "Try it" variation the reader can switch in
+  the live example, and "You can now…" as the last line. No API tables on Learn pages; every
+  function or variable named links to its Reference entry.
+- Prose is written for someone who knows CSS and has never seen cp-theming. No sentence may
+  depend on a term the chapter has not introduced. One idea per chapter; if a chapter needs two,
+  it is two chapters.
+
+**Chapters** (order is the dependency order; each line is the question the chapter answers)
+
+1. **One colour, a whole palette.** What does cp-theming do with a colour I give it? Live: a
+   colour picker driving `--color--primary` on a `[theme]` element; the ladder, contrast text,
+   bg, stroke and focus ring update as it moves. Idea: the browser derives everything, at runtime,
+   so a theme is a few inputs and nested themes or runtime changes just work. Rules out Sass
+   colour math and pre-computed shades. Code: `t.theme($palettes: (primary: t.palette(…)))`
+   with `define-core-theme` and `define-theme`. Introduces: theme, palette, the `--color--{name}`
+   tokens, `--contrast`.
+2. **Light and dark are one theme.** Why don't I write a dark theme? Live: the same card under
+   `themeMode` light / dark / auto on different elements, including a dark card inside a light
+   page. Idea: every value resolves where it is used, so a mode is a property of an element, not
+   of the page. Code: `t.light-dark()`, `themeMode`. Introduces: modes, `--high` / `--low`.
+3. **Pass what you have, the rest is generated.** I only have a brand colour; what happens?
+   Live: a brand swatch and the primary, secondary, tertiary, background and surface generated
+   from it, with the brand too bright to read as text and the primary readable. Idea: the chain
+   brand → primary → accents → neutrals, what is adjusted and what never is, how to override one
+   link. Code: `t.theme($brand: …)`, passing `secondary` explicitly. Introduces: brand, the
+   generation chain.
+4. **Roles, not shades.** Why `bg`, `stroke`, `contrast` instead of "a bit lighter"? Live: one
+   component on three palettes, each role labelled. Idea: a role names a job (fill, border, text
+   on it); the theme decides the colour, the component decides the job. Introduces: the role
+   tokens, `--tint-N`, focus per palette.
+5. **Scopes and surfaces.** How do I colour a piece of the page? Live: `palette=` selecting a
+   palette, `bg` / `filled` / `outlined` painting it, `tone=` sliding it, composed. Idea: the
+   attribute layers and what text colour each gives you and why. Code: the same in Sass with
+   `t.apply-palette()`, `t.bg()`, `t.filled()`, `t.outlined()`, `t.tone()`. Introduces:
+   `--palette-color*`, `--container--*`.
+6. **Themes inside themes.** What does a nested theme inherit? Live: three nested themes side by
+   side — passes only primary, passes only brand, passes nothing — inside an outer theme. Idea:
+   a theme declares only what it passes; what follows from that is regenerated, the rest is
+   inherited. Introduces: nesting, `$default`, coexisting themes.
+7. **Readable by construction.** Who chooses black or white text? Live: a lightness slider across
+   the contrast step, with the ratio shown. Idea: the step at the WCAG crossover, what it
+   guarantees (every opaque colour reads at 4.5:1 or better) and what it doesn't (translucent
+   fills, the `warn`/`caution` presets on the surface). Introduces: the guarantee, where it ends.
+8. **Everything else a theme carries.** Spacing, shape, motion, elevation, weights, typography:
+   one live panel with sliders. Idea: these are inputs like colours, with the same inheritance.
+   Introduces: `--space--*`, `--shape--*`, density scopes, `--elevation-N--shadow`, `--weight--*`.
+9. **Switching at runtime.** How does a user pick a theme or mode? Live: a switcher with
+   persistence and a reload. Idea: it is an attribute on an element plus a saved value; the head
+   snippet applies it before first paint. Code: the TypeScript API, `provideTheme()`, the
+   `ThemeService` signals. Introduces: the TS and Angular APIs.
+10. **Angular Material.** How do Material components get these colours? Live: the gallery's
+    buttons under two nested themes and a `[palette]` scope, with a Material role and the
+    cp-theming token it comes from shown on hover. Idea: Material reads `--mat-sys-*`; the
+    adapter computes those from Material's own role tables and your tokens, so nothing is
+    hand-mapped and nested scopes follow. Introduces: the adapter, overlays, override patches.
+
+**Mechanics**
+
+- Every live example, Sass ones included, is a file under `demos/docs/src/examples/learn/NN-…/`
+  (`.html` plus optional `.scss`) rendered inside an `<iframe>` built by the docs build with core,
+  the chapter's own compiled theme and the example's CSS, and its source shown beside it from the
+  same file. "Try it" variations are alternative files for the same frame. The examples check
+  (Phase 7 resumed) runs over them.
+- The order check: a pattern table next to the chapter list (`themeMode` → 2, `$brand` → 3,
+  `palette=` / `t.bg()` → 5, nested `theme=` → 6, `--space--` / `--shape--` → 8, `<script` /
+  `ThemeService` → 9, `mat-` / `--mat-sys` → 10, and so on). An example of chapter N that
+  matches a later chapter's pattern fails the build; so does prose that names a Reference entry
+  before its chapter.
+- The Reference's CSS Variables page is generated from the compiled `core.css`, one live swatch
+  per colour token, with a theme and mode switch, instead of the hand-written table.
+- Review: once written, one Opus reader per chapter, given only that chapter and the "Introduces"
+  lines of the chapters before it, lists every term, variable, mixin or attribute used before it
+  was taught and every explanation that is not plain; a second pass fixes the list.
+
+Done when: the ten chapters are written and pass the order check; every live example renders in
+the page with its source beside it; the Reference variables page is generated; the readers' lists
+are closed; a reader who starts at chapter 1 meets no term before it is explained (the review
+pass is the test).
+
+**As landed: the mechanics and chapters 1 to 5 (Session 15, 2026-11-12)**
+
+- Navigation: Learn (`/learn`), Reference (`/packages/:lib`, unchanged addresses, with a package
+  switch in the sidebar) and Explore (`/explore/components`, `/explore/showcase`). The home page
+  starts with Learn. The gallery and the showcase also stay routed under `/packages/ng-material`,
+  unlisted, because `render.ts` and `chain.ts` open them there.
+- Tables: `demos/docs/src/app/learn/chapters.ts` has the chapter list, `PATTERNS` and `REFS`.
+  The check is `demos/docs/scripts/lib/order.ts`: example files and prose against the patterns of
+  later chapters; `<cpa-ref>` names against `REFS` (the chapter that introduces each, and a
+  Reference section that exists and mentions it); a `<code>` that names a library entry without
+  `<cpa-ref>`; the five parts of a page; the frames a page shows against the files it imports.
+  It runs in `scripts/learn.ts` (first step of `pnpm --filter docs build`, exit 1) and in
+  `test/learn.test.ts` (`pnpm test`, CI), which also shows the check refusing each kind of
+  violation.
+- Frames: `scripts/learn.ts` writes `demos/docs/.generated/learn-frames/{chapter}/{frame}.html`
+  (git-ignored; an `assets` entry of `angular.json`). A chapter's `theme.scss` is a complete
+  stylesheet with `define-core-theme()`, as a reader would write it; its compiled CSS starts with
+  core's, which is written once as `core.css` and linked ahead of the rest. The docs add
+  `scripts/frame.css` (font, margin, the page colours) and the page sets `themeMode` on the
+  frame's `<html>` to the site's mode. A bare `npx ng build docs` does not run the script: use
+  `pnpm --filter docs build`, or run `node demos/docs/scripts/learn.ts` first.
+- Browser check: `demos/docs/test/learn.ts`. 491 checks per engine, all passing in Chromium,
+  Firefox and WebKit; screenshots of every chapter in light and dark in `dist/docs-render/learn/`.
+
+Judgment calls you may want to revisit:
+
+- **"Try it" is a second frame**, under the code, with one tab per variation and the swapped
+  files marked. The plan says "a variation the reader can switch in the live example"; with one
+  frame at the top of the page the reader would switch it from four screens further down.
+- **Chapter 1's picker sets the primary's light and dark value**
+  (`--color--primary--mode-light` / `--mode-dark`) on the `[theme]` element, not
+  `--color--primary`. Setting the joined token re-derives the steps, contrasts and tints but not
+  bg, stroke or focus (`_palette.scss`, `derive-palette`), and the plan wants all of them to
+  move. The prose says the picker changes "the colour this theme is given".
+- **Chapter 1 shows the soft background, border and focus ring** (the plan's live example) and
+  its stylesheet therefore reads `--color--primary--bg`, `--stroke` and `--focus`, three chapters
+  before roles are taught. The prose names them in plain words only; `REFS` gives those entries
+  to chapter 4, and chapter 4's pattern is `--tint-N` alone.
+- **Chapter 2 uses the primary palette only** (fill, border, text all from it): `surface` is
+  chapter 3. Chapters 4 and 5 use primary, secondary and tertiary, which chapter 3 taught.
+- **Chapter 5 has no `container` and no `shape`** (chapter 8), so its fills are square and extend
+  slightly past their element, as `bg()` does without a container.
+- Patterns added to the plan's list: `light-dark(`, `--high` / `--low`, `--mode-light`,
+  `color-scheme` → 2; `--color--brand`, the generated palette names as variables or as keys of
+  `$palettes` → 3; `--tint-N` → 4; `tone=`, the surface attributes, the apply mixins,
+  `--palette-color`, `--container--` → 5; `$default` → 6; `WCAG`, `4.5:1` → 7; the non-colour
+  tokens, attributes and config functions → 8; the TypeScript names → 9.
+
+Found while writing, not changed:
+
+- The Reference's Surface Types page says a layer needs a palette "on the same element (or an
+  ancestor)". The selectors are `[palette][bg]` and so on: the same element only.
+- The focus colour of a light palette is near-black in both modes (lightness is inverted from the
+  colour, not from the page), so in dark mode a ring drawn outside a pale button is hard to see
+  against the page. Chapter 4's "A pale primary" tab shows it when the site is dark.
+
+**As landed: chapters 6 to 10 and the generated CSS Variables page (Session 16, 2026-11-12)**
+
+- The ten chapters are written and pass the order check. Chapters 6 to 9 are frames like 1 to 5;
+  chapter 10's example is rendered by Angular in the page.
+- New in the mechanics:
+  - `cpa-live-example` takes `controls` (a colour picker, or a slider that sets custom properties
+    or an attribute in the frame), `measures` (contrast ratios the page reads out of the frame and
+    shows under the controls) and `ownMode` (the page leaves the frame's `themeMode` alone). The
+    page still writes nothing into the example's files.
+  - A frame may run a script (from chapter 9): `example.ts.txt`, TypeScript that the build runs
+    with its types taken off, at the end of `<body>`; and `head.html`, placed in `<head>` ahead
+    of the stylesheets. The script imports `@cpangular/cp-theming-core` by name; an import map
+    in the frame points it at core's built modules, copied to `learn-frames/core/`. The file is
+    `.ts.txt` because the Angular build compiles a `.ts` file a page imports as text; the page
+    shows it as `example.ts`. An excerpt of the docs app in such a folder is `X.app.ts.txt`.
+  - `cpa-live-template` shows an Angular template rendered in the page with its source under it.
+  - Checks added: the examples test type-checks every frame script against core's source
+    (`erasableSyntaxOnly`), core's vitest holds every `head.html` to `themeHeadSnippet`, a test
+    keeps chapter 10's two themes in `src/styles.scss` equal to its `theme.scss`.
+- The CSS Variables page: `demos/docs/scripts/lib/variables.ts` reads the compiled `core.css`;
+  `scripts/variables.ts` writes `demos/docs/.generated/variables.ts`; the page imports it. 920
+  colour tokens as live swatches in ten palettes and three roles, with a theme and a mode switch;
+  226 other variables in eleven tables and the type scale as a grid. A name with no place stops
+  the build. The values now come from core: the old page had `--motion--duration-medium` 250ms
+  (it is 200ms), `--shape--xxl` 32px (48px), `--focus--width` 2px (3px) and the text weights as
+  0.87 / 1.0 / 0.55 (82% / 96% / 55%).
+- Browser checks: `demos/docs/test/learn.ts` (955 checks per engine) and
+  `demos/docs/test/variables.ts` (28 per engine), all passing in Chromium, Firefox and WebKit.
+  Screenshots of every chapter in light and dark in `dist/docs-render/learn/`.
+
+Judgment calls you may want to revisit:
+
+- **Chapter 6's third inner theme passes a secondary, not nothing.** A theme that passes nothing
+  emits no rule, so `theme="x"` for it is an attribute the library's CSS does not select on (the
+  examples check refuses it), and a theme with only a non-colour input needs chapter 8. The three
+  cases are now the top, the middle and the end of the chain: brand, primary, secondary.
+- **Chapter 7 introduces the four fixed palettes** (error, warn, caution, pass), in its Try it,
+  because the limit the plan names is about two of them. The pattern table gives them to
+  chapter 7.
+- **Chapter 7's ratios are measured by the page**, not by the example: the page paints the
+  computed colours of the frame on a canvas and applies the WCAG formula. There are four
+  readouts: the fill, the lowest of the six steps, text on a tint, the colour as text.
+- **Chapter 7's hue variation is a yellow and a blue written in `hsl()`.** With `oklch()` the
+  text flips at the same lightness for every hue (57% on the slider, measured), so a second hue
+  shows nothing; in `hsl()` the yellow flips at 24% and the blue at 69%.
+- **Chapter 8's card is `filled`, not `bg`**: only `filled` sets
+  `--container--text-deemphasis`. Its weight slider sets the light and the dark value of the
+  weight, as chapter 1's picker does for the colour.
+- **Chapter 9's example saves under its own storage keys.** A frame is served from the site's
+  address and would share its storage, so the docs link `frame-storage.js` first in such a frame:
+  the same two storage objects with every key under the frame's path. The chapter says so in one
+  sentence. The Angular half of the chapter is shown as excerpts of this site's own source
+  (`app.config.ts`, the theme switcher), not as a running example.
+- **Chapter 10's readout is read from the stylesheets on the page**: the rule that paints the
+  button names a `--mat-sys-*` variable, and the adapter's rule for that variable names the
+  cp-theming one. Nothing is listed by hand, so it follows Material and the adapter. Its
+  specificity ordering is approximate. The Try it reuses two examples of the gallery as they are.
+- **Chapter 10's two themes are defined twice**: in its `theme.scss` (shown) and in the docs
+  app's `src/styles.scss` (rendered), as the Getting Started theme is. A test keeps them equal.
+- **The variables data is imported, not fetched**: a bare `npx ng build docs` now fails until
+  `pnpm --filter docs generate` has run once. `pnpm --filter docs build`, `start`, `dev` and
+  `build:dev` run it. The README and the check headers say `pnpm --filter docs build`.
+- **A contrast token is a chip inside the swatch of its fill**, not a tile of its own; the light
+  and the dark value a theme sets have swatches too. The notes column of the tables is the one
+  hand-written part (`NOTES`, 25 entries; a note for a name core does not have fails).
+- Patterns added: the fixed palettes → 7; `--focus--`, `--overlay--`, the `container`, `radius`
+  and `padding` mixins → 8; `getTheme`, `getMode`, `getEffectiveMode`, the watch and persistence
+  functions, `sessionStorage` → 9; Material's attribute directives (`matButton`) → 10.
+
+Found while writing:
+
+- **Fixed: `watchMode()` never ran on an attribute change in a browser.** Its MutationObserver
+  was filtered on `themeMode`; an HTML document stores the attribute as `thememode`, and the
+  filter is compared with the stored name. Chapter 9's buttons did not follow the mode until a
+  reload. The filter now names both; `packages/theme-core/test/api/watch.spec.ts` fails without
+  it. `ThemeService` was unaffected for its own `setMode()` (it sets its signal itself) and
+  affected for a mode set by anything else.
+- Not changed: `setTheme(name, element)` saves the name under the one global key whatever
+  element it was given, so a theme set on a nested element comes back on `<html>` after a reload.
+- Not changed: the default warn and caution as text on the default surface are 4.18:1 and 3.86:1
+  in light mode (chapter 7's Try it shows them). This is the item already listed below.
+
+**As landed: the review pass (Session 17, 2026-11-12)**
+
+- Ten Opus readers, one per chapter, each given its chapter page, its example files, its
+  screenshots and the "Introduces" lines of the chapters before it. They returned 514 findings in
+  four lists: used before taught (182), read twice (119), not shown by the example (131), code
+  before its idea (82). Clarity as the readers scored it: 3 of 5 for chapters 5 and 8, 4 for the
+  rest.
+- One Opus synthesizer merged them into 66 exact edits in 25 files (the ten pages, fourteen example
+  files, one line of `live-example.component.ts`), rejected 49 groups of findings with the reason
+  (taught by an earlier chapter, or the example coming first by design) and left 10 open. All 66
+  applied. No `REFS` or `PATTERNS` entry changed.
+- What the edits do, in the main: "step" is defined at its first use in chapter 1; chapters 1 to 3
+  name the soft background, border and focus ring by the last word of their variables (bg, stroke,
+  focus) without linking them; chapter 1 explains `$`, a Sass map and what the name passed to
+  `define-theme()` is; "This rules out…" became a plain sentence in every chapter; each chapter
+  says where its example does not show a claim.
+- Corrected, because the readers checked the claim against the screen and it was wrong:
+  - Chapters 1 and 4 said the lighter steps of a yellow "run out at white". They are one and the
+    same strong yellow (`rgb(255 253 82)` for gold, measured in three engines), so in chapter 4's
+    "Written with shades" the pill is invisible and the text unreadable.
+  - Chapter 3 drew the chain as one line ending in background and surface. They come from the
+    brand, not from secondary and tertiary; it is now two lines. It also says what a theme with a
+    primary and no brand does for them (takes them from around it; on `<html>` they take a trace
+    of the primary's hue).
+  - Chapter 5: `filled outlined` draws its edge in the soft background colour, `bg` does not set
+    the `--container--text*` variables, and the badge takes the scope it sits in.
+  - Chapter 7 said both cases outside the guarantee "do go under 4.5". On a light page at the
+    starting colour neither does (6.62 and 6.80); the chapter now says which goes under where.
+  - Chapter 10: in a `palette` scope only the buttons Material paints with its primary change;
+    Tonal and Elevated keep the theme's fill (measured).
+- After the edits: order check passed, 446 docs checks, `learn.ts` 2934/2934 across Chromium,
+  Firefox and WebKit. The claims the synthesizer marked for measuring were measured in the three
+  engines (`packages/theme-core/test/.scratch/s17/`, local only).
+
+Judgment calls you may want to revisit:
+
+- **Learn code blocks are up to 660px tall, not 460px.** Chapter 6's `theme.scss` (607px) ended
+  inside the scroll area, above the `define-theme()` lines the paragraph is about. Chapters 4, 7,
+  8 and 9 still have a stylesheet or script that scrolls.
+- **Chapter 3 has one sentence about a theme on `<html>`**, added by hand after the synthesis: the
+  synthesizer's "does not generate them" is not true there (Phase 14d).
+- **Chapter 9 mentions `invert`** in one sentence, because the head snippet shown in the chapter
+  contains the word.
+
+Open after the review (real findings a text edit cannot close):
+
+- Chapters 1 to 3 cannot link bg, stroke and focus: `REFS` gives them to chapter 4 (the Session 15
+  call). Moving the four entries to chapter 1 would let them.
+- Chapter 5's title word "surfaces" is read as the surface palette. It is defined in the text now;
+  a new title would be clearer.
+- `auto` is never seen changing (chapters 2 and 9): a frame cannot change the device's setting.
+- Chapter 4: "Written with shades" is shown on the yellow only, not on the violet it was drawn for
+  (a third tab).
+- Chapter 8: the sliders write to the frame, and the source beside it does not show what they set.
+- Chapter 9: the Angular half is excerpts of this site, not a running example (the Session 16
+  call).
+- Chapter 10: overlays in a nested theme without `cpaOverlayScope` are described and not shown; no
+  readout names a shade the adapter derives; the icon buttons show their ligature text ("fav") in
+  the check's screenshots, where web fonts are blocked.
 
 ## Decisions already made
 

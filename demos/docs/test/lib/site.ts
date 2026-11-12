@@ -44,7 +44,7 @@ export function serve(): Promise<{ server: Server; origin: string }> {
 /** Stops with a message when there is no production build to serve. */
 export function requireBuild(): void {
   if (!existsSync(path.join(siteDir, 'index.html'))) {
-    console.error(`No build at ${siteDir}. Run: pnpm build && npx ng build docs`);
+    console.error(`No build at ${siteDir}. Run: pnpm --filter docs build`);
     process.exit(2);
   }
 }

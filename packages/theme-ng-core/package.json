@@ -14,7 +14,8 @@
     "github.actions.pack": "gitflow pack"
   },
   "publishConfig": {
-    "directory": "../../dist/theme-ng-core"
+    "directory": "../../dist/theme-ng-core",
+    "linkDirectory": false
   },
   "peerDependencies": {
     "@angular/common": "^22.0.0",

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -154,5 +154,19 @@ describe('themeHeadSnippet', () => {
     expect(html).toContain(`<script>${themeHeadSnippet}</script>`);
     // Before any stylesheet, so no frame is painted with the HTML's own theme.
     expect(html.indexOf(themeHeadSnippet)).toBeLessThan(html.indexOf('<link'));
+  });
+
+  it('is the head of every Learn example that has one, character for character', () => {
+    // demos/docs/src/examples/learn/{chapter}/head.html and X.head.html: what a
+    // chapter shows as "put this in <head>" and what its frame runs.
+    const learn = path.resolve(import.meta.dirname, '../../../../demos/docs/src/examples/learn');
+    const heads = readdirSync(learn).flatMap((chapter) =>
+      readdirSync(path.join(learn, chapter))
+        .filter((file) => /(?:^|\.)head\.html$/.test(file))
+        .map((file) => path.join(learn, chapter, file)),
+    );
+    expect(heads.length).toBeGreaterThan(0);
+    for (const file of heads)
+      expect(readFileSync(file, 'utf8'), file).toContain(`<script>${themeHeadSnippet}</script>`);
   });
 });

@@ -1,0 +1,11 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+// The same theme with another colour, written as a CSS colour name.
+$ocean: t.theme(
+  $palettes: (
+    primary: t.palette(gold),
+  )
+);
+
+@include t.define-core-theme();
+@include t.define-theme("ocean", $ocean);

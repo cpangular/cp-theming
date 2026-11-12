@@ -219,9 +219,15 @@ export function watchMode(
   const el = options.element ?? document.documentElement;
   const notify = () => callback(getMode(el));
 
-  // Watch [themeMode] attribute changes on the element.
+  // Watch [themeMode] attribute changes on the element. An HTML document
+  // stores the attribute's name in lower case and the filter is compared with
+  // the stored name, so `themeMode` alone never matches there; an XML document
+  // (SVG) keeps the case it was written in.
   const observer = new MutationObserver(notify);
-  observer.observe(el, { attributes: true, attributeFilter: [ATTR_MODE] });
+  observer.observe(el, {
+    attributes: true,
+    attributeFilter: [ATTR_MODE, ATTR_MODE.toLowerCase()],
+  });
 
   // Also fire when the system color scheme changes — only relevant for AUTO / INVERT.
   const mql = _darkQuery(el);

@@ -134,10 +134,10 @@ demos/demo-brand-material/                                 — Example brand+mat
   `chain/` rows (Phase 14) and `gamut/` rows (Phase 14c) carry expectations worked out by hand;
   keep them that way. A row with `hue` also asserts the hue of the colour as painted.
 - Chain check on the built docs: `demos/docs/test/chain.ts` (Playwright, local only), after
-  `npx ng build docs`: the Getting Started `palette="brand"` swatch is the example's `$brand` in
+  `pnpm --filter docs build`: the Getting Started `palette="brand"` swatch is the example's `$brand` in
   both modes, and every preset column of the showcase shows three different accents.
 - Startup check: `demos/docs/test/startup.ts` (Playwright, all three engines, local only), run
-  after `npx ng build docs`: the saved theme and mode are painted before the bundle runs.
+  after `pnpm --filter docs build`: the saved theme and mode are painted before the bundle runs.
 - Docs examples: `demos/docs/test/examples.test.ts` (`pnpm --filter docs test`, part of
   `pnpm test` and of CI). Every Sass, CSS and attribute sample the docs show is a file in
   `demos/docs/src/examples/{page}/` that pages import as text. `.scss` compiles through the
@@ -146,7 +146,7 @@ demos/demo-brand-material/                                 — Example brand+mat
   CSS selects on and is what `cpa-theme-example` renders; `*.display.*` marks a fragment that
   cannot be checked. Do not write such a sample in a page template.
 - Contrast report: `demos/docs/test/render.ts` (Playwright, Chromium by default, local only), run
-  after `npx ng build docs`: the painted contrast of every label on the showcase in light and dark,
+  after `pnpm --filter docs build`: the painted contrast of every label on the showcase in light and dark,
   and the component gallery (Phase 15) per preset and mode: every section screenshotted, as
   loaded, hovered, focused and with every overlay open. A component label below 4.5:1 fails the
   run; a disabled control and a docs caption are reported. `--only=gallery|showcase`,
@@ -158,9 +158,41 @@ demos/demo-brand-material/                                 — Example brand+mat
   only (`gallery-layout.scss` may not declare a colour). `*.ts.txt` is TypeScript the docs show,
   verbatim from a source file of the docs app. Never colour a gallery example: fix the adapter or
   add a measured patch to `apply-material-overrides()`.
+- Learn track (PORT-PLAN.md Phase 17, ten chapters): `demos/docs/src/app/learn/chapters.ts` holds
+  the chapter list and the order check's tables (`PATTERNS`, `REFS`). A chapter uses only what
+  earlier chapters introduced: its example files (`demos/docs/src/examples/learn/NN-name/`) and
+  its prose match no pattern of a later chapter, and its prose names library entries only through
+  `<cpa-ref name="…" />`, each introduced by that chapter or an earlier one. The check is
+  `demos/docs/scripts/lib/order.ts`, run by `demos/docs/scripts/learn.ts` (the first step of
+  `pnpm --filter docs build`, which also writes the example frames to
+  `demos/docs/.generated/learn-frames/`) and by `demos/docs/test/learn.test.ts`. A frame is
+  `theme.scss`, `example.html`, optional `example.scss`, and from chapter 9 optional
+  `example.ts.txt` (its script: TypeScript, type-checked by `examples.test.ts`, run with its types
+  taken off) and `head.html` (into `<head>`; held to `themeHeadSnippet` by
+  `packages/theme-core/test/api/head-snippet.spec.ts`); `X.*` is a variation frame, `X.app.ts.txt`
+  an excerpt of the docs app. Chapter 10's example is an Angular template (`example.ng.html`)
+  that the page renders, with the gallery's components. Browser check:
+  `demos/docs/test/learn.ts` (Playwright, local only), after `pnpm --filter docs build`: every
+  chapter in light and dark, each frame rendered with its source beside it, every Reference link,
+  and what chapters 6–10 claim (inheritance, the 4.5:1 floor across the slider, each slider, the
+  saved theme across a reload, the Material roles).
+- CSS Variables page: generated from the compiled `core.css` by `demos/docs/scripts/variables.ts`
+  (`scripts/lib/variables.ts`) into `demos/docs/.generated/variables.ts`, which the page imports.
+  Every public custom property core declares, registers or reads has one place on it: a swatch
+  (colour tokens, by palette and role) or a table row. A name with no place throws; add its
+  family to `TABLES`. Checks: `demos/docs/test/variables.test.ts` (in `pnpm test`),
+  `demos/docs/test/variables.ts` (browser). Do not write variable names or defaults into the
+  page's template.
+- Both generated parts must exist before `ng build docs` / `ng serve docs`:
+  `pnpm --filter docs build`, `start`, `dev` and `build:dev` write them; otherwise run
+  `pnpm --filter docs generate` first.
 - The docs read the adapter's built CSS (`packages/theme-ng-material/dist/*.css`): after a change
   in its `scss/`, run `pnpm --filter @cpangular/cp-theming-ng-material build` before
-  `npx ng build docs`. Root `pnpm build` builds core only.
+  `npx ng build docs`. Root `pnpm build` builds core and `demos/demo-core`, not the adapter.
+- The deployed site is `pnpm --filter docs build`: core, the adapter and demo-core, the production
+  `ng build`, then `demos/docs/scripts/assemble.ts` (demo-core copied to `demos/demo-core/`,
+  `404.html`). An example's `href` is a fragment, an absolute path or a URL; the docs layout keeps
+  a fragment link on the page, because the site's `<base href>` would otherwise send it to the root.
 - Fixture themes live in `packages/theme-core/test/fixtures/` and `packages/theme-ng-material/test/fixtures/`.
 - CI: `.github/workflows/test.yml` (cpdevtools/git-flow) runs `github.actions.build` then
   `github.actions.test` in every package that defines them.
@@ -169,6 +201,9 @@ demos/demo-brand-material/                                 — Example brand+mat
   `.publish/versions.yml`, changed only by `pnpm gitflow version`, which the user runs. A push
   updates a draft release PR into `release/<branch>`; merging it publishes the three packages to
   GitHub Packages (`.publish/registries.yml`). Never merge a release PR or merge into `main`.
+  `demos/docs` is a `static-site` artifact (`deploy: [gh-pages]`, `pagesRoot`): a merge attaches
+  the built site to the release, and `pnpm gitflow deploy` (the user runs it) puts it on the
+  `gh-pages` branch through `.github/workflows/deploy-production.yml`. A merge never deploys.
   Each published package has `release-artifacts.yml` and `github.actions.pack`: theme-core packs
   with `publishConfig.exports`, theme-ng-core with `publishConfig.directory` (the ng-packagr
   output), theme-ng-material as plain Sass/CSS. Peers between them are `workspace:^`.
@@ -236,7 +271,7 @@ pnpm --filter @cpangular/cp-theming-core render   # browser check, local only
 
 ## Key Files
 - [PLAN.md](../PLAN.md) — full plan, status, phases
-- [PORT-PLAN.md](../PORT-PLAN.md) — phases 8–14 (harness, cascade, contrast, Material adapter, startup, release, palette chain)
+- [PORT-PLAN.md](../PORT-PLAN.md) — phases 8–17 (harness, cascade, contrast, Material adapter, startup, release, palette chain, gallery, docs that teach)
 - [packages/theme-core/scss/_theme.scss](../packages/theme-core/scss/_theme.scss) — public SCSS API (`@cpangular/cp-theming-core`)
 - [packages/theme-core/scss/_palette.scss](../packages/theme-core/scss/_palette.scss) — palette system
 

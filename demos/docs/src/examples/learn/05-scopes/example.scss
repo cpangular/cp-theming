@@ -1,0 +1,30 @@
+/* An element of our own. It names no palette: it reads the one it is in. */
+.count {
+  background: var(--palette-color);
+  color: var(--palette-color--contrast);
+}
+
+/* Text that steps back, on whatever filled puts behind it. */
+.quiet {
+  color: var(--container--text-deemphasis);
+}
+
+/* Layout only. */
+p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0 0 18px;
+}
+.panel {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0 5px 14px;
+  padding: 14px;
+}
+.count {
+  margin-left: auto;
+  padding: 0 9px;
+  border-radius: 99px;
+}

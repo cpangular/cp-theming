@@ -1,109 +1,130 @@
 // Demo component styles — cards, buttons, swatches.
 // Depends on theme vars and base being loaded first.
-@use "@cpangular/cp-theming-core/scss/apply" as a;
+// Everything comes from the public module, like base.scss: apply-palette()
+// selects a palette, tone() slides it, bg() / filled() / outlined() paint it and
+// container() gives the box its padding and radius.
+@use "@cpangular/cp-theming-core/scss/theme" as t;
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
 .card {
-  @include a.radius(var(--shape--md));
-  @include a.padding(var(--space--lg));
+  @include t.radius(var(--shape--md));
+  @include t.padding(var(--space--lg));
   margin: 1rem;
 }
 
 .card--primary {
-  @include a.apply-palette(primary);
-  @include a.container();
+  @include t.apply-palette(primary);
+  @include t.bg();
+  @include t.container();
 }
 
 .card--secondary {
-  @include a.apply-palette(secondary);
-  @include a.container();
+  @include t.apply-palette(secondary);
+  @include t.bg();
+  @include t.container();
 }
 
 .card--primary-high {
-  @include a.apply-palette(primary);
-  @include a.container(high);
+  @include t.apply-palette(primary);
+  @include t.tone(high);
+  @include t.bg();
+  @include t.container();
 }
 
 .card--primary-low {
-  @include a.apply-palette(primary);
-  @include a.container(low);
+  @include t.apply-palette(primary);
+  @include t.tone(low);
+  @include t.bg();
+  @include t.container();
 }
 
-.card--danger {
-  @include a.apply-palette(danger);
-  @include a.container();
+.card--error {
+  @include t.apply-palette(error);
+  @include t.bg();
+  @include t.container();
 }
 
 .card--surface {
-  @include a.apply-palette(surface);
-  @include a.container();
+  @include t.apply-palette(surface);
+  @include t.bg();
+  @include t.container();
+}
+
+// ─── Filled card ──────────────────────────────────────────────────────────────
+// filled() paints the palette's own colour and sets contrast text, with the
+// emphasis and deemphasis tiers the helpers below read.
+.card--filled {
+  @include t.apply-palette(primary);
+  @include t.filled();
+  @include t.container();
 }
 
 // ─── Outlined card ────────────────────────────────────────────────────────────
 .card--outlined {
-  @include a.radius(var(--shape--md));
-  @include a.padding(var(--space--lg));
-  @include a.apply-palette(primary);
-  @include a.outlined();
-  @include a.stroke();
+  @include t.radius(var(--shape--md));
+  @include t.padding(var(--space--lg));
+  @include t.apply-palette(primary);
+  @include t.outlined();
+  @include t.container();
   margin: 1rem;
 }
 
 // ─── Typography helpers ───────────────────────────────────────────────────────
-// Written by container()/filled()/outlined() — work under any surface variant.
+// filled() writes --container--text-emphasis / --container--text-deemphasis.
+// Anywhere else the helpers keep the inherited colour.
 .text--emphasis {
-  color: var(--container--text-emphasis);
+  color: var(--container--text-emphasis, inherit);
+  font-weight: 600;
 }
 
 .text--deemphasis {
-  color: var(--container--text-deemphasis);
+  color: var(--container--text-deemphasis, inherit);
 }
 
 // ─── Buttons ─────────────────────────────────────────────────────────────────
 .btn {
-  @include a.radius(var(--shape--sm));
-  @include a.padding($block: var(--space--xs), $inline: var(--space--md));
+  @include t.radius(var(--shape--sm));
+  @include t.padding($block: var(--space--xs), $inline: var(--space--md));
   display: inline-block;
   border: none;
+  background: none;
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 600;
-  transition: background-color 0.15s;
 }
 
 .btn--primary {
-  @include a.apply-palette(primary);
-  @include a.container();
+  @include t.apply-palette(primary);
+  @include t.filled();
+  @include t.container();
 }
 
 .btn--primary:hover {
-  @include a.apply-palette(primary);
-  @include a.container(high);
+  @include t.tone(high);
 }
 
 .btn--outlined {
-  @include a.apply-palette(primary);
-  @include a.outlined();
-  @include a.stroke();
+  @include t.apply-palette(primary);
+  @include t.outlined();
+  @include t.container();
 }
 
 .btn--outlined:hover {
-  @include a.apply-palette(primary);
-  @include a.container(lower);
+  @include t.bg();
 }
 
 // ─── Tonal cards ─────────────────────────────────────────────────────────────
 // Tonal = apply-palette + tone shift — uses attribute selectors in HTML.
-// No classes needed; [palette][tone][container] composes at the HTML layer.
+// No classes needed; [palette][tone][bg][container] composes at the HTML layer.
 
 // ─── State-layer button ───────────────────────────────────────────────────────
 // Hover/press via contrast-colour overlay at themed opacity.
 // Works on any background without pre-computing lightness steps.
 .btn--state-layer {
-  @include a.apply-palette(primary);
-  @include a.container();
+  @include t.apply-palette(primary);
+  @include t.filled();
+  @include t.container();
   overflow: hidden;
-  isolation: isolate;
 }
 
 .btn--state-layer::after {
@@ -118,13 +139,13 @@
 }
 
 .btn--state-layer:hover::after {
-  opacity: calc(var(--weight--state-hover, 8%) / 100);
+  opacity: calc(var(--weight--state-hover, 8%) / 100%);
 }
 .btn--state-layer:active::after {
-  opacity: calc(var(--weight--state-press, 12%) / 100);
+  opacity: calc(var(--weight--state-press, 12%) / 100%);
 }
 .btn--state-layer:focus-visible::after {
-  opacity: calc(var(--weight--state-focus, 12%) / 100);
+  opacity: calc(var(--weight--state-focus, 12%) / 100%);
 }
 
 // ─── Swatch grid ─────────────────────────────────────────────────────────────

@@ -1,0 +1,18 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+// Three themes to choose from. ocean is the default: it applies until the
+// reader picks one.
+$ocean: t.theme(
+  $brand: #1565c0,
+);
+$forest: t.theme(
+  $brand: #2e7d32,
+);
+$sunset: t.theme(
+  $brand: #e65100,
+);
+
+@include t.define-core-theme();
+@include t.define-theme("ocean", $ocean, $default: true);
+@include t.define-theme("forest", $forest);
+@include t.define-theme("sunset", $sunset);

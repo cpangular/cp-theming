@@ -1,7 +1,7 @@
 // Browser check of the palette chain on the built docs (PORT-PLAN.md Phase 14).
 // Local only, not in CI.
 //
-//   pnpm build && pnpm --filter @cpangular/cp-theming-ng-material build && npx ng build docs
+//   pnpm --filter docs build
 //   node demos/docs/test/chain.ts            # chromium
 //   node demos/docs/test/chain.ts firefox webkit
 //

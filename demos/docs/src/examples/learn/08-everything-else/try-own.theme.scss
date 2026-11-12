@@ -1,0 +1,32 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+// The same colour, and numbers of its own. Each kind has a function that
+// takes only what you want to change.
+$studio: t.theme(
+  $palettes: (
+    primary: t.palette(#7a3fd1),
+  ),
+  $density: t.density(-2),
+  $shape: t.shape(
+      $md: 4px,
+      $full: 6px,
+    ),
+  $elevation: t.elevation(
+      $shadow-color: oklch(0.45 0.2 300 / 45%),
+    ),
+  $motion: t.motion(
+      $duration-extra: 1200ms,
+    ),
+  $weights: t.weights(
+      $text-deemphasis-blend: 75%,
+    ),
+  $typography: t.typography(
+      $plain-family: (
+        Georgia,
+        serif,
+      ),
+    ),
+);
+
+@include t.define-core-theme();
+@include t.define-theme("studio", $studio);

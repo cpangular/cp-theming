@@ -1,0 +1,3 @@
+<!-- themeHeadSnippet from @cpangular/cp-theming-core, pasted as it is. It runs
+     before the page is drawn and puts the saved theme and mode on <html>. -->
+<script>(function(){try{var d=document.documentElement,p=localStorage.getItem("cp-theming--persist"),s=p==="local"?localStorage:p==="session"?sessionStorage:null;if(!s)return;var t=s.getItem("cp-theming--theme"),m=s.getItem("cp-theming--mode");if(t)d.setAttribute("theme",t);if(m==="auto"||m==="light"||m==="dark"||m==="invert")d.setAttribute("themeMode",m)}catch(e){}})();</script>

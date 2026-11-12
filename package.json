@@ -6,6 +6,7 @@
   "scripts": {
     "build": "wireit",
     "build.core": "wireit",
+    "build.demo-core": "wireit",
     "test": "wireit",
     "fix": "wireit",
     "gitflow": "gitflow",
@@ -92,11 +93,15 @@
     },
     "build": {
       "dependencies": [
-        "build.core"
+        "build.core",
+        "build.demo-core"
       ]
     },
     "build.core": {
       "command": "pnpm --filter @cpangular/cp-theming-core build"
+    },
+    "build.demo-core": {
+      "command": "pnpm --filter demo-core build"
     },
     "test": {
       "dependencies": [

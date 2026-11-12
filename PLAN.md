@@ -255,17 +255,26 @@ $my-theme: t.theme(
 ### 🟡 Phase 7 — docs site + demos (docs examples done; the four demos pending)
 
 **docs** (`demos/docs`) — Angular 22 + Material 22 documentation / showcase app. Dev server:
-`ng serve docs --host 0.0.0.0 --port 4200`. Deploys to GitHub Pages at `/cp-theming/` through
-`.github/workflows/pages.yml` (manual trigger until the repo is public; git-flow's `static-site` artifact replaces it then).
+`ng serve docs --host 0.0.0.0 --port 4200`. Deploys to GitHub Pages at `/cp-theming/` as git-flow's
+`static-site` artifact, by `gitflow deploy` through `.github/workflows/deploy-production.yml` (Phase 16).
 
 **Navigation, as the code has it** (`app.routes.ts`, `packages/packages.routes.ts`,
 `packages/packages-layout.component.ts`):
 
-- `/` — home: one card per package and a "Get started" link to `/packages/core/getting-started`.
-- Toolbar (every page): the logo (home), one link per package (`/packages/core`,
-  `/packages/ng-core`, `/packages/ng-material`), the theme selector and the light/dark toggle.
-- `/packages/:lib/…` — a sidebar on the left, the page, and an "on this page" rail on the right
-  that each page fills through `TocService`. `/packages/:lib` redirects to `categories`.
+- Three tracks (Phase 17), all in the layout of `packages-layout.component.ts`: **Learn**
+  (`/learn`), **Reference** (`/packages/:lib`, the addresses it always had) and **Explore**
+  (`/explore`).
+- `/` — home: Learn first (a "Start learning" button to chapter 1 and the chapter list), then the
+  Reference (one card per package), then Explore (Components, Showcase, the hosted demo-core).
+- Toolbar (every page): the logo (home), Learn, Reference, Explore, the theme selector and the
+  light/dark toggle.
+- `/learn` — the chapter list; `/learn/{slug}` — a chapter. The sidebar lists the ten chapters
+  (`learn/chapters.ts`). No "on this page" rail.
+- `/explore/components`, `/explore/showcase` — the gallery and the showcase. The same pages stay
+  routed under `/packages/ng-material/…`, unlisted: the browser checks open them there.
+- `/packages/:lib/…` — a sidebar on the left with a switch between the three packages, the page,
+  and an "on this page" rail on the right that each page fills through `TocService`.
+  `/packages/:lib` redirects to `categories`.
 - Sidebar for **core** (18 pages, in this order):
   - Getting Started
   - _SCSS API_: Palette, Theme, Weights, Typography, Density, Shape, Focus, Motion, Elevation, Overlay
@@ -310,7 +319,7 @@ $my-theme: t.theme(
     paths the packages export; every file is imported by a page; no `<pre>` or string field of a
     page holds a Sass, CSS or attribute sample.
 - The other TypeScript, shell and JSON samples stay in the page templates; nothing checks them.
-- `demos/docs/test/render.ts` (local, `pnpm --filter docs render` after `npx ng build docs`):
+- `demos/docs/test/render.ts` (local, `pnpm --filter docs render` after `pnpm --filter docs build`):
   painted contrast measured from screenshots, over the built showcase in light and dark and
   (Phase 15) over the component gallery in every preset and both modes: as loaded, hovered,
   focused and with each overlay open. A component label below 4.5:1 fails the run; a docs caption
@@ -359,7 +368,7 @@ colour format is accepted and oklch is recommended.
   31 rows, one per "Behaviour today" case plus the mode, palette and nesting cases; 15 pass today,
   the other 16 are the cascade defects Phase 9 fixes.
 - Wiring: wireit `test` scripts, `github.actions.build` / `github.actions.test`, git-flow's
-  `test.yml`; `pages.yml` is manual-only until the repo is public.
+  `test.yml`; `pages.yml` was manual-only until the repo went public (deleted in Phase 16).
 
 ### ✅ Phase 9 — Cascade: a theme is one rule; core derives once (PORT-PLAN.md)
 - Registration is what animation needs, nothing derived: each core palette role's light and dark
@@ -630,7 +639,66 @@ colour format is accepted and oklch is recommended.
   production tsconfig reads core through `packages/theme-core/dist/index.d.ts`. theme-ng-material:
   `files: [dist, scss]`, no `sideEffects: false` (it is CSS).
 - Peers between the three packages are `workspace:^`.
-- Docs deploy: the repo is still private, so `pages.yml` stays on manual trigger. Once it is
-  public, add a `static-site` artifact (`deploy: [gh-pages]`) for `demos/docs` and delete `pages.yml`.
+- Docs deploy: the repo was private when this landed, so `pages.yml` stayed on manual trigger.
+  Phase 16 replaced it with the `static-site` artifact.
+
+### ✅ Phase 16 — Wrap-up: docs deploy, demo-core, gallery hrefs (PORT-PLAN.md)
+
+Done in the repo; the first deploy has not been run (it needs the release PR merged, the Pages
+source set to `gh-pages`, and `pnpm gitflow deploy`, all the user's to do).
+
+- `demos/docs/release-artifacts.yml`: `static-site`, `directory: ../..`, `packDir:
+  dist/docs/browser`, `pagesRoot: true`, `deploy: [gh-pages]`. The docs have
+  `github.actions.build` (core, the adapter and demo-core first, then `ng build docs
+  --configuration production`, then `scripts/assemble.ts`: demo-core copied to
+  `demos/demo-core/` and `404.html`) and `github.actions.pack`. `pages.yml` is deleted.
+- Merging a release PR does not deploy (git-flow keeps the two apart).
+  `.github/workflows/deploy-production.yml` is the environment `gitflow deploy` dispatches: it
+  fetches `deploy-gh-pages.zip` from the release and commits the site to the `gh-pages` branch.
+- `demos/demo-core` builds: its Sass goes through the public `theme` module only, its markup uses
+  today's attributes (`bg`, the `error` palette, the mode-relative tones), Vite builds with a
+  relative `base`. Root `pnpm build` builds core and demo-core.
+- Gallery demo links are `href="#sidenav"` / `href="#list"`. The site has a `<base href>`, which
+  a fragment-only link resolves against, so the docs layout keeps such a click on the page.
+  `examples.test.ts` refuses an `href` that is not a fragment, an absolute path or a URL.
+- The home page and the core Getting Started page link to the hosted demo-core; the home page
+  says the three Angular demos are stubs.
+
+### 🟡 Phase 17 — Docs that teach (PORT-PLAN.md)
+
+A Learn track of ten chapters above the existing pages, which become the Reference. Done: the
+mechanics, the ten chapters and the generated CSS Variables page.
+
+- `demos/docs/src/app/learn/chapters.ts` holds the chapter list and, next to it, the two tables of
+  the order check: `PATTERNS` (text a chapter introduces) and `REFS` (the Reference entries prose
+  may name, each with its chapter and the section it links to).
+- A chapter is a page in `src/app/learn/chapters/NN-name.component.ts` that fills the five parts of
+  `cpa-chapter` (example, idea, code, Try it, "You can now"). It names library entries with
+  `<cpa-ref name="…" />`, which links them to the Reference.
+- A live example is a set of files in `src/examples/learn/NN-name/`: `theme.scss` (a complete
+  stylesheet, core included), `example.html`, an optional `example.scss`, and any `X.html`,
+  `X.scss` or `X.theme.scss` for a variation `X`. `demos/docs/scripts/learn.ts` compiles them and
+  writes one HTML document per frame to `demos/docs/.generated/learn-frames/` (an `assets` entry of
+  `angular.json`); `cpa-live-example` shows it in an `<iframe>` beside the text of the same files.
+- The order check (`scripts/lib/order.ts`) runs in that script, so `pnpm --filter docs build`
+  fails on a violation, and in `demos/docs/test/learn.test.ts`, so `pnpm test` and CI do too.
+- From chapter 9 a frame may run a script: `example.ts.txt` (TypeScript, type-checked by the
+  examples test, run with its types taken off, importing the package by name through an import
+  map) and `head.html` (the head snippet). The docs add `frame-storage.js` to such a frame, which
+  keeps what it saves under the frame's own storage keys.
+- `cpa-live-example` has controls (a colour picker, sliders that set a custom property or an
+  attribute in the frame) and contrast readouts the page measures in the frame (chapters 7, 8).
+- Chapter 10's example is an Angular template (`example.ng.html`) rendered in the page by
+  `cpa-live-template` with the gallery's Buttons component. Pointing at a button reads, from the
+  stylesheets on the page, which `--mat-sys-*` variable paints it and which cp-theming variable
+  that is declared from (`learn/material-roles.ts`).
+- The Reference's CSS Variables page is generated: `demos/docs/scripts/variables.ts` reads the
+  compiled `core.css` and writes `demos/docs/.generated/variables.ts` (one live swatch per colour
+  token by palette and role, with a theme and mode switch; a table row per other variable). A
+  name with no place on the page fails the build and `demos/docs/test/variables.test.ts`.
+- Browser checks: `node demos/docs/test/learn.ts` and `node demos/docs/test/variables.ts` (after
+  `pnpm --filter docs build`).
+
+Not done: the review pass (one reader per chapter, Session 17).
 
 ---

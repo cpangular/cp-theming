@@ -2,7 +2,7 @@
 // saved dark non-default theme, paints that theme on the first frame, before its
 // bundle runs. Local only, not in CI.
 //
-//   pnpm build && npx ng build docs        # the production build this serves
+//   pnpm --filter docs build               # the production build this serves
 //   node demos/docs/test/startup.ts        # chromium, firefox, webkit
 //   node demos/docs/test/startup.ts firefox
 //

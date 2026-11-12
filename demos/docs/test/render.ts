@@ -1,7 +1,7 @@
 // Painted contrast over the built docs (PORT-PLAN.md, "Phase 7 (resumed)" and
 // Phase 15). Local only, not in CI.
 //
-//   pnpm build && npx ng build docs        # the production build this serves
+//   pnpm --filter docs build               # the production build this serves
 //   node demos/docs/test/render.ts         # chromium, everything
 //   node demos/docs/test/render.ts chromium firefox
 //   node demos/docs/test/render.ts --only=gallery --preset=rose-red --mode=dark --section=tabs

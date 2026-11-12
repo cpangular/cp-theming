@@ -1,0 +1,30 @@
+<div theme="studio">
+  <!-- every palette="primary" is now palette="tertiary" -->
+  <p palette="tertiary">palette="tertiary" gives text in the palette's colour.</p>
+
+  <p>
+    <span palette="tertiary" bg>bg</span>
+    <span palette="tertiary" filled>filled</span>
+    <span palette="tertiary" outlined>outlined</span>
+    <span palette="tertiary" bg outlined>bg outlined</span>
+    <span palette="tertiary" filled outlined>filled outlined</span>
+  </p>
+
+  <p>
+    <span palette="tertiary" filled tone="low">tone="low"</span>
+    <span palette="tertiary" filled>no tone</span>
+    <span palette="tertiary" filled tone="high">tone="high"</span>
+  </p>
+
+  <!-- the panels trade palettes; the badge follows without being told -->
+  <div palette="primary" bg class="panel">
+    <strong>primary, bg</strong>
+    <span palette="secondary" filled>secondary, filled</span>
+    <span class="count">3</span>
+  </div>
+
+  <div palette="secondary" filled class="panel">
+    <strong>secondary, filled</strong>
+    <span class="quiet">a quieter line</span>
+  </div>
+</div>
