@@ -967,8 +967,15 @@ The repo is public since 2026-11-11. Three leftovers, none of them a spike findi
    under the current page. Use `href="#sidenav"` / `href="#list"` (same-page anchors), and let the
    examples check refuse an `href` that is neither a fragment, an absolute path nor a URL.
 
+4. **The demos are reachable.** Nothing links to the demos today and none is hosted. The docs
+   build copies `demo-core`'s Vite output to `dist/docs/browser/demos/demo-core/` (its own
+   `base`), and the home page and the core Getting Started page link to it as "Live demo: vanilla
+   TypeScript + Vite". The three Angular demos are stubs; they get a line on the home page saying
+   so, no link, until they exist.
+
 Done when: a push opens or refreshes the draft release PR with the docs artifact listed; `pnpm
-build` at the root builds demo-core; the examples check passes with the href rule; the README
+build` at the root builds demo-core and the docs build includes it; the home page links to it and
+the link works on the deployed site; the examples check passes with the href rule; the README
 rows are updated.
 
 ## Decisions already made
