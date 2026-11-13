@@ -141,9 +141,10 @@ import { CHAPTERS } from '../learn/chapters';
             <div class="pkg-body">
               <div class="pkg-name">Live demo: vanilla TypeScript + Vite</div>
               <p class="pkg-desc">
-                <code>demos/demo-core</code> from the repository, built with this site. The three
-                Angular demos, <code>demo-material</code>, <code>demo-brand-core</code> and
-                <code>demo-brand-material</code>, are stubs and are not hosted yet.
+                <code>demos/demo-core</code> from the repository, built with this site. Its third
+                theme, <em>acme</em>, comes from the example theme package of Learn chapter 11
+                (<code>demo-brand-core</code>). The Angular demo, <code>demo-material</code>, is a
+                stub and is not hosted yet.
               </p>
             </div>
             <mat-icon class="pkg-arrow">arrow_forward</mat-icon>

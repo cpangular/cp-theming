@@ -1,0 +1,33 @@
+/* The app's own styles: layout and type sizes. No colour is chosen here. */
+.app {
+  max-width: 420px;
+  border: 1px solid var(--color--surface--stroke);
+}
+.bar {
+  padding: var(--space--sm) var(--space--md);
+  font-weight: 600;
+}
+.order {
+  margin: var(--space--md);
+}
+h4,
+p {
+  margin: 0 0 var(--space--xs);
+}
+h4 {
+  font-size: 17px;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space--sm);
+  margin: var(--space--md) 0 0;
+}
+.action {
+  padding: var(--space--xs) var(--space--md);
+}
+.label {
+  margin-left: auto;
+  padding: 2px var(--space--sm);
+  font-size: 12px;
+}

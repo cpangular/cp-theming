@@ -1,0 +1,7 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+@use "@acme/theme" as acme;
+
+@include t.define-core-theme();
+
+// Not the default: the theme applies where the attribute says, and nowhere else.
+@include acme.define($default: false);

@@ -15,7 +15,7 @@
 //   4. every tab of a "Try it" loads its frame and marks the files it swapped;
 //   5. every Reference link of the prose leads to a section that exists.
 // Chapter 1 also moves its picker and expects the colours worked out from the
-// primary to change with it. Chapters 6 to 10 each have their own part:
+// primary to change with it. Chapters 6 to 11 each have their own part:
 //   6   what a nested theme passes, generates and inherits is what is painted;
 //   7   across the lightness slider the text on a fill never reads below
 //       4.5:1, the text flips once, and the two cases outside the guarantee
@@ -27,6 +27,11 @@
 //   10  the gallery's buttons are rendered three times in three different
 //       colours, and pointing at one names its Material variable and the
 //       cp-theming variable behind it.
+//   11  the app with Sass and the app without paint the same colours, the
+//       brand and the tertiary are the package's, the page around the app has
+//       the theme too (it is the default); with one palette changed by the app
+//       only that palette differs, and with the theme not the default the page
+//       around the app has no theme.
 // Screenshots go to dist/docs-render/learn/. Exits 1 when an assertion fails.
 import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -220,6 +225,88 @@ async function checkNested(frame: Frame, label: string): Promise<void> {
       (await of('plum', 'surface')) === harbour.surface,
     `${label}: a nested secondary changes that palette and inherits the rest`,
   );
+}
+
+// ── Chapter 11: one theme, two ways in ───────────────────────────────────────
+/** What an app of chapter 11 paints: its fills, and the page around it. */
+function paintedBy(frame: Frame): Promise<Record<string, string>> {
+  return frame.evaluate(() => {
+    const fill = (s: string) =>
+      getComputedStyle(document.querySelector(s)!, '::before').backgroundColor;
+    return {
+      brand: fill('.bar'),
+      primary: fill('.action[filled]'),
+      tertiary: fill('.label'),
+      surface: fill('.order'),
+      background: fill('.app'),
+      corner: getComputedStyle(document.querySelector('.order')!).borderTopLeftRadius,
+      around: getComputedStyle(document.body).backgroundColor,
+    };
+  });
+}
+
+/** The package's own colours (demos/demo-brand-core/scss/_index.scss). */
+const ACME = {
+  brand: 'rgb(0, 168, 120)',
+  tertiary: { light: 'rgb(123, 45, 142)', dark: 'rgb(219, 166, 234)' },
+  corner: '10px',
+};
+/** try-override.theme.scss: the tertiary the app sets. */
+const OVERRIDE = { light: 'rgb(179, 38, 30)', dark: 'rgb(255, 180, 171)' };
+
+async function checkPackage(page: Page, mode: 'light' | 'dark', label: string): Promise<void> {
+  const sass = await paintedBy(await frameOf(page, 0, 'example'));
+  const css = await paintedBy(await frameOf(page, 1, 'css'));
+  expect(
+    JSON.stringify(sass) === JSON.stringify(css),
+    `${label}: with Sass and without paint the same (${JSON.stringify(sass)} / ${JSON.stringify(css)})`,
+  );
+  expect(sass.brand === ACME.brand, `${label}: the brand fill is the package's (${sass.brand})`);
+  expect(
+    sass.tertiary === ACME.tertiary[mode],
+    `${label}: the tertiary is the package's for ${mode} (${sass.tertiary})`,
+  );
+  expect(sass.corner === ACME.corner, `${label}: the medium corner is the package's`);
+  expect(
+    new Set([sass.brand, sass.primary, sass.tertiary, sass.surface]).size === 4,
+    `${label}: brand, primary, tertiary and surface are four colours`,
+  );
+  expect(
+    sass.around === sass.background,
+    `${label}: the theme is the default: the page around the app has its background`,
+  );
+}
+
+async function checkPackageTry(
+  page: Page,
+  frame: Frame,
+  name: string,
+  mode: 'light' | 'dark',
+  label: string,
+): Promise<void> {
+  // The example it is compared with is still on the page, in the first block.
+  const base = await paintedBy(await frameOf(page, 0, 'example'));
+  const tried = await paintedBy(frame);
+  if (name === 'try-override') {
+    expect(
+      tried.tertiary === OVERRIDE[mode],
+      `${label}: the tertiary is the app's (${tried.tertiary})`,
+    );
+    expect(
+      JSON.stringify({ ...tried, tertiary: '' }) === JSON.stringify({ ...base, tertiary: '' }),
+      `${label}: nothing but the tertiary changed`,
+    );
+  }
+  if (name === 'try-named') {
+    expect(
+      JSON.stringify({ ...tried, around: '' }) === JSON.stringify({ ...base, around: '' }),
+      `${label}: the app itself is unchanged`,
+    );
+    expect(
+      tried.around !== base.around,
+      `${label}: the page around the app has no theme (${tried.around})`,
+    );
+  }
 }
 
 // ── Chapter 7: the guarantee and its edge ────────────────────────────────────
@@ -570,6 +657,7 @@ async function run(engine: string): Promise<void> {
           path: path.join(outDir, `${engine}-${chapter.folder}-${mode}-slid.png`),
         });
       }
+      if (chapter.n === 11) await checkPackage(page, mode, label);
       if (chapter.n === 10) {
         await checkMaterial(page, chapter.folder, label);
         await page
@@ -595,7 +683,17 @@ async function run(engine: string): Promise<void> {
           );
           const src = (await blocks.nth(i).locator('iframe').getAttribute('src')) ?? '';
           const name = path.basename(src, '.html');
-          await checkFrame(page, i, chapter.folder, name, mode, `${label} #${i} ${name}`, ownMode);
+          const tried = await checkFrame(
+            page,
+            i,
+            chapter.folder,
+            name,
+            mode,
+            `${label} #${i} ${name}`,
+            ownMode,
+          );
+          if (chapter.n === 11)
+            await checkPackageTry(page, tried, name, mode, `${label} #${i} ${name}`);
           const marked = await blocks.nth(i).locator('.live-file .live-changed').count();
           expect(marked > 0, `${label} #${i} ${name}: the swapped files are marked`);
           await blocks.nth(i).screenshot({
@@ -631,6 +729,7 @@ async function run(engine: string): Promise<void> {
     REFS.find((r) => r.chapter === 5)!,
     REFS.find((r) => r.name === '--space--{size}')!,
     REFS.find((r) => r.chapter === 10)!,
+    REFS.find((r) => r.chapter === 11)!,
   ]) {
     await page.goto(`${origin}${BASE}packages/${ref.page}#${ref.anchor}`, {
       waitUntil: 'networkidle',

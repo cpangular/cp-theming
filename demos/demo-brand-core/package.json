@@ -1,11 +1,27 @@
 {
-  "name": "demo-brand-core",
+  "name": "@acme/theme",
   "version": "0.0.0-MAIN",
   "private": true,
-  "description": "Example: how a company creates their own theme pack using cp-theming-core.",
-  "type": "module",
-  "dependencies": {
-    "@cpangular/cp-theming-core": "workspace:*"
+  "description": "Example: the theme a company ships to its own apps, as a package built on @cpangular/cp-theming-core.",
+  "exports": {
+    ".": {
+      "sass": "./_index.scss"
+    },
+    "./scss/*": "./scss/*",
+    "./css": "./dist/acme.css"
+  },
+  "files": [
+    "_index.scss",
+    "scss",
+    "dist"
+  ],
+  "scripts": {
+    "build": "sass --no-source-map --style=expanded --load-path=node_modules scss/acme.scss:dist/acme.css",
+    "pack:check": "pnpm run build && pnpm pack --dry-run",
+    "github.actions.build": "pnpm run build"
+  },
+  "peerDependencies": {
+    "@cpangular/cp-theming-core": "workspace:^"
   },
   "devDependencies": {
     "sass": "^1.101.0"

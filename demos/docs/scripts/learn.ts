@@ -20,6 +20,11 @@
 // points that name at the package's built modules, copied beside the frames.
 // The docs add frame-storage.js to such a frame (see scripts/frame-storage.ts).
 //
+// From chapter 11 a frame's theme may be plain CSS (X.theme.css), the
+// stylesheet of an app without Sass: `@import`s of compiled CSS by package
+// name. A bundler would follow them; here each becomes a <link> to the file
+// the package's `exports` name, compiled from its source.
+//
 // Sass is compiled the way a consumer's is: `@cpangular/…` resolves through
 // the packages' `exports`. Every theme starts with define-core-theme(), so its
 // CSS starts with core's; that part is written once, as core.css, and each
@@ -36,7 +41,13 @@ import {
   writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
-import { coreDir, exportsImporters, repoRoot } from '../../../packages/theme-core/test/lib/sass.ts';
+import {
+  coreDir,
+  exportsImporters,
+  repoRoot,
+  resolveExport,
+  sourceOfDist,
+} from '../../../packages/theme-core/test/lib/sass.ts';
 import {
   CHAPTERS,
   CORE_MODULES,
@@ -113,6 +124,44 @@ function shareScripts(): void {
   );
 }
 
+/** Compiled CSS of a package, by the path its `exports` give: where a frame finds it. */
+const PACKAGE_CSS = 'packages';
+const packageCss = new Map<string, string>([[path.join(coreDir, 'dist/core.css'), '../core.css']]);
+
+/**
+ * The links for a plain CSS theme: one per `@import`, in the file's order.
+ * Anything else in it stops the build: such a file is the whole stylesheet of
+ * an app without Sass, and the page shows it as that.
+ */
+function importLinks(file: string): string[] {
+  const fail = (why: string): never => {
+    console.error(`learn: ${path.relative(repoRoot, file)}: ${why}`);
+    process.exit(1);
+  };
+  const links: string[] = [];
+  const rest = readFileSync(file, 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/@import\s+(["'])([^"']+)\1\s*;/g, (_, _quote, specifier: string) => {
+      const target = resolveExport(specifier);
+      if (typeof target !== 'string' || !target.endsWith('.css'))
+        return fail(`"${specifier}" is not compiled CSS a package exports`);
+      let href = packageCss.get(target);
+      if (!href) {
+        const source = sourceOfDist(target);
+        if (!source) return fail(`"${specifier}" has no Sass source to build it from`);
+        mkdirSync(path.join(out, PACKAGE_CSS), { recursive: true });
+        writeFileSync(path.join(out, PACKAGE_CSS, path.basename(target)), compile(source));
+        href = `../${PACKAGE_CSS}/${path.basename(target)}`;
+        packageCss.set(target, href);
+      }
+      links.push(sheet(href));
+      return '';
+    });
+  if (rest.trim()) fail('a CSS theme holds @import of package CSS and nothing else');
+  if (!links.length) fail('a CSS theme imports at least one stylesheet');
+  return links;
+}
+
 const importMap = JSON.stringify({ imports: { [CORE_PACKAGE]: `../${CORE_MODULES}/index.js` } });
 
 let frames = 0;
@@ -129,6 +178,11 @@ for (const chapter of CHAPTERS.filter((c) => c.written)) {
   const themeLinks = (file: string): string[] => {
     const known = themes.get(file);
     if (known) return known;
+    if (file.endsWith('.css')) {
+      const imported = importLinks(path.join(dir, file));
+      themes.set(file, imported);
+      return imported;
+    }
     const css = compile(path.join(dir, file));
     const name = file.replace(/\.scss$/, '.css');
     const split = css.startsWith(core);

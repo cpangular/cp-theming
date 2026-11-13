@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "pnpm run demo-core.dev",
     "build": "wireit",
+    "build.theme": "wireit",
     "preview": "pnpm run demo-core.preview",
     "demo-core.dev": "vite",
     "demo-core.preview": "vite preview",
@@ -14,7 +15,13 @@
   },
   "wireit": {
     "build": {
-      "command": "vite build"
+      "command": "vite build",
+      "dependencies": [
+        "build.theme"
+      ]
+    },
+    "build.theme": {
+      "command": "pnpm --filter @acme/theme build"
     },
     "github.actions.build": {
       "dependencies": [
@@ -23,6 +30,7 @@
     }
   },
   "dependencies": {
+    "@acme/theme": "workspace:*",
     "@cpangular/cp-theming-core": "workspace:*"
   },
   "devDependencies": {

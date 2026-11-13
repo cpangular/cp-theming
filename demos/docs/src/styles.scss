@@ -5,6 +5,7 @@
 // if the two theme rules differ. The package path resolves through this app's
 // node_modules, which angular.json names as a Sass include path.
 @use "@cpangular/cp-theming-core/scss/theme" as t;
+@use "@acme/theme" as acme;
 
 @include t.define-theme("my-brand", t.theme($brand: #ff6a00));
 
@@ -13,6 +14,11 @@
 // adapter, which angular.json loads. The same test holds them to that file.
 @include t.define-theme("harbour", t.theme($brand: #1565c0));
 @include t.define-theme("ember", t.theme($brand: #e65100));
+
+// The theme of the example theme package, @acme/theme (demos/demo-brand-core),
+// taken the way an app with Sass takes it (Learn chapter 11): the theme
+// switcher offers it. Not as a default: the docs' default is a preset.
+@include acme.define($default: false);
 
 html,
 body {

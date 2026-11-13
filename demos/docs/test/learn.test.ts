@@ -77,6 +77,9 @@ test('an example that uses a later chapter is refused', () => {
     [5, 'a.html', '<mat-card></mat-card>', 10],
     [9, 'a.ng.html', '<button matButton="filled">x</button>', 10],
     [9, 'a.scss', '.a { color: var(--mat-sys-primary); }', 10],
+    [10, 'theme.scss', '@use "@acme/theme" as acme;', 11],
+    [10, 'theme.scss', '@include acme.define();', 11],
+    [10, 'a.css', '@import "@acme/theme/css";', 11],
   ];
   for (const [n, file, text, later] of cases) {
     const found = checkExample(n, file, text);
@@ -191,6 +194,17 @@ test('a frame is the example with the files of its own name swapped in', () => {
     theme: 'theme.scss',
     html: 'example.html',
   });
+});
+
+test("a frame's theme may be plain CSS, for an app without Sass", () => {
+  const files = ['css.theme.css', 'example.html', 'example.scss', 'theme.scss'];
+  assert.deepEqual(frameNames(files), ['example', 'css']);
+  assert.deepEqual(frameFiles('css', files), {
+    theme: 'css.theme.css',
+    html: 'example.html',
+    styles: 'example.scss',
+  });
+  assert.equal(frameFiles('example', files).theme, 'theme.scss');
 });
 
 test('a frame may have a script and a head, and an excerpt is not a frame', () => {

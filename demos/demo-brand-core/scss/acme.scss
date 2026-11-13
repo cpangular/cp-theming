@@ -1,0 +1,17 @@
+/* @acme/theme: the Acme theme as plain CSS, for an app without Sass.
+ *
+ * Load order: cp-theming's core first, then this file.
+ *
+ *   <link rel="stylesheet" href="node_modules/@cpangular/cp-theming-core/dist/core.css" />
+ *   <link rel="stylesheet" href="node_modules/@acme/theme/dist/acme.css" />
+ *
+ * or, through a bundler:
+ *
+ *   @import "@cpangular/cp-theming-core/css/core";
+ *   @import "@acme/theme/css";
+ *
+ * The theme is [theme="acme"], and the default of a page that names no theme.
+ */
+@use "index" as acme;
+
+@include acme.define();
