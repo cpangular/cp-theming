@@ -1300,6 +1300,46 @@ Open after the review (real findings a text edit cannot close):
   readout names a shade the adapter derives; the icon buttons show their ligature text ("fav") in
   the check's screenshots, where web fonts are blocked.
 
+### Phase 18 — A theme as a package (added 2026-11-13)
+
+Nothing shows how a company ships its theme to its own apps. `demos/demo-brand-core` and
+`demos/demo-brand-material` were meant to and are stubs. This phase makes them the worked example
+and teaches it.
+
+- **`demos/demo-brand-core` becomes `@acme/theme`** (`private: true`, never published, but shaped
+  exactly like a package a company would publish):
+  - `scss/_index.scss`: the theme built with `t.theme($brand: …, $palettes: …, …)` and exported
+    as `$theme`, plus a `define($default: true)` mixin that wraps `t.define-theme('acme', $theme)`
+    so a consumer with Sass writes `@use '@acme/theme' as acme; @include acme.define();`.
+  - `scss/acme.scss`: the entry that compiles to `dist/acme.css` for consumers without Sass, with
+    the load order (core, then this file) in its header.
+  - `package.json`: `exports` for `./scss/*` and `./css`, `files`, a peer dependency on
+    `@cpangular/cp-theming-core` (caret), `github.actions.build`, and a `pack:check` script that
+    runs `pnpm pack --dry-run` and lists the files, as the harness does for the real packages.
+  - `README.md`: both ways to consume it (Sass and CSS), the `theme="acme"` attribute, how to
+    override one palette from the consumer side, and how to version it against cp-theming.
+- **`demos/demo-brand-material` becomes `@acme/theme-material`**: the same brand with the Material
+  adapter, `scss/_index.scss` exporting a `define()` that includes the core theme, the adapter's
+  core mixin and the company's own `apply-material-overrides()` additions, `dist/acme-material.css`,
+  and a peer on `@cpangular/cp-theming-ng-material`.
+- **Consumers in the repo:** `demo-core` gets a third theme from `@acme/theme` (CSS path) beside
+  ocean and ember; the docs app registers `acme` through the Sass path so the theme switcher offers
+  it; a test keeps the two packages' compiled CSS equal to what `define()` emits.
+- **Learn chapter 11, "Ship your theme as a package."** Question: how do I give my theme to every
+  app we build? Live: the acme package consumed both ways, side by side. Idea: a theme package is
+  one Sass file that builds the theme and one compiled CSS file, nothing else; cp-theming stays a
+  peer so the consumer picks the version; the attribute is the only thing a consumer's HTML needs.
+  Code: the package's `_index.scss` and `package.json` as they are. Introduces: `@use` of a theme
+  package, `define()`, peer dependencies.
+- **Reference:** a "Theme packages" guide on the core Guides page with the folder layout and the
+  publish checklist; the README's Demos table rows move from Stub to Done.
+- **Harness:** both packages build in CI; `pack:check` must list exactly the files the README
+  names; the examples check covers chapter 11.
+
+Done when: `pnpm build` builds both packages and their consumers; chapter 11 passes the order check
+and renders both consumption paths live; `pnpm pack --dry-run` in each package lists the README's
+file list; the docs theme switcher shows acme and the showcase renders under it.
+
 ## Decisions already made
 
 So they are not reopened. Tell me if you want any reversed.
