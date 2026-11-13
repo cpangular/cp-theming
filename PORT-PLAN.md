@@ -1360,6 +1360,11 @@ Built as listed. What differs from the list, or was decided on the way:
   the mechanism the Palette page already documents. A second `t.define-theme('acme', …)` in the
   app was not recommended: passing a palette that others are generated from re-points those at
   the generated colours, and would undo a palette the package passes.
+  Measured in Chromium on the chapter's frame: the primary pair set on `[theme="acme"]` changes
+  the primary and the generated secondary and leaves the package's tertiary; the same pair on
+  `:root` changes nothing on the element that carries the attribute (the theme rule sets the pair
+  there), so the README tells an app to write the rule for `:root, [theme="acme"]` when it also
+  relies on the default.
 - **`@acme/theme-material`** depends on `@acme/theme` (`workspace:^`) and has core and the adapter
   as peers. Its `define()` also includes the adapter's density scopes, so `dist/acme-material.css`
   replaces both of the adapter's stylesheets. Acme's own patch sets the five
@@ -1400,6 +1405,8 @@ Measured (Chromium):
 - Component gallery under `--preset=acme`: 3,384 component labels over light and dark, 0 below
   4.5:1 (lowest 5.05:1 light, a snackbar button; 5.01:1 dark, a focused filled button under
   `palette="error"`), every overlay opened and resolved its opener's theme and mode, 0 errors.
+- The full `render.ts` run on the final build (four presets, light and dark): 19,136 gallery
+  labels, 0 component labels below 4.5:1, 0 errors; the showcase report is unchanged.
 
 Open after this session:
 

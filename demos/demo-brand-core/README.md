@@ -72,9 +72,14 @@ properties, its light value and its dark value. Set the pair, after the theme, i
 }
 ```
 
-Use `:root` instead of `[theme="acme"]` when the page relies on the theme being the default. The
-palette's steps, contrasts and roles follow. On `:root`, the palettes cp-theming generates from
-the one you set follow too; on a nested `[theme]` element they do not.
+The rule has to match the element that carries the theme: a pair set on `:root` does not reach
+an element with `theme="acme"`, because the theme sets the pair on that element itself. If the
+page also relies on the theme being the default (parts of it have no `theme` attribute), write
+the rule for both: `:root, [theme="acme"] { … }`.
+
+The palette's steps, contrasts and roles follow the pair. So do the palettes cp-theming generates
+from that palette: set the primary and the secondary follows. A palette the package passes
+itself, as it does the tertiary, stays as the package has it.
 
 ## What is in the package
 
