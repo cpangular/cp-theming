@@ -1,0 +1,4 @@
+/* The stylesheet of an app without Sass:
+   two compiled files, core first. */
+@import "@cpangular/cp-theming-core/css/core";
+@import "@acme/theme/css";

@@ -40,14 +40,20 @@
 // same checks. The docs build also renders them (scripts/learn.ts), and
 // test/learn.test.ts holds them to the chapter order.
 //
+//   X.theme.css        (chapter 11 on) the stylesheet of an app without Sass:
+//                      plain CSS like any name.css, built into a frame by
+//                      scripts/learn.ts from the compiled CSS it imports
+//
 // Every file, display-only or not, may only name custom properties the library
-// declares or reads and `@cpangular/…` paths the packages export.
+// declares or reads and paths the packages export: `@cpangular/…`, and
+// `@acme/…` for the two example theme packages (test/theme-packages.test.ts).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
 import {
+  PACKAGE_SPECIFIER,
   compileFile,
   docsDir,
   docsStyleList,
@@ -654,11 +660,11 @@ for (const file of all) {
   });
 }
 
-test('every @cpangular path an example names is in the package exports', () => {
+test('every package path an example names is in the package exports', () => {
   const bad: string[] = [];
   for (const file of all) {
     const source = readFileSync(file, 'utf8');
-    for (const [specifier] of source.matchAll(/@cpangular\/cp-theming-[\w-]+(?:\/[\w.*-]+)*/g)) {
+    for (const [specifier] of source.matchAll(PACKAGE_SPECIFIER)) {
       const target = resolveExport(specifier);
       const exists =
         typeof target === 'string' &&

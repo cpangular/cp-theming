@@ -5,6 +5,8 @@
 //   node demos/docs/test/render.ts         # chromium, everything
 //   node demos/docs/test/render.ts chromium firefox
 //   node demos/docs/test/render.ts --only=gallery --preset=rose-red --mode=dark --section=tabs
+//   node demos/docs/test/render.ts --only=showcase --theme=acme   # the showcase under another site theme
+//   node demos/docs/test/render.ts --only=gallery --preset=acme   # the gallery under the example theme package
 //   node demos/docs/test/render.ts --fonts # let the web fonts load, for looking at the screenshots
 //
 // What it measures is what is on screen, not what the stylesheet says. A fill in
@@ -22,7 +24,9 @@
 // Two runs, per browser:
 //
 // The showcase (`/packages/ng-material/showcase`), in light and dark. A report:
-// it prints every label below 4.5:1 and fails nothing.
+// it prints every label below 4.5:1 and fails nothing. `--theme=name` runs it
+// with that theme on `<html>` in place of the site's default, as picking it in
+// the theme switcher does: `acme` is the example theme package (Phase 18).
 //
 // The component gallery (`/packages/ng-material/components`), per preset in
 // light and dark. For every section it measures the page as it loads, then each
@@ -60,6 +64,9 @@ const option = (name: string): string[] | null => {
 const engines = argv.filter((a) => a in ENGINES);
 const only = option('only');
 const presets = option('preset') ?? PRESETS;
+/** The site theme the showcase runs under; the site's default without it. */
+const siteTheme = option('theme')?.[0] ?? null;
+const showcaseName = (engine: string) => (siteTheme ? `${engine}-${siteTheme}` : engine);
 const modes = MODES.filter((m) => (option('mode') ?? MODES).includes(m));
 const sections = option('section');
 const withFonts = argv.includes('--fonts');
@@ -238,7 +245,13 @@ async function showcase(
     await page.goto(`${origin}${BASE}packages/ng-material/showcase`, { waitUntil: 'networkidle' });
     await page.waitForSelector('.showcase-page .preset-col');
     await page.addStyleTag({ content: FREEZE });
-    await page.evaluate((m) => document.documentElement.setAttribute('themeMode', m), mode);
+    await page.evaluate(
+      ([m, t]) => {
+        document.documentElement.setAttribute('themeMode', m!);
+        if (t) document.documentElement.setAttribute('theme', t);
+      },
+      [mode, siteTheme],
+    );
     // The page scrolls inside its layout; grow the viewport until nothing is cut off.
     const overflow = await page.evaluate(() => {
       const scroller = document.querySelector('.page-scroll');
@@ -249,7 +262,7 @@ async function showcase(
 
     const labels = await page.evaluate(collectLabels);
     const painted = decodePng(
-      await page.screenshot({ path: path.join(outDir, `${name}-${mode}.png`) }),
+      await page.screenshot({ path: path.join(outDir, `${showcaseName(name)}-${mode}.png`) }),
     );
     const hide = await page.addStyleTag({ content: HIDE_TEXT });
     await settle(page);
@@ -901,15 +914,19 @@ for (const name of engines.length ? engines : ['chromium']) {
     measured.sort((a, b) => a.ratio - b.ratio);
     const below = measured.filter((m) => m.ratio < AA);
     const report =
-      `${name}: ${measured.length} labels measured on the showcase (${modes.join(' + ')}), ` +
+      `${showcaseName(name)}: ${measured.length} labels measured on the showcase ` +
+      `(${modes.join(' + ')}${siteTheme ? `, theme="${siteTheme}"` : ''}), ` +
       `${below.length} below ${AA}:1` +
       (unpainted ? `, ${unpainted} text nodes with no painted glyph (clipped or covered)` : '') +
       '\n';
     writeFileSync(
-      path.join(outDir, `${name}.txt`),
+      path.join(outDir, `${showcaseName(name)}.txt`),
       `${report}\n${measured.map(line).join('\n')}\n`,
     );
-    writeFileSync(path.join(outDir, `${name}.json`), JSON.stringify(measured, null, 2));
+    writeFileSync(
+      path.join(outDir, `${showcaseName(name)}.json`),
+      JSON.stringify(measured, null, 2),
+    );
     console.log(`\n${report}`);
     if (below.length) console.log(`Below ${AA}:1\n${below.map(line).join('\n')}`);
     if (!measured.length) {

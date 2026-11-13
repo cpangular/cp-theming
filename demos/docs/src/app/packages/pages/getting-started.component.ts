@@ -79,8 +79,9 @@ pnpm add @cpangular/cp-theming-core</code></pre>
               <a href="demos/demo-core/index.html" target="_blank" rel="noopener"
                 >Live demo: vanilla TypeScript + Vite</a
               >
-              — the repository's <code>demos/demo-core</code>, built with this site: two themes,
-              light, dark and auto modes, nested themes and density, with no framework.
+              — the repository's <code>demos/demo-core</code>, built with this site: three themes
+              (one of them from a theme package), light, dark and auto modes, nested themes and
+              density, with no framework.
             </p>
           </section>
 

@@ -95,6 +95,8 @@ export class ThemeSwitcherComponent {
     { value: 'rose-red', label: 'Rose Red' },
     { value: 'cyan-orange', label: 'Cyan Orange' },
     { value: 'magenta-violet', label: 'Magenta Violet' },
+    // Not a preset: the example theme package, @acme/theme (src/styles.scss).
+    { value: 'acme', label: 'Acme' },
   ];
 
   setTheme(value: string): void {

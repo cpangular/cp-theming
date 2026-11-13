@@ -15,8 +15,8 @@ packages/theme-material/  @cpangular/cp-theming-material  — Angular Material a
 packages/theme-m3/        @cpangular/cp-theming-m3        — Plain M3 adapter (stub)
 demos/demo-core/                                           — Vite + vanilla demo
 demos/demo-material/                                       — Angular demo
-demos/demo-brand-core/                                     — Example brand pack
-demos/demo-brand-material/                                 — Example brand+material pack
+demos/demo-brand-core/      @acme/theme                    — Example theme package (private)
+demos/demo-brand-material/  @acme/theme-material           — Example theme package for Material (private)
 ```
 
 ## Non-Negotiable Design Decisions
@@ -158,7 +158,7 @@ demos/demo-brand-material/                                 — Example brand+mat
   only (`gallery-layout.scss` may not declare a colour). `*.ts.txt` is TypeScript the docs show,
   verbatim from a source file of the docs app. Never colour a gallery example: fix the adapter or
   add a measured patch to `apply-material-overrides()`.
-- Learn track (PORT-PLAN.md Phase 17, ten chapters): `demos/docs/src/app/learn/chapters.ts` holds
+- Learn track (PORT-PLAN.md Phase 17, ten chapters; chapter 11 is Phase 18): `demos/docs/src/app/learn/chapters.ts` holds
   the chapter list and the order check's tables (`PATTERNS`, `REFS`). A chapter uses only what
   earlier chapters introduced: its example files (`demos/docs/src/examples/learn/NN-name/`) and
   its prose match no pattern of a later chapter, and its prose names library entries only through
@@ -188,11 +188,27 @@ demos/demo-brand-material/                                 — Example brand+mat
   `pnpm --filter docs generate` first.
 - The docs read the adapter's built CSS (`packages/theme-ng-material/dist/*.css`): after a change
   in its `scss/`, run `pnpm --filter @cpangular/cp-theming-ng-material build` before
-  `npx ng build docs`. Root `pnpm build` builds core and `demos/demo-core`, not the adapter.
+  `npx ng build docs`. Root `pnpm build` builds core, the two example theme packages,
+  `demos/demo-core` and the docs site (whose own build builds the adapter).
 - The deployed site is `pnpm --filter docs build`: core, the adapter and demo-core, the production
   `ng build`, then `demos/docs/scripts/assemble.ts` (demo-core copied to `demos/demo-core/`,
   `404.html`). An example's `href` is a fragment, an absolute path or a URL; the docs layout keeps
   a fragment link on the page, because the site's `<base href>` would otherwise send it to the root.
+- Theme packages (PORT-PLAN.md Phase 18): `demos/demo-brand-core` (`@acme/theme`) and
+  `demos/demo-brand-material` (`@acme/theme-material`) are the worked example of a theme shipped
+  as a package: private, never published, shaped like a real one. Each has `scss/_index.scss`
+  (`$theme` and a `define($default: true)` mixin), a one-line root `_index.scss` that forwards it,
+  a build entry compiled to `dist/*.css`, cp-theming as `workspace:^` peer dependencies, a
+  `pack:check` script and a README whose "What is in the package" list is what
+  `pnpm pack --dry-run` prints. A theme package never includes `define-core-theme()`.
+  `demos/docs/test/theme-packages.test.ts` (in `pnpm test`) builds both and checks: the compiled
+  CSS is what `define()` emits, the pack listing is the README's, `demos/demo-core` takes the
+  theme by the CSS path and the docs app by the Sass path (`acme.define($default: false)` in
+  `styles.scss`; the theme switcher offers `acme`), and Learn chapter 11 and the Theme packages
+  guide import the package's own files. A Learn frame's theme may be plain CSS from chapter 11
+  (`X.theme.css`: `@import`s of package CSS only, linked by `scripts/learn.ts`). Change a colour
+  of the example theme in `scss/_index.scss` only; `demos/docs/test/learn.ts` names the brand
+  and tertiary it expects painted.
 - Fixture themes live in `packages/theme-core/test/fixtures/` and `packages/theme-ng-material/test/fixtures/`.
 - CI: `.github/workflows/test.yml` (cpdevtools/git-flow) runs `github.actions.build` then
   `github.actions.test` in every package that defines them.
@@ -271,7 +287,7 @@ pnpm --filter @cpangular/cp-theming-core render   # browser check, local only
 
 ## Key Files
 - [PLAN.md](../PLAN.md) — full plan, status, phases
-- [PORT-PLAN.md](../PORT-PLAN.md) — phases 8–17 (harness, cascade, contrast, Material adapter, startup, release, palette chain, gallery, docs that teach)
+- [PORT-PLAN.md](../PORT-PLAN.md) — phases 8–18 (harness, cascade, contrast, Material adapter, startup, release, palette chain, gallery, docs that teach, a theme as a package)
 - [packages/theme-core/scss/_theme.scss](../packages/theme-core/scss/_theme.scss) — public SCSS API (`@cpangular/cp-theming-core`)
 - [packages/theme-core/scss/_palette.scss](../packages/theme-core/scss/_palette.scss) — palette system
 

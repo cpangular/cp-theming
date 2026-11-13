@@ -1,0 +1,7 @@
+// The stylesheet of an app that has Sass.
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+@use "@acme/theme" as acme;
+
+// Core once, then the theme from the package.
+@include t.define-core-theme();
+@include acme.define();

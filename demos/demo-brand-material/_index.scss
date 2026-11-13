@@ -1,0 +1,3 @@
+// What `@use "@acme/theme-material"` loads: Sass looks for _index.scss in the
+// folder a @use names. The mixins are in scss/_index.scss.
+@forward "scss/index";

@@ -1,0 +1,12 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+@use "@acme/theme" as acme;
+
+@include t.define-core-theme();
+@include acme.define();
+
+// This app's own change to the theme: one palette, in plain CSS. A palette's
+// colour is a pair of custom properties, its light value and its dark value.
+[theme="acme"] {
+  --color--tertiary--mode-light: #b3261e;
+  --color--tertiary--mode-dark: #ffb4ab;
+}

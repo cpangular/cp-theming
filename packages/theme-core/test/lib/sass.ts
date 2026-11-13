@@ -9,6 +9,9 @@ export const repoRoot = path.resolve(import.meta.dirname, '..', '..', '..', '..'
 export const coreDir = path.join(repoRoot, 'packages/theme-core');
 export const materialDir = path.join(repoRoot, 'packages/theme-ng-material');
 export const docsDir = path.join(repoRoot, 'demos/docs');
+/** The two example theme packages (PORT-PLAN.md, Phase 18). */
+export const acmeThemeDir = path.join(repoRoot, 'demos/demo-brand-core');
+export const acmeMaterialDir = path.join(repoRoot, 'demos/demo-brand-material');
 
 export interface SassWarning {
   deprecation: boolean;
@@ -70,28 +73,40 @@ export function compileFile(
 export const workspacePackages: Record<string, string> = {
   '@cpangular/cp-theming-core': coreDir,
   '@cpangular/cp-theming-ng-material': materialDir,
+  '@acme/theme': acmeThemeDir,
+  '@acme/theme-material': acmeMaterialDir,
 };
 
+/** A specifier of a workspace package, as an example or a consumer writes it. */
+export const PACKAGE_SPECIFIER =
+  /@(?:cpangular\/cp-theming-[\w-]+|acme\/theme(?:-material)?)(?:\/[\w.*-]+)*/g;
+
 /**
- * Resolves `@cpangular/<package>/<subpath>` the way a bundler does: through the
- * package's `exports` only. Returns the absolute target, `null` when the
- * subpath is not exported, `undefined` when the specifier names no workspace
- * package. A `./scss/*` pattern returns the path without extension (Sass adds
- * the partial underscore and the extension).
+ * Resolves `<package>/<subpath>` the way a bundler does: through the package's
+ * `exports` only. Returns the absolute target, `null` when the subpath is not
+ * exported, `undefined` when the specifier names no workspace package. A
+ * `./scss/*` pattern returns the path without extension (Sass adds the partial
+ * underscore and the extension). A target written as conditions is read by its
+ * `sass` condition, the one Sass tools ask for.
  */
 export function resolveExport(specifier: string): string | null | undefined {
-  const name = Object.keys(workspacePackages).find(
-    (n) => specifier === n || specifier.startsWith(`${n}/`),
-  );
+  // The longest name first: `@acme/theme-material` is not `@acme/theme`.
+  const name = Object.keys(workspacePackages)
+    .sort((a, b) => b.length - a.length)
+    .find((n) => specifier === n || specifier.startsWith(`${n}/`));
   if (!name) return undefined;
   const dir = workspacePackages[name];
-  const exportsMap: Record<string, string> =
+  const exportsMap: Record<string, string | { sass?: string }> =
     JSON.parse(readFileSync(path.join(dir, 'package.json'), 'utf8')).exports ?? {};
+  const targetOf = (value: string | { sass?: string } | undefined) =>
+    typeof value === 'string' ? value : value?.sass;
   const subpath = `.${specifier.slice(name.length)}`;
-  if (typeof exportsMap[subpath] === 'string') return path.join(dir, exportsMap[subpath]);
-  for (const [key, target] of Object.entries(exportsMap)) {
+  const exact = targetOf(exportsMap[subpath]);
+  if (exact) return path.join(dir, exact);
+  for (const [key, value] of Object.entries(exportsMap)) {
     const star = key.indexOf('*');
-    if (star < 0 || typeof target !== 'string') continue;
+    const target = targetOf(value);
+    if (star < 0 || !target) continue;
     const [head, tail] = [key.slice(0, star), key.slice(star + 1)];
     if (subpath.startsWith(head) && subpath.endsWith(tail) && subpath.length > key.length - 1)
       return path.join(
@@ -103,7 +118,8 @@ export function resolveExport(specifier: string): string | null | undefined {
 }
 
 /**
- * Sass importers for what a consumer writes: `@use '@cpangular/…'` resolves
+ * Sass importers for what a consumer writes: `@use '@cpangular/…'` (or one of
+ * the example theme packages, `@acme/…`) resolves
  * through the package's `exports` and nothing else, so an example that names
  * an unexported path fails to compile. A built `dist/x.css` target is compiled
  * from its Sass source and loaded as CSS, so the check does not depend on a
@@ -120,7 +136,11 @@ export const exportsImporters: NonNullable<sass.Options<'sync'>['importers']> = 
     load(canonicalUrl) {
       const target = decodeURI(canonicalUrl.pathname);
       const source = sourceOfDist(target);
-      const contents = source ? compileFile(source).css : readFileSync(target, 'utf8');
+      // A package's entry may itself name another package (the example theme
+      // packages do), so it is compiled through the same importers.
+      const contents = source
+        ? compileFile(source, [], exportsImporters).css
+        : readFileSync(target, 'utf8');
       return { contents, syntax: 'css' };
     },
   },

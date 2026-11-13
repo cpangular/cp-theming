@@ -1300,6 +1300,121 @@ Open after the review (real findings a text edit cannot close):
   readout names a shade the adapter derives; the icon buttons show their ligature text ("fav") in
   the check's screenshots, where web fonts are blocked.
 
+### Phase 18 — A theme as a package (added 2026-11-13)
+
+Nothing shows how a company ships its theme to its own apps. `demos/demo-brand-core` and
+`demos/demo-brand-material` were meant to and are stubs. This phase makes them the worked example
+and teaches it.
+
+- **`demos/demo-brand-core` becomes `@acme/theme`** (`private: true`, never published, but shaped
+  exactly like a package a company would publish):
+  - `scss/_index.scss`: the theme built with `t.theme($brand: …, $palettes: …, …)` and exported
+    as `$theme`, plus a `define($default: true)` mixin that wraps `t.define-theme('acme', $theme)`
+    so a consumer with Sass writes `@use '@acme/theme' as acme; @include acme.define();`.
+  - `scss/acme.scss`: the entry that compiles to `dist/acme.css` for consumers without Sass, with
+    the load order (core, then this file) in its header.
+  - `package.json`: `exports` for `./scss/*` and `./css`, `files`, a peer dependency on
+    `@cpangular/cp-theming-core` (caret), `github.actions.build`, and a `pack:check` script that
+    runs `pnpm pack --dry-run` and lists the files, as the harness does for the real packages.
+  - `README.md`: both ways to consume it (Sass and CSS), the `theme="acme"` attribute, how to
+    override one palette from the consumer side, and how to version it against cp-theming.
+- **`demos/demo-brand-material` becomes `@acme/theme-material`**: the same brand with the Material
+  adapter, `scss/_index.scss` exporting a `define()` that includes the core theme, the adapter's
+  core mixin and the company's own `apply-material-overrides()` additions, `dist/acme-material.css`,
+  and a peer on `@cpangular/cp-theming-ng-material`.
+- **Consumers in the repo:** `demo-core` gets a third theme from `@acme/theme` (CSS path) beside
+  ocean and ember; the docs app registers `acme` through the Sass path so the theme switcher offers
+  it; a test keeps the two packages' compiled CSS equal to what `define()` emits.
+- **Learn chapter 11, "Ship your theme as a package."** Question: how do I give my theme to every
+  app we build? Live: the acme package consumed both ways, side by side. Idea: a theme package is
+  one Sass file that builds the theme and one compiled CSS file, nothing else; cp-theming stays a
+  peer so the consumer picks the version; the attribute is the only thing a consumer's HTML needs.
+  Code: the package's `_index.scss` and `package.json` as they are. Introduces: `@use` of a theme
+  package, `define()`, peer dependencies.
+- **Reference:** a "Theme packages" guide on the core Guides page with the folder layout and the
+  publish checklist; the README's Demos table rows move from Stub to Done.
+- **Harness:** both packages build in CI; `pack:check` must list exactly the files the README
+  names; the examples check covers chapter 11.
+
+Done when: `pnpm build` builds both packages and their consumers; chapter 11 passes the order check
+and renders both consumption paths live; `pnpm pack --dry-run` in each package lists the README's
+file list; the docs theme switcher shows acme and the showcase renders under it.
+
+**As landed (Session 18, 2026-11-13)**
+
+Built as listed. What differs from the list, or was decided on the way:
+
+- **A one-line `_index.scss` at the root of each package**, `@forward "scss/index"`, beside the
+  `scss/_index.scss` the phase names. `@use '@acme/theme'` cannot reach `scss/_index.scss` by
+  itself: Sass (the CLI with a load path, which is how `@acme/theme-material` is built) looks for
+  `_index.scss` in the folder the `@use` names and does not read `exports`. `exports` has a `.`
+  entry for the same file under the `sass` condition, for tools that do read it, next to
+  `./scss/*` and `./css`. `files` is therefore `_index.scss`, `scss`, `dist`.
+- **Peers are `workspace:^`**, as in the three real packages; pnpm writes the caret range when it
+  packs. The chapter and the README say what to write outside this repository.
+- **The compiled CSS is always a default theme** (`define()` with its default argument). An app
+  that needs `$default: false` uses the Sass path. demo-core loads `@acme/theme/css` before its
+  own default theme, ocean, so ocean stays the default there.
+- **Changing one palette from the app** is the palette's light and dark pair set in plain CSS
+  after the theme (`[theme="acme"] { --color--tertiary--mode-light: …; --color--tertiary--mode-dark: … }`),
+  the mechanism the Palette page already documents. A second `t.define-theme('acme', …)` in the
+  app was not recommended: passing a palette that others are generated from re-points those at
+  the generated colours, and would undo a palette the package passes.
+  Measured in Chromium on the chapter's frame: the primary pair set on `[theme="acme"]` changes
+  the primary and the generated secondary and leaves the package's tertiary; the same pair on
+  `:root` changes nothing on the element that carries the attribute (the theme rule sets the pair
+  there), so the README tells an app to write the rule for `:root, [theme="acme"]` when it also
+  relies on the default.
+- **`@acme/theme-material`** depends on `@acme/theme` (`workspace:^`) and has core and the adapter
+  as peers. Its `define()` also includes the adapter's density scopes, so `dist/acme-material.css`
+  replaces both of the adapter's stylesheets. Acme's own patch sets the five
+  `--mat-button-*-container-shape` tokens from `--shape--md`; the test fails a token the installed
+  Angular Material does not read. Building the package needs `@angular/material` and
+  `@angular/cdk` installed (dev dependencies): the adapter's Sass reads Material's role tables.
+  Nothing in the repository consumes this package; the docs app loads the adapter itself and takes
+  the theme from `@acme/theme`.
+- **`pack:check` is `pnpm run build && pnpm pack --dry-run`**; the comparison with the README's
+  file list is in `demos/docs/test/theme-packages.test.ts`, which also builds both packages, so
+  `pnpm test` does not depend on a prior build. The real packages have no such check;
+  `gitflow pack` is theirs.
+- **Root `pnpm build` now also builds the docs site** (and through it the adapter), because the
+  docs app is one of the two consumers the Done-when names. It takes about a minute longer.
+- **A Learn frame's theme may be plain CSS** (`X.theme.css`, chapter 11 on): `@import`s of package
+  CSS by name and nothing else. `scripts/learn.ts` resolves each through the package's `exports`,
+  compiles it from its source and links it, so the frame of the app without Sass loads
+  `core.css` and `acme.css` and no compiled Sass of its own. `cpa-live-example` has a `themeFirst`
+  input: the source opens on the theme file.
+- **Chapter 11's example is two blocks, one under the other** (an app with Sass, an app without),
+  each with its stylesheet beside it, not one block with two tabs: both are on screen at once.
+  The package's `scss/_index.scss` and `package.json` are imported as text from
+  `demos/demo-brand-core`, not copied into `src/examples/`.
+- `PATTERNS` for chapter 11: `@acme/`, `acme.define(`, "peer dependency". `REFS`: `$theme` and
+  `define()` (the Theme packages guide), `--color--{name}--mode-light` / `--mode-dark` (the
+  Palette page, "Changing a colour by hand").
+- `render.ts` has `--theme=name` for the showcase run (the theme on `<html>`, as the switcher
+  sets it); the gallery run takes `--preset=acme` as it is. `acme` is not in its default preset
+  list.
+
+Measured (Chromium):
+
+- `demos/docs/test/learn.ts`: 1107 of 1107 checks, chapter 11 in light and dark. Both apps paint
+  the same seven values; the brand fill is `rgb(0, 168, 120)` in both modes, the tertiary
+  `rgb(123, 45, 142)` light and `rgb(219, 166, 234)` dark, the medium corner 10px.
+- Showcase under `theme="acme"`: 224 labels, 40 below 4.5:1, the same 40 as under the default
+  theme (the docs' own dimmed captions and code labels). Acme adds none.
+- Component gallery under `--preset=acme`: 3,384 component labels over light and dark, 0 below
+  4.5:1 (lowest 5.05:1 light, a snackbar button; 5.01:1 dark, a focused filled button under
+  `palette="error"`), every overlay opened and resolved its opener's theme and mode, 0 errors.
+- The full `render.ts` run on the final build (four presets, light and dark): 19,136 gallery
+  labels, 0 component labels below 4.5:1, 0 errors; the showcase report is unchanged.
+
+Open after this session:
+
+- `demos/demo-material` is still a stub; it would be the natural consumer of
+  `@acme/theme-material`.
+- The README and PLAN.md said Phase 17's review pass was not done; it landed in Session 17
+  (24f3094). Both now say so.
+
 ## Decisions already made
 
 So they are not reopened. Tell me if you want any reversed.
@@ -1363,9 +1478,10 @@ So they are not reopened. Tell me if you want any reversed.
   close it and make every held label visibly darker or paler.
 - Angular Material's components resolve their font to `system-ui` in the docs, not to the docs'
   web font (seen in the Phase 15 screenshots; not looked into).
-- The root `pnpm build` builds core only. The docs app reads the adapter's built CSS, so an
-  adapter change needs `pnpm --filter @cpangular/cp-theming-ng-material build` first (README and
-  CLAUDE.md now say so).
+- The root `pnpm build` built core only. The docs app reads the adapter's built CSS, so an
+  adapter change needs `pnpm --filter @cpangular/cp-theming-ng-material build` before a bare
+  `npx ng build docs`. Since Phase 18 the root `pnpm build` runs the docs' own build, which builds
+  the adapter first.
 
 ---
 
