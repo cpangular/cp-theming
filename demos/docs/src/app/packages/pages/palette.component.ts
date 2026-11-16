@@ -252,7 +252,11 @@ const TOC = [
                   ><span class="api-param-default">default derived</span>
                 </div>
                 <div class="api-param-desc">
-                  Override for the border role (<code>--color--name--stroke</code>).
+                  Override for the border role (<code>--color--name--stroke</code>). Derived when
+                  left out: the colour held to lightness 0.42–0.60, or, for
+                  <code>background</code> and <code>surface</code>, a boundary 4.5:1 or more against
+                  the palette's own colour in either mode. The Material adapter's outlines are the
+                  surface's stroke.
                 </div>
               </div>
               <div class="api-param-row">

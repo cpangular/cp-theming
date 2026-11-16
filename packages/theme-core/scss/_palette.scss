@@ -213,10 +213,12 @@ $_luminance: "(0.2126 * clamp(0, r, 1) + 0.7152 * clamp(0, g, 1) + 0.0722 * clam
 $_contrast-step: string.unquote("clamp(0, (0.179 - #{$_luminance}) * 1e6, 1)");
 
 // Called once from define-core-theme() inside :where(:root): the contrast
-// step, and every pair of the palette chain pointed at its generated colour
-// (see "Generated palettes"), which a theme that passes the palette replaces.
+// step, the neutral stroke's channels (see "Neutral stroke"), and every pair of
+// the palette chain pointed at its generated colour (see "Generated
+// palettes"), which a theme that passes the palette replaces.
 @mixin root-defaults() {
   #{$_contrast-step-var}: #{$_contrast-step};
+  @include _neutral-stroke-channels();
   @each $name in $_generated-names {
     @include _use-generated($name);
   }
@@ -230,6 +232,85 @@ $_contrast-step: string.unquote("clamp(0, (0.179 - #{$_luminance}) * 1e6, 1)");
   @return string.unquote(
     "oklch(from color(from #{$origin} srgb-linear #{$s} #{$s} #{$s}) l 0 0 / 1)"
   );
+}
+
+// ─── Neutral stroke ───────────────────────────────────────────────────────────
+// The stroke of background and surface is a boundary drawn on that palette's
+// own colour: the outline of a field, an outlined button, a card (the Material
+// adapter's `outline` is the surface's stroke). WCAG 1.4.11 asks 3:1 of a
+// control's boundary. This one is worked out from the palette's colour so that
+// it is 4.5:1 or more against it, whatever that colour is:
+//
+//   1. Y, the colour's relative luminance, in closed form from its oklch
+//      channels (oklab's a and b from c and h, LMS as the cubes, Y from LMS).
+//      Exact for any colour the screen can show.
+//   2. The direction: darker when Y is above 0.179, where black and white text
+//      change places (see Contrast), lighter below it.
+//   3. Darker: the target luminance gives 4.6:1, so the painted colour,
+//      rounded to 8 bits, is still above 4.5:1. Scaling a colour's linear
+//      light by k scales its oklch lightness and chroma by ∛k and keeps the
+//      hue, so the stroke is the colour with l and c times ∛(target / Y): the
+//      luminance is the target exactly and the colour stays inside sRGB.
+//      Lighter: the target gives 6:1 (white when 6:1 is out of reach, which is
+//      4.58:1 at the switch). The lightness is that of a grey of the target
+//      luminance; the chroma is the colour's, tapered towards white by
+//      4L(1 − L) as m3-tone() does, so it is a grey near white and the
+//      colour's own tint further down.
+//
+// The two targets are what Material's own role table gave `outline` against
+// the presets' surfaces (4.55–4.61:1 light, 6.19–6.33:1 dark), so the outline
+// reads as strong as it did when the adapter took it from the table. The
+// lowest a stroke can be is 4.58:1, at the switch, where neither black nor
+// white goes further.
+//
+// The channels are declared once on :where(:root) as private variables that
+// read l, c and h, like the contrast step; each stroke substitutes them inside
+// its own `oklch(from …)`, so they mean that palette's colour.
+$_stroke-contrast-darker: 4.6;
+$_stroke-contrast-lighter: 6;
+
+@function _private($name) {
+  @return --theme--_stroke-#{$name};
+}
+
+@mixin _neutral-stroke-channels() {
+  $rad: "h * 0.0174532925";
+  $a: "c * cos(#{$rad})";
+  $b: "c * sin(#{$rad})";
+  $lms: (
+    "l + 0.3963377774 * #{$a} + 0.2158037573 * #{$b}",
+    "l - 0.1055613458 * #{$a} - 0.0638541728 * #{$b}",
+    "l - 0.0894841775 * #{$a} - 1.291485548 * #{$b}"
+  );
+  $y: var(#{_private(luminance)});
+  $darker: var(#{_private(darker)});
+  $scale: var(#{_private(scale)});
+  $lighter: var(#{_private(lighter)});
+
+  #{_private(luminance)}: string.unquote(
+    "max(0.000001, -0.0407745 * pow(#{list.nth($lms, 1)}, 3) + 1.1124922 * pow(#{list.nth($lms, 2)}, 3) - 0.0717176 * pow(#{list.nth($lms, 3)}, 3))"
+  );
+  // 1 when the stroke is darker than the colour, 0 when it is lighter.
+  #{_private(darker)}: string.unquote("clamp(0, (#{$y} - 0.179) * 1e6, 1)");
+  // Darker: ∛(target / Y), the factor on l and c.
+  #{_private(scale)}: string.unquote(
+    "pow(max(0, (#{$y} + 0.05) / #{$_stroke-contrast-darker} - 0.05) / #{$y}, 1 / 3)"
+  );
+  // Lighter: the lightness of a grey of the target luminance.
+  #{_private(lighter)}: string.unquote(
+    "pow(min(1, #{$_stroke-contrast-lighter} * (#{$y} + 0.05) - 0.05), 1 / 3)"
+  );
+  #{_private(l)}: string.unquote(
+    "calc(#{$darker} * l * #{$scale} + (1 - #{$darker}) * #{$lighter})"
+  );
+  #{_private(c)}: string.unquote(
+    "calc(#{$darker} * c * #{$scale} + (1 - #{$darker}) * c * min(1, 4 * #{$lighter} * (1 - #{$lighter})))"
+  );
+}
+
+// The default stroke of background or surface whose colour is $origin.
+@function _neutral-stroke($origin) {
+  @return string.unquote("oklch(from #{$origin} var(#{_private(l)}) var(#{_private(c)}) h / 1)");
 }
 
 // All modifier vars + their contrasts for one role.
@@ -314,16 +395,22 @@ $_contrast-step: string.unquote("clamp(0, (0.179 - #{$_luminance}) * 1e6, 1)");
   }
   @include _join($name, bg);
 
-  // Stroke — the colour role's lightness clamped into the visible mid-tone band
-  // (0.42–0.60), so it shows against its palette surface:
-  //   light surfaces (L≈0.93) → L≈0.60, dark surfaces (L≈0.24) → L≈0.42,
-  //   mid-tone accents (L≈0.43) → unchanged.
+  // Stroke — the line drawn around something.
+  //   background, surface: a boundary on the palette's own colour, 4.5:1 or
+  //     more against it whatever its lightness (see "Neutral stroke").
+  //   every other palette: the colour role's lightness clamped into the
+  //     mid-tone band 0.42–0.60, so a mid-tone accent (L≈0.43) keeps its
+  //     colour and a pale or deep one is moved to where it shows.
   // _role-derivatives adds --stroke--low (subtle divider) and --stroke--high.
   // Focus ring — per palette: inverted lightness + 60° hue shift, always distinct.
   @each $mode in light, dark {
-    #{token($name, stroke)}--mode-#{$mode}: oklch(
-      from var(#{$c}--mode-#{$mode}) clamp(0.42, l, 0.6) c h / 1
-    );
+    @if $name == background or $name == surface {
+      #{token($name, stroke)}--mode-#{$mode}: _neutral-stroke(var(#{$c}--mode-#{$mode}));
+    } @else {
+      #{token($name, stroke)}--mode-#{$mode}: oklch(
+        from var(#{$c}--mode-#{$mode}) clamp(0.42, l, 0.6) c h / 1
+      );
+    }
     #{token($name, focus)}--mode-#{$mode}: oklch(
       from var(#{$c}--mode-#{$mode}) clamp(0.1, calc(1 - l), 0.9) c calc(h + 60) / 1
     );

@@ -398,11 +398,15 @@ test('core derives the auto bg, stroke and focus into their registered pairs, fr
       );
     }
     for (const mode of ['light', 'dark']) {
+      // background/surface: the neutral stroke, whose channels core declares
+      // once on :where(:root) (contrast.test.ts holds it to its ratio).
+      const stroke =
+        name === 'background' || name === 'surface'
+          ? 'var\\(--theme--_stroke-l\\) var\\(--theme--_stroke-c\\) h / 1\\)$'
+          : 'clamp\\(0\\.42, l, 0\\.6\\)';
       assert.match(
         shared.get(`--color--${name}--stroke--mode-${mode}`)!,
-        new RegExp(
-          `^oklch\\(from var\\(--color--${name}--mode-${mode}\\) clamp\\(0\\.42, l, 0\\.6\\)`,
-        ),
+        new RegExp(`^oklch\\(from var\\(--color--${name}--mode-${mode}\\) ${stroke}`),
       );
       assert.match(
         shared.get(`--color--${name}--focus--mode-${mode}`)!,

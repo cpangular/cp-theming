@@ -176,7 +176,8 @@ These names are registered and derived once by `define-core-theme()`: `brand`, `
 | `--color--{name}--bg` | Background/container role |
 | `--color--{name}--bg--contrast` | Contrast against bg role |
 | `--color--{name}--bg--high` / `--low` | Bg lightness modifiers |
-| `--color--{name}--stroke` | Border/outline role |
+| `--color--{name}--stroke` | Border/outline role. Default: the colour clamped to lightness 0.42–0.60; for `background` and `surface`, a boundary 4.5:1 or more against the palette's own colour in either mode (above WCAG 1.4.11's 3:1). `$stroke` replaces it. The Material adapter's `--mat-sys-outline` is the surface's stroke |
+| `--color--{name}--stroke--low` | Quieter stroke for a divider (the adapter's `--mat-sys-outline-variant`); may be under 3:1 |
 | `--color--{name}--focus` | Focus ring color |
 | `--color--{name}--tint-1` … `--tint-5` | 10%/20%/38%/60%/80% opacity tints |
 

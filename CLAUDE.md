@@ -48,14 +48,22 @@ This is a CSS-variable-based theming system. Key facts:
   `gamut/` rows of `render.ts`). Do not let the overshoot count past 0.25: the factor reaches 0
   and a vivid teal brand turns grey. Chromium reports no hue for a non-oklch origin below chroma
   0.02, so a corrected colour that faint is painted at hue 0 there.
+- Neutral stroke: the default stroke of `background` and `surface` (not the other palettes,
+  which keep `clamp(0.42, l, 0.6)`) is derived from the palette's colour to 4.6:1 against it when
+  darker and 6:1 when lighter (white when out of reach; never under 4.58:1), from its luminance
+  in closed form (`--theme--_stroke-*`, declared once on `:where(:root)` like the contrast step,
+  "Neutral stroke" in `_palette.scss`). Checks: the stroke tests in `test/css/contrast.test.ts`
+  (presets, fixtures, a sweep of colours) and the outline tests in the adapter's
+  `material-roles.test.ts`.
 - Contrast (Phase 10): `--contrast` is black or white by a step at relative luminance 0.179 in
   clamped linear sRGB; the step is declared once as `--theme--_contrast-step`. Every relative-colour
   derivation ends `/ 1` (only the tints carry an alpha); a harness check enforces it.
 - Material adapter (Phase 11): the `--mat-sys-*` colour roles come from Angular Material's own
   role tables (`theme-ng-material/scss/_roles.scss`); roles cp-theming has a token for map to it
   (containers are `--bg`, one ladder step lighter in dark mode), the rest are `m3-tone()` of the
-  theme colour, and the neutral roles (surface containers, dim, bright, `outline`) are offsets
-  from `--color--surface`. Tokens that read a cp-theming variable sit on `:root, :where([theme])`.
+  theme colour, and the neutral roles (surface containers, dim, bright) are offsets from
+  `--color--surface`. `outline` is `--color--surface--stroke` and `outline-variant` its `--low`
+  step, so a theme's surface `$stroke` drives every Material outline. Tokens that read a cp-theming variable sit on `:root, :where([theme])`.
   State-layer opacities are numbers (`calc(weight / 100%)`), as Material expects. Harness checks
   fail any `--mat-sys-*` name the installed Material reads that the adapter does not declare, and
   any component token the adapter sets that Material does not read.

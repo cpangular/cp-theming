@@ -28,6 +28,7 @@ import {
   evaluateColor,
   maxChannelDiff,
   painted,
+  wcagContrast,
   type Mode,
 } from './lib/color.ts';
 
@@ -1192,6 +1193,52 @@ function gamutRows(): Row[] {
   return out;
 }
 
+// ─── The neutral stroke ──────────────────────────────────────────────────────
+// The default stroke of background and surface reads the colour's luminance in
+// closed form (pow, cos, sin over l, c and h; _palette.scss "Neutral stroke").
+// These rows prove the browsers evaluate it as the evaluator does; the
+// prediction itself is held to 4.5:1 here, so a row cannot pass with both wrong.
+const STROKE_SAMPLES: [label: string, colour: string][] = [
+  ['black', 'oklch(0 0 0)'],
+  ['dark-preset', 'oklch(0.22 0.01 250)'],
+  ['dark-violet', 'oklch(0.195 0.06 286)'],
+  ['dark-red', 'oklch(0.3 0.12 30)'],
+  // Either side of the switch at luminance 0.179.
+  ['mid-grey-below', 'oklch(0.56 0 0)'],
+  ['mid-grey-above', 'oklch(0.57 0 0)'],
+  ['mid-green', 'oklch(0.6 0.1 145)'],
+  ['light-preset', 'oklch(0.93 0.01 250)'],
+  ['light-yellow', 'oklch(0.95 0.08 100)'],
+  ['white', 'oklch(1 0 0)'],
+  ['hex', '#2a1f3d'],
+];
+
+function strokeRows(): Row[] {
+  return STROKE_SAMPLES.flatMap(([label, colour]) =>
+    (['background', 'surface'] as const).map((name) => {
+      const pair = {
+        [`--color--${name}--mode-light`]: colour,
+        [`--color--${name}--mode-dark`]: colour,
+      };
+      const expect = expectFrom('alpha', 'alpha', `--color--${name}--stroke`, 'light', pair);
+      const ratio = wcagContrast(cssColor(expect), cssColor(colour));
+      if (ratio < 4.5) throw new Error(`stroke/${label}/${name}: predicted ${ratio.toFixed(2)}:1`);
+      const style = Object.entries(pair)
+        .map(([n, v]) => `${n}: ${v}`)
+        .join('; ');
+      return {
+        id: `stroke/${label}/${name}=${ratio.toFixed(2)}:1`,
+        sheets: ['core', 'alpha'],
+        html: 'theme="alpha"',
+        body: `<div id="p" theme="custom" style="${style}">x</div>`,
+        probe: '#p',
+        token: `--color--${name}--stroke`,
+        expect,
+      };
+    }),
+  );
+}
+
 // ─── Rows ────────────────────────────────────────────────────────────────────
 interface Row {
   id: string;
@@ -1913,6 +1960,8 @@ const rows: Row[] = [
   ...chainRows(),
   ...bgTextRows(),
   ...gamutRows(),
+  // ── The neutral stroke ───────────────────────────────────────────────────
+  ...strokeRows(),
 ];
 
 // A theme that passes one palette and nothing else, for the inheritance rows.

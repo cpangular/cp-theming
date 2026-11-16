@@ -368,6 +368,10 @@ components read. Depends on Phase 9.
     `--color--surface`), no longer `--color--surface--stroke`: 2:1 on the surface in dark mode
     became 6.2:1, and 3.2:1 in light became 4.6:1 (Material's stock: 5.8 and 4.3).
     `outline-variant` still maps to `--color--surface--stroke--low`.
+    *Superseded (2026-11-15, `feature/outline-from-stroke`):* `outline` is
+    `--color--surface--stroke` again; core's default surface and background stroke is now
+    derived to 4.6:1 (light) / 6:1 (dark) against the palette's colour, so a theme's `$stroke`
+    drives every Material outline.
   - **Containers are one ladder step lighter in dark mode.** `{primary,secondary,tertiary,error}-container`
     is `light-dark(--bg, --bg--light)` and the on-role its contrast. The dark `--bg` tint sits at
     the lightness of a dark surface, so a selected or activated fill was 1.00–1.07:1 on it; now 1.5:1

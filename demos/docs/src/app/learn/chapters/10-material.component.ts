@@ -52,11 +52,14 @@ import overlayScopeTs from '../../../examples/components/overlay-scope.ts.txt' w
           The <strong>adapter</strong> is a stylesheet that declares every one of those variables
           from the variables your theme already has. Where cp-theming has a variable for the same
           job, Material's simply points at it: the main fill is your primary, and the text on it is
-          your primary's contrast. Where Material wants a shade that cp-theming has no name for, the
-          adapter works it out from one of your colours by the rules of Material's own design. That
-          shade is a formula, which the browser works out like the steps of chapter 1. Point at a
-          button in the example. The lines under it name the Material variable of the button's fill
-          and of its text, and the variable of yours that each one reads.
+          your primary's contrast. Every outline Material draws, around a text field, an outlined
+          button or a chip, is your surface palette's stroke (chapter 4), and a divider is its low
+          step. A theme that passes its surface a stroke of its own changes them all. Where Material
+          wants a shade that cp-theming has no name for, the adapter works it out from one of your
+          colours by the rules of Material's own design. That shade is a formula, which the browser
+          works out like the steps of chapter 1. Point at a button in the example. The lines under
+          it name the Material variable of the button's fill and of its text, and of its outline on
+          the Outlined button, and the variable of yours that each one reads.
         </p>
         <p>
           The adapter works on Material's shared variables, not on each component, and two things

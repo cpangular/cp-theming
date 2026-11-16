@@ -9,8 +9,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { themeSteps } from '../lib/sass.ts';
-import { contextFor, evaluateColor, painted, wcagContrast, type Mode } from '../lib/color.ts';
-import { relativeColors, rules } from '../lib/css.ts';
+import {
+  contextFor,
+  cssColor,
+  evaluateColor,
+  painted,
+  wcagContrast,
+  type Mode,
+} from '../lib/color.ts';
+import { declarationsFor, relativeColors, rules, themeSelector } from '../lib/css.ts';
 import {
   CORE_PALETTE_NAMES,
   coreFixtureSheets,
@@ -160,6 +167,99 @@ test('hue × lightness × chroma grid, including colours outside sRGB, against -
         summarize(measured, 'grid colours '),
     );
   assert.equal(below(measured).length, 0, summarize(measured, 'grid colours '));
+});
+
+// ─── The stroke of background and surface ────────────────────────────────────
+// Their stroke is a boundary drawn on the palette's own colour (the Material
+// adapter's outline is the surface's). WCAG 1.4.11 asks 3:1 of a control's
+// boundary; core derives it at 4.5:1 or more against that colour, whatever its
+// lightness (_palette.scss, "Neutral stroke"). A theme's own $stroke is used as
+// passed and is not checked here.
+const BOUNDARY = 3;
+const STROKE_DERIVED = 4.5;
+const NEUTRALS = ['background', 'surface'];
+
+/** The neutral's stroke against the neutral, for each palette and mode. */
+function neutralStrokes(decls: Map<string, string>, overrides?: Map<string, string>) {
+  return MODES.flatMap((mode) => {
+    const ctx = contextFor(decls, mode, overrides);
+    return NEUTRALS.map((name) => ({
+      where: `${mode} --color--${name}--stroke`,
+      ratio: wcagContrast(
+        evaluateColor(`var(--color--${name}--stroke)`, ctx),
+        evaluateColor(`var(--color--${name})`, ctx),
+      ),
+    }));
+  });
+}
+
+const strokeSummary = (m: Measured[]) =>
+  `lowest ${lowest(m).ratio.toFixed(2)}:1 at ${lowest(m).where}`;
+
+for (const theme of themes) {
+  test(`${theme.label}: the default background and surface strokes are ${BOUNDARY}:1 or more against their palette's colour`, (t) => {
+    const own = declarationsFor(
+      [...presets, ...fixtures].find((s) => s.label === theme.label)!.css,
+      themeSelector(themeName([...presets, ...fixtures].find((s) => s.label === theme.label)!)),
+    );
+    for (const name of NEUTRALS)
+      assert.ok(
+        !own.has(`--color--${name}--stroke--mode-light`),
+        `${name}: the theme passes no $stroke`,
+      );
+    const measured = neutralStrokes(theme.decls);
+    t.diagnostic(measured.map((m) => `${m.where} ${m.ratio.toFixed(2)}:1`).join(', '));
+    assert.deepEqual(
+      measured.filter((m) => m.ratio < BOUNDARY).map((m) => `${m.where} ${m.ratio.toFixed(2)}`),
+      [],
+    );
+    assert.deepEqual(
+      measured
+        .filter((m) => m.ratio < STROKE_DERIVED)
+        .map((m) => `${m.where} ${m.ratio.toFixed(2)}`),
+      [],
+      `the derivation promises ${STROKE_DERIVED}:1`,
+    );
+  });
+}
+
+test(`the default background and surface strokes over a sweep of colours the screen can show: ${BOUNDARY}:1 or more`, (t) => {
+  // Lightness 0 to 1 in steps of 0.01, at chroma from grey to vivid and hues
+  // round the wheel. Each colour is one palette's colour in one mode, taken in
+  // turn: the derivation is the same for both, and evaluating all four for
+  // every colour took a minute and a half.
+  const { decls } = themes[0];
+  const measured: Measured[] = [];
+  const pairs = NEUTRALS.flatMap((name) => MODES.map((mode) => ({ name, mode })));
+  let n = 0;
+  for (let i = 0; i <= 100; i++) {
+    const l = i / 100;
+    for (const c of [0, 0.006, 0.01, 0.02, 0.04, 0.06, 0.1, 0.15, 0.2, 0.3])
+      for (let h = 0; h < 360; h += 30) {
+        const colour = `oklch(${l} ${c} ${h})`;
+        if (!cssColor(colour).inGamut('srgb', { epsilon: 1e-5 })) continue;
+        const { name, mode } = pairs[n++ % pairs.length];
+        const ctx = contextFor(decls, mode, new Map([[`--color--${name}--mode-${mode}`, colour]]));
+        measured.push({
+          where: `${colour} ${mode} --color--${name}--stroke`,
+          ratio: wcagContrast(
+            evaluateColor(`var(--color--${name}--stroke)`, ctx),
+            evaluateColor(`var(--color--${name})`, ctx),
+          ),
+        });
+      }
+  }
+  t.diagnostic(`${measured.length} strokes; ${strokeSummary(measured)}`);
+  assert.ok(measured.length > 3000, `only ${measured.length} strokes measured`);
+  assert.deepEqual(
+    measured.filter((m) => m.ratio < BOUNDARY).map((m) => `${m.where} ${m.ratio.toFixed(2)}`),
+    [],
+  );
+  assert.deepEqual(
+    measured.filter((m) => m.ratio < STROKE_DERIVED).map((m) => `${m.where} ${m.ratio.toFixed(2)}`),
+    [],
+    `the derivation promises ${STROKE_DERIVED}:1`,
+  );
 });
 
 // ─── Alpha ───────────────────────────────────────────────────────────────────

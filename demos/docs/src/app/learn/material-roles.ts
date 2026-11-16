@@ -14,7 +14,7 @@ interface Declared {
 
 /** One painted part of a component and the chain of variables behind it. */
 export interface RoleLine {
-  /** `Fill` or `Text`. */
+  /** `Fill`, `Text` or `Outline`. */
   part: string;
   /** The Material variable the component reads: `--mat-sys-primary`. */
   role: string;
@@ -31,6 +31,7 @@ export interface RoleLine {
 const PAINTED: [part: string, properties: string[]][] = [
   ['Fill', ['background-color', 'background']],
   ['Text', ['color']],
+  ['Outline', ['border-color']],
 ];
 
 let index: Map<string, Declared[]> | undefined;
@@ -151,9 +152,9 @@ const scopeOf = (on: Element, selector: string): string => {
 const unique = (names: string[]) => [...new Set(names)];
 
 /**
- * The fill and the text of a Material component, each traced from the rule
- * that paints it to the cp-theming variables behind it. Empty when the element
- * paints neither through a Material variable.
+ * The fill, the text and the outline of a Material component, each traced
+ * from the rule that paints it to the cp-theming variables behind it. Empty
+ * when the element paints none of them through a Material variable.
  */
 export function rolesOf(el: Element): RoleLine[] {
   const all = declarations(el.ownerDocument);
@@ -163,6 +164,11 @@ export function rolesOf(el: Element): RoleLine[] {
     if (part === 'Fill') {
       const painted = view?.getComputedStyle(el).backgroundColor ?? '';
       if (/^(?:transparent|rgba\(0, 0, 0, 0\))$/.test(painted)) continue;
+    }
+    if (part === 'Outline') {
+      const style = view?.getComputedStyle(el);
+      if (!style || parseFloat(style.borderTopWidth) === 0 || style.borderTopStyle === 'none')
+        continue;
     }
     const rule = properties.map((p) => winner(el, all.get(p))).find(Boolean);
     if (!rule) continue;
