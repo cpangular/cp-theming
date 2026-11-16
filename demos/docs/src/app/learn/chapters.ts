@@ -104,6 +104,14 @@ export const CHAPTERS: Chapter[] = [
     question: 'How do Material components get these colours?',
     written: true,
   },
+  {
+    n: 11,
+    slug: 'package',
+    folder: '11-package',
+    title: 'Ship your theme as a package',
+    question: 'How do I give my theme to every app we build?',
+    written: true,
+  },
 ];
 
 // ── The pattern table ────────────────────────────────────────────────────────
@@ -204,6 +212,11 @@ export const PATTERNS: Pattern[] = [
   { chapter: 10, what: 'a Material directive', pattern: /\bmat[A-Z]\w+/ },
   { chapter: 10, what: '--mat-sys', pattern: /--mat-sys/ },
   { chapter: 10, what: 'the Material adapter', pattern: /cp-theming-ng-material/ },
+
+  // 11 — a theme package
+  { chapter: 11, what: 'a theme package', pattern: /@acme\// },
+  { chapter: 11, what: "a theme package's define()", pattern: /\bacme\.define\(/ },
+  { chapter: 11, what: 'a peer dependency', pattern: /\bpeer ?dependenc/i },
 ];
 
 /**
@@ -681,6 +694,36 @@ export const REFS: Ref[] = [
     anchor: 'overlays',
     find: 'cpaOverlayScope',
   },
+
+  // 11 — a theme package: what it exports, and a palette changed by hand
+  {
+    name: '$theme',
+    chapter: 11,
+    page: 'core/guides',
+    anchor: 'theme-packages',
+    find: '$theme',
+  },
+  {
+    name: 'define()',
+    chapter: 11,
+    page: 'core/guides',
+    anchor: 'theme-packages',
+    find: 'define()',
+  },
+  {
+    name: '--color--{name}--mode-light',
+    chapter: 11,
+    page: 'core/palette',
+    anchor: 'chain',
+    find: '--mode-light',
+  },
+  {
+    name: '--color--{name}--mode-dark',
+    chapter: 11,
+    page: 'core/palette',
+    anchor: 'chain',
+    find: '--mode-dark',
+  },
 ];
 
 // ── Frames ───────────────────────────────────────────────────────────────────
@@ -701,6 +744,10 @@ export const REFS: Ref[] = [
 // Any other name X with an X.html, X.scss, X.ts.txt, X.theme.scss or
 // X.head.html is one more frame (a "Try it" variation, or the same example
 // written another way): it is the example with the files X has swapped in.
+//
+// From chapter 11 a frame's theme may be plain CSS, X.theme.css: the
+// stylesheet of an app without Sass. It holds nothing but `@import`s of
+// compiled CSS by package name, and the frame links those files in that order.
 //
 // TypeScript a chapter only shows (an excerpt of this site's own source) is
 // X.app.ts.txt: the second dot keeps it from being read as a frame.
@@ -723,7 +770,7 @@ const SHARED = ['theme.scss', 'head.html'];
 export function frameNames(files: string[]): string[] {
   const names = new Set<string>();
   for (const file of files) {
-    const m = /^([\w-]+)\.(?:theme\.scss|head\.html|scss|html|ts\.txt)$/.exec(file);
+    const m = /^([\w-]+)\.(?:theme\.scss|theme\.css|head\.html|scss|html|ts\.txt)$/.exec(file);
     if (m && !SHARED.includes(file)) names.add(m[1]);
   }
   names.delete('example');
@@ -738,7 +785,9 @@ export function frameFiles(frame: string, files: string[]): FrameFiles {
     return files.includes(file) ? { [key]: file } : {};
   };
   return {
-    theme: pick(`${frame}.theme.scss`, 'theme.scss'),
+    theme: files.includes(`${frame}.theme.css`)
+      ? `${frame}.theme.css`
+      : pick(`${frame}.theme.scss`, 'theme.scss'),
     html: pick(`${frame}.html`, 'example.html'),
     ...optional('styles', `${frame}.scss`, 'example.scss'),
     ...optional('script', `${frame}.ts.txt`, 'example.ts.txt'),

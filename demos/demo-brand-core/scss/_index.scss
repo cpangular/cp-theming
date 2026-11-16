@@ -1,0 +1,35 @@
+// @acme/theme: the Acme theme, for every app Acme builds.
+//
+//   @use "@cpangular/cp-theming-core/scss/theme" as t;
+//   @use "@acme/theme" as acme;
+//
+//   @include t.define-core-theme(); // core, once per app, before any theme
+//   @include acme.define();
+//
+// An app without Sass loads dist/acme.css instead (see acme.scss).
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+// The theme holds what Acme's brand guidelines give and nothing else. Core
+// generates the rest: a readable primary from the brand colour, a secondary
+// from that primary, and the page's background and surface.
+$theme: t.theme(
+  // Acme green, exactly as the guidelines print it.
+  $brand: #00a878,
+  $palettes: (
+    // Acme plum, the guidelines' second colour. Left out, the tertiary would
+    // be generated from the primary.
+    tertiary: t.light-dark(t.palette(#7b2d8e), t.palette(#dba6ea))
+  ),
+  // Acme's corners are a little squarer than the defaults.
+  $shape: t.shape(
+      $sm: 6px,
+      $md: 10px,
+    )
+);
+
+// Writes the theme as [theme="acme"]. With $default (which is the default) it
+// is also the theme of a page that names none; pass $default: false in an app
+// that has a default theme of its own.
+@mixin define($default: true) {
+  @include t.define-theme("acme", $theme, $default: $default);
+}

@@ -59,5 +59,10 @@ export const learnChildRoutes: Routes = [
     loadComponent: () =>
       import('./chapters/10-material.component').then((m) => m.MaterialChapterComponent),
   },
+  {
+    path: 'package',
+    loadComponent: () =>
+      import('./chapters/11-package.component').then((m) => m.PackageChapterComponent),
+  },
   { path: '**', redirectTo: '' },
 ];

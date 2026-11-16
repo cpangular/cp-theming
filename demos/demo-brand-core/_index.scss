@@ -1,0 +1,3 @@
+// What `@use "@acme/theme"` loads: Sass looks for _index.scss in the folder a
+// @use names. The theme itself is scss/_index.scss.
+@forward "scss/index";

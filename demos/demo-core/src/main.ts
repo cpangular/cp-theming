@@ -1,4 +1,8 @@
 import './scss/base.scss'; // core first
+// A third theme, from a package and without Sass: the compiled CSS of
+// @acme/theme (demos/demo-brand-core). It is a default theme, like ocean; it
+// loads first, so ocean, which loads after it, is this page's default.
+import '@acme/theme/css';
 import './scss/themes/ocean.scss';
 import './scss/themes/ember.scss';
 import './scss/components.scss';

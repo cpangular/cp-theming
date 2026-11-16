@@ -1,0 +1,30 @@
+// Fixture: themes that pass their surface a $stroke, for the outline checks
+// (--mat-sys-outline is the surface's stroke). The first is dark only, with
+// coloured surfaces, the way an app passes them. The other two are meant to be
+// nested inside it: one passes a surface and stroke of its own, one only a
+// primary.
+@use "../../../theme-core/scss/theme" as t;
+
+$theme: t.theme(
+  $palettes: (
+    background: t.palette(oklch(0.15 0.05 286)),
+    surface: t.palette(oklch(0.195 0.06 286), $stroke: oklch(0.68 0.18 286)),
+    primary: t.palette(oklch(0.75 0.15 286)),
+  ),
+);
+
+$nested: t.theme(
+  $palettes: (
+    surface: t.palette(oklch(0.25 0.05 150), $stroke: oklch(0.7 0.16 150)),
+  ),
+);
+
+$nested-primary: t.theme(
+  $palettes: (
+    primary: t.palette(oklch(0.8 0.12 60)),
+  ),
+);
+
+@include t.define-theme("fixture-outline", $theme);
+@include t.define-theme("fixture-outline-nested", $nested);
+@include t.define-theme("fixture-outline-primary", $nested-primary);

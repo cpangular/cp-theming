@@ -41,6 +41,7 @@ How to set things in the VS Code extension (Claude Code chat panel):
 | 15 | Phase 17 Learn track: mechanics + chapters 1–5 | Fable 5.1 | high | Auto |
 | 16 | Phase 17 Learn track: chapters 6–10 + reference | Fable 5.1 | high | Auto |
 | 17 | Phase 17 review (ultracode) | Fable 5.1 | high | Auto |
+| 18 | Phase 18 a theme as a package | Fable 5.1 | high | Auto |
 
 Subagent models are chosen inside the workflow prompts: Opus at high effort for critique, Sonnet at
 medium for reading and sweeps. You do not set these.
@@ -151,4 +152,10 @@ Work in /devcontainer/repos/cp-theming on branch feature/port-spike-findings. Re
 
 ```
 ultracode. Work in /devcontainer/repos/cp-theming on branch feature/port-spike-findings. Read PORT-PLAN.md Phase 17 and the ten Learn chapters in demos/docs. Run a workflow: one Opus reader (high effort) per chapter, given only that chapter's text and examples and the "Introduces" lines of the chapters before it, told it knows CSS and has never seen cp-theming, asked to list every term, variable, mixin or attribute the chapter uses before teaching it, every sentence it had to read twice, every claim the live example does not actually show, and every place code appears before the idea it belongs to. Then one Opus synthesizer merges the lists into fixes. Apply the fixes, rebuild, re-run the order and examples checks, then commit and push without asking, and tell me the three weakest chapters after the fixes.
+```
+
+## Session 18 — Phase 18 a theme as a package
+
+```
+Work in /devcontainer/repos/cp-theming on branch main. Read CLAUDE.md, .github/copilot-instructions.md, PORT-PLAN.md Phase 18, the three packages' package.json files and chapters 1, 3 and 10 of the Learn track. Build the two example packages exactly as the phase lists them: @acme/theme in demos/demo-brand-core (Sass entry exporting $theme and define(), compiled CSS entry, exports, files, peer on cp-theming-core, pack:check, README with both consumption paths) and @acme/theme-material in demos/demo-brand-material; wire demo-core to consume the CSS path and the docs app the Sass path so the theme switcher offers acme; write Learn chapter 11 "Ship your theme as a package" in the same shape as the others, its live example showing both consumption paths; add the Theme packages guide to the core Guides page. Run pnpm build at the root, pnpm test, the order and examples checks, pnpm pack --dry-run in both packages, and render.ts; screenshot chapter 11 and the showcase under acme. When the Done-when holds, update the README and PLAN.md status tables, commit and push without asking, and tell me how to view chapter 11.
 ```

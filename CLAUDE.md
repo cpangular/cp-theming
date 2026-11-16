@@ -4,7 +4,7 @@ See [.github/copilot-instructions.md](.github/copilot-instructions.md) for the f
 project context, conventions, non-negotiable design decisions, and what is stub vs real.
 
 See [PLAN.md](PLAN.md) for the full architecture, current status, and development phases, and
-[PORT-PLAN.md](PORT-PLAN.md) for phases 8–17.
+[PORT-PLAN.md](PORT-PLAN.md) for phases 8–18.
 
 ## Quick Context
 
@@ -48,14 +48,22 @@ This is a CSS-variable-based theming system. Key facts:
   `gamut/` rows of `render.ts`). Do not let the overshoot count past 0.25: the factor reaches 0
   and a vivid teal brand turns grey. Chromium reports no hue for a non-oklch origin below chroma
   0.02, so a corrected colour that faint is painted at hue 0 there.
+- Neutral stroke: the default stroke of `background` and `surface` (not the other palettes,
+  which keep `clamp(0.42, l, 0.6)`) is derived from the palette's colour to 4.6:1 against it when
+  darker and 6:1 when lighter (white when out of reach; never under 4.58:1), from its luminance
+  in closed form (`--theme--_stroke-*`, declared once on `:where(:root)` like the contrast step,
+  "Neutral stroke" in `_palette.scss`). Checks: the stroke tests in `test/css/contrast.test.ts`
+  (presets, fixtures, a sweep of colours) and the outline tests in the adapter's
+  `material-roles.test.ts`.
 - Contrast (Phase 10): `--contrast` is black or white by a step at relative luminance 0.179 in
   clamped linear sRGB; the step is declared once as `--theme--_contrast-step`. Every relative-colour
   derivation ends `/ 1` (only the tints carry an alpha); a harness check enforces it.
 - Material adapter (Phase 11): the `--mat-sys-*` colour roles come from Angular Material's own
   role tables (`theme-ng-material/scss/_roles.scss`); roles cp-theming has a token for map to it
   (containers are `--bg`, one ladder step lighter in dark mode), the rest are `m3-tone()` of the
-  theme colour, and the neutral roles (surface containers, dim, bright, `outline`) are offsets
-  from `--color--surface`. Tokens that read a cp-theming variable sit on `:root, :where([theme])`.
+  theme colour, and the neutral roles (surface containers, dim, bright) are offsets from
+  `--color--surface`. `outline` is `--color--surface--stroke` and `outline-variant` its `--low`
+  step, so a theme's surface `$stroke` drives every Material outline. Tokens that read a cp-theming variable sit on `:root, :where([theme])`.
   State-layer opacities are numbers (`calc(weight / 100%)`), as Material expects. Harness checks
   fail any `--mat-sys-*` name the installed Material reads that the adapter does not declare, and
   any component token the adapter sets that Material does not read.
@@ -84,7 +92,7 @@ This is a CSS-variable-based theming system. Key facts:
   overlay open (`--only=gallery`, `--preset=`, `--mode=`, `--section=`); a component label below
   4.5:1 fails the run. The docs read the adapter's built CSS: after a change in
   `packages/theme-ng-material/scss/`, run `pnpm --filter @cpangular/cp-theming-ng-material build`
-  before `npx ng build docs` (root `pnpm build` builds core only).
+  before `npx ng build docs` (root `pnpm build` runs the docs' own build, which builds the adapter).
 - Releases (Phase 13): cpdevtools/git-flow. Every manifest carries `0.0.0-MAIN`; the version is
   `.publish/versions.yml` (changed only by `pnpm gitflow version`, which the user runs). A push
   updates a draft release PR into `release/<branch>`; merging it publishes to GitHub Packages.
@@ -101,8 +109,8 @@ This is a CSS-variable-based theming system. Key facts:
   (`demos/demo-core/index.html`), and `href="#section"` stays on the page only because
   `packages-layout.component.ts` handles the click. An example's `href` is a fragment, an
   absolute path or a URL (a check fails anything else). demo-core uses the public `theme` module
-  only; root `pnpm build` builds core and demo-core.
-- Learn track (Phase 17, ten chapters written; the review pass is Session 17):
+  only; root `pnpm build` builds core, the two example theme packages, demo-core and the docs site.
+- Learn track (Phase 17, ten chapters and their review pass; chapter 11 is Phase 18):
   `demos/docs/src/app/learn/chapters.ts` is the chapter list plus the order check's tables,
   `PATTERNS` (text a chapter introduces) and `REFS` (Reference entries prose may name, with the
   chapter and the section each links to). A chapter is `learn/chapters/NN-name.component.ts`: the
@@ -126,6 +134,26 @@ This is a CSS-variable-based theming system. Key facts:
   when one needs something new, add it to `PATTERNS` / `REFS` under that chapter. Checks:
   `demos/docs/test/learn.test.ts` (in `pnpm test`), `node demos/docs/test/learn.ts` (browser:
   every chapter in light and dark, and what each of chapters 6–10 claims).
+- Theme packages (Phase 18): `demos/demo-brand-core` is `@acme/theme` and
+  `demos/demo-brand-material` is `@acme/theme-material`, both `private` and never published, each
+  shaped like a package a company would publish: `scss/_index.scss` (the theme as `$theme` and a
+  `define($default: true)` mixin; the Material one includes the theme, the adapter, its patches
+  and density scopes, and Acme's own `overrides()`), a one-line `_index.scss` at the package root
+  that forwards it (what `@use "@acme/theme"` finds by folder; `exports["."]` names it under the
+  `sass` condition), a build entry that compiles to `dist/*.css` with the load order in its
+  header, cp-theming as `workspace:^` peers, `pack:check`, and a README whose file list
+  `pnpm pack --dry-run` has to match. Neither holds core. Consumers: `demos/demo-core` imports
+  `@acme/theme/css` (after core, before ocean, so ocean stays its default); the docs app's
+  `styles.scss` includes `acme.define($default: false)` and the theme switcher offers `acme`.
+  `demos/docs/test/theme-packages.test.ts` (in `pnpm test`) builds both, holds the compiled CSS
+  to what `define()` emits, the pack listing to the README and the consumers to their path.
+  Learn chapter 11 (`11-package`) shows both paths: its `css` frame has a plain CSS theme,
+  `css.theme.css`, which holds `@import`s of package CSS only and which `scripts/learn.ts` turns
+  into `<link>`s (`.generated/learn-frames/packages/`); the chapter and the core Guides page
+  import the package's `scss/_index.scss` and `package.json` as text from the package itself.
+  `packages/theme-core/test/lib/sass.ts` resolves `@acme/…` through the packages' `exports` like
+  `@cpangular/…`. Browser: `node demos/docs/test/learn.ts` (both apps paint the same);
+  `node demos/docs/test/render.ts --only=showcase --theme=acme`, `--only=gallery --preset=acme`.
 - CSS Variables page (Phase 17): generated. `demos/docs/scripts/variables.ts` reads the compiled
   `core.css` (`scripts/lib/variables.ts`) and writes `demos/docs/.generated/variables.ts`, which
   `pages/variables.component.ts` imports: one live swatch per colour token by palette and role

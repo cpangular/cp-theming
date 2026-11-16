@@ -1,6 +1,6 @@
 import { Component, computed, inject, effect } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TocService } from '../../shell/toc.service';
 import { CodeComponent } from '../../shared/code.component';
 import { ThemeExampleComponent } from '../../shared/theme-example.component';
@@ -28,6 +28,17 @@ import shapeVarsDisplayCss from '../../../examples/guides/shape-vars.display.css
   loader: 'text',
 };
 import adaptorScss from '../../../examples/theme/adaptor.scss' with { loader: 'text' };
+import appWithSassScss from '../../../examples/learn/11-package/theme.scss' with { loader: 'text' };
+import appWithoutSassCss from '../../../examples/learn/11-package/css.theme.css' with {
+  loader: 'text',
+};
+import appOverrideScss from '../../../examples/learn/11-package/try-override.theme.scss' with {
+  loader: 'text',
+};
+// The example theme package itself (demos/demo-brand-core), as it is.
+import packageIndexScss from '../../../../../demo-brand-core/scss/_index.scss' with {
+  loader: 'text',
+};
 import ngScopedThemeDisplayHtml from '../../../examples/guides/ng-scoped-theme.display.html' with {
   loader: 'text',
 };
@@ -44,6 +55,7 @@ const CORE_TOC = [
   { label: 'Density', anchor: 'density' },
   { label: 'Shape', anchor: 'shape' },
   { label: 'Adaptor hooks', anchor: 'adaptor-hooks' },
+  { label: 'Theme packages', anchor: 'theme-packages' },
 ];
 
 const NG_CORE_TOC = [
@@ -60,7 +72,7 @@ const NG_MATERIAL_TOC = [
 @Component({
   selector: 'cpa-guides-page',
   standalone: true,
-  imports: [CodeComponent, ThemeExampleComponent],
+  imports: [CodeComponent, ThemeExampleComponent, RouterLink],
   template: `
     <article class="doc-page">
       <header class="page-header">
@@ -210,6 +222,106 @@ setMode(ThemeMode.AUTO);</code></pre>
               <code>define-palette-after</code> (called once per palette name, at root level).
             </p>
           </section>
+
+          <section id="theme-packages" class="page-section">
+            <h2>Theme packages</h2>
+            <p>
+              A theme that more than one app uses belongs in a package of its own, so every app gets
+              the same theme and it changes in one place.
+              <a routerLink="/learn/package">Learn chapter 11</a> explains the idea with a live
+              example; this section is the reference. The worked example is in the repository:
+              <code>demos/demo-brand-core</code>, the package <code>&#64;acme/theme</code>, and
+              <code>demos/demo-brand-material</code>, <code>&#64;acme/theme-material</code>, for
+              apps that use Angular Material. Neither is published.
+            </p>
+
+            <h3>Folder layout</h3>
+            <p>These are all the files of <code>&#64;acme/theme</code> as it would be published:</p>
+            <pre
+              class="package-layout"
+            ><code class="language-plaintext">package.json        name, exports, files and the peer dependency
+README.md           how an app uses the theme
+_index.scss         one line that passes scss/_index.scss on
+scss/_index.scss    the theme and its define() mixin
+scss/acme.scss      the entry that compiles to dist/acme.css
+dist/acme.css       the compiled theme: built, not committed, published</code></pre>
+            <p>
+              <code>scss/_index.scss</code> is the package. It builds the theme with
+              <code>t.theme()</code>, keeps it in a variable, <code>$theme</code>, that an app can
+              read, and has one mixin, <code>define()</code>, around <code>t.define-theme()</code>.
+              The theme's name is written there and nowhere else:
+            </p>
+            <cpa-code [code]="ex.packageIndexScss" lang="scss" />
+            <p>
+              The file at the top of the package, <code>_index.scss</code>, exists so that
+              <code>&#64;use "&#64;acme/theme"</code> works in every Sass tool: Sass looks for a
+              file of that name in the folder a <code>&#64;use</code> names, and tools that read
+              <code>package.json</code> find the same file through the <code>sass</code> condition
+              of <code>exports</code>.
+            </p>
+
+            <h3>How an app uses it</h3>
+            <p>With Sass, the app includes core once and then the package's mixin:</p>
+            <cpa-code [code]="ex.appWithSassScss" lang="scss" />
+            <p>Without Sass, it loads two compiled files, core first:</p>
+            <cpa-code [code]="ex.appWithoutSassCss" lang="css" />
+            <p>
+              Both give the same theme rule. In the HTML the app writes the theme's name in the
+              <code>theme</code> attribute. <code>define()</code> also makes the theme the default,
+              so a page without the attribute has it too; an app with a default theme of its own
+              passes <code>$default: false</code>, which needs Sass. To change one palette, the app
+              sets that palette's pair of colours in a rule of its own, after the theme:
+            </p>
+            <cpa-code [code]="ex.appOverrideScss" lang="scss" />
+
+            <h3>Publish checklist</h3>
+            <ol>
+              <li>
+                The theme file never includes <code>t.define-core-theme()</code>, and neither does
+                the compiled CSS. Core is the app's to include, once.
+              </li>
+              <li>
+                <code>&#64;cpangular/cp-theming-core</code> is a peer dependency with a caret range,
+                not a dependency: the app chooses the version and has one copy of core. While
+                cp-theming is at <code>0.x</code> a caret range covers patch releases only, so a new
+                minor of cp-theming means a rebuild, a wider range and a release of the theme
+                package.
+              </li>
+              <li>
+                <code>exports</code> names the Sass entry (<code>.</code>, with the
+                <code>sass</code> condition), <code>./scss/*</code> and the compiled file
+                (<code>./css</code>). <code>files</code> lists the top-level
+                <code>_index.scss</code>, the <code>scss</code> folder and <code>dist</code>.
+              </li>
+              <li>
+                The compiled CSS is built from the same mixin the Sass path includes, so the two
+                paths cannot differ. Its header states the load order.
+              </li>
+              <li>
+                Build, then run <code>pnpm pack --dry-run</code> (the example's
+                <code>pack:check</code> script does both). The listing is the folder layout above:
+                the compiled CSS is in it although it is not committed, and nothing else is.
+              </li>
+              <li>
+                The README says how to load the theme with and without Sass, the value of the
+                <code>theme</code> attribute, how to change one palette, and which cp-theming
+                versions the package works with.
+              </li>
+              <li>
+                Version the package by what its apps see: a changed colour is a minor release; a
+                renamed theme, a removed palette or a peer range that drops a cp-theming version is
+                a major one.
+              </li>
+            </ol>
+            <p>
+              For Angular Material, <code>&#64;acme/theme-material</code> has a
+              <code>define()</code> that includes the theme, the adapter
+              (<code>define-ng-material-core-theme()</code>), the adapter's patches
+              (<code>apply-material-overrides()</code>) and the company's own patches, and a
+              compiled file that takes the place of the adapter's two. Its peer dependencies are
+              cp-theming's core and the adapter.
+            </p>
+          </section>
         }
 
         @case ('ng-core') {
@@ -305,6 +417,10 @@ export class GuidesPageComponent {
     shapeScss,
     shapeVarsDisplayCss,
     adaptorScss,
+    appWithSassScss,
+    appWithoutSassCss,
+    appOverrideScss,
+    packageIndexScss,
     ngScopedThemeDisplayHtml,
   };
   private readonly _toc = inject(TocService);

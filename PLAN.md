@@ -18,8 +18,8 @@ packages/
 demos/
   demo-core/           Vanilla TS + Vite
   demo-material/       Angular app (Material adapter)
-  demo-brand-core/     Example: company creates own theme pack
-  demo-brand-material/ Example: company wires brand into Material
+  demo-brand-core/     @acme/theme: example of a theme shipped as a package (Phase 18)
+  demo-brand-material/ @acme/theme-material: the same for Angular Material apps (Phase 18)
 ```
 
 ### @cpangular/cp-theming-core
@@ -252,7 +252,7 @@ $my-theme: t.theme(
 - `ng build theme-ng-material` → `dist/theme-ng-material/` (fesm2022 + types) ✅
 - Package exports: `./css/material-core`, `./css/material-overrides`, `./scss/*`
 
-### 🟡 Phase 7 — docs site + demos (docs examples done; the four demos pending)
+### 🟡 Phase 7 — docs site + demos (docs examples done; demo-material pending)
 
 **docs** (`demos/docs`) — Angular 22 + Material 22 documentation / showcase app. Dev server:
 `ng serve docs --host 0.0.0.0 --port 4200`. Deploys to GitHub Pages at `/cp-theming/` as git-flow's
@@ -347,10 +347,10 @@ colour format is accepted and oklch is recommended.
 - `::ng-deep` required for nested Material component styles in `ThemeSwitcherComponent`.
 
 **Still pending:**
-- demo-core: Vite + vanilla TS
 - demo-material: Angular + Material (separate from docs)
-- demo-brand-core: example brand pack
-- demo-brand-material: example brand + Material
+
+demo-core builds and is hosted in the docs site (Phase 16); demo-brand-core and
+demo-brand-material are the example theme packages (Phase 18).
 
 ### ✅ Phase 8 — Test harness and CI (PORT-PLAN.md)
 - CSS checks, `node --test` + Sass JS API (`packages/theme-core/test/css`, `packages/theme-ng-material/test/css`):
@@ -664,7 +664,7 @@ source set to `gh-pages`, and `pnpm gitflow deploy`, all the user's to do).
 - The home page and the core Getting Started page link to the hosted demo-core; the home page
   says the three Angular demos are stubs.
 
-### 🟡 Phase 17 — Docs that teach (PORT-PLAN.md)
+### ✅ Phase 17 — Docs that teach (PORT-PLAN.md)
 
 A Learn track of ten chapters above the existing pages, which become the Reference. Done: the
 mechanics, the ten chapters and the generated CSS Variables page.
@@ -699,6 +699,39 @@ mechanics, the ten chapters and the generated CSS Variables page.
 - Browser checks: `node demos/docs/test/learn.ts` and `node demos/docs/test/variables.ts` (after
   `pnpm --filter docs build`).
 
-Not done: the review pass (one reader per chapter, Session 17).
+The review pass (one reader per chapter, Session 17) is done; PORT-PLAN.md Phase 17 lists what it
+changed and what it left open.
+
+### ✅ Phase 18 — A theme as a package (PORT-PLAN.md)
+
+The two brand demos are the worked example of a company shipping its theme to its own apps.
+
+- `demos/demo-brand-core` is `@acme/theme` (private, never published): `scss/_index.scss` builds
+  the theme with `t.theme()` (a brand colour, one palette, the corners), keeps it in `$theme` and
+  has `define($default: true)` around `t.define-theme('acme', …)`; a one-line `_index.scss` at the
+  package root forwards it, so `@use "@acme/theme"` works by folder and through the `sass`
+  condition of `exports`; `scss/acme.scss` compiles to `dist/acme.css`, with the load order in its
+  header; `exports` (`.`, `./scss/*`, `./css`), `files`, cp-theming-core as a `workspace:^` peer,
+  `github.actions.build`, `pack:check`; a README with both ways to use it, the attribute, how an
+  app changes one palette (the palette's light and dark pair, in plain CSS) and how to version it
+  against cp-theming.
+- `demos/demo-brand-material` is `@acme/theme-material`: `define()` includes the theme from
+  `@acme/theme` (a dependency), the adapter, its patches and density scopes, and Acme's own
+  `overrides()` (button corners from `--shape--md`); `dist/acme-material.css`; peers on core and
+  the adapter. Building it needs `@angular/material` installed (a dev dependency).
+- Neither package holds core: the app includes it once, before the theme.
+- Consumers: `demos/demo-core` imports `@acme/theme/css` as a third theme; the docs app includes
+  `acme.define($default: false)` in `styles.scss` and its theme switcher offers `acme`.
+- Learn chapter 11, "Ship your theme as a package": two live apps, one with Sass and one without
+  (a frame whose theme is plain CSS, `css.theme.css`), the package's `_index.scss` and
+  `package.json` shown from the package itself, and two variations (one palette changed by the
+  app; not the default).
+- Reference: "Theme packages" on the core Guides page (folder layout, how an app uses it, the
+  publish checklist).
+- Harness: `demos/docs/test/theme-packages.test.ts` (in `pnpm test`) builds both packages and
+  checks the compiled CSS against what `define()` emits, `pnpm pack --dry-run` against the
+  README's file list, the manifests, and each consumer's path; the examples and order checks
+  cover chapter 11; `demos/docs/test/learn.ts` checks in the browser that both apps paint the
+  same. Root `pnpm build` now builds core, both packages, demo-core and the docs site.
 
 ---

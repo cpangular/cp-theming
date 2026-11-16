@@ -14,10 +14,13 @@
 //     so --mat-sys-surface stays --color--surface and the containers, dim and
 //     bright keep M3's order around it.
 // Roles cp-theming already has a token for are written out in $_direct and
-// replace the table's value. `outline` is not one of them: it is the boundary
-// of outlined buttons, fields and chips, and --color--surface--stroke is too
-// quiet for that in dark mode (about 2:1 on the surface), so it comes from the
-// tables like the other neutrals (4.5:1 light, 6:1 dark in the presets).
+// replace the table's value. Every outline is the surface's stroke: `outline`
+// (the boundary of outlined buttons, fields, chips and button toggles) is
+// --color--surface--stroke, `outline-variant` (dividers) its --low step. A
+// theme sets them by passing the surface a $stroke, a nested theme likewise,
+// and nothing is mapped per component. When a theme passes none, core derives
+// a stroke 4.5:1 or more against the surface (_palette.scss, "Neutral
+// stroke"); --low is a step quieter and may be under 3:1, as a divider may.
 //
 // The Sass path below is not in Material's `exports` map. It resolves under a
 // node_modules load path and under Sass's package importer; the harness fails
@@ -76,6 +79,7 @@ $_direct: map.merge(
     on-surface: var(--color--surface--contrast),
     background: var(--color--background),
     on-background: var(--color--background--contrast),
+    outline: var(--color--surface--stroke),
     outline-variant: var(--color--surface--stroke--low),
     scrim: var(--overlay--scrim),
     shadow: var(--overlay--shadow),

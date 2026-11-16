@@ -407,6 +407,8 @@ export class LiveExampleComponent {
   readonly measures = input<LiveMeasure[]>([]);
   /** The example sets its own light or dark: the page leaves `themeMode` alone. */
   readonly ownMode = input(false);
+  /** The source opens on the frame's theme file instead of its markup. */
+  readonly themeFirst = input(false);
 
   private readonly frameEl = viewChild.required<ElementRef<HTMLIFrameElement>>('frame');
   private readonly _frame = signal<string | null>(null);
@@ -464,7 +466,9 @@ export class LiveExampleComponent {
   protected readonly file = computed(() => {
     const names = this.files_().map((f) => f.name);
     const chosen = this._file();
-    return chosen && names.includes(chosen) ? chosen : (this.changed()[0] ?? names[0]);
+    if (chosen && names.includes(chosen)) return chosen;
+    // namesOf() puts the theme last.
+    return this.changed()[0] ?? (this.themeFirst() ? names[names.length - 1] : names[0]);
   });
 
   /** The controls and readouts of the frame on show. */

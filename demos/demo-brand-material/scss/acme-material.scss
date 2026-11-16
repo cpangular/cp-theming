@@ -1,0 +1,15 @@
+/* @acme/theme-material: the Acme theme and its Angular Material mapping as
+ * plain CSS, for an app without Sass.
+ *
+ * Load order: cp-theming's core first, then this file. It takes the place of
+ * @acme/theme's acme.css and of the adapter's two stylesheets: load none of
+ * them beside it.
+ *
+ *   @import "@cpangular/cp-theming-core/css/core";
+ *   @import "@acme/theme-material/css";
+ *
+ * The theme is [theme="acme"], and the default of a page that names no theme.
+ */
+@use "index" as acme;
+
+@include acme.define();

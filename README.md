@@ -41,11 +41,11 @@ exact version (see the repository's Releases).
 
 | Demo | Description | Status |
 |---|---|---|
-| `demos/docs` | Angular 22 + Material 22 docs/showcase site | 🟡 In Progress — all pages built; every Sass, CSS and attribute sample is a real file under `demos/docs/src/examples/`, compiled and checked by `pnpm test` and rendered live from the same file; theme + mode switching working, saved theme and mode painted on the first frame (`node demos/docs/test/startup.ts`), a Components page in the ng-material section with every Angular Material 22 component family live (27 sections, the accent families repeated under `palette="secondary"`, `"tertiary"`, `"error"` and `"brand"`, and the overlays inside a nested `theme` and a nested `themeMode`; Phase 15 done), painted-contrast report over the showcase and the component gallery, where a component label below 4.5:1 is an error (`node demos/docs/test/render.ts`), pixel check of the palette chain on Getting Started and the showcase (`node demos/docs/test/chain.ts`); a Learn track (Phase 17, ten chapters; the review pass is not done) whose live examples are built into frames by `node demos/docs/scripts/learn.ts` and held to the chapter order by `demos/docs/test/learn.test.ts`; a CSS Variables reference page generated from the compiled `core.css` (`node demos/docs/scripts/variables.ts`), one live swatch per colour token; TypeScript, shell and JSON samples outside the Learn track are still hand-written; its build (`pnpm --filter docs build`) includes `demo-core` under `demos/demo-core/`, linked from the home page and the core Getting Started page; released as a git-flow `static-site` artifact and deployed to GitHub Pages with `gitflow deploy` (see Docs site below; not deployed yet) |
-| `demos/demo-core` | Vanilla TS + Vite | 🟡 In Progress — builds again (root `pnpm build` and CI build it): two themes, modes, tones, nested themes and density through the public `theme` module only (`t.apply-palette()`, `t.tone()`, `t.bg()`, `t.filled()`, `t.outlined()`, `t.container()`); the docs build copies it into the site as the live demo. Still a single hand-written page with no tests of its own |
+| `demos/docs` | Angular 22 + Material 22 docs/showcase site | 🟡 In Progress — all pages built; every Sass, CSS and attribute sample is a real file under `demos/docs/src/examples/`, compiled and checked by `pnpm test` and rendered live from the same file; theme + mode switching working (the switcher also offers `acme`, the theme of the example package `@acme/theme`, which the app takes through Sass), saved theme and mode painted on the first frame (`node demos/docs/test/startup.ts`), a Components page in the ng-material section with every Angular Material 22 component family live (27 sections, the accent families repeated under `palette="secondary"`, `"tertiary"`, `"error"` and `"brand"`, and the overlays inside a nested `theme` and a nested `themeMode`; Phase 15 done), painted-contrast report over the showcase and the component gallery, where a component label below 4.5:1 is an error (`node demos/docs/test/render.ts`), pixel check of the palette chain on Getting Started and the showcase (`node demos/docs/test/chain.ts`); a Learn track (Phases 17 and 18, eleven chapters; chapter 11 is "Ship your theme as a package") whose live examples are built into frames by `node demos/docs/scripts/learn.ts` and held to the chapter order by `demos/docs/test/learn.test.ts`; a CSS Variables reference page generated from the compiled `core.css` (`node demos/docs/scripts/variables.ts`), one live swatch per colour token; TypeScript, shell and JSON samples outside the Learn track are still hand-written; its build (`pnpm --filter docs build`) includes `demo-core` under `demos/demo-core/`, linked from the home page and the core Getting Started page; released as a git-flow `static-site` artifact and deployed to GitHub Pages with `gitflow deploy` (see Docs site below; not deployed yet) |
+| `demos/demo-core` | Vanilla TS + Vite | 🟡 In Progress — builds again (root `pnpm build` and CI build it): two themes of its own and a third, `acme`, from the compiled CSS of `@acme/theme` (`demos/demo-brand-core`), modes, tones, nested themes and density through the public `theme` module only (`t.apply-palette()`, `t.tone()`, `t.bg()`, `t.filled()`, `t.outlined()`, `t.container()`); the docs build copies it into the site as the live demo. Still a single hand-written page with no tests of its own |
 | `demos/demo-material` | Angular + Material adapter | ⬛ Stub |
-| `demos/demo-brand-core` | Example brand theme pack | ⬛ Stub |
-| `demos/demo-brand-material` | Example brand + Material | ⬛ Stub |
+| `demos/demo-brand-core` | `@acme/theme`: the example of a theme shipped as a package (private, never published) | ✅ Done — `scss/_index.scss` exports `$theme` and `define()`, `dist/acme.css` is the same theme compiled, cp-theming is a peer dependency, `pnpm run pack:check` lists what would be published; its [README](demos/demo-brand-core/README.md) shows both ways to use it |
+| `demos/demo-brand-material` | `@acme/theme-material`: the same theme for Angular Material apps (private, never published) | ✅ Done — one `define()` for the theme, the adapter, its patches and Acme's own; `dist/acme-material.css` takes the place of the adapter's two stylesheets; see its [README](demos/demo-brand-material/README.md). No app in the repository uses it yet |
 
 ---
 
@@ -59,7 +59,7 @@ exact version (see the repository's Releases).
 | 4 | Precompiled CSS per preset theme | ✅ Done |
 | 5 | `theme-ng-core` — Angular signals wrapper | ✅ Done |
 | 6 | `theme-ng-material` — Angular Material M3 adapter + density scopes | ✅ Done |
-| 7 | `demos/docs` — Documentation + showcase site | 🟡 In Progress — docs examples are real, checked files (PORT-PLAN.md "Phase 7 (resumed)" done); the four demos below the docs are still stubs |
+| 7 | `demos/docs` — Documentation + showcase site | 🟡 In Progress — docs examples are real, checked files (PORT-PLAN.md "Phase 7 (resumed)" done); `demos/demo-material` is still a stub |
 | 8 | Test harness and CI (`node --test` CSS checks, vitest API tests, Playwright `render.ts`, git-flow `test.yml`) | ✅ Done |
 | 9 | Cascade: a theme is one rule; core derives once | ✅ Done |
 | 10 | Contrast and alpha (`--contrast` by a luminance step; every derivation opaque except the tints) | ✅ Done |
@@ -72,9 +72,10 @@ exact version (see the repository's Releases).
 | 14d | A theme without a brand uses its primary as the brand: the brand pair of such a theme points at its primary pair, so `palette="brand"` on a preset paints the preset's primary; with no theme the brand stays grey | ✅ Done |
 | 15 | Material component gallery in the ng-material docs (Components page, every family an example file, `render.ts` screenshots it per preset and mode with overlays open and fails a component label below 4.5:1) | ✅ Done |
 | 16 | Wrap-up: the docs site as a git-flow `static-site` artifact deployed to GitHub Pages (`pages.yml` deleted), `demos/demo-core` building again and hosted inside the docs site, gallery demo links as same-page anchors with a check that refuses a relative `href` | ✅ Done — in the repo; the first deploy has not been run |
-| 17 | Docs that teach: a Learn track of ten chapters with live examples, the existing pages as the Reference underneath | 🟡 In Progress — the ten chapters are written and pass the order check: Learn / Reference / Explore navigation with Learn first on the home page, the chapter page shape, live examples as files under `demos/docs/src/examples/learn/` that the docs build renders into `<iframe>` documents with their source beside them (chapter 9's with a script, chapter 10's rendered by Angular from the Components gallery), the order check, which fails the build, and the Reference's CSS Variables page generated from the compiled `core.css`. The review pass (one reader per chapter) is not done |
+| 17 | Docs that teach: a Learn track of ten chapters with live examples, the existing pages as the Reference underneath | ✅ Done — the ten chapters are written and pass the order check: Learn / Reference / Explore navigation with Learn first on the home page, the chapter page shape, live examples as files under `demos/docs/src/examples/learn/` that the docs build renders into `<iframe>` documents with their source beside them (chapter 9's with a script, chapter 10's rendered by Angular from the Components gallery), the order check, which fails the build, and the Reference's CSS Variables page generated from the compiled `core.css`. The review pass (one reader per chapter, Session 17) is done |
+| 18 | A theme as a package: `demos/demo-brand-core` and `demos/demo-brand-material` as the example packages `@acme/theme` and `@acme/theme-material`, used by `demo-core` (compiled CSS) and the docs app (Sass); Learn chapter 11 and a Theme packages guide | ✅ Done |
 
-Phases 8–17 are specified in [PORT-PLAN.md](PORT-PLAN.md); 14, 14b, 14c, 14d and 15 were done before 13.
+Phases 8–18 are specified in [PORT-PLAN.md](PORT-PLAN.md); 14, 14b, 14c, 14d and 15 were done before 13.
 
 ### Docs site
 
@@ -145,9 +146,10 @@ shows Material components without hover, focus and press layers.
 
 ```bash
 pnpm install
-pnpm build         # builds @cpangular/cp-theming-core and demos/demo-core
+pnpm build         # builds core, the two example theme packages (@acme/theme, @acme/theme-material), demos/demo-core and the docs site
 pnpm --filter docs build   # the docs site as it is deployed: core, the adapter and demo-core first, then ng build, then demo-core copied to dist/docs/browser/demos/demo-core/
-pnpm build.core    # the same, by name
+pnpm build.core    # core only
+pnpm --filter @acme/theme pack:check   # the example theme package: build, then list what would be published
 pnpm --filter @cpangular/cp-theming-ng-material build   # the adapter's CSS; the docs app reads it, so run it before `npx ng build docs` after a change in scss/
 pnpm test          # CSS checks (node --test) + TypeScript API tests (vitest) in both packages, and the docs examples
 pnpm fix           # format all files with prettier

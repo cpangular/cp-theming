@@ -6,7 +6,10 @@
   "scripts": {
     "build": "wireit",
     "build.core": "wireit",
+    "build.acme-theme": "wireit",
+    "build.acme-theme-material": "wireit",
     "build.demo-core": "wireit",
+    "build.docs": "wireit",
     "test": "wireit",
     "fix": "wireit",
     "gitflow": "gitflow",
@@ -94,14 +97,33 @@
     "build": {
       "dependencies": [
         "build.core",
-        "build.demo-core"
+        "build.acme-theme",
+        "build.acme-theme-material",
+        "build.demo-core",
+        "build.docs"
       ]
     },
     "build.core": {
       "command": "pnpm --filter @cpangular/cp-theming-core build"
     },
+    "build.acme-theme": {
+      "command": "pnpm --filter @acme/theme build"
+    },
+    "build.acme-theme-material": {
+      "command": "pnpm --filter @acme/theme-material build"
+    },
     "build.demo-core": {
-      "command": "pnpm --filter demo-core build"
+      "command": "pnpm --filter demo-core build",
+      "dependencies": [
+        "build.core",
+        "build.acme-theme"
+      ]
+    },
+    "build.docs": {
+      "command": "pnpm --filter docs build",
+      "dependencies": [
+        "build.demo-core"
+      ]
     },
     "test": {
       "dependencies": [

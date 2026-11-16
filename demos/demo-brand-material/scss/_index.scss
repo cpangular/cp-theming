@@ -1,0 +1,41 @@
+// @acme/theme-material: the Acme theme for an app that uses Angular Material.
+//
+//   @use "@cpangular/cp-theming-core/scss/theme" as t;
+//   @use "@acme/theme-material" as acme;
+//
+//   @include t.define-core-theme(); // core, once per app, before any theme
+//   @include acme.define();
+//
+// One include in place of four: the theme from @acme/theme, cp-theming's
+// Material adapter, the adapter's patches, and Acme's own. An app without Sass
+// loads dist/acme-material.css instead (see acme-material.scss).
+@use "@acme/theme" as acme;
+@use "@cpangular/cp-theming-ng-material/scss/material" as mat;
+
+// The theme itself, for an app that wants to read it.
+@forward "@acme/theme" show $theme;
+
+// Acme's own patches, after the adapter's. Each sets a token Angular Material
+// reads, from a variable of the theme.
+@mixin overrides() {
+  // Acme's buttons are rounded rectangles, not Material's pills: the theme's
+  // medium corner. On every theme element, so a nested theme uses its own.
+  :where(:root, [theme]) {
+    --mat-button-filled-container-shape: var(--shape--md);
+    --mat-button-tonal-container-shape: var(--shape--md);
+    --mat-button-outlined-container-shape: var(--shape--md);
+    --mat-button-protected-container-shape: var(--shape--md);
+    --mat-button-text-container-shape: var(--shape--md);
+  }
+}
+
+// Writes the theme as [theme="acme"] and everything Angular Material needs to
+// follow it. The order is cp-theming's: themes, then the adapter, then patches.
+// $default is passed on to the theme (see @acme/theme).
+@mixin define($default: true) {
+  @include acme.define($default);
+  @include mat.define-ng-material-core-theme();
+  @include mat.apply-material-overrides();
+  @include mat.apply-material-density-scopes();
+  @include overrides();
+}
