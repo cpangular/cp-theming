@@ -10,12 +10,19 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import { declarationsFor, normalizeSelector, rules } from '../../../theme-core/test/lib/css.ts';
+import {
+  declarationsFor,
+  normalizeSelector,
+  rules,
+  themeSelector,
+} from '../../../theme-core/test/lib/css.ts';
 import { compileSource, materialDir, repoRoot } from '../../../theme-core/test/lib/sass.ts';
 import {
   contextFor,
+  cssColor,
   evaluateColor,
   maxChannelDiff,
+  wcagContrast,
   type Mode,
 } from '../../../theme-core/test/lib/color.ts';
 import {
@@ -129,6 +136,7 @@ const DIRECT: [string, string][] = [
   ['on-surface', 'var(--color--surface--contrast)'],
   ['background', 'var(--color--background)'],
   ['on-background', 'var(--color--background--contrast)'],
+  ['outline', 'var(--color--surface--stroke)'],
   ['outline-variant', 'var(--color--surface--stroke--low)'],
   ['scrim', 'var(--overlay--scrim)'],
   ['shadow', 'var(--overlay--shadow)'],
@@ -327,5 +335,102 @@ for (const theme of themes) {
         `${mode}: --mat-sys-surface is --color--surface`,
       );
     }
+  });
+}
+
+// ─── Outline ─────────────────────────────────────────────────────────────────
+// Every Material outline is the surface's stroke: `outline` is the stroke,
+// `outline-variant` its --low step. A theme sets it by passing its surface a
+// $stroke; a theme that passes none gets core's derived one.
+
+const outlineSheet = materialFixtureSheets().find((s) => s.label.endsWith('outline-theme.scss'))!;
+
+/** A theme's declarations with the adapter's :root ones, as on its element. */
+function withAdapter(decls: Map<string, string>): Map<string, string> {
+  for (const [n, v] of rootDecls) decls.set(n, v);
+  return decls;
+}
+
+/**
+ * The declarations on a [theme="inner"] element inside a theme `outer`: what
+ * the outer element has, then every rule that matches the inner element again
+ * (core's shared and [theme] rules, which re-derive there), then its own rule.
+ */
+function nested(outer: string, inner: string): Map<string, string> {
+  const decls = themeDeclarations(core, outlineSheet, outer);
+  for (const css of [core.css, outlineSheet.css])
+    for (const rule of rules(css)) {
+      if (rule.context.length || !/\[theme\]/.test(rule.selector)) continue;
+      for (const [n, v] of rule.declarations) decls.set(n, v);
+    }
+  for (const [n, v] of declarationsFor(outlineSheet.css, themeSelector(inner))) decls.set(n, v);
+  return withAdapter(decls);
+}
+
+const outline = (decls: Map<string, string>, mode: Mode, role = 'outline') =>
+  evaluateColor(`var(--mat-sys-${role})`, contextFor(decls, mode));
+
+const PASSED: [where: string, decls: () => Map<string, string>, stroke: string][] = [
+  [
+    'a theme that passes its surface a $stroke',
+    () => withAdapter(themeDeclarations(core, outlineSheet, 'fixture-outline')),
+    'oklch(0.68 0.18 286)',
+  ],
+  [
+    'a nested theme that passes its surface a $stroke of its own',
+    () => nested('fixture-outline', 'fixture-outline-nested'),
+    'oklch(0.7 0.16 150)',
+  ],
+];
+
+for (const [where, decls, stroke] of PASSED) {
+  test(`--mat-sys-outline is the stroke passed, in ${where}`, () => {
+    const d = decls();
+    for (const mode of MODES) {
+      assert.ok(maxChannelDiff(outline(d, mode), cssColor(stroke)) < 1e-9, `${mode} outline`);
+      // …and outline-variant is that stroke's --low step.
+      assert.ok(
+        maxChannelDiff(
+          outline(d, mode, 'outline-variant'),
+          evaluateColor('var(--color--surface--stroke--low)', contextFor(d, mode)),
+        ) < 1e-9,
+        `${mode} outline-variant`,
+      );
+    }
+  });
+}
+
+test('in a nested theme that passes no surface, the outline is derived from the surface it inherits', () => {
+  // An explicit role is not inherited into a nested theme (core re-derives it
+  // on every [theme] element), so this is the default stroke of the outer
+  // theme's surface, not the outer theme's $stroke.
+  const d = nested('fixture-outline', 'fixture-outline-primary');
+  for (const mode of MODES) {
+    const surface = evaluateColor('var(--mat-sys-surface)', contextFor(d, mode));
+    assert.ok(
+      maxChannelDiff(surface, cssColor('oklch(0.195 0.06 286)')) < 1e-9,
+      `${mode}: the surface is the outer theme's`,
+    );
+    const ratio = wcagContrast(outline(d, mode), surface);
+    assert.ok(ratio >= 4.5, `${mode}: ${ratio.toFixed(2)}:1`);
+  }
+});
+
+for (const theme of themes) {
+  if (theme.label.endsWith('outline-theme.scss')) continue;
+  test(`core + ${theme.label} + adapter: a theme that passes no $stroke gets core's stroke as its outline, 4.5:1 or more on the surface`, (t) => {
+    const out: string[] = [];
+    for (const mode of MODES) {
+      const ctx = contextFor(theme.decls, mode);
+      const value = evaluateColor('var(--mat-sys-outline)', ctx);
+      assert.ok(
+        maxChannelDiff(value, evaluateColor('var(--color--surface--stroke)', ctx)) < 1e-9,
+        `${mode}: outline is --color--surface--stroke`,
+      );
+      const ratio = wcagContrast(value, evaluateColor('var(--mat-sys-surface)', ctx));
+      out.push(`${mode} ${ratio.toFixed(2)}:1`);
+      assert.ok(ratio >= 4.5, `${mode}: outline ${ratio.toFixed(2)}:1 on the surface`);
+    }
+    t.diagnostic(`outline on the surface: ${out.join(', ')}`);
   });
 }

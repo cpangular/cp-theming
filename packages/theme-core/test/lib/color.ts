@@ -259,7 +259,7 @@ class Parser {
           return (
             fnTok !== undefined &&
             fnTok.type === 'ident' &&
-            !/^(calc|clamp|min|max|var)$/i.test(fnTok.text)
+            !/^(calc|clamp|min|max|var|pow|cos|sin)$/i.test(fnTok.text)
           );
         }
         depth--;
@@ -317,6 +317,13 @@ class Parser {
             return Math.min(...args);
           case 'max':
             return Math.max(...args);
+          case 'pow':
+            return Math.pow(args[0], args[1]);
+          // A plain number is radians, as in CSS.
+          case 'cos':
+            return Math.cos(args[0]);
+          case 'sin':
+            return Math.sin(args[0]);
           default:
             throw new Error(`unsupported function "${fn}" in a channel expression`);
         }

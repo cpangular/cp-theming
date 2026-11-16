@@ -484,6 +484,21 @@ async function checkMaterial(page: Page, folder: string, label: string): Promise
       `${label}: under ${scope} a filled button is ${token} (${lines.join(' / ')})`,
     );
   }
+  // The outlined button's outline is the surface's stroke.
+  const outlined = groups
+    .nth(0)
+    .locator('button', { hasText: /^\s*Outlined\s*$/ })
+    .first();
+  await outlined.hover();
+  await block.locator('.live-roles-name', { hasText: 'Outlined' }).waitFor();
+  const tight = (text: string) => text.replace(/\s+/g, '');
+  const outlineLines = (await block.locator('.live-role').allTextContents()).map(tight);
+  expect(
+    outlineLines.includes(
+      tight('Outline --mat-sys-outline from --color--surface--stroke in theme="harbour"'),
+    ),
+    `${label}: an outlined button's outline is the surface's stroke (${outlineLines.join(' / ')})`,
+  );
   expect(
     new Set(fills).size === 3 && fills.every((f) => !/rgba\(0, 0, 0, 0\)|transparent/.test(f)),
     `${label}: the three scopes paint three colours (${fills.join(', ')})`,
