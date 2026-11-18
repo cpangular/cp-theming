@@ -602,6 +602,31 @@ test('the docs app defines the Getting Started theme exactly as the example show
   assert.match(live, /palette="brand"/);
 });
 
+// The Palette page shows contrast-preference.scss and renders
+// contrast-preference.html with it; src/styles.scss defines that theme again.
+test("the docs app defines the Palette page's red-brand theme exactly as the example shows it", () => {
+  const themeRule = (css: string) =>
+    rules(css)
+      .filter((r) => /\[theme=["']?red-brand["']?\]/.test(r.selector))
+      .map((r) => r.declarations);
+  const example = compiled.get(path.join(examplesDir, 'palette', 'contrast-preference.scss'));
+  assert.ok(example, 'contrast-preference.scss compiles');
+  const app = docsStyleList().find((s) => s.entry.endsWith('docs/src/styles.scss'));
+  assert.ok(app, 'angular.json lists the docs stylesheet');
+  assert.equal(themeRule(example.css).length, 1, 'the example defines red-brand');
+  assert.deepEqual(themeRule(app.compiled.css), themeRule(example.css));
+  // The rule carries the preference: the brand's contrasts, by the prefer-white step.
+  const contrasts = themeRule(example.css)[0].filter(([n]) => n.endsWith('--contrast'));
+  assert.equal(contrasts.length, 7);
+  for (const [name, value] of contrasts) {
+    assert.match(name, /^--color--brand(?:--\w+)?--contrast$/);
+    assert.match(value, /--theme--_contrast-step--prefer-white/);
+  }
+  const live = readFileSync(path.join(examplesDir, 'palette', 'contrast-preference.html'), 'utf8');
+  assert.match(live, /theme="red-brand"/);
+  assert.match(live, /palette="brand"[^>]* filled/);
+});
+
 // Learn chapter 10 renders its example in the page (Angular Material cannot
 // run in a frame), with the two themes its theme.scss defines. src/styles.scss
 // defines them again for the app, and the rules have to be the same.

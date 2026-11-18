@@ -4,7 +4,7 @@ Palettes are the foundation of every theme. Each named palette emits a family of
 
 ## Defining a palette
 
-### `t.palette($base, $color?, $bg?, $stroke?, $focus?)`
+### `t.palette($base, $color?, $bg?, $stroke?, $focus?, $contrast?)`
 
 Builds a single-variation palette config. Pass inside `t.light-dark()` to provide separate light and dark values.
 
@@ -15,6 +15,7 @@ Builds a single-variation palette config. Pass inside `t.light-dark()` to provid
 | `$bg` | `oklch` color | Override for the `bg` (background) role. Defaults to `$base`. |
 | `$stroke` | `oklch` color | Override for the `stroke` role. Defaults to `$base`. |
 | `$focus` | `oklch` color | Override for the focus ring color. Auto-derived when null. |
+| `$contrast` | `prefer-white` \| `prefer-black` | The text colour this palette's colour and its ladder steps take wherever it reaches 3:1 on them. Left out: black or white by luminance, 4.5:1 or more. See [A palette that prefers white or black text](#a-palette-that-prefers-white-or-black-text). |
 
 ```scss
 // Single static palette
@@ -32,6 +33,29 @@ t.palette(
   $bg: oklch(0.93 0.01 253),                // lighter tinted surface for bg
 )
 ```
+
+### A palette that prefers white or black text
+
+`--contrast` is black or white by luminance, whichever reaches 4.5:1. Brand guidelines often say otherwise: a mid-tone red "takes white", where the luminance rule picks black (`#e65151`: black 5.66:1, white 3.71:1). State the brand's rule with `$contrast`:
+
+```scss
+$theme: t.theme(
+  $brand: t.palette(#e65151, $contrast: prefer-white),
+);
+```
+
+- `prefer-white`: the palette's colour and each of its six ladder steps take white text wherever white reaches 3:1 on them (relative luminance below 0.30), black elsewhere. The `--high` / `--low` aliases follow.
+- `prefer-black`: the mirror. Black wherever black reaches 3:1 (luminance 0.10 and up), white elsewhere.
+- Only the colour role changes; the `--bg` and `--stroke` roles keep the default choice.
+- In one config of `t.light-dark()` the preference applies in that mode only.
+- A theme that passes `primary` with a preference and no brand has the same preference on its brand palette (which is that primary). A palette generated from the one with the preference keeps the default.
+- The preference belongs to the theme that passes it: elements inside inherit it, and a theme nested inside chooses by the default rule again unless it passes the preference too.
+
+3:1 is the WCAG floor for large text (24px, or 18.66px bold) and for icons. Smaller text needs 4.5:1: put it on `--color--brand--dark` (for `#e65151` that is `#bb252e`, white at 6.13:1), or make the colour slightly darker (`#d44042`, 0.05 less oklch lightness, is 4.55:1 with white).
+
+Mechanism: core declares two more private steps beside `--theme--_contrast-step`, with the cut-off at luminance 0.30 (`--theme--_contrast-step--prefer-white`) and 0.10 (`--theme--_contrast-step--prefer-black`). The theme rule re-declares the seven colour-role contrasts of that palette with the step asked for. A theme without `$contrast` declares no contrast at all.
+
+For one fixed text colour, set `--color--{name}--contrast` in a rule of your own after the theme; nothing checks it.
 
 ## Light/dark variation
 

@@ -58,6 +58,19 @@ This is a CSS-variable-based theming system. Key facts:
 - Contrast (Phase 10): `--contrast` is black or white by a step at relative luminance 0.179 in
   clamped linear sRGB; the step is declared once as `--theme--_contrast-step`. Every relative-colour
   derivation ends `/ 1` (only the tints carry an alpha); a harness check enforces it.
+- Contrast preference (Phase 19, issue #8): `t.palette(…, $contrast: prefer-white | prefer-black)`,
+  also through `$brand: t.palette(…)`. The palette's colour role (the colour and its six ladder
+  steps; the high / low aliases follow) takes the preferred text colour wherever it reaches 3:1,
+  the other elsewhere; the bg and stroke roles keep the default step. Two more private steps on
+  `:where(:root)`, `--theme--_contrast-step--prefer-white` (cut-off luminance 0.30) and
+  `--prefer-black` (0.10); the theme rule re-declares the seven contrasts with the one asked for
+  (`_emit-contrast-preference`, also for the brand a primary-only theme points at its primary). A
+  theme without `$contrast` declares no contrast. A nested theme re-derives with the default step
+  unless it passes the preference itself. A preference in one config of `t.light-dark()` applies
+  in that mode only. Not a fixed colour: that stays a hand-written `--color--x--contrast`.
+  Checks: `test/css/contrast-preference.test.ts` (not a fixture: the fixtures are swept at
+  4.5:1), the `prefer/` rows of `render.ts`, `node demos/docs/test/brand-text.ts` (the Palette
+  page's live example and every figure it states).
 - Material adapter (Phase 11): the `--mat-sys-*` colour roles come from Angular Material's own
   role tables (`theme-ng-material/scss/_roles.scss`); roles cp-theming has a token for map to it
   (containers are `--bg`, one ladder step lighter in dark mode), the rest are `m3-tone()` of the

@@ -212,12 +212,40 @@ $_contrast-step-var: --theme--_contrast-step;
 $_luminance: "(0.2126 * clamp(0, r, 1) + 0.7152 * clamp(0, g, 1) + 0.0722 * clamp(0, b, 1))";
 $_contrast-step: string.unquote("clamp(0, (0.179 - #{$_luminance}) * 1e6, 1)");
 
+// A palette may prefer white or black text: `$contrast: prefer-white` (or
+// `prefer-black`) in t.palette(). Brand guidelines often say "this red takes
+// white" where the step above picks black (#e65151: black 5.66:1, white
+// 3.71:1). The preferred colour is then used wherever it reaches 3:1, the WCAG
+// floor for large text and icons, and the other one elsewhere:
+//
+//   prefer-white  white while 1.05 / (Y + 0.05) >= 3, that is Y < 0.30
+//   prefer-black  black while (Y + 0.05) / 0.05 >= 3, that is Y >= 0.10
+//
+// Each is the same step with another cut-off, declared once beside it. A theme
+// rule re-declares the contrasts of the palette's colour role with it
+// (_emit-contrast-preference()); nothing changes for a palette without one.
+$_contrast-preferences: (
+  prefer-white: (
+    var: --theme--_contrast-step--prefer-white,
+    cutoff: 0.3,
+  ),
+  prefer-black: (
+    var: --theme--_contrast-step--prefer-black,
+    cutoff: 0.1,
+  ),
+);
+
 // Called once from define-core-theme() inside :where(:root): the contrast
 // step, the neutral stroke's channels (see "Neutral stroke"), and every pair of
 // the palette chain pointed at its generated colour (see "Generated
 // palettes"), which a theme that passes the palette replaces.
 @mixin root-defaults() {
   #{$_contrast-step-var}: #{$_contrast-step};
+  @each $preference, $step in $_contrast-preferences {
+    #{map.get($step, var)}: string.unquote(
+      "clamp(0, (#{map.get($step, cutoff)} - #{$_luminance}) * 1e6, 1)"
+    );
+  }
   @include _neutral-stroke-channels();
   @each $name in $_generated-names {
     @include _use-generated($name);
@@ -226,9 +254,13 @@ $_contrast-step: string.unquote("clamp(0, (0.179 - #{$_luminance}) * 1e6, 1)");
 
 // The contrast colour of $origin: the step on all three linear-sRGB channels
 // (black or white), read back as an oklch lightness so the token stays an
-// oklch value, alpha 1.
-@function _contrast-of($origin) {
+// oklch value, alpha 1. $preference picks the step: null (the default one),
+// prefer-white or prefer-black.
+@function _contrast-of($origin, $preference: null) {
   $s: var(#{$_contrast-step-var});
+  @if $preference != null {
+    $s: var(#{map.get(map.get($_contrast-preferences, $preference), var)});
+  }
   @return string.unquote(
     "oklch(from color(from #{$origin} srgb-linear #{$s} #{$s} #{$s}) l 0 0 / 1)"
   );
@@ -634,6 +666,8 @@ $_gamut-passes: 4;
       @include _join(brand, $role);
     }
   }
+  // The brand is the primary, so it takes white or black as the primary does.
+  @include _emit-contrast-preference(brand, map.get($light, contrast), map.get($dark, contrast));
 }
 
 // Public: the root-level pieces of a custom palette name, once per compilation:
@@ -668,8 +702,22 @@ $_gamut-passes: 4;
 //     t.palette(oklch(0.65 0.16 240), $focus: oklch(0.85 0.18 60)),
 //   )
 // If null, focus is auto-derived at CSS runtime from the color role.
-@function config($base, $color: null, $bg: null, $stroke: null, $focus: null) {
-  @return (base: $base, color: $color, bg: $bg, stroke: $stroke, focus: $focus);
+// $contrast — prefer-white or prefer-black: the text colour this palette's
+// colour takes wherever that colour reaches 3:1 on it (see "Contrast"). If
+// null, text is black or white by the default step.
+@function config($base, $color: null, $bg: null, $stroke: null, $focus: null, $contrast: null) {
+  @if $contrast != null and not map.has-key($_contrast-preferences, $contrast) {
+    @error "t.palette(): $contrast is prefer-white or prefer-black, not `#{$contrast}`. " +
+      "For one fixed text colour, set --color--{name}--contrast in a rule after the theme.";
+  }
+  @return (
+    base: $base,
+    color: $color,
+    bg: $bg,
+    stroke: $stroke,
+    focus: $focus,
+    contrast: $contrast
+  );
 }
 
 // Internal: resolve a role from a config, falling back to base
@@ -729,6 +777,35 @@ $_gamut-passes: 4;
   $d-focus: map.get($dark, focus);
   @if $l-focus != null or $d-focus != null {
     @include _explicit-pair($name, focus, $l-focus, $d-focus);
+  }
+
+  @include _emit-contrast-preference($name, map.get($light, contrast), map.get($dark, contrast));
+}
+
+// The contrasts of a palette's colour role under a preference ($contrast in
+// t.palette()): the colour itself and its six ladder steps; the high / low
+// aliases read these, so they follow. $l and $d are the preference of the light
+// and of the dark config (null: the default step); when they differ, each mode
+// gets its own. The bg and stroke roles keep the default step.
+//
+// These declarations sit in the theme rule, so they hold on the element that
+// carries the theme and are inherited below it. A theme nested inside
+// re-derives its contrasts with the default step (the shared derivation rule
+// matches every [theme] element) unless it passes the preference itself: the
+// preference belongs to the theme that passed it.
+$_ladder-steps: "", "--dark", "--darker", "--darkest", "--light", "--lighter", "--lightest";
+
+@mixin _emit-contrast-preference($name, $l, $d) {
+  @if $l != null or $d != null {
+    $p: token($name, color);
+    @each $step in $_ladder-steps {
+      $origin: var(#{$p}#{$step});
+      @if $l == $d {
+        #{$p}#{$step}--contrast: _contrast-of($origin, $l);
+      } @else {
+        #{$p}#{$step}--contrast: light-dark(_contrast-of($origin, $l), _contrast-of($origin, $d));
+      }
+    }
   }
 }
 

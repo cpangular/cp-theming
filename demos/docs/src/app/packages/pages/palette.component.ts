@@ -7,11 +7,22 @@ import brandOnlyScss from '../../../examples/palette/brand-only.scss' with { loa
 import primaryOnlyScss from '../../../examples/palette/primary-only.scss' with { loader: 'text' };
 import fromBrandScss from '../../../examples/palette/from-brand.scss' with { loader: 'text' };
 import derivedOutputCss from '../../../examples/palette/derived.output.css' with { loader: 'text' };
+import contrastPreferenceScss from '../../../examples/palette/contrast-preference.scss' with {
+  loader: 'text',
+};
+import contrastPreferenceHtml from '../../../examples/palette/contrast-preference.html' with {
+  loader: 'text',
+};
+import contrastFixedScss from '../../../examples/palette/contrast-fixed.scss' with {
+  loader: 'text',
+};
+import { ThemeExampleComponent } from '../../shared/theme-example.component';
 
 const TOC = [
   { label: 'Overview', anchor: 'overview' },
   { label: 'Brand, accents and neutrals', anchor: 'chain' },
   { label: 'Runtime derivatives', anchor: 'runtime-derivatives' },
+  { label: 'Brand colours that take white text', anchor: 'brand-text' },
   { label: 'Color variables', anchor: 'color-variables' },
   { label: 'API Reference', anchor: 'api' },
   { label: 'palette()', anchor: 'palette-fn' },
@@ -24,7 +35,7 @@ const TOC = [
 @Component({
   selector: 'cpa-palette-page',
   standalone: true,
-  imports: [CodeComponent],
+  imports: [CodeComponent, ThemeExampleComponent],
   template: `
     <article class="doc-page">
       <header class="page-header">
@@ -140,8 +151,67 @@ const TOC = [
           relative luminance is below 0.179, black text above it. That is the point where both give
           the same contrast, so the text reaches at least 4.5:1 on every opaque colour, in any
           colour format and whatever its hue. Every derived colour is opaque (alpha 1) even when the
-          input is not; only the tints carry an alpha.
+          input is not; only the tints carry an alpha. A palette can prefer white or black instead,
+          down to 3:1: see <a href="#brand-text">Brand colours that take white text</a>.
         </p>
+      </section>
+
+      <section id="brand-text" class="page-section">
+        <h2>Brand colours that take white text</h2>
+        <p>
+          Brand guidelines often pair a mid-tone colour with white: a red header with a white logo.
+          <code>--contrast</code> is chosen by luminance, and for such a colour it picks black. On
+          <code>#e65151</code> black text is 5.66:1 and white text 3.71:1. To state the brand's
+          rule, give the palette a preference with <code>$contrast</code>:
+        </p>
+        <cpa-code [code]="ex.contrastPreferenceScss" lang="scss" />
+        <p>
+          With <code>prefer-white</code>, the palette's colour and each of its ladder steps take
+          white text wherever white reaches 3:1 on them, and black everywhere else, so a step too
+          light for white still gets black. <code>prefer-black</code> is the mirror: black wherever
+          black reaches 3:1, white elsewhere. Without <code>$contrast</code> nothing changes: text
+          is the one of the two that reaches 4.5:1. The preference covers the colour itself and its
+          steps (<code>--color--brand--contrast</code>, <code>--color--brand--dark--contrast</code>,
+          the <code>--high</code> and <code>--low</code> aliases and so on); the palette's
+          <code>--bg</code> and <code>--stroke</code> roles keep the default choice.
+        </p>
+        <cpa-theme-example
+          title="A brand that prefers white text"
+          [attrsHtml]="ex.contrastPreferenceHtml"
+        />
+        <p>
+          <strong>What 3:1 is enough for.</strong> 3:1 is what WCAG asks of large text (24px, or
+          18.66px bold) and of icons, so a header's title and its icons pass on the brand colour.
+          Smaller text needs 4.5:1. There are two ways to give it that. Put it on the next step,
+          <code>--color--brand--dark</code> (<code>tone="high"</code> in light mode): for
+          <code>#e65151</code> that is <code>#bb252e</code>, where white is 6.13:1. Or make the
+          header colour slightly darker: <code>#e65151</code> with 0.05 less oklch lightness is
+          <code>#d44042</code>, where white is 4.55:1.
+        </p>
+        <p>
+          <strong>Brand and primary.</strong> <code>brand</code> is identity: the header, the logo,
+          a few highlights. <code>primary</code> is interaction: buttons, links, the selected state.
+          They do not have to be the same hue. When the guidelines add an accent of another hue, a
+          blue beside the red, pass it as <code>primary</code>: it stays out of the brand's areas
+          and goes on the interactive elements of the content.
+        </p>
+        <p>
+          <strong>A red brand next to <code>error</code>.</strong> Inside the content a red means
+          that something went wrong. Keep the brand red out of the content area, and keep
+          <code>error</code> a distinct red that comes with an icon, so it is never told apart by
+          colour alone.
+        </p>
+        <p>
+          <strong>Nested themes.</strong> The preference belongs to the theme that passes it. The
+          elements inside that theme inherit it; a theme nested inside chooses its text by the
+          default rule again unless it passes the preference too.
+        </p>
+        <p>
+          <strong>One fixed text colour.</strong> To use one text colour whatever the palette's
+          colour is, set the variable in a rule of your own, after the theme. Nothing checks its
+          contrast then:
+        </p>
+        <cpa-code [code]="ex.contrastFixedScss" lang="scss" />
       </section>
 
       <section id="color-variables" class="page-section">
@@ -213,6 +283,8 @@ const TOC = [
               ><span class="api-sig-punct">: </span><span class="api-sig-default">null</span
               ><span class="api-sig-punct">, </span><span class="api-sig-param">$focus</span
               ><span class="api-sig-punct">: </span><span class="api-sig-default">null</span
+              ><span class="api-sig-punct">, </span><span class="api-sig-param">$contrast</span
+              ><span class="api-sig-punct">: </span><span class="api-sig-default">null</span
               ><span class="api-sig-punct">) → </span><span class="api-sig-return">map</span></span
             >
             <div class="api-member-body">
@@ -268,6 +340,20 @@ const TOC = [
                 <div class="api-param-desc">
                   Override for the focus ring color (<code>--color--name--focus</code>). Defaults to
                   a hue-shifted derivative for visibility on same-hue surfaces.
+                </div>
+              </div>
+              <div class="api-param-row">
+                <div>
+                  <span class="api-param-name">$contrast</span
+                  ><span class="api-param-type">prefer-white | prefer-black?</span
+                  ><span class="api-param-default">default by luminance</span>
+                </div>
+                <div class="api-param-desc">
+                  The text colour the palette's colour and its ladder steps take wherever that
+                  colour reaches 3:1 on them; the other one elsewhere. Left out, text is black or
+                  white by luminance, at 4.5:1 or more. In one config of
+                  <code>t.light-dark()</code> it applies in that mode only. Any other value is a
+                  Sass error. See <a href="#brand-text">Brand colours that take white text</a>.
                 </div>
               </div>
             </div>
@@ -541,6 +627,9 @@ export class PalettePageComponent {
     brandOnlyScss,
     primaryOnlyScss,
     fromBrandScss,
+    contrastPreferenceScss,
+    contrastPreferenceHtml,
+    contrastFixedScss,
   };
   readonly paletteOptions = [
     'brand',

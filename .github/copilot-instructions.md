@@ -93,6 +93,16 @@ demos/demo-brand-material/  @acme/theme-material           — Example theme pac
   `--theme--_contrast-step`. Do not go back to a lightness threshold: no single one passes
   every hue.
 
+- **A palette may prefer white or black text, down to 3:1.** `$contrast: prefer-white` (or
+  `prefer-black`) in `t.palette()`, and so in `$brand: t.palette(…)`: the palette's colour and
+  its ladder steps take that text colour wherever it reaches 3:1 on them (WCAG large text and
+  icons), the other one elsewhere. It is the same step with another cut-off (luminance 0.30 /
+  0.10), declared once beside `--theme--_contrast-step`; the theme rule re-declares the seven
+  colour-role contrasts of that palette with it. The default stays the 4.5:1 choice, the bg and
+  stroke roles keep it, and a nested theme goes back to it unless it passes the preference too.
+  Do not turn `$contrast` into a fixed colour: the issue asked for one and the user chose the
+  preference, so that the ladder steps follow the same rule (PORT-PLAN.md Phase 19, #8).
+
 - **Derivations are opaque.** Every relative-colour derivation ends `/ 1`, so a translucent
   input cannot make ladder steps, auto roles or text translucent. Only `--tint-1..5` carry an
   alpha. The contrast check fails a derivation without it.
@@ -224,6 +234,13 @@ demos/demo-brand-material/  @acme/theme-material           — Example theme pac
   exported as `./css/base`. Browser checks: the `base/` rows of `packages/theme-core/test/render.ts`
   and `demos/docs/test/page-base.ts` (after `pnpm --filter docs build`): the docs app takes the
   rule from Sass, `demos/demo-core` as compiled CSS.
+- Contrast preference (PORT-PLAN.md Phase 19, issue #8):
+  `packages/theme-core/test/css/contrast-preference.test.ts` compiles its themes from source
+  (a fixture with `$contrast` would fail the 4.5:1 sweep every fixture gets) and works out what
+  "white reaches 3:1" means from the colour itself, not from the CSS; the `prefer/` rows of
+  `render.ts` are black or white written by hand; `demos/docs/test/brand-text.ts` (after
+  `pnpm --filter docs build`) measures the Palette page's live example and each ratio the page
+  states. Measure a ratio before writing it into a page.
 - Fixture themes live in `packages/theme-core/test/fixtures/` and `packages/theme-ng-material/test/fixtures/`.
 - CI: `.github/workflows/test.yml` (cpdevtools/git-flow) runs `github.actions.build` then
   `github.actions.test` in every package that defines them.

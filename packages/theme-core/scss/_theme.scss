@@ -26,8 +26,11 @@
 // (@forward can't rename individual members, so we use wrapper functions.)
 // Every builder returns only the keys it was given; core supplies the defaults.
 
-@function palette($base, $color: null, $bg: null, $stroke: null, $focus: null) {
-  @return _pal.config($base, $color, $bg, $stroke, $focus);
+// $contrast — prefer-white or prefer-black: the palette's colour and its ladder
+// steps take that text colour wherever it reaches 3:1 on them, the other one
+// elsewhere. Without it, text is black or white by luminance (4.5:1 or more).
+@function palette($base, $color: null, $bg: null, $stroke: null, $focus: null, $contrast: null) {
+  @return _pal.config($base, $color, $bg, $stroke, $focus, $contrast);
 }
 
 // palette-from-var($var) — derives a palette from any CSS custom property at runtime.
@@ -206,8 +209,10 @@
 //
 // $brand — the brand colour exactly as the guidelines give it. It becomes the
 // `brand` palette (--color--brand) and is never adjusted; the same as passing
-// `brand: t.palette(…)` in $palettes. A theme that passes `primary` and no
-// brand gets that primary as its brand palette.
+// `brand: t.palette(…)` in $palettes. A colour, or a t.palette() when the brand
+// has more to say (`$brand: t.palette(#e65151, $contrast: prefer-white)`). A
+// theme that passes `primary` and no brand gets that primary as its brand
+// palette.
 @function theme(
   $palettes: (),
   $weights: null,
@@ -304,15 +309,19 @@ $_palette-hooks-emitted: ();
     $palettes: ();
   }
 
-  // $brand is the brand palette: one colour, the same in both modes.
+  // $brand is the brand palette: a colour (the same in both modes), or a
+  // t.palette() config / t.light-dark() pair of them.
   $brand: map.get($theme, brand);
   @if $brand != null {
     @if map.has-key($palettes, brand) {
       @error "Theme `#{$name}` passes the brand colour twice: as $brand and as the `brand` palette.";
     }
+    @if meta.type-of($brand) != map {
+      $brand: _pal.config($brand);
+    }
     $palettes: map.merge(
       (
-        brand: _pal.config($brand),
+        brand: $brand,
       ),
       $palettes
     );

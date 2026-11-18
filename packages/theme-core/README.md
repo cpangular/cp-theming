@@ -158,6 +158,16 @@ Colours follow the chain **brand → primary → secondary, tertiary → backgro
 
 `error`, `warn`, `caution` and `pass` have fixed defaults. A nested theme generates what follows from what it passes and inherits the rest. Details: [docs/palettes.md](docs/palettes.md#brand-accents-and-neutrals-pass-what-you-have).
 
+### Text colour on a palette
+
+`--color--{name}--contrast` is black or white by luminance, at 4.5:1 or more. When the brand's rule is "this colour takes white", say so:
+
+```scss
+$brand: t.palette(#e65151, $contrast: prefer-white),
+```
+
+The palette's colour and its ladder steps then take white wherever white reaches 3:1 (large text and icons), black elsewhere. `prefer-black` is the mirror. Details: [docs/palettes.md](docs/palettes.md#a-palette-that-prefers-white-or-black-text).
+
 ### Custom palette roles
 
 Override individual roles within a palette:

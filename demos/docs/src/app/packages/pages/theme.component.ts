@@ -300,14 +300,16 @@ setMode(ThemeMode.AUTO);</code></pre>
               <div class="api-param-row">
                 <div>
                   <span class="api-param-name">$brand</span
-                  ><span class="api-param-type">color?</span
+                  ><span class="api-param-type">color | palette?</span
                   ><span class="api-param-default">default null</span>
                 </div>
                 <div class="api-param-desc">
                   The brand color, exactly as given: the <code>brand</code> palette,
                   <code>--color--brand</code>. Never adjusted. A primary, background and surface the
                   theme does not pass are generated from it. The same as passing
-                  <code>brand: t.palette(…)</code> in <code>$palettes</code>. Left out, the theme's
+                  <code>brand: t.palette(…)</code> in <code>$palettes</code>, and it takes a
+                  <code>t.palette()</code> too, for a brand that prefers white text
+                  (<code>$contrast</code>, on the Palette page). Left out, the theme's
                   <code>primary</code> is its brand palette.
                 </div>
               </div>

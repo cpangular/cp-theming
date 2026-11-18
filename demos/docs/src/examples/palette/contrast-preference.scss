@@ -1,0 +1,9 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+// The brand red takes white text: the guidelines say so. By luminance core
+// would pick black for it (black 5.66:1, white 3.71:1).
+$red-brand: t.theme(
+  $brand: t.palette(#e65151, $contrast: prefer-white),
+);
+
+@include t.define-theme("red-brand", $red-brand);

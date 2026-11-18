@@ -15,7 +15,8 @@
 // rows that of Phase 14 (palettes a theme did not pass are generated from the
 // nearest thing it passed), the gamut/ rows that of Phase 14c (a generated
 // colour is painted in the hue that was asked for), the base/ rows that of
-// Phase 19 (the opt-in page rule, issue #10). Stylesheets load in the order
+// Phase 19 (the opt-in page rule, issue #10), the prefer/ rows that of Phase 19
+// too (a palette that prefers white or black text, issue #8). Stylesheets load in the order
 // core, themes, adapter, user CSS.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -1215,6 +1216,223 @@ function baseRows(): Row[] {
   ];
 }
 
+// ─── A palette that prefers white or black text (Phase 19, issue #8) ─────────
+// #e65151 takes black by the default step (5.66:1) and white with
+// `$contrast: prefer-white` (3.71:1); #2e7d32 takes white by default and black
+// with prefer-black. Every expectation is black or white, written here.
+const PREFER = { red: '#e65151', green: '#2e7d32' };
+sheets.preferNone = chainTheme('prefer-none', `$brand: ${PREFER.red}`);
+sheets.preferWhite = chainTheme(
+  'prefer-white',
+  `$brand: t.palette(${PREFER.red}, $contrast: prefer-white)`,
+);
+sheets.preferWhiteDefault = chainTheme(
+  'prefer-white-default',
+  `$brand: t.palette(${PREFER.red}, $contrast: prefer-white)`,
+  true,
+);
+// A theme that passes no colour, and one that passes the same preference again.
+sheets.preferInner = chainTheme('prefer-inner', `$density: t.density(-1)`);
+sheets.preferInnerOwn = chainTheme(
+  'prefer-inner-own',
+  `$brand: t.palette(${PREFER.red}, $contrast: prefer-white)`,
+);
+sheets.preferPrimary = chainTheme(
+  'prefer-primary',
+  `$palettes: (primary: t.palette(${PREFER.red}, $contrast: prefer-white))`,
+);
+sheets.preferLightOnly = chainTheme(
+  'prefer-light-only',
+  `$palettes: (primary: t.light-dark(t.palette(${PREFER.red}, $contrast: prefer-white), t.palette(${PREFER.red})))`,
+);
+sheets.preferBlack = chainTheme(
+  'prefer-black',
+  `$palettes: (primary: t.palette(${PREFER.green}, $contrast: prefer-black))`,
+);
+sheets.preferBlackNone = chainTheme(
+  'prefer-black-none',
+  `$palettes: (primary: t.palette(${PREFER.green}))`,
+);
+
+function preferRows(): Row[] {
+  const BLACK = 'rgb(0, 0, 0)';
+  const WHITE = 'rgb(255, 255, 255)';
+  const out: Row[] = [];
+  const row = (
+    id: string,
+    sheet: string,
+    theme: string,
+    token: string,
+    expect: string,
+    more: Partial<Row> = {},
+  ) =>
+    out.push({
+      id: `prefer/${id}`,
+      sheets: ['core', sheet],
+      html: `theme="${theme}"`,
+      body: P,
+      probe: '#p',
+      token,
+      expect,
+      ...more,
+    });
+  const dark = (theme: string) => ({ html: `theme="${theme}" themeMode="dark"` });
+
+  // The colour of the issue: black by default, white when the palette prefers it.
+  row('default/base=black', 'preferNone', 'prefer-none', '--color--brand--contrast', BLACK);
+  row('white/base=white', 'preferWhite', 'prefer-white', '--color--brand--contrast', WHITE);
+  row(
+    'white/base=white/dark-mode',
+    'preferWhite',
+    'prefer-white',
+    '--color--brand--contrast',
+    WHITE,
+    dark('prefer-white'),
+  );
+  // The ladder: the darker steps take white, the lighter ones black (white is under 3:1 there).
+  for (const step of ['dark', 'darker', 'darkest'])
+    row(
+      `white/${step}=white`,
+      'preferWhite',
+      'prefer-white',
+      `--color--brand--${step}--contrast`,
+      WHITE,
+    );
+  for (const step of ['light', 'lighter', 'lightest'])
+    row(
+      `white/${step}=black`,
+      'preferWhite',
+      'prefer-white',
+      `--color--brand--${step}--contrast`,
+      BLACK,
+    );
+  // The aliases follow: high is the dark step in light mode, the light step in dark mode.
+  row(
+    'white/high/light-mode=white',
+    'preferWhite',
+    'prefer-white',
+    '--color--brand--high--contrast',
+    WHITE,
+  );
+  row(
+    'white/high/dark-mode=black',
+    'preferWhite',
+    'prefer-white',
+    '--color--brand--high--contrast',
+    BLACK,
+    dark('prefer-white'),
+  );
+  // What paints with it: a filled brand element's text.
+  row('white/filled-text=white', 'preferWhite', 'prefer-white', 'color', WHITE, {
+    body: '<div id="p" palette="brand" filled>x</div>',
+    read: 'text',
+  });
+  row('default/filled-text=black', 'preferNone', 'prefer-none', 'color', BLACK, {
+    body: '<div id="p" palette="brand" filled>x</div>',
+    read: 'text',
+  });
+  // It resolves where it is used: a themeMode scope inside the page.
+  row('white/nested-mode=white', 'preferWhite', 'prefer-white', '--color--brand--contrast', WHITE, {
+    body: '<div themeMode="dark"><div id="p">x</div></div>',
+  });
+  // A default theme: the page without a theme attribute has it too.
+  row('white/default-theme=white', 'preferWhiteDefault', '', '--color--brand--contrast', WHITE, {
+    html: '',
+  });
+  // The bg and stroke roles keep the default step.
+  row(
+    'white/stroke-role-unchanged',
+    'preferWhite',
+    'prefer-white',
+    '--color--brand--stroke--contrast',
+    BLACK,
+  );
+
+  // The preference belongs to the theme that passed it: a theme nested inside
+  // re-derives with the default step, unless it passes the preference itself.
+  const nested = (inner: string) => ({
+    body: `<div theme="${inner}"><div id="p">x</div></div>`,
+  });
+  row(
+    'nested/theme-without=black',
+    'preferWhite',
+    'prefer-white',
+    '--color--brand--contrast',
+    BLACK,
+    {
+      sheets: ['core', 'preferWhite', 'preferInner'],
+      ...nested('prefer-inner'),
+    },
+  );
+  row(
+    'nested/theme-with-its-own=white',
+    'preferWhite',
+    'prefer-white',
+    '--color--brand--contrast',
+    WHITE,
+    {
+      sheets: ['core', 'preferWhite', 'preferInnerOwn'],
+      ...nested('prefer-inner-own'),
+    },
+  );
+  // …and an element that is not a theme inherits it.
+  row(
+    'nested/plain-element=white',
+    'preferWhite',
+    'prefer-white',
+    '--color--brand--contrast',
+    WHITE,
+    {
+      body: '<section><div id="p">x</div></section>',
+    },
+  );
+
+  // A primary with a preference and no brand: the brand palette is that primary.
+  row(
+    'primary/primary=white',
+    'preferPrimary',
+    'prefer-primary',
+    '--color--primary--contrast',
+    WHITE,
+  );
+  row('primary/brand=white', 'preferPrimary', 'prefer-primary', '--color--brand--contrast', WHITE);
+  // A preference in the light config only.
+  row(
+    'light-only/light=white',
+    'preferLightOnly',
+    'prefer-light-only',
+    '--color--primary--contrast',
+    WHITE,
+  );
+  row(
+    'light-only/dark=black',
+    'preferLightOnly',
+    'prefer-light-only',
+    '--color--primary--contrast',
+    BLACK,
+    dark('prefer-light-only'),
+  );
+
+  // prefer-black, the mirror.
+  row(
+    'black/default=white',
+    'preferBlackNone',
+    'prefer-black-none',
+    '--color--primary--contrast',
+    WHITE,
+  );
+  row('black/base=black', 'preferBlack', 'prefer-black', '--color--primary--contrast', BLACK);
+  // Its darker steps are too dark for black at 3:1: white.
+  row(
+    'black/darker=white',
+    'preferBlack',
+    'prefer-black',
+    '--color--primary--darker--contrast',
+    WHITE,
+  );
+  return out;
+}
+
 function gamutRows(): Row[] {
   const out: Row[] = [];
   const row = (
@@ -2058,6 +2276,7 @@ const rows: Row[] = [
   ...bgTextRows(),
   ...gamutRows(),
   ...baseRows(),
+  ...preferRows(),
   // ── The neutral stroke ───────────────────────────────────────────────────
   ...strokeRows(),
 ];

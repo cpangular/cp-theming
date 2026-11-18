@@ -175,6 +175,11 @@ export const PATTERNS: Pattern[] = [
   { chapter: 7, what: 'the contrast guarantee', pattern: /\bWCAG\b|\b4\.5:1/ },
   {
     chapter: 7,
+    what: 'a palette that prefers white or black text',
+    pattern: /\$contrast\b|\bprefer-(?:white|black)\b/,
+  },
+  {
+    chapter: 7,
     what: 'a fixed palette (error, warn, caution, pass)',
     pattern:
       /--color--(?:error|warn|caution|pass)\b|\bpalette="(?:error|warn|caution|pass)"|\b(?:error|warn|caution|pass):\s*t\./,
@@ -500,6 +505,15 @@ export const REFS: Ref[] = [
 
   // 6 — nesting, $default, coexisting themes
   { name: '$default', chapter: 6, page: 'core/theme', anchor: 'define-theme', find: '$default' },
+
+  // 7 — the contrast guarantee, and a palette's preference within it
+  {
+    name: '$contrast',
+    chapter: 7,
+    page: 'core/palette',
+    anchor: 'brand-text',
+    find: '$contrast',
+  },
 
   // 8 — everything else a theme carries
   {

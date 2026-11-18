@@ -9,6 +9,11 @@
 
 @include t.define-theme("my-brand", t.theme($brand: #ff6a00));
 
+// The Palette page's example of a brand that takes white text, rendered there
+// by examples/palette/contrast-preference.html: the theme of
+// examples/palette/contrast-preference.scss, held to it by the same test.
+@include t.define-theme("red-brand", t.theme($brand: t.palette(#e65151, $contrast: prefer-white)));
+
 // The two themes of Learn chapter 10, whose live example Angular renders in
 // the page: examples/learn/10-material/theme.scss without core and without the
 // adapter, which angular.json loads. The same test holds them to that file.
