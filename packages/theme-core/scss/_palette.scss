@@ -273,7 +273,8 @@ $_contrast-preferences: (
 );
 
 // Called once from define-core-theme() inside :where(:root): the contrast
-// step, the neutral stroke's channels (see "Neutral stroke"), and every pair of
+// step, the gamut factor (see "Gamut correction"), the neutral stroke's
+// channels (see "Neutral stroke"), and every pair of
 // the palette chain pointed at its generated colour (see "Generated
 // palettes"), which a theme that passes the palette replaces.
 @mixin root-defaults() {
@@ -283,6 +284,7 @@ $_contrast-preferences: (
       "clamp(0, (#{map.get($step, cutoff)} - #{$_luminance}) * 1e6, 1)"
     );
   }
+  #{$_gamut-factor-var}: string.unquote($_gamut-factor);
   @include _neutral-stroke-channels();
   @each $name in $_generated-names {
     @include _use-generated($name);
@@ -387,26 +389,38 @@ $_stroke-contrast-lighter: 6;
 // border outlined() draws, the focused outline and the active indicator of a
 // Material field, its caret and its arrow. WCAG 1.4.11 asks 3:1 of such a
 // line, not the 4.5:1 of text, so a mid-tone accent is its own stroke; only
-// one that would not show is moved, keeping its hue and chroma:
+// one that would not show is moved, keeping its hue:
 //
-//   light  lightness clamped into 0.42–0.60. An accent written for a light
-//          page (0.43–0.55 in the presets) is unchanged; a pale one comes
-//          down to 0.60, a near-black one up to 0.42 so it still has a colour.
+//   light  lightness clamped into 0.42–0.55. An accent written for a light
+//          page (0.43–0.55 in the presets) keeps its lightness; a pale one
+//          comes down to 0.55, a near-black one up to 0.42 so it still has a
+//          colour.
 //   dark   no darker than 0.65. An accent written for a dark page (0.67–0.82
-//          in the presets) is unchanged; a darker one (a brand that is one
-//          colour in both modes) comes up to 0.65.
+//          in the presets) keeps its lightness; a darker one (a brand that is
+//          one colour in both modes) comes up to 0.65.
+//
+// Then it gives up chroma until the screen can show it (_in-gamut()), like
+// the text role: a pure yellow brought down to 0.55 keeps a chroma sRGB does
+// not hold there, and clipped it is painted as an ochre, 12° from its hue.
+// This also applies to an accent the band does not move but that is written
+// outside sRGB (half of the presets' are: azure-blue's light primary,
+// oklch(0.43 0.19 253), has a red channel of −0.16). Its fill is painted as
+// the browser clips it; its stroke is the same lightness and hue with the
+// chroma sRGB holds. An accent inside sRGB and inside the band is its own
+// stroke, exactly.
 //
 // Until Phase 19 the band was 0.42–0.60 in both modes, which made a dark-mode
 // accent's stroke darker than the accent: 2.7–3.0:1 for the primary of three
 // of the four presets on the container of a filled Material field. Now the
-// presets' dark strokes are their accents (3.6:1 or more there), and at the
-// floor of 0.65 any colour sRGB can show is 3.2:1 or more there and 4.4:1 on
-// the surface. In light mode the presets' strokes are 3.2:1 or more on that
-// container; the ceiling of 0.60 itself is not enough for every hue (a green
-// at 0.60 is 2.9:1 on the presets' surface), so a pale accent of such a hue
-// wants a `$stroke` of its own.
+// presets' dark strokes are at their accents' lightness (3.6:1 or more
+// there), and at the floor of 0.65 any colour is 3.1:1 or more there and
+// 4.3:1 on the surface. In light mode the ceiling was 0.60 until Session C,
+// where a green is 2.9:1 on the presets' surface; at 0.55 every colour is
+// 3.58:1 or more on the presets' surface, 4.1:1 on their background and
+// 3.04:1 on that container. The presets' own light strokes are 3.2:1 or more
+// on the container.
 $_accent-stroke-lightness: (
-  light: string.unquote("clamp(0.42, l, 0.6)"),
+  light: string.unquote("clamp(0.42, l, 0.55)"),
   dark: string.unquote("max(l, 0.65)"),
 );
 
@@ -438,6 +452,11 @@ $_text-lightness: (
 
 @function _as-text($origin, $mode) {
   @return _in-gamut("oklch(from #{$origin} #{map.get($_text-lightness, $mode)} c h / 1)");
+}
+
+// The accent stroke of $origin (see "Accent stroke"): the band, then inside sRGB.
+@function _accent-stroke($origin, $mode) {
+  @return _in-gamut("oklch(from #{$origin} #{map.get($_accent-stroke-lightness, $mode)} c h / 1)");
 }
 
 // All modifier vars + their contrasts for one role.
@@ -533,9 +552,7 @@ $_text-lightness: (
     @if $name == background or $name == surface {
       #{token($name, stroke)}--mode-#{$mode}: _neutral-stroke(var(#{$c}--mode-#{$mode}));
     } @else {
-      #{token($name, stroke)}--mode-#{$mode}: oklch(
-        from var(#{$c}--mode-#{$mode}) #{map.get($_accent-stroke-lightness, $mode)} c h / 1
-      );
+      #{token($name, stroke)}--mode-#{$mode}: _accent-stroke(var(#{$c}--mode-#{$mode}), $mode);
       #{token($name, text)}--mode-#{$mode}: _as-text(var(#{$c}--mode-#{$mode}), $mode);
     }
     #{token($name, focus)}--mode-#{$mode}: oklch(
@@ -695,12 +712,19 @@ $_generated-names: primary, secondary, tertiary, background, surface;
 // its hue than before, not on it.
 //
 // A colour already inside sRGB comes back unchanged, a grey stays grey.
+//
+// The factor reads r, g and b, so it only means something inside
+// `color(from … srgb …)`. Like the contrast step, core declares it once on
+// :where(:root) as a private variable and each pass substitutes it: written
+// out it is 80 bytes four times in every corrected colour, and the text role
+// alone has twenty of those.
+$_gamut-factor-var: --theme--_gamut-factor;
 $_gamut-factor: "calc(1 - 2 * clamp(0, max(r - 1, g - 1, b - 1, -1 * r, -1 * g, -1 * b), 0.25))";
 $_gamut-passes: 4;
 
 @function _in-gamut($colour) {
   @for $i from 1 through $_gamut-passes {
-    $colour: "oklch(from color(from #{$colour} srgb r g b / #{$_gamut-factor}) l calc(c * alpha) h / 1)";
+    $colour: "oklch(from color(from #{$colour} srgb r g b / var(#{$_gamut-factor-var})) l calc(c * alpha) h / 1)";
   }
   @return string.unquote($colour);
 }

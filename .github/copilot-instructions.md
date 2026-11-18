@@ -107,8 +107,11 @@ demos/demo-brand-material/  @acme/theme-material           — Example theme pac
   text (links, headings, labels): the colour, no lighter than 0.40 in light mode and no darker
   than 0.82 in dark, same hue, inside sRGB (`_palette.scss`, "Text role"). A registered pair like
   stroke and focus, derived on the shared selector, replaced by `$text`. `background` and
-  `surface` have none. The accent stroke is the colour moved into a band per mode (0.42–0.60
-  light, 0.65 or more dark): a line needs 3:1, not 4.5:1, so a mid-tone accent is its own stroke.
+  `surface` have none. The accent stroke is the colour moved into a band per mode (0.42–0.55
+  light, 0.65 or more dark) and then brought inside sRGB like the text role (`_in-gamut()`): a
+  line needs 3:1, not 4.5:1, so a mid-tone accent that sRGB can show is its own stroke. An accent
+  written outside sRGB (half of the presets' are) keeps its lightness and hue as a stroke and
+  gives up chroma, so its stroke is not the colour its fill is painted in.
   The Material adapter points Material's accent labels at the text role and its accent lines
   (a field's focused outline, indicator, caret, arrow) at the stroke, and declares those
   component tokens where `--mat-sys-primary` is declared (theme elements, at no specificity, and

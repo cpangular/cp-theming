@@ -79,9 +79,12 @@ This is a CSS-variable-based theming system. Key facts:
   and `max(l, 0.82)` in dark, hue and chroma kept, through `_in-gamut()`; a registered pair
   derived on the shared selector like stroke and focus (ten registrations per accent, eight per
   neutral: 125 in core), replaced by `$text` in `t.palette()` (a Sass error on a neutral). The
-  accent stroke is per mode: `clamp(0.42, l, 0.6)` in light, `max(l, 0.65)` in dark (it was
-  0.42–0.60 in both, which put a dark-mode accent's stroke under 3:1 on a filled field), so a
-  preset's stroke is its accent in both modes. The Material adapter reads both
+  accent stroke is per mode: `clamp(0.42, l, 0.55)` in light, `max(l, 0.65)` in dark (it was
+  0.42–0.60 in both, which put a dark-mode accent's stroke under 3:1 on a filled field; the
+  light ceiling was 0.60 until Session C, 2.9:1 for a pale green on the presets' surface), then
+  through `_in-gamut()` like the text role. So a preset's stroke has its accent's lightness and
+  hue in both modes; 33 of the presets' 64 accents are written outside sRGB, and those strokes
+  have less chroma than the clipped fill. The Material adapter reads both
   (`theme-ng-material/scss/_tokens.scss`): labels Material paints in primary or error are
   `var(--color--{name}--text)`, the lines (a field's focused outline, active indicator, caret,
   arrow) `var(--color--{name}--stroke)`, declared by `define-ng-material-core-theme()` on

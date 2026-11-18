@@ -241,8 +241,9 @@ const TOC = [
           <code>--color--primary</code>, with <code>--color--primary--contrast</code> as the text on
           it. A line (a border, an underline, an outline) is <code>--color--primary--stroke</code>.
           A line needs 3:1, not 4.5:1, so the stroke is the colour itself wherever a line in it
-          shows on the page: lightness 0.42 to 0.60 in light mode, 0.65 or more in dark mode. A
-          colour outside that range is moved into it.
+          shows on the page: lightness 0.42 to 0.55 in light mode, 0.65 or more in dark mode. A
+          colour outside that range is moved into it, and, like the text role, a stroke gives up
+          chroma when the screen cannot show the colour.
         </p>
         <p>
           <strong>With Angular Material.</strong> The Material adapter gives the same two roles to
@@ -374,8 +375,8 @@ const TOC = [
                 </div>
                 <div class="api-param-desc">
                   Override for the border role (<code>--color--name--stroke</code>). Derived when
-                  left out: the colour with its lightness kept between 0.42 and 0.60 in light mode
-                  and at 0.65 or more in dark mode, or, for <code>background</code> and
+                  left out: the colour with its lightness kept between 0.42 and 0.55 in light mode
+                  and at 0.65 or more in dark mode, inside sRGB, or, for <code>background</code> and
                   <code>surface</code>, a boundary 4.5:1 or more against the palette's own colour in
                   either mode. The Material adapter's outlines are the surface's stroke; a focused
                   field's outline is the accent's.

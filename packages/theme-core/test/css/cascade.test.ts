@@ -342,7 +342,7 @@ test('fixtures/brand: a custom palette gets its registrations, derivations and [
   // The accent is wrapped by the gamut correction (Phase 14c), which names its origin once.
   const primary = decls.get('--color--primary--mode-light')!;
   assert.match(primary, /^oklch\(from color\(from oklch\(/);
-  assert.deepEqual(primary.match(/var\([\w-]+\)/g), ['var(--color--brand)']);
+  assert.deepEqual(primary.match(/var\(--color[\w-]+\)/g), ['var(--color--brand)']);
   assert.match(primary, /oklch\(from var\(--color--brand\) clamp\(/);
   assert.match(decls.get('--color--background--mode-dark')!, /^oklch\(from var\(--color--brand\)/);
 });
@@ -401,16 +401,19 @@ test('core derives the auto bg, stroke, focus and text into their registered pai
       // background/surface: the neutral stroke, whose channels core declares
       // once on :where(:root) (contrast.test.ts holds it to its ratio).
       // Every other palette: the colour where a line in it shows, per mode
-      // (0.42–0.60 on a light page, 0.65 or lighter on a dark one).
+      // (0.42–0.55 on a light page, 0.65 or lighter on a dark one), wrapped
+      // by the gamut correction.
       const stroke =
         name === 'background' || name === 'surface'
           ? 'var\\(--theme--_stroke-l\\) var\\(--theme--_stroke-c\\) h / 1\\)$'
           : mode === 'light'
-            ? 'clamp\\(0\\.42, l, 0\\.6\\) c h ?/ ?1\\)$'
-            : 'max\\(l, 0\\.65\\) c h ?/ ?1\\)$';
+            ? 'clamp\\(0\\.42, l, 0\\.55\\) c h ?/ ?1\\) srgb '
+            : 'max\\(l, 0\\.65\\) c h ?/ ?1\\) srgb ';
       assert.match(
         shared.get(`--color--${name}--stroke--mode-${mode}`)!,
-        new RegExp(`^oklch\\(from var\\(--color--${name}--mode-${mode}\\) ${stroke}`),
+        new RegExp(
+          `^(oklch\\(from color\\(from )*oklch\\(from var\\(--color--${name}--mode-${mode}\\) ${stroke}`,
+        ),
       );
       assert.match(
         shared.get(`--color--${name}--focus--mode-${mode}`)!,

@@ -5,9 +5,10 @@
 //                            mode, no darker than 0.82 in dark, same hue,
 //                            inside sRGB. 4.5:1 or more on the background and
 //                            on the surface.
-//   --color--{name}--stroke  the colour as a line: 0.42–0.60 in light mode,
-//                            0.65 or lighter in dark. 3:1 or more on the
-//                            background and on the surface.
+//   --color--{name}--stroke  the colour as a line: 0.42–0.55 in light mode,
+//                            0.65 or lighter in dark, same hue, inside sRGB.
+//                            3:1 or more on the background and on the
+//                            surface.
 //
 // Every colour is read from the compiled CSS through the evaluator. The limits
 // and the ratios are written here, not read from the Sass, so a change to
@@ -51,13 +52,19 @@ const TEXT = 4.5;
 const LINE = 3;
 /** The text role's limits: the lightest it is in light mode, the darkest in dark. */
 const TEXT_LIMIT = { light: 0.4, dark: 0.82 };
-const STROKE_BAND = { light: [0.42, 0.6], dark: [0.65, 1] };
+const STROKE_BAND = { light: [0.42, 0.55], dark: [0.65, 1] };
 const EPSILON = 1e-6;
 
 const lightness = (c: ReturnType<typeof evaluateColor>) => c.to('oklch').coords[0] ?? NaN;
 const chroma = (c: ReturnType<typeof evaluateColor>) => c.to('oklch').coords[1] ?? 0;
 const hue = (c: ReturnType<typeof evaluateColor>) => c.to('oklch').coords[2] ?? NaN;
 const hueDistance = (a: number, b: number) => Math.abs(((a - b + 540) % 360) - 180);
+/**
+ * How far the worst sRGB channel lies outside 0–1, before any clipping.
+ * (maxChannelDiff() clips both of its colours, so it cannot answer this.)
+ */
+const outside = (c: ReturnType<typeof evaluateColor>) =>
+  Math.max(0, ...c.to('srgb').coords.map((v) => Math.max((v ?? 0) - 1, -(v ?? 0))));
 
 function theme(name: string, args: string): Stylesheet {
   const compiled = compileSource(
@@ -184,10 +191,7 @@ for (const t of themes) {
         }
 
         // The screen can show it, so the hue painted is the accent's.
-        assert.ok(
-          maxChannelDiff(text, painted(text)) < 0.02,
-          `${where} is inside sRGB: ${text.to('srgb').toString()}`,
-        );
+        assert.ok(outside(text) < 0.02, `${where} is inside sRGB: ${text.to('srgb').toString()}`);
         if (chroma(colour) > 0.03 && chroma(text) > 0.03)
           assert.ok(
             hueDistance(hue(painted(text)), hue(colour)) < 6,
@@ -196,7 +200,7 @@ for (const t of themes) {
 
         // A colour already past the limit, which the screen can show, is unchanged.
         const past = mode === 'light' ? lightness(colour) <= limit : lightness(colour) >= limit;
-        if (past && maxChannelDiff(colour, painted(colour)) < 1e-6)
+        if (past && outside(colour) < 1e-6)
           assert.ok(maxChannelDiff(text, colour) < 1 / 255, `${where} is the colour itself`);
       }
     }
@@ -221,7 +225,14 @@ for (const t of themes.filter((x) => x.preset)) {
           Math.abs(l - Math.min(max, Math.max(min, lightness(colour)))) < 1e-4,
           `${where}: lightness ${l.toFixed(3)} is the colour's, moved into ${min}–${max}`,
         );
-        assert.ok(Math.abs(chroma(stroke) - chroma(colour)) < 1e-4, `${where} keeps the chroma`);
+        // The screen can show it; chroma is only given up for that.
+        assert.ok(
+          outside(stroke) < 0.02,
+          `${where} is inside sRGB: ${stroke.to('srgb').toString()}`,
+        );
+        assert.ok(chroma(stroke) <= chroma(colour) + 1e-4, `${where} gains no chroma`);
+        if (outside(colour) < 1e-6 && Math.abs(l - lightness(colour)) < 1e-4)
+          assert.ok(Math.abs(chroma(stroke) - chroma(colour)) < 1e-4, `${where} keeps the chroma`);
         for (const on of NEUTRALS) {
           const ratio = wcagContrast(stroke, read(`--color--${on}`));
           if (ratio < lowest.ratio) lowest = { ratio, where: `${where} on ${on}` };
@@ -233,23 +244,41 @@ for (const t of themes.filter((x) => x.preset)) {
   });
 }
 
-test('in a preset the stroke of an accent is the accent itself, in both modes', () => {
+test('in a preset the stroke of an accent is the accent, in both modes: its lightness and hue, its chroma as far as sRGB holds it', (ctx) => {
   // The presets write their accents for the page they are on: 0.43–0.55 in
-  // light mode, 0.67–0.82 in dark. Until Phase 19 the dark stroke was held to
-  // 0.60, darker than the accent.
+  // light mode, 0.67–0.82 in dark, so the band moves none of them. (Until
+  // Phase 19 the dark stroke was held to 0.60, darker than the accent.) Many
+  // of them are written with more chroma than sRGB holds at their lightness
+  // (azure-blue's light primary, oklch(0.43 0.19 253), has a red channel of
+  // −0.16); the fill is painted clipped, the stroke gives up the chroma.
+  let beyond = 0;
+  let most = { lost: 0, where: '' };
   for (const t of themes.filter((x) => x.preset))
     for (const mode of MODES) {
       const context = contextFor(t.decls, mode);
-      for (const name of ACCENTS)
-        assert.ok(
-          maxChannelDiff(
-            evaluateColor(`var(--color--${name}--stroke)`, context),
-            evaluateColor(`var(--color--${name})`, context),
-          ) <
-            1 / 255,
-          `${t.label} ${mode} ${name}`,
-        );
+      for (const name of ACCENTS) {
+        const stroke = evaluateColor(`var(--color--${name}--stroke)`, context);
+        const colour = evaluateColor(`var(--color--${name})`, context);
+        const where = `${t.label} ${mode} ${name}`;
+        assert.ok(Math.abs(lightness(stroke) - lightness(colour)) < 1e-4, `${where}: lightness`);
+        assert.ok(hueDistance(hue(stroke), hue(colour)) < 0.01, `${where}: hue`);
+        if (outside(colour) < 1e-6) {
+          assert.ok(maxChannelDiff(stroke, colour) < 1 / 255, `${where} is the accent itself`);
+        } else {
+          beyond++;
+          const lost = 1 - chroma(stroke) / chroma(colour);
+          if (lost > most.lost) most = { lost, where };
+          assert.ok(
+            lost > 0 && lost <= 0.5 + 1e-6,
+            `${where}: ${(lost * 100).toFixed(0)}% of its chroma`,
+          );
+        }
+      }
     }
+  ctx.diagnostic(
+    `${beyond} of ${4 * 2 * ACCENTS.length} preset accents are outside sRGB; ` +
+      `most chroma given up: ${(most.lost * 100).toFixed(0)}% (${most.where})`,
+  );
 });
 
 test('a brand that is one dark colour in both modes: its dark stroke and text are moved to where they show', () => {
@@ -265,6 +294,64 @@ test('a brand that is one dark colour in both modes: its dark stroke and text ar
   assert.ok(wcagContrast(read('--color--brand--text'), surface) >= TEXT);
 });
 
+test('any accent, however pale or vivid: its light stroke is at most 0.55, inside sRGB and 3:1 or more on the presets’ background and surface', (ctx) => {
+  // The ceiling was 0.60 until Session C: a green there is 2.9:1 on the
+  // presets' surface. The stroke is read through the compiled CSS for a sweep
+  // of colours lighter than the ceiling, with the pair set as a theme would.
+  let lowest = { ratio: Infinity, where: '' };
+  let dark = { ratio: Infinity, where: '' };
+  for (const t of themes.filter((x) => x.preset)) {
+    for (const mode of MODES)
+      for (const l of mode === 'light' ? [0.56, 0.6, 0.75, 0.9] : [0.2, 0.4, 0.6, 0.64])
+        for (const c of [0, 0.04, 0.1, 0.16, 0.22, 0.3, 0.37])
+          for (let h = 0; h < 360; h += 6) {
+            const colour = `oklch(${l} ${c} ${h})`;
+            const context = contextFor(
+              t.decls,
+              mode,
+              new Map([[`--color--primary--mode-${mode}`, colour]]),
+            );
+            const stroke = evaluateColor(`var(--color--primary--stroke--mode-${mode})`, context);
+            const limit = STROKE_BAND[mode][mode === 'light' ? 1 : 0];
+            assert.ok(
+              Math.abs(lightness(stroke) - limit) < 1e-4,
+              `${colour}: ${lightness(stroke)}`,
+            );
+            assert.ok(outside(stroke) < 0.02, `${colour} inside sRGB`);
+            for (const on of NEUTRALS) {
+              const ratio = wcagContrast(stroke, evaluateColor(`var(--color--${on})`, context));
+              const where = `${t.label} ${colour} on ${on}`;
+              if (mode === 'light' && ratio < lowest.ratio) lowest = { ratio, where };
+              if (mode === 'dark' && ratio < dark.ratio) dark = { ratio, where };
+              assert.ok(ratio >= LINE, `${mode} ${where}: ${ratio.toFixed(2)}:1`);
+            }
+          }
+  }
+  ctx.diagnostic(`light, at the ceiling: lowest ${lowest.ratio.toFixed(2)}:1 at ${lowest.where}`);
+  ctx.diagnostic(`dark, at the floor: lowest ${dark.ratio.toFixed(2)}:1 at ${dark.where}`);
+});
+
+test('a vivid accent as a line keeps its hue: the chroma is given up, not the hue', () => {
+  // A pure yellow moved down to 0.55 keeps a chroma sRGB does not hold there:
+  // clipped, a browser paints it as an ochre, more than 10° away.
+  const yellow = theme('stroke-yellow', '$palettes: (primary: t.palette(#ffd400))');
+  const context = contextFor(themeDeclarations(core, yellow, 'stroke-yellow'), 'light');
+  const colour = evaluateColor('var(--color--primary)', context);
+  const stroke = evaluateColor('var(--color--primary--stroke)', context);
+  assert.ok(Math.abs(lightness(stroke) - 0.55) < 1e-4);
+  assert.ok(chroma(stroke) < chroma(colour), 'chroma given up');
+  assert.ok(outside(stroke) < 0.02, 'inside sRGB');
+  assert.ok(
+    hueDistance(hue(painted(stroke)), hue(colour)) < 3,
+    `hue ${hue(painted(stroke)).toFixed(1)}, the colour's is ${hue(colour).toFixed(1)}`,
+  );
+  const clipped = painted(cssColor(`oklch(0.55 ${chroma(colour)} ${hue(colour)})`));
+  assert.ok(
+    hueDistance(hue(clipped), hue(colour)) > 10,
+    'the uncorrected colour is painted off its hue',
+  );
+});
+
 test('a vivid accent as text keeps its hue: the chroma is given up, not the hue', () => {
   // An orange at lightness 0.40 with this chroma is outside sRGB: clipped, a
   // browser paints it as a red, 16° away (what Phase 14c found for a primary).
@@ -273,7 +360,7 @@ test('a vivid accent as text keeps its hue: the chroma is given up, not the hue'
   const text = evaluateColor('var(--color--primary--text)', context);
   assert.ok(Math.abs(lightness(text) - 0.4) < 1e-4);
   assert.ok(chroma(text) < 0.2, 'chroma given up');
-  assert.ok(maxChannelDiff(text, painted(text)) < 0.02, 'inside sRGB');
+  assert.ok(outside(text) < 0.02, 'inside sRGB');
   assert.ok(hueDistance(hue(painted(text)), 45) < 3, `hue ${hue(painted(text)).toFixed(1)}`);
   const clipped = painted(cssColor('oklch(0.4 0.2 45)'));
   assert.ok(hueDistance(hue(clipped), 45) > 10, 'the uncorrected colour is painted off its hue');

@@ -134,6 +134,7 @@ for (const [key, name, args] of [
   ['textExplicit', 'text-explicit', '$palettes: (primary: t.palette(#0c6ab6, $text: #084a80))'],
   ['textOrange', 'text-orange', '$palettes: (primary: t.palette(oklch(0.63 0.2 45)))'],
   ['textNavy', 'text-navy', '$brand: oklch(0.25 0.1 260)'],
+  ['strokeYellow', 'stroke-yellow', '$palettes: (primary: t.palette(#ffd400))'],
 ])
   sheets[key] = compileSource(
     `@use "../../scss/theme" as t;\n@include t.define-theme("${name}", t.theme(${args}));`,
@@ -1354,12 +1355,15 @@ function preferRows(): Row[] {
   row('white/default-theme=white', 'preferWhiteDefault', '', '--color--brand--contrast', WHITE, {
     html: '',
   });
-  // The bg and stroke roles keep the default step.
+  // The bg and stroke roles keep the default step. The stroke of #e65151 is
+  // the colour at lightness 0.55 (Session C; 0.60 before), which takes white
+  // under either step, so the row reads the stroke's lighter step: lightness
+  // 0.67, where the default step says black and the preference would say white.
   row(
     'white/stroke-role-unchanged',
     'preferWhite',
     'prefer-white',
-    '--color--brand--stroke--contrast',
+    '--color--brand--stroke--light--contrast',
     BLACK,
   );
 
@@ -1571,7 +1575,8 @@ function strokeRows(): Row[] {
 // ─── An accent as text and as a line (Phase 19, issue #15) ────────────────────
 // --color--{name}--text is the accent held to a lightness and brought inside
 // sRGB (min() / max() over l, then the gamut correction); the accent stroke is
-// the colour moved into a band per mode. These rows prove the browsers evaluate
+// the colour moved into a band per mode, then brought inside sRGB the same
+// way. These rows prove the browsers evaluate
 // both as the evaluator does, for every accent of every preset in both modes.
 // The prediction itself is held to its ratio here (4.5:1 for text, 3:1 for a
 // line, on the background and on the surface), so a row cannot pass with both
@@ -1595,6 +1600,7 @@ const ACCENT_PALETTES = [
 // The orange of the gamut rows as a primary: as text at lightness 0.40 it is
 // outside sRGB, and clipped it would be painted as a red.
 const TEXT_ORANGE = { colour: 'oklch(0.63 0.2 45)', hue: 45 };
+const STROKE_YELLOW_HUE = 94.02;
 
 function accentRows(): Row[] {
   const out: Row[] = [];
@@ -1668,6 +1674,19 @@ function accentRows(): Row[] {
     token: '--color--primary--text',
     expect: expectFrom('textOrange', 'text-orange', '--color--primary--text', 'light'),
     hue: { of: TEXT_ORANGE.hue, within: 6 },
+  });
+  // A vivid accent keeps its hue as a line too. A pure yellow (#ffd400, hue
+  // 94°) comes down to the light ceiling, 0.55, where sRGB holds less than
+  // half of its chroma: uncorrected it is painted as an ochre, 12° away.
+  out.push({
+    id: 'line/vivid-yellow-keeps-its-hue',
+    sheets: ['core', 'strokeYellow'],
+    html: 'theme="stroke-yellow"',
+    body: P,
+    probe: '#p',
+    token: '--color--primary--stroke',
+    expect: expectFrom('strokeYellow', 'stroke-yellow', '--color--primary--stroke', 'light'),
+    hue: { of: STROKE_YELLOW_HUE, within: 3 },
   });
   // A dark brand in dark mode: the line and the text are moved to where they show.
   for (const role of ['stroke', 'text'])

@@ -762,7 +762,7 @@ C (#12, #13, #11: one surface scale, muted text everywhere, Material's shadows) 
   `--color--{name}--text` (`--palette-color--text` in a `[palette]` scope), the colour no lighter
   than 0.40 in light mode and no darker than 0.82 in dark, hue kept, inside sRGB; a registered
   pair derived on the shared selector, which `$text` in `t.palette()` replaces. `background` and
-  `surface` have none. The accent stroke is per mode (0.42–0.60 light, 0.65 or more dark; it was
+  `surface` have none. The accent stroke is per mode (0.42–0.55 light, 0.65 or more dark; it was
   0.42–0.60 in both, under 3:1 on a filled field in dark mode), so a preset's stroke is its
   accent. The Material adapter reads both: labels in primary or error are the text role, a
   field's focused outline, active indicator, caret and arrow the stroke. Palette page: "An accent

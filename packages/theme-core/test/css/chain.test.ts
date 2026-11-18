@@ -100,13 +100,16 @@ const hueDiff = (a: number, b: number) => Math.abs(((a - b + 540) % 360) - 180);
 // ─── Gamut correction (Phase 14c) ────────────────────────────────────────────
 // The three accents give up chroma until sRGB can show them. One pass is two
 // relative colours: the inner one carries a factor in its alpha, the outer one
-// multiplies the chroma by it. Four passes, nested.
+// multiplies the chroma by it. Four passes, nested. The factor is declared
+// once on :where(:root) as a private variable that each pass substitutes
+// (Phase 19, Session C: written out it was 80 bytes, four times per colour).
+const GAMUT_FACTOR_VAR = '--theme--_gamut-factor';
 const GAMUT_FACTOR =
   'calc(1 - 2 * clamp(0, max(r - 1, g - 1, b - 1, -1 * r, -1 * g, -1 * b), 0.25))';
 /** The CSS the Sass must emit around a colour expression. */
 function inGamutCss(expr: string): string {
   for (let pass = 0; pass < 4; pass++)
-    expr = `oklch(from color(from ${expr} srgb r g b / ${GAMUT_FACTOR}) l calc(c * alpha) h / 1)`;
+    expr = `oklch(from color(from ${expr} srgb r g b / var(${GAMUT_FACTOR_VAR})) l calc(c * alpha) h / 1)`;
   return expr;
 }
 /** How far the worst sRGB channel of an oklch colour lies outside 0–1. */
@@ -138,6 +141,25 @@ function gamutChroma(l: number, h: number, cap: number): number {
 const paintedHue = (c: Color) => oklch(painted(c)).h;
 
 // ─── What core declares ──────────────────────────────────────────────────────
+
+test('the gamut factor is declared once, on :where(:root), and nowhere written out', () => {
+  assert.equal(root.get(GAMUT_FACTOR_VAR), GAMUT_FACTOR);
+  const declared = rules(core.css).flatMap((r) => r.declarations);
+  assert.deepEqual(
+    declared.filter(([n]) => n === GAMUT_FACTOR_VAR).length,
+    1,
+    'one declaration in core.css',
+  );
+  // Only that declaration reads the channels this way; every pass substitutes it.
+  assert.deepEqual(
+    declared.filter(([n, v]) => n !== GAMUT_FACTOR_VAR && v.includes('max(r - 1')).map(([n]) => n),
+    [],
+  );
+  const passes = declared.filter(([, v]) => v.includes(`/ var(${GAMUT_FACTOR_VAR}))`));
+  assert.ok(passes.length >= 38, `${passes.length} corrected colours`);
+  for (const [name, value] of passes)
+    assert.equal(value.split(`var(${GAMUT_FACTOR_VAR})`).length - 1, 4, `${name}: four passes`);
+});
 
 test('core declares every generated colour once, on :where(:root, [theme])', () => {
   const light = (name: string) => `var(--color--${name}--mode-light)`;
@@ -189,7 +211,7 @@ test('core declares every generated colour once, on :where(:root, [theme])', () 
   // The colour expression is written once however many passes wrap it.
   for (const name of ['primary', 'secondary', 'tertiary'])
     for (const mode of MODES)
-      assert.equal(shared.get(generated(name, mode))!.split('var(').length - 1, 1, name);
+      assert.equal(shared.get(generated(name, mode))!.split('var(--color').length - 1, 1, name);
   // Exactly these ten, declared nowhere else; nothing generates the brand or a
   // semantic palette.
   const all = rules(core.css).flatMap((r) => r.declarations.map(([n]) => n));
