@@ -1476,12 +1476,13 @@ palette's darker and lighter steps, not only its base.
   primary. A nested theme re-derives with the default step unless it passes the preference
   itself: the preference belongs to the theme that passed it.
 - Measured for #e65151 (IdealLINK's brand): white 3.71:1 (today black, 5.66:1); its `--dark`
-  step (L − 0.12) white at about 5.9:1.
+  step (L − 0.12, #bb252e) white at 6.13:1 (this line said "about 5.9:1" until Session A measured
+  it).
 - A fixed text colour stays possible by hand (`--color--x--contrast` after the theme), as the
   Palette page documents it.
 - Docs, a section on the Palette page, "Brand colours that take white text":
   - the preference and the 3:1 floor: a header title and icons pass; text under 18.66px bold or
-    24px needs 4.5:1, so put it on `--color--brand--dark` (white at about 5.9:1 here) or darken
+    24px needs 4.5:1, so put it on `--color--brand--dark` (white at 6.13:1 here) or darken
     the header colour slightly (#e65151 at L − 0.05, #d44042, is 4.55:1);
   - brand is identity (header, logo, a few highlights), primary is interaction; an accent of
     another hue (blue beside a red brand) stays out of the brand's areas and goes on the
@@ -1519,6 +1520,47 @@ into `node_modules`, and the new resolver check passes for every documented `@us
 white text and its ladder the contrasts above; a token set on a wrapper reaches the buttons inside
 it; `pnpm test`, the order and examples checks and the full `render.ts` run (0 component labels
 below 4.5:1) pass; the four issues are closed by their commits.
+
+**As landed: Session A (#7, #10, #8), 2026-11-18.** Commits e1fd006 (#7), 47ab51e (#10),
+a1586eb (#8).
+
+- #7. Entries under the `sass` condition: core `scss/theme`, `scss/variables`, `scss/presets`
+  (its `index.scss`), `scss/presets/themes`, `scss/presets/palettes`; the adapter
+  `scss/material`; theme-m3 `scss/m3-core`; `./scss/*.scss` in all five packages. The harness
+  importer failed 144 of 480 docs checks before the maps changed, and the docs build without the
+  include path failed with the issue's own error. `demos/docs/test/exports.test.ts` installs each
+  package into a temporary app (its Sass, a placeholder for every compiled file that has a Sass
+  source, a `package.json` with the map under test) and resolves with the esbuild that
+  `@angular/build` depends on.
+- #10. As specified. `demos/docs/test/page-base.ts` checks the built docs app and demo-core.
+- #8. As specified, with these calls of mine:
+  - the preference covers the **colour role** only (the colour and its six steps, 7
+    declarations); the palette's `--bg` and `--stroke` roles keep the default step. The phase
+    said "every contrast of that palette (the base and the six ladder steps)", which I read as
+    the colour role. Extending it to the other two roles is three lines in
+    `_emit-contrast-preference`;
+  - a preference in one config of `t.light-dark()` applies in that mode only (an explicit role
+    given in one mode applies to both; a preference does not);
+  - `$brand` in `t.theme()` now takes a `t.palette()` as well as a colour, which is how a brand
+    passes `$contrast`;
+  - any other `$contrast` value is a Sass error that points at the hand-written
+    `--color--{name}--contrast` for a fixed colour;
+  - the docs app has a theme of its own for the Palette page's live example, `red-brand`.
+- Session A did not run in one go: the container reached its process limit (about 25,000
+  unreaped `git` zombies) part-way through #10 and was restarted before the browser checks.
+
+Checks at the end of Session A: `pnpm build`; `pnpm test` (189 core CSS, 40 API, 52 adapter, 507
+docs, the order and examples checks among them); core `render.ts` 320/320 rows in Chromium,
+Firefox and WebKit; `page-base.ts` and `brand-text.ts` in the three engines; `chain.ts`,
+`startup.ts`, `variables.ts` and `learn.ts` (1111/1111) in Chromium; the docs `render.ts` in
+Chromium: 19,136 gallery labels, 0 component labels below 4.5:1 (lowest 4.73:1). The Firefox
+gallery run was left to Session B, which changes the adapter.
+
+Open after Session A:
+
+- #9, the whole of Session B.
+- The Learn track names neither `t.apply-document-base()` nor `$contrast` in a chapter; both are
+  in `REFS` (chapters 8 and 7) so a chapter may.
 
 ## Decisions already made
 

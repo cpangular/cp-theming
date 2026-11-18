@@ -319,7 +319,7 @@ pnpm --filter @cpangular/cp-theming-core render   # browser check, local only
 
 ## Key Files
 - [PLAN.md](../PLAN.md) — full plan, status, phases
-- [PORT-PLAN.md](../PORT-PLAN.md) — phases 8–18 (harness, cascade, contrast, Material adapter, startup, release, palette chain, gallery, docs that teach, a theme as a package)
+- [PORT-PLAN.md](../PORT-PLAN.md) — phases 8–19 (harness, cascade, contrast, Material adapter, startup, release, palette chain, gallery, docs that teach, a theme as a package, the issues from the first app that moved over)
 - [packages/theme-core/scss/_theme.scss](../packages/theme-core/scss/_theme.scss) — public SCSS API (`@cpangular/cp-theming-core`)
 - [packages/theme-core/scss/_palette.scss](../packages/theme-core/scss/_palette.scss) — palette system
 

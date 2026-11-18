@@ -734,4 +734,29 @@ The two brand demos are the worked example of a company shipping its theme to it
   cover chapter 11; `demos/docs/test/learn.ts` checks in the browser that both apps paint the
   same. Root `pnpm build` now builds core, both packages, demo-core and the docs site.
 
+### 🟡 Phase 19 — Issues from the IdealLINK move (PORT-PLAN.md)
+
+Four issues from the first app that moved to 0.2.0-alpha.0. Session A (core and packaging) is
+done; Session B (#9, the Material adapter) is next.
+
+- ✅ #7 — Sass entry points resolve through `exports`. The Angular CLI takes an `exports` target
+  exactly as mapped, so `"./scss/*": "./scss/*"` never found `_theme.scss`. Every documented entry
+  point now has its own entry under the `sass` condition (core: `scss/theme`, `scss/variables`,
+  `scss/presets`, `scss/presets/themes`, `scss/presets/palettes`; the adapter: `scss/material`;
+  theme-m3: `scss/m3-core`), plus `./scss/*.scss` for a full file name, in `exports` and in core's
+  `publishConfig.exports`; the two `@acme` packages likewise. The harness importer takes a target
+  exactly as mapped; `demos/docs/test/exports.test.ts` resolves every `@use` the docs, READMEs
+  and sources show with `@angular/build`'s own esbuild against both maps; the docs app has no
+  include path into `node_modules`.
+- ✅ #10 — the opt-in page rule. `t.apply-document-base()` emits `:where(body)` with the
+  background colour, its contrast as text and the plain font family; `scss/base.scss` compiles it
+  to `dist/base.css` (`./css/base`). The docs app uses the mixin, demo-core the compiled file.
+  Getting Started has "Style the page" and "Coming from ng-material-theme".
+- ✅ #8 — a palette that prefers white or black text. `t.palette(…, $contrast: prefer-white |
+  prefer-black)`, also through `$brand: t.palette(…)`: the palette's colour and its ladder steps
+  take the preferred colour wherever it reaches 3:1, the other elsewhere. Two more private steps
+  beside `--theme--_contrast-step`; the theme rule re-declares the seven colour-role contrasts.
+  Palette page: "Brand colours that take white text".
+- ⬛ #9 — Material label tokens set on an ancestor are ignored: not started.
+
 ---
