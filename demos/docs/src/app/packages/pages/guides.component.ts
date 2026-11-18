@@ -289,8 +289,11 @@ dist/acme.css       the compiled theme: built, not committed, published</code></
               </li>
               <li>
                 <code>exports</code> names the Sass entry (<code>.</code>, with the
-                <code>sass</code> condition), <code>./scss/*</code> and the compiled file
-                (<code>./css</code>). <code>files</code> lists the top-level
+                <code>sass</code> condition), the files of the <code>scss</code> folder by their
+                full name (<code>./scss/*.scss</code>) and the compiled file (<code>./css</code>).
+                Every target is a file that exists, written with its underscore and its extension:
+                the Angular CLI takes an <code>exports</code> target exactly as it is written and
+                does not complete a name the way Sass does. <code>files</code> lists the top-level
                 <code>_index.scss</code>, the <code>scss</code> folder and <code>dist</code>.
               </li>
               <li>

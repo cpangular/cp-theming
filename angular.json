@@ -29,7 +29,7 @@
             ],
             "inlineStyleLanguage": "scss",
             "stylePreprocessorOptions": {
-              "includePaths": ["demos/docs/src/app/packages/pages", "demos/docs/node_modules"]
+              "includePaths": ["demos/docs/src/app/packages/pages"]
             },
             "styles": [
               "highlight.js/styles/github.min.css",

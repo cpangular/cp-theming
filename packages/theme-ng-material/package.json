@@ -8,7 +8,10 @@
     "directory": "packages/theme-ng-material"
   },
   "exports": {
-    "./scss/*": "./scss/*",
+    "./scss/material": {
+      "sass": "./scss/_material.scss"
+    },
+    "./scss/*.scss": "./scss/*.scss",
     "./css/material-core": "./dist/material-core.css",
     "./css/material-overrides": "./dist/material-overrides.css"
   },

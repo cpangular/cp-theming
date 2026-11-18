@@ -250,7 +250,7 @@ $my-theme: t.theme(
 - `scss/material-core.scss` + `scss/material-overrides.scss` — precompiled entry points
 - `dist/material-core.css` (166 token mappings) + `dist/material-overrides.css` ✅
 - `ng build theme-ng-material` → `dist/theme-ng-material/` (fesm2022 + types) ✅
-- Package exports: `./css/material-core`, `./css/material-overrides`, `./scss/*`
+- Package exports: `./css/material-core`, `./css/material-overrides`, `./scss/material`, `./scss/*.scss`
 
 ### 🟡 Phase 7 — docs site + demos (docs examples done; demo-material pending)
 
@@ -711,7 +711,7 @@ The two brand demos are the worked example of a company shipping its theme to it
   has `define($default: true)` around `t.define-theme('acme', …)`; a one-line `_index.scss` at the
   package root forwards it, so `@use "@acme/theme"` works by folder and through the `sass`
   condition of `exports`; `scss/acme.scss` compiles to `dist/acme.css`, with the load order in its
-  header; `exports` (`.`, `./scss/*`, `./css`), `files`, cp-theming-core as a `workspace:^` peer,
+  header; `exports` (`.`, `./scss/*.scss`, `./css`), `files`, cp-theming-core as a `workspace:^` peer,
   `github.actions.build`, `pack:check`; a README with both ways to use it, the attribute, how an
   app changes one palette (the palette's light and dark pair, in plain CSS) and how to version it
   against cp-theming.

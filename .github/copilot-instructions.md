@@ -209,6 +209,14 @@ demos/demo-brand-material/  @acme/theme-material           — Example theme pac
   (`X.theme.css`: `@import`s of package CSS only, linked by `scripts/learn.ts`). Change a colour
   of the example theme in `scss/_index.scss` only; `demos/docs/test/learn.ts` names the brand
   and tertiary it expects painted.
+- Package paths (PORT-PLAN.md Phase 19, issue #7): `demos/docs/test/exports.test.ts` (in
+  `pnpm test`) resolves every `@use`, `@forward` and `@import` of a workspace package that the
+  docs, READMEs and sources show, with the esbuild `@angular/build` depends on and the options of
+  its stylesheet bundle, against `exports` and `publishConfig.exports`. The Angular CLI takes an
+  `exports` target exactly as written, so each documented Sass entry point is its own entry under
+  the `sass` condition, pointing at the file with its underscore and extension, and
+  `./scss/*.scss` covers a full file name. Do not add a `./scss/*` pattern, and do not add an
+  include path into `node_modules` to the docs app: its build is the proof that the maps work.
 - Fixture themes live in `packages/theme-core/test/fixtures/` and `packages/theme-ng-material/test/fixtures/`.
 - CI: `.github/workflows/test.yml` (cpdevtools/git-flow) runs `github.actions.build` then
   `github.actions.test` in every package that defines them.

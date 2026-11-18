@@ -148,7 +148,13 @@ for (const pkg of PACKAGES) {
     // The Sass path, by the package's name and by folder, and the CSS path.
     assert.equal(resolveExport(pkg.name), path.join(pkg.dir, '_index.scss'));
     assert.match(read(path.join(pkg.dir, '_index.scss')), /^@forward "scss\/index";$/m);
-    assert.equal(resolveExport(`${pkg.name}/scss/index`), path.join(pkg.dir, 'scss/index'));
+    // A file of the scss folder by its full name; nothing Sass would have to
+    // complete (the Angular CLI takes an exports target exactly, issue #7).
+    assert.equal(
+      resolveExport(`${pkg.name}/scss/_index.scss`),
+      path.join(pkg.dir, 'scss/_index.scss'),
+    );
+    assert.equal(manifest.exports['./scss/*'], undefined);
     assert.equal(resolveExport(`${pkg.name}/css`), path.join(pkg.dir, pkg.css));
     assert.deepEqual(manifest.files, ['_index.scss', 'scss', 'dist']);
     assert.deepEqual(Object.keys(manifest.peerDependencies).sort(), pkg.peers);

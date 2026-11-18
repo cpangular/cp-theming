@@ -58,6 +58,7 @@ import {
   docsDir,
   docsStyleList,
   exportsImporters,
+  isFile,
   repoRoot,
   resolveExport,
   sourceOfDist,
@@ -666,12 +667,9 @@ test('every package path an example names is in the package exports', () => {
     const source = readFileSync(file, 'utf8');
     for (const [specifier] of source.matchAll(PACKAGE_SPECIFIER)) {
       const target = resolveExport(specifier);
+      // Exactly as mapped (issue #7): a built file, or a file that exists.
       const exists =
-        typeof target === 'string' &&
-        (existsSync(target) ||
-          sourceOfDist(target) !== null ||
-          existsSync(`${target}.scss`) ||
-          existsSync(path.join(path.dirname(target), `_${path.basename(target)}.scss`)));
+        typeof target === 'string' && (isFile(target) || sourceOfDist(target) !== null);
       if (!exists) bad.push(`${rel(file)}: ${specifier}`);
     }
   }

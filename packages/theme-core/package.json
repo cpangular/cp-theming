@@ -10,7 +10,22 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./scss/*": "./scss/*",
+    "./scss/theme": {
+      "sass": "./scss/_theme.scss"
+    },
+    "./scss/variables": {
+      "sass": "./scss/_variables.scss"
+    },
+    "./scss/presets": {
+      "sass": "./scss/presets/index.scss"
+    },
+    "./scss/presets/themes": {
+      "sass": "./scss/presets/_themes.scss"
+    },
+    "./scss/presets/palettes": {
+      "sass": "./scss/presets/_palettes.scss"
+    },
+    "./scss/*.scss": "./scss/*.scss",
     "./css/core": "./dist/core.css",
     "./css/presets/azure-blue": "./dist/presets/azure-blue.css",
     "./css/presets/rose-red": "./dist/presets/rose-red.css",
@@ -28,7 +43,22 @@
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
       },
-      "./scss/*": "./scss/*",
+      "./scss/theme": {
+        "sass": "./scss/_theme.scss"
+      },
+      "./scss/variables": {
+        "sass": "./scss/_variables.scss"
+      },
+      "./scss/presets": {
+        "sass": "./scss/presets/index.scss"
+      },
+      "./scss/presets/themes": {
+        "sass": "./scss/presets/_themes.scss"
+      },
+      "./scss/presets/palettes": {
+        "sass": "./scss/presets/_palettes.scss"
+      },
+      "./scss/*.scss": "./scss/*.scss",
       "./css/core": "./dist/core.css",
       "./css/presets/azure-blue": "./dist/presets/azure-blue.css",
       "./css/presets/rose-red": "./dist/presets/rose-red.css",

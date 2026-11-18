@@ -1651,9 +1651,15 @@ const NG_MATERIAL_TOC = [
                 </tr>
                 <tr>
                   <td>
-                    <span class="prop-name">&#64;cpangular/cp-theming-ng-material/scss/*</span>
+                    <span class="prop-name"
+                      >&#64;cpangular/cp-theming-ng-material/scss/material</span
+                    >
                   </td>
-                  <td>Full SCSS source including <code>adaptor()</code>.</td>
+                  <td>
+                    The Sass API, including <code>adaptor()</code>. Any other file of the
+                    <code>scss</code> folder is exported by its full name
+                    (<code>scss/_roles.scss</code>).
+                  </td>
                 </tr>
               </tbody>
             </table>

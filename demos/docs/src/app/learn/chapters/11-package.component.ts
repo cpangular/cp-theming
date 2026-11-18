@@ -132,8 +132,11 @@ import packageJson from '../../../../../demo-brand-core/package.json' with { loa
           <li>
             <code>exports</code> lists what an app may load. The first entry is what
             <code>&#64;use "&#64;acme/theme"</code> finds: a file <em>_index.scss</em> at the top of
-            the package, one line long, that passes on <em>scss/_index.scss</em>.
-            <code>./css</code> is the compiled file, the one the second example imports.
+            the package, one line long, that passes on <em>scss/_index.scss</em>. The second lets an
+            app name a file of the <em>scss</em> folder in full. Each entry points at a file that
+            exists, underscore and extension included, because the Angular CLI takes the path
+            exactly as it is written here. <code>./css</code> is the compiled file, the one the
+            second example imports.
           </li>
           <li>
             <code>files</code> is what the published package contains: that one-line file, the

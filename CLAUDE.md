@@ -154,6 +154,16 @@ This is a CSS-variable-based theming system. Key facts:
   `packages/theme-core/test/lib/sass.ts` resolves `@acme/…` through the packages' `exports` like
   `@cpangular/…`. Browser: `node demos/docs/test/learn.ts` (both apps paint the same);
   `node demos/docs/test/render.ts --only=showcase --theme=acme`, `--only=gallery --preset=acme`.
+- Package `exports` (Phase 19, issue #7): the Angular CLI resolves a bare `@use` with esbuild
+  under the `style` / `sass` conditions and takes the target exactly as mapped (no partial
+  underscore, no extension). So every Sass entry point the docs name has its own entry under the
+  `sass` condition pointing at the real file (`./scss/theme` → `./scss/_theme.scss`), and
+  `./scss/*.scss` hands a full file name through. Never a bare `./scss/*` pattern. A new entry
+  point goes into `exports` and, in core, into `publishConfig.exports` as well (the two may differ
+  only at `.`). The harness importer (`test/lib/sass.ts`) fails a target that is not a file as
+  written; `demos/docs/test/exports.test.ts` resolves every `@use` / `@forward` / `@import` of a
+  package that the docs, READMEs and sources show with `@angular/build`'s own esbuild, against
+  both maps. The docs app has no include path into `node_modules`.
 - CSS Variables page (Phase 17): generated. `demos/docs/scripts/variables.ts` reads the compiled
   `core.css` (`scripts/lib/variables.ts`) and writes `demos/docs/.generated/variables.ts`, which
   `pages/variables.component.ts` imports: one live swatch per colour token by palette and role
