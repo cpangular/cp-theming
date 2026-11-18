@@ -44,7 +44,7 @@ How to set things in the VS Code extension (Claude Code chat panel):
 | 18 | Phase 18 a theme as a package | Fable 5.1 | high | Auto |
 | 19 | Phase 19 A: Sass exports, page base rule, prefer-white contrast (#7, #10, #8) | Fable 5.2 | high | Auto |
 | 20 | Phase 19 B: a text colour per accent; Material labels read it (#15, #9) | Fable 5.2 | high | Auto |
-| 21 | Phase 19 C: surface containers, muted text, shadows (#12, #13, #11) | Fable 5.2 | high | Auto |
+| 21 | Phase 19 C: stroke and size follow-ups; surface containers, muted text, shadows (#12, #13, #11) | Fable 5.2 | high | Auto |
 
 Subagent models are chosen inside the workflow prompts: Opus at high effort for critique, Sonnet at
 medium for reading and sweeps. You do not set these.
@@ -178,5 +178,5 @@ Work in /devcontainer/repos/cp-theming on branch main. Read CLAUDE.md, .github/c
 ## Session 21 — Phase 19 C: surface containers, muted text, shadows
 
 ```
-Work in /devcontainer/repos/cp-theming on branch main. Read CLAUDE.md, .github/copilot-instructions.md, PORT-PLAN.md Phase 19 (Session C, and what Sessions A and B landed) and issues #12, #13 and #11 (gh issue view). Do #12, then #13, then #11, as the phase describes them: core's surface container colours with the adapter reading them, the de-emphasis weight at M3's on-surface-variant (measure the dark value), page text defaults against the background, and Material's three-layer shadows as the default geometry. Run pnpm build, pnpm test, the order and examples checks, core render.ts, and the full docs render.ts gallery in Chromium and Firefox. Commit each issue on its own with "Fixes #N". When the Session C Done-when holds, update the README and PLAN.md status tables and Phase 19's "As landed", commit and push without asking, and tell me what IdealLINK can remove.
+Work in /devcontainer/repos/cp-theming on branch main. Read CLAUDE.md, .github/copilot-instructions.md, PORT-PLAN.md Phase 19 (Session C, and what Sessions A and B landed) and issues #12, #13 and #11 (gh issue view). First the four items Session C takes from Session B's open list (the gamut factor declared once so core.css fits its size ceiling, the accent stroke through _in-gamut(), the light stroke ceiling at 0.55, the docs' inline code on the text role), in one commit. Then do #12, then #13, then #11, as the phase describes them: core's surface container colours with the adapter reading them, the de-emphasis weight at M3's on-surface-variant (measure the dark value), page text defaults against the background, and Material's three-layer shadows as the default geometry. Run pnpm build, pnpm test, the order and examples checks, core render.ts, and the full docs render.ts gallery in Chromium and Firefox. Commit each issue on its own with "Fixes #N". When the Session C Done-when holds, update the README and PLAN.md status tables and Phase 19's "As landed", commit and push without asking, and tell me what IdealLINK can remove.
 ```

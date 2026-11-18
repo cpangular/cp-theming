@@ -1569,6 +1569,19 @@ on its own; #15, filed after Session A, changes its fix, so they land together.)
   change what Material paints; the showcase contrast report.
 - IdealLINK can remove its surface-tone overrides, its 63% weight, its `:root` muted-text default
   and its `$elevation` levels.
+- **From Session B's open list (decided 2026-11-18), done first:**
+  - **The gamut factor declared once.** `core.css` is 205 bytes under the 16 KiB gzipped
+    ceiling because each text pair repeats `_in-gamut()`'s four passes. Declare the per-pass
+    factor once on `:where(:root)` as a private variable that each pass substitutes, the way
+    `--theme--_contrast-step` is, so Session C's colours fit under the ceiling as it is. If a
+    pass cannot read it that way, raise the ceiling instead and say by how much and why.
+  - **The accent stroke through `_in-gamut()`**, so a vivid accent moved into the band keeps its
+    hue (Chrome clips a colour outside sRGB). Render rows for a vivid accent's stroke hue.
+  - **The light stroke ceiling 0.60 → 0.55**: 3.07:1 or more on the presets' surface for every
+    colour the screen can show (a pale green was 2.9:1 at 0.60). `#e65151`'s stroke goes from
+    0.60 to 0.55. The dark band (`max(l, 0.65)`) stays.
+  - **The docs' inline `code`** is `--color--primary--text`, not `--color--primary`
+    (3.5–3.8:1 in dark mode on the showcase).
 
 Done when (Session A): `@use "@cpangular/cp-theming-core/scss/theme"` and
 `@use "@cpangular/cp-theming-ng-material/scss/material"` build in the docs app with no include path
@@ -1580,9 +1593,11 @@ Done when (Session B): `--color--{palette}--text` exists for every accent palett
 4.5:1 on background and surface in every preset and mode; Material's labels equal it; a token set
 on a wrapper reaches the buttons inside it; the focused outline, indicator and arrow reach 3:1.
 
-Done when (Session C): the adapter's five surface containers equal core's container colours;
-muted text outside a container is defined on every theme element; Material's three-layer shadows
-are the default.
+Done when (Session C): `core.css` is under its size ceiling with the gamut factor declared once;
+the accent stroke is gamut-corrected and at most 0.55 in light mode, 3:1 or more on the surface
+for every colour; the adapter's five surface containers equal core's container colours; muted
+text outside a container is defined on every theme element; Material's three-layer shadows are
+the default.
 
 Every session: `pnpm test`, the order and examples checks and the full `render.ts` run (0
 component labels below 4.5:1) pass, and its issues are closed by their commits.
@@ -1730,16 +1745,12 @@ What IdealLINK can remove:
 Open after Session B:
 
 - #12, #13 and #11: Session C.
-- `core.css` is 16,179 bytes gzipped against the 16 KiB ceiling of `registry.test.ts`
-  (205 bytes left; the sixteen text pairs each carry the four-pass gamut expression).
-  Session C adds colours: either raise the ceiling or declare the gamut factor once as a private
-  variable, as the contrast step is.
-- The accent stroke is not gamut-corrected: a vivid accent moved into the band can leave sRGB.
-- The light stroke ceiling (above).
+- `core.css` size, the accent stroke's gamut, the light stroke ceiling (0.55) and the docs' inline
+  `code`: moved into Session C (decided 2026-11-18).
 - Identity text in a `[palette]` scope (`color: var(--palette-color)`) is still the colour as
   written; the text role is something an app opts into. The docs app's own inline `code` is
   `--color--primary` on a primary tint, 3.5–3.8:1 in dark mode on the showcase (a caption, a
-  report): `--color--primary--text` would fix it.
+  report): fixed in Session C.
 - The gallery has no native `<select>`, so `--mat-form-field-focus-select-arrow-color` is set
   and not measured; the caret is checked by computed style, not painted.
 - The Learn track does not name the text role in a chapter; it is in `REFS` (chapter 7).
