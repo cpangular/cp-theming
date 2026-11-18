@@ -189,7 +189,7 @@ M3 animation defaults. Static — not light/dark varying.
 
 ### `t.elevation($shadow-color?, $levels?)`
 
-Controls box shadow levels (0–5). The shadow color defaults to `oklch(0.2 0.02 0 / 25%)` for light mode and `oklch(0 0 0 / 50%)` for dark mode — theme() applies these defaults automatically unless you override them.
+Controls box shadow levels (0–5). Levels 1–5 are the shadows Angular Material draws for its own levels: three layers each (key, penumbra, ambient). The shadow color defaults to `oklch(0 0 0 / 30%)` for light mode and `oklch(0 0 0 / 50%)` for dark mode, and the three layers take 2/3, 7/15 and 2/5 of its opacity (20%, 14% and 12% in light mode, as Material has them). A `$shadow-color` of your own is shared out the same way, by the browser, so any CSS color works. A shadow passed in `$levels` is used as written.
 
 ```scss
 $elevation: t.light-dark(
@@ -198,7 +198,7 @@ $elevation: t.light-dark(
 )
 ```
 
-A level's light and dark shadow may differ in their colours only: `light-dark()` switches a colour, not an offset or a blur, so each shadow is emitted as `<geometry> light-dark(<light colour>, <dark colour>)`. A `$levels` shadow passed for one mode with its own geometry applies to both modes; different geometries for the two modes are a compile error.
+A level's light and dark shadow may differ in their colours only: `light-dark()` switches a colour, not an offset or a blur, so each layer of a shadow is emitted as `<geometry> light-dark(<light colour>, <dark colour>)`. A `$levels` shadow passed for one mode with its own geometry applies to both modes; different geometries for the two modes are a compile error.
 
 ---
 

@@ -258,8 +258,22 @@ This is a CSS-variable-based theming system. Key facts:
 - `watchMode()` observes `themeMode` and `thememode`: an HTML document stores an attribute's name
   in lower case, and a MutationObserver filter is compared with the stored name
   (`test/api/watch.spec.ts`).
-- A box-shadow token cannot be wrapped in `light-dark()` (colours only): `--elevation-N--shadow`
-  is `<geometry> light-dark(<colour>, <colour>)`; a harness check fails a list inside `light-dark()`.
+- A box-shadow token cannot be wrapped in `light-dark()` (colours only): each layer of
+  `--elevation-N--shadow` is `<geometry> light-dark(<colour>, <colour>)`; a harness check fails a
+  list inside `light-dark()`.
+- Elevation (Phase 19, issue #11): levels 1–5 are Material's three layers each (key, penumbra,
+  ambient; `$_geometry` in `_elevation.scss`, the lengths Angular Material draws for elevations
+  1, 3, 6, 8 and 12). The default layer colours are written out: black at 20 / 14 / 12% in light
+  mode, 33.3 / 23.3 / 20% in dark (shares 2/3, 7/15 and 2/5 of 30% and 50%). An author's
+  `$shadow-color` is shared out the same way by the browser,
+  `oklch(from <colour> l c h / calc(alpha * <share>))`, the one relative colour that does not end
+  `/ 1` besides the tints (the contrast check knows it). A `$levels` shadow is used as written,
+  with as many layers as it has; `_compatible()` / `_by-mode()` walk multi-layer lists. Checks:
+  `theme-core/test/css/elevation.test.ts`, the elevation test in the adapter's
+  `material-roles.test.ts` (core's default against Material's own `get-box-shadow()`), the
+  `elevation/` rows of core's `render.ts` (`read: 'shadow'` with `layer`, and
+  `read: 'shadow-geometry'`). `core.css` may be 16.5 KiB gzipped since this session
+  (`registry.test.ts` says why).
 - Focus ring color is **per-palette**, auto-derived via CSS relative color.
 - `cp-theming-core` has **zero Angular dependency**.
 - Most packages are currently **stubs** — implement with `// TODO(phase-N):` comments.

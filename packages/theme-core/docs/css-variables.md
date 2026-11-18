@@ -284,11 +284,11 @@ Use with `--palette-color--focus` (set by `apply-palette`):
 
 ## Elevation
 
-6 levels (0–5). Each level has a shadow var and a tint var. A shadow's colour uses `light-dark()` — it adjusts automatically with `color-scheme`; its offsets and blur are the same in both modes. Tints are percentages and cannot use `light-dark()`.
+6 levels (0–5). Each level has a shadow var and a tint var. Levels 1–5 are the shadows Angular Material draws for its own levels: three layers each (key, penumbra, ambient), in black at 20%, 14% and 12% in light mode and at 33%, 23% and 20% in dark. Each layer's colour uses `light-dark()` — it adjusts automatically with `color-scheme`; the offsets, blurs and spreads are the same in both modes. Tints are percentages and cannot use `light-dark()`.
 
 | Variable | Level 0 | Level 1 | Level 5 |
 |----------|---------|---------|---------|
-| `--elevation-{N}--shadow` | none | 0 1px 2px light-dark(…) | 0 8px 16px light-dark(…) |
+| `--elevation-{N}--shadow` | none | 0 2px 1px -1px light-dark(…), 0 1px 1px 0 light-dark(…), 0 1px 3px 0 light-dark(…) | 0 7px 8px -4px light-dark(…), 0 12px 17px 2px light-dark(…), 0 5px 22px 4px light-dark(…) |
 | `--elevation-{N}--tint` | 0% | 5% | 14% |
 
 Use in component CSS:

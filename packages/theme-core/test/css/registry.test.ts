@@ -72,12 +72,19 @@ test('core.css registers exactly the expected 125 properties, each once', () => 
 // ten palette names since Phase 14 (about 20 KB expanded per name). The
 // gzipped size is the one that matters: the expanded ceiling is 256 KiB since
 // Phase 14b, when core.css was 221,168 bytes (216 KiB), 15,211 gzipped.
-test('core.css stays under 256 KiB expanded and 16 KiB gzipped', (t) => {
+//
+// 16.5 KiB gzipped since Phase 19, Session C (16 KiB until then), where
+// core.css came to 16,471 bytes: the surface's ten container declarations
+// (132 bytes gzipped), the three text variables of the page (66), ten more
+// shadow layers (89) and the accent stroke through the gamut correction (36).
+// Declaring the gamut factor once took 4.4 KB off the expanded file and 31
+// bytes off the gzipped one: gzip had already folded the repetition.
+test('core.css stays under 256 KiB expanded and 16.5 KiB gzipped', (t) => {
   const bytes = Buffer.byteLength(core.css);
   const gz = gzipSync(core.css).length;
   t.diagnostic(`core.css: ${bytes} bytes, ${gz} gzipped`);
   assert.ok(bytes <= 256 * 1024, `${bytes} bytes`);
-  assert.ok(gz <= 16 * 1024, `${gz} bytes gzipped`);
+  assert.ok(gz <= 16.5 * 1024, `${gz} bytes gzipped`);
 });
 
 test('each preset stays under 4 KiB (a theme rule holds only what was passed)', (t) => {

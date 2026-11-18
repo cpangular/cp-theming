@@ -143,6 +143,12 @@ demos/demo-brand-material/  @acme/theme-material           — Example theme pac
   freezes at the declaring element; read the `--mode-light` / `--mode-dark` pair inside
   `light-dark()`) (PORT-PLAN.md Phase 19, #13).
 
+- **Shadows are Material's.** Elevation levels 1–5 are the three-layer shadows Angular Material
+  draws (key, penumbra, ambient), so a Material card and an `elevated` element cast the same
+  shadow. One `$shadow-color` per mode is shared out over the layers (2/3, 7/15, 2/5 of its
+  alpha) by the browser; never work a shadow colour out in Sass. Do not go back to one shadow per
+  level: a level-1 card barely showed on a light surface (PORT-PLAN.md Phase 19, #11).
+
 - **Derivations are opaque.** Every relative-colour derivation ends `/ 1`, so a translucent
   input cannot make ladder steps, auto roles or text translucent. Only `--tint-1..5` carry an
   alpha. The contrast check fails a derivation without it.
@@ -307,6 +313,13 @@ demos/demo-brand-material/  @acme/theme-material           — Example theme pac
   default weight) to within 0.02 of the lightness the installed Material's tables give it; the
   `muted/` rows of core's `render.ts` are worked out by hand for a grey page. The evaluator in
   `test/lib/color.ts` handles `color-mix()`.
+- Elevation (PORT-PLAN.md Phase 19, issue #11): `packages/theme-core/test/css/elevation.test.ts`
+  holds the three layers of each level to lengths and opacities written in the test, and checks
+  `$shadow-color` (shared out by the browser, a `var()` included) and `$levels` (as written, one
+  layer or three, light and dark differing in colour only). The adapter's
+  `material-roles.test.ts` compiles Angular Material's own `get-box-shadow()` for its five
+  levels and compares. The `elevation/` rows of core's `render.ts` read one layer's colour
+  (`read: 'shadow'`, `layer`) or every layer's lengths (`read: 'shadow-geometry'`).
 - Fixture themes live in `packages/theme-core/test/fixtures/` and `packages/theme-ng-material/test/fixtures/`.
 - CI: `.github/workflows/test.yml` (cpdevtools/git-flow) runs `github.actions.build` then
   `github.actions.test` in every package that defines them.

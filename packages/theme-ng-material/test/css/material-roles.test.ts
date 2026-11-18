@@ -521,6 +521,72 @@ for (const theme of themes) {
   });
 }
 
+// ─── Elevation (issue #11) ───────────────────────────────────────────────────
+// Core's default shadows are the ones Angular Material draws for its own
+// levels: the same three layers, offsets, blurs and spreads, and in light mode
+// the same three opacities. Material's are compiled here from its own Sass.
+
+/** level → Material's box-shadow for it, in black. */
+function materialShadows(): Map<string, string> {
+  const { css } = compileSource(
+    `@use "@angular/material/core/style/elevation" as e;
+@use "@angular/material/core/tokens/m3/md-sys-elevation" as levels;
+levels { @each $name, $z in levels.md-sys-elevation-values() { #{$name}: e.get-box-shadow($z, black); } }`,
+    path.join(materialDir, 'test/fixtures/__elevation-levels.scss'),
+  );
+  return new Map(rules(css).find((r) => r.selector === 'levels')!.declarations);
+}
+
+/** A box-shadow as layers of [geometry, alpha], lengths without `px` on a zero. */
+function shadowLayers(value: string, mode: Mode): [string, number][] {
+  const out: string[] = [];
+  let depth = 0;
+  let current = '';
+  for (const ch of value) {
+    if (ch === '(') depth++;
+    if (ch === ')') depth--;
+    if (ch === ',' && depth === 0) {
+      out.push(current.trim());
+      current = '';
+    } else current += ch;
+  }
+  out.push(current.trim());
+  return out.map((layer) => {
+    const m = /^((?:-?[\d.]+(?:px)? ){4})(.+)$/.exec(layer)!;
+    const geometry = m[1].trim().replace(/\b0px\b/g, '0');
+    return [geometry, evaluateColor(m[2], contextFor(new Map(), mode)).alpha ?? 1];
+  });
+}
+
+test(`--mat-sys-level1 to level5 are core's shadows, and core's are the ones Angular Material ${matVersion} draws`, (t) => {
+  const material = materialShadows();
+  const coreRoot = declarationsFor(core.css, ':where(:root)');
+  assert.deepEqual(
+    [...material.keys()],
+    [0, 1, 2, 3, 4, 5].map((n) => `level${n}`),
+  );
+  for (let level = 1; level <= 5; level++) {
+    assert.equal(rootDecls.get(`--mat-sys-level${level}`), `var(--elevation-${level}--shadow)`);
+    const ours = shadowLayers(coreRoot.get(`--elevation-${level}--shadow`)!, 'light');
+    const theirs = shadowLayers(material.get(`level${level}`)!, 'light');
+    assert.deepEqual(
+      ours.map(([geometry]) => geometry),
+      theirs.map(([geometry]) => geometry),
+      `level ${level}: offsets, blur and spread`,
+    );
+    for (const [i, [, alpha]] of ours.entries())
+      assert.ok(Math.abs(alpha - theirs[i][1]) < 0.0005, `level ${level} layer ${i + 1}: ${alpha}`);
+    // Dark mode is stronger than Material's, as core's shadows always were.
+    for (const [i, [, alpha]] of shadowLayers(
+      coreRoot.get(`--elevation-${level}--shadow`)!,
+      'dark',
+    ).entries())
+      assert.ok(alpha > theirs[i][1], `level ${level} layer ${i + 1} dark: ${alpha}`);
+    if (level === 1) t.diagnostic(`level 1: ${ours.map(([g, a]) => `${g} @ ${a}`).join(', ')}`);
+  }
+  assert.equal(coreRoot.get('--elevation-0--shadow'), 'none');
+});
+
 // ─── Muted text (issue #13) ──────────────────────────────────────────────────
 // on-surface-variant is the mix core uses for muted text, at core's weight,
 // against the surface: --container--text-deemphasis as it would be on the

@@ -303,7 +303,12 @@ test('fixtures/explicit-roles: explicit $bg/$stroke/$focus, weights, overlay, el
   assert.ok(!decls.has('--weight--text-emphasis-blend--mode-light'), 'unpassed weight absent');
   assert.match(decls.get('--overlay--scrim')!, /^light-dark\(/);
   assert.ok(!decls.has('--overlay--shadow'), 'unpassed overlay key absent');
-  assert.match(decls.get('--elevation-1--shadow')!, /^0 1px 2px light-dark\(.*0\.6\)\)$/);
+  // Three layers (elevation.test.ts); the dark side of each is the passed
+  // colour at that layer's share of its alpha.
+  assert.match(
+    decls.get('--elevation-1--shadow')!,
+    /^0 2px 1px -1px light-dark\(oklch\(0% 0 0deg \/ 0\.2\), oklch\(from oklch\(0% 0 0deg \/ 0\.6\) l c h \/ calc\(alpha \* 0\.6667\)\)\), 0 1px 1px 0 light-dark\(/,
+  );
   assert.ok(!decls.has('--elevation-0--shadow'), 'level 0 untouched by $shadow-color');
   assert.equal(decls.get('--shape--md'), '10px');
   assert.ok(!decls.has('--shape--xs'), 'unpassed shape absent');

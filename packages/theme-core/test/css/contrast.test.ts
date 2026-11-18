@@ -266,11 +266,14 @@ test(`the default background and surface strokes over a sweep of colours the scr
 // A relative colour keeps its origin's alpha unless it says otherwise, so a
 // translucent input would make every ladder step, auto role and contrast
 // translucent too. Each derivation pins `/ 1`. The tints are the exception:
-// their alpha is the point.
-test('every relative-colour derivation pins alpha to 1, except the tints', (t) => {
+// their alpha is the point. So are the layers of a shadow drawn in a theme's
+// $shadow-color (Phase 19, issue #11): each takes a share of that colour's
+// alpha, `calc(alpha * <share>)`.
+test('every relative-colour derivation pins alpha to 1, except the tints and the layers of a shadow', (t) => {
   const unpinned: string[] = [];
   let pinned = 0;
   let tints = 0;
+  let shadows = 0;
   for (const sheet of [core, ...presets, ...fixtures, ...materialSheets()]) {
     for (const rule of rules(sheet.css)) {
       for (const [name, value] of rule.declarations) {
@@ -278,13 +281,19 @@ test('every relative-colour derivation pins alpha to 1, except the tints', (t) =
           if (/--tint-\d+$/.test(name)) {
             assert.match(fn.alpha ?? '', /^var\(--weight--tint-\d+--mode-(light|dark), [\d.]+%\)$/);
             tints++;
+          } else if (/^--elevation-\d--shadow$/.test(name)) {
+            assert.match(fn.alpha ?? '', /^calc\(alpha \* 0\.\d+\)$/, `${name}: ${fn.text}`);
+            shadows++;
           } else if (fn.alpha === '1') pinned++;
           else unpinned.push(`${sheet.label} ${rule.selector} { ${name} }: ${fn.text}`);
         }
       }
     }
   }
-  t.diagnostic(`${pinned} derivations pin alpha to 1; ${tints} tint sides carry their weight`);
+  t.diagnostic(
+    `${pinned} derivations pin alpha to 1; ${tints} tint sides carry their weight; ` +
+      `${shadows} shadow layers take a share of their colour's alpha`,
+  );
   assert.ok(pinned > 0 && tints > 0, 'the check found derivations and tints');
   assert.deepEqual(unpinned, []);
 });

@@ -119,7 +119,8 @@ test('a value comes from core.css: the registration, the root rule or the declar
     '--weight--state-hover--mode-light',
     '--weight--state-hover--mode-dark',
   ]);
-  assert.match(value('--elevation-2--shadow')?.value ?? '', /^0 2px 6px light-dark\(/);
+  // Material's three layers: the key shadow first.
+  assert.match(value('--elevation-2--shadow')?.value ?? '', /^0 3px 3px -2px light-dark\(/);
   assert.equal(value('--container--padding')?.input, true);
   assert.match(value('--palette-color')?.value ?? '', /^var\(--palette-src/);
   const title = data.typeScale.styles.find((s) => s.style === 'title-large');

@@ -135,6 +135,19 @@ for (const [key, name, args] of [
   ['textOrange', 'text-orange', '$palettes: (primary: t.palette(oklch(0.63 0.2 45)))'],
   ['textNavy', 'text-navy', '$brand: oklch(0.25 0.1 260)'],
   ['strokeYellow', 'stroke-yellow', '$palettes: (primary: t.palette(#ffd400))'],
+  // The elevation/ rows: a shadow colour of the theme's own, and a level passed
+  // whole (what IdealLINK passed while core's shadows were one layer).
+  [
+    'shadowTint',
+    'shadow-tint',
+    '$elevation: t.elevation($shadow-color: oklch(0.45 0.2 300 / 45%))',
+  ],
+  [
+    'shadowLevels',
+    'shadow-levels',
+    '$elevation: t.elevation($levels: (1: (shadow: (0 2px 1px -1px rgb(0 0 90 / 20%), ' +
+      '0 1px 1px 0 rgb(0 0 90 / 14%), 0 1px 3px 0 rgb(0 0 90 / 12%)))))',
+  ],
   // The surface of the container/ rows and the page of the muted/ rows: a
   // blue-grey surface and a grey background whose numbers are easy to move by
   // hand.
@@ -1926,6 +1939,94 @@ function mutedRows(): Row[] {
   return out;
 }
 
+// ─── Elevation (Phase 19, issue #11) ──────────────────────────────────────────
+// Each level is Material's three shadows: key, penumbra, ambient. The lengths
+// are the ones Angular Material draws for its levels 1–5, written here as a
+// browser reports them; the colours are black at 20%, 14% and 12% in light
+// mode and at 33.3%, 23.3% and 20% in dark. A theme's $shadow-color is shared
+// out over the layers by the browser (2/3, 7/15 and 2/5 of its alpha).
+const SHADOW_GEOMETRY: Record<number, string> = {
+  1: '0px 2px 1px -1px, 0px 1px 1px 0px, 0px 1px 3px 0px',
+  2: '0px 3px 3px -2px, 0px 3px 4px 0px, 0px 1px 8px 0px',
+  3: '0px 3px 5px -1px, 0px 6px 10px 0px, 0px 1px 18px 0px',
+  4: '0px 5px 5px -3px, 0px 8px 10px 1px, 0px 3px 14px 2px',
+  5: '0px 7px 8px -4px, 0px 12px 17px 2px, 0px 5px 22px 4px',
+};
+const SHADOW_ALPHA = { light: [0.2, 0.14, 0.12], dark: [0.333, 0.233, 0.2] };
+
+function elevationRows(): Row[] {
+  const out: Row[] = [];
+  const row = (id: string, more: Partial<Row> & Pick<Row, 'token' | 'expect'>) =>
+    out.push({
+      id: `elevation/${id}`,
+      sheets: ['core', 'alpha'],
+      html: 'theme="alpha"',
+      body: P,
+      probe: '#p',
+      read: 'shadow',
+      ...more,
+    });
+  for (let level = 1; level <= 5; level++) {
+    row(`level-${level}/geometry`, {
+      token: `--elevation-${level}--shadow`,
+      read: 'shadow-geometry',
+      expect: SHADOW_GEOMETRY[level],
+    });
+    // Material's own token is the same shadow.
+    row(`level-${level}/geometry/material`, {
+      sheets: ['core', 'alpha', 'material'],
+      token: `--mat-sys-level${level}`,
+      read: 'shadow-geometry',
+      expect: SHADOW_GEOMETRY[level],
+    });
+  }
+  for (const mode of ['light', 'dark'] as const)
+    for (const [layer, alpha] of SHADOW_ALPHA[mode].entries())
+      for (const level of [1, 5])
+        row(`level-${level}/${mode}/layer-${layer + 1}`, {
+          html: `theme="alpha" themeMode="${mode}"`,
+          token: `--elevation-${level}--shadow`,
+          layer,
+          expect: `oklch(0 0 0 / ${alpha})`,
+          tolerance: 0.004,
+        });
+  // A theme's own shadow colour: each layer takes its share of the alpha.
+  for (const [layer, alpha] of [0.3, 0.21, 0.18].entries())
+    row(`shadow-color/layer-${layer + 1}`, {
+      sheets: ['core', 'shadowTint'],
+      html: 'theme="shadow-tint"',
+      token: '--elevation-4--shadow',
+      layer,
+      expect: `oklch(0.45 0.2 300 / ${alpha})`,
+      tolerance: 0.004,
+    });
+  row('shadow-color/geometry', {
+    sheets: ['core', 'shadowTint'],
+    html: 'theme="shadow-tint"',
+    token: '--elevation-4--shadow',
+    read: 'shadow-geometry',
+    expect: SHADOW_GEOMETRY[4],
+  });
+  // A level passed whole in $levels is drawn as written; the others are core's.
+  for (const [layer, alpha] of [0.2, 0.14, 0.12].entries())
+    row(`levels/as-written/layer-${layer + 1}`, {
+      sheets: ['core', 'shadowLevels'],
+      html: 'theme="shadow-levels"',
+      token: '--elevation-1--shadow',
+      layer,
+      expect: `rgb(0 0 90 / ${alpha})`,
+      tolerance: 0.004,
+    });
+  row('levels/other-levels-are-core’s', {
+    sheets: ['core', 'shadowLevels'],
+    html: 'theme="shadow-levels"',
+    token: '--elevation-2--shadow',
+    expect: 'oklch(0 0 0 / 0.2)',
+    tolerance: 0.004,
+  });
+  return out;
+}
+
 // ─── Rows ────────────────────────────────────────────────────────────────────
 interface Row {
   id: string;
@@ -1944,7 +2045,13 @@ interface Row {
    * text: the probe's own computed `color` (the token is not read).
    * property: the probe's computed value of the property `token` names, a colour.
    */
-  read?: 'paint' | 'raw' | 'shadow' | 'text' | 'property';
+  read?: 'paint' | 'raw' | 'shadow' | 'shadow-geometry' | 'text' | 'property';
+  /**
+   * shadow: which layer of the box-shadow to read the colour of, from 0 (the
+   * first, the default). shadow-geometry: the lengths of every layer of the
+   * computed `box-shadow: var(token)`, colours left out, compared as text.
+   */
+  layer?: number;
   /** The value, or labelled candidates of which one must match (crossfade rows). */
   expect: string | Record<string, string>;
   /** Tolerance for a colour comparison (sRGB channel, 0–1). */
@@ -2515,8 +2622,10 @@ const rows: Row[] = [
     token: '--probe',
     expect: 'rgb(0 0 0 / 0.2)',
   },
-  // A shadow token is a box-shadow whose colour varies by mode; light-dark()
-  // around the whole value would be invalid and compute to `none`.
+  // A shadow token is a box-shadow whose colours vary by mode; light-dark()
+  // around the whole value would be invalid and compute to `none`. These read
+  // the first of a level's three layers (the key shadow); elevationRows() has
+  // the others.
   {
     id: 'elevation/shadow-is-a-box-shadow/light',
     sheets: ['core', 'alpha'],
@@ -2525,7 +2634,7 @@ const rows: Row[] = [
     probe: '#p',
     token: '--elevation-2--shadow',
     read: 'shadow',
-    expect: 'oklch(0 0 0 / 0.3)',
+    expect: 'oklch(0 0 0 / 0.2)',
   },
   {
     id: 'elevation/shadow-is-a-box-shadow/nested-mode',
@@ -2535,7 +2644,7 @@ const rows: Row[] = [
     probe: '#p',
     token: '--elevation-2--shadow',
     read: 'shadow',
-    expect: 'oklch(0 0 0 / 0.5)',
+    expect: 'oklch(0 0 0 / 0.333)',
   },
   {
     id: 'mat-sys/level-is-a-box-shadow/nested-mode',
@@ -2545,7 +2654,7 @@ const rows: Row[] = [
     probe: '#p',
     token: '--mat-sys-level2',
     read: 'shadow',
-    expect: 'oklch(0 0 0 / 0.5)',
+    expect: 'oklch(0 0 0 / 0.333)',
   },
   // background/surface keep their base as the bg role; a nested theme that
   // does not pass them inherits that base, not the outer's $color override.
@@ -2656,6 +2765,7 @@ const rows: Row[] = [
   ...accentRows(),
   ...containerRows(),
   ...mutedRows(),
+  ...elevationRows(),
 ];
 
 // A theme that passes one palette and nothing else, for the inheritance rows.
@@ -2738,7 +2848,7 @@ interface Outcome {
 }
 
 // Runs inside the page: reads the token on the probe, after the act when there is one.
-const probeScript = `(({ probe, token, read, act, transitioned, animates }) => {
+const probeScript = `(({ probe, token, read, layer, act, transitioned, animates }) => {
   const el = document.querySelector(probe);
   if (!el) return { error: 'no element matches ' + probe };
   const readValue = () => {
@@ -2746,12 +2856,27 @@ const probeScript = `(({ probe, token, read, act, transitioned, animates }) => {
     if (read === 'text') return getComputedStyle(el).color;
     if (read === 'property') return getComputedStyle(el).getPropertyValue(token);
     const span = document.createElement('span');
-    if (read === 'shadow') span.style.boxShadow = 'var(' + token + ')';
+    const shadow = read === 'shadow' || read === 'shadow-geometry';
+    if (shadow) span.style.boxShadow = 'var(' + token + ')';
     else span.style.color = 'var(' + token + ')';
     el.appendChild(span);
-    const v = read === 'shadow'
-      ? getComputedStyle(span).boxShadow.replace(/(^|\\s)-?[\\d.]+px/g, '').trim()
-      : getComputedStyle(span).color;
+    let v = getComputedStyle(span).color;
+    if (shadow) {
+      // The layers of the computed box-shadow: split at its top-level commas.
+      const layers = [];
+      let depth = 0, current = '';
+      for (const ch of getComputedStyle(span).boxShadow) {
+        if (ch === '(') depth++;
+        if (ch === ')') depth--;
+        if (ch === ',' && depth === 0) { layers.push(current.trim()); current = ''; }
+        else current += ch;
+      }
+      layers.push(current.trim());
+      const lengths = /(^|\\s)-?[\\d.]+px/g;
+      v = read === 'shadow'
+        ? (layers[layer || 0] || 'no layer ' + layer).replace(lengths, '').trim()
+        : layers.map((l) => (l.match(lengths) || []).map((x) => x.trim()).join(' ')).join(', ');
+    }
     span.remove();
     return v;
   };
@@ -2775,7 +2900,7 @@ function judge(row: Row, value: string, animations: number | undefined): Outcome
   if (row.animates === false && animations)
     return { ok: false, detail: `${animations} transition(s) ran; value ${value}` };
   const expected = candidates(row);
-  if (row.read === 'raw')
+  if (row.read === 'raw' || row.read === 'shadow-geometry')
     return {
       ok: expected.some(([, v]) => v === value),
       detail: `${value} expected ${expected[0][1]}`,
@@ -2834,6 +2959,7 @@ async function runBrowser(type: BrowserType, selected: Row[]): Promise<Map<strin
       probe: row.probe,
       token: row.token,
       read: row.read ?? 'paint',
+      layer: row.layer ?? 0,
       act: row.act ?? '',
       transitioned: row.transitioned ?? '',
       animates: row.animates ?? null,
@@ -2863,6 +2989,7 @@ function selfContainedPage(selected: Row[]): string {
     probe: row.probe,
     token: row.token,
     read: row.read ?? 'paint',
+    layer: row.layer ?? 0,
     act: row.act ?? '',
     transitioned: row.transitioned ?? '',
     animates: row.animates ?? null,
@@ -2898,7 +3025,7 @@ async function run(){
     if(!r.error){
       if(row.animates===true&&!r.animations){got+=' (no transition ran)'}
       else if(row.animates===false&&r.animations){got+=' ('+r.animations+' transition ran)'}
-      else if(row.read==='raw'){ok=row.expect.includes(r.value)}
+      else if(row.read==='raw'||row.read==='shadow-geometry'){ok=row.expect.includes(r.value)}
       else{const a=canvasRgb(r.value);ok=row.expect.some(e=>{const b=canvasRgb(e);return Math.max(...a.map((v,i)=>Math.abs(v-b[i])))<row.tolerance});
         if(ok&&row.hue){const h=hueOf(a),off=Math.abs((h-row.hue.of+540)%360-180);if(off>row.hue.within){ok=false;got+=' (painted at hue '+h.toFixed(1)+', '+off.toFixed(1)+' from '+row.hue.of+')'}}}
     }
