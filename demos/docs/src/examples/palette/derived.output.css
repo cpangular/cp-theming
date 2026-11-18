@@ -1,8 +1,8 @@
 /* presets/azure-blue.css — the theme rule holds what its author passed:
    the light and the dark colour, and the token that joins them. */
 :where([theme=azure-blue]):not(cp-theming-none), :where(:root) {
-  --color--primary--mode-light: oklch(43% 0.19 253deg);
-  --color--primary--mode-dark: oklch(72% 0.17 253deg);
+  --color--primary--mode-light: oklch(44.1% 0.178 259.9deg);
+  --color--primary--mode-dark: oklch(71.3% 0.155 250.2deg);
   --color--primary: light-dark(var(--color--primary--mode-light), var(--color--primary--mode-dark));
 }
 
@@ -18,7 +18,7 @@
   --color--primary--dark: oklch(from var(--color--primary) clamp(0, l - 0.12, 1) c h/1);
   --color--primary--light: oklch(from var(--color--primary) clamp(0, l + 0.12, 1) c h/1);
   --color--primary--high: light-dark(var(--color--primary--dark), var(--color--primary--light));
-  --color--primary--contrast: oklch(from color(from var(--color--primary) srgb-linear var(--theme--_contrast-step) var(--theme--_contrast-step) var(--theme--_contrast-step)) l 0 0 / 1);
+  --color--primary--contrast: oklch(from color(from var(--color--primary) srgb-linear var(--theme--_contrast-step) var(--theme--_contrast-step) var(--theme--_contrast-step)) l 0 none / 1);
 
   --color--primary--bg--mode-light: oklch(from var(--color--primary--mode-light) 0.92 calc(c * var(--bg-chroma, 0.4)) h/1);
   --color--primary--bg--mode-dark: oklch(from var(--color--primary--mode-dark) 0.24 calc(c * var(--bg-chroma, 0.4)) h/1);

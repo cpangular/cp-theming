@@ -19,17 +19,17 @@ Builds a single-variation palette config. Pass inside `t.light-dark()` to provid
 
 ```scss
 // Single static palette
-t.palette(oklch(0.43 0.19 253))
+t.palette(oklch(0.441 0.178 259.9))
 
 // Mode-varying palette
 t.light-dark(
-  t.palette(oklch(0.43 0.19 253)),           // light mode
-  t.palette(oklch(0.72 0.17 253)),           // dark mode
+  t.palette(oklch(0.441 0.178 259.9)),           // light mode
+  t.palette(oklch(0.713 0.155 250.2)),           // dark mode
 )
 
 // Override roles individually
 t.palette(
-  oklch(0.43 0.19 253),
+  oklch(0.441 0.178 259.9),
   $bg: oklch(0.93 0.01 253),                // lighter tinted surface for bg
 )
 ```
@@ -66,8 +66,8 @@ Wraps any config value in a `(light: ..., dark: ...)` map. The theme system reso
 ```scss
 $palettes: (
   primary: t.light-dark(
-    t.palette(oklch(0.43 0.19 253)),
-    t.palette(oklch(0.72 0.17 253)),
+    t.palette(oklch(0.441 0.178 259.9)),
+    t.palette(oklch(0.713 0.155 250.2)),
   ),
 );
 ```
@@ -88,7 +88,7 @@ A theme passes whichever of these it has. Core generates each one it leaves out,
 | `tertiary` | Primary's lightness, hue + 60°, half its chroma. |
 | `background` | The brand's hue at lightness 0.97 / 0.17, chroma 0.006 at most. The same numbers as `t.background-from-brand()`. |
 | `surface` | The brand's hue at lightness 0.93 / 0.22, chroma 0.01 at most. The same numbers as `t.surface-from-brand()`. |
-| `error`, `warn`, `caution`, `pass` | Not part of the chain. Fixed defaults, the ones the presets pass: `oklch(0.52 0.22 27)` / `oklch(0.70 0.20 27)`, `oklch(0.55 0.18 55)` / `oklch(0.76 0.16 55)`, `oklch(0.55 0.16 103)` / `oklch(0.82 0.15 103)`, `oklch(0.48 0.18 145)` / `oklch(0.72 0.16 145)`. |
+| `error`, `warn`, `caution`, `pass` | Not part of the chain. Fixed defaults, the ones the presets pass: `oklch(0.525 0.214 28.1)` / `oklch(0.694 0.196 27)`, `oklch(0.55 0.161 43.5)` / `oklch(0.76 0.16 55)`, `oklch(0.55 0.113 98.8)` / `oklch(0.82 0.15 103)`, `oklch(0.488 0.165 142.5)` / `oklch(0.72 0.16 145)`. |
 
 So:
 
@@ -290,7 +290,7 @@ Every `--contrast` is black or white, chosen by the browser from the colour it s
 
 ```css
 /* S = clamp(0, (0.179 - (0.2126*R + 0.7152*G + 0.0722*B)) * 1e6, 1), with R, G, B clamped to 0–1 */
---color--primary--contrast: oklch(from color(from var(--color--primary) srgb-linear S S S) l 0 0 / 1);
+--color--primary--contrast: oklch(from color(from var(--color--primary) srgb-linear S S S) l 0 none / 1);
 ```
 
 Core declares `S` once, as the private variable `--theme--_contrast-step`, and each `--contrast` reads it.

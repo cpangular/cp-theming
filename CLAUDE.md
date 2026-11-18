@@ -83,8 +83,12 @@ This is a CSS-variable-based theming system. Key facts:
   0.42–0.60 in both, which put a dark-mode accent's stroke under 3:1 on a filled field; the
   light ceiling was 0.60 until Session C, 2.9:1 for a pale green on the presets' surface), then
   through `_in-gamut()` like the text role. So a preset's stroke has its accent's lightness and
-  hue in both modes; 33 of the presets' 64 accents are written outside sRGB, and those strokes
-  have less chroma than the clipped fill. The Material adapter reads both
+  hue in both modes. The presets and the semantic defaults are written inside sRGB (each the
+  colour a browser painted for the value written before), so a preset's stroke is its accent
+  exactly; a theme that passes a literal accent outside sRGB gets a Sass `@warn` naming the
+  painted colour (`_warn-outside-srgb()`), because its stroke and text keep the hue and give up
+  chroma while its fill is clipped. Docs examples compile with zero warnings, so they are
+  written inside sRGB too. The Material adapter reads both
   (`theme-ng-material/scss/_tokens.scss`): labels Material paints in primary or error are
   `var(--color--{name}--text)`, the lines (a field's focused outline, active indicator, caret,
   arrow) `var(--color--{name}--stroke)`, declared by `define-ng-material-core-theme()` on
@@ -124,9 +128,9 @@ This is a CSS-variable-based theming system. Key facts:
   says. The adapter's `--mat-sys-on-surface-variant` is the same mix at the same weight against
   the surface (`_roles.scss`, "Muted text"), not a tone offset: a theme's
   `$text-deemphasis-blend` moves both. The test evaluator (`test/lib/color.ts`) evaluates
-  `color-mix()`. A hue written as a number is interpolated even at chroma 0, and the contrast
-  colour is `oklch(l 0 0)`, so muted text on a strongly coloured fill drifts towards hue 0°;
-  invisible on a near-neutral page or surface. Checks: `theme-core/test/css/page-text.test.ts`,
+  `color-mix()` and treats `none` as a missing channel. The contrast colour is
+  `oklch(from … l 0 none / 1)`: a hue written as a number is interpolated even at chroma 0, and
+  with hue 0 muted text on a coloured fill drifted towards 0° (purple on a blue fill). Checks: `theme-core/test/css/page-text.test.ts`,
   the muted-text tests in the adapter's `material-roles.test.ts`, the `muted/` rows of core's
   `render.ts`.
 - Material adapter (Phase 11): the `--mat-sys-*` colour roles come from Angular Material's own

@@ -194,12 +194,12 @@ class Parser {
       }
       this.pos = channelParser.pos;
       this.expect(')');
-      const scaled = coords.map((v, k) => v / (space.scale?.[k] ?? 1));
+      const scaled = coords.map((v, k) => (Number.isNaN(v) ? null : v / (space.scale?.[k] ?? 1)));
       // An alpha outside 0–1 is clamped, as the browsers do: the gamut
       // correction (_in-gamut() in _palette.scss) carries a factor there.
       return new Color(
         space.id,
-        scaled as [number, number, number],
+        scaled as unknown as [number, number, number],
         Math.min(Math.max(alpha, 0), 1),
       );
     }
@@ -369,7 +369,10 @@ class Parser {
         }
       }
       if (t.text in this.vars) return this.vars[t.text];
-      if (t.text === 'none') return 0;
+      // `none` is a missing channel (CSS Color 4). NaN here; the relative
+      // colour turns it into colorjs.io's null, so a color-mix() takes that
+      // channel from the other colour, as browsers do.
+      if (t.text === 'none') return NaN;
       throw new Error(`unknown identifier "${t.text}" in "${this.src}"`);
     }
     throw new Error(`unexpected "${t.text}" in "${this.src}"`);

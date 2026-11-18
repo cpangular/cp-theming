@@ -110,8 +110,9 @@ demos/demo-brand-material/  @acme/theme-material           — Example theme pac
   `surface` have none. The accent stroke is the colour moved into a band per mode (0.42–0.55
   light, 0.65 or more dark) and then brought inside sRGB like the text role (`_in-gamut()`): a
   line needs 3:1, not 4.5:1, so a mid-tone accent that sRGB can show is its own stroke. An accent
-  written outside sRGB (half of the presets' are) keeps its lightness and hue as a stroke and
-  gives up chroma, so its stroke is not the colour its fill is painted in.
+  written outside sRGB keeps its lightness and hue as a stroke and gives up chroma, so its stroke
+  is not the colour its fill is painted in: the presets and semantic defaults are written inside
+  sRGB, and core warns at compile time about a literal accent outside it.
   The Material adapter points Material's accent labels at the text role and its accent lines
   (a field's focused outline, indicator, caret, arrow) at the stroke, and declares those
   component tokens where `--mat-sys-primary` is declared (theme elements, at no specificity, and

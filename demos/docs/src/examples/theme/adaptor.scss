@@ -4,12 +4,12 @@
 $my-theme: t.theme(
   $palettes: (
     primary: t.light-dark(
-      t.palette(oklch(0.44 0.22 253)),
-      t.palette(oklch(0.72 0.17 253))
+      t.palette(oklch(0.45 0.2 262)),
+      t.palette(oklch(0.71 0.15 250))
     ),
     // a custom palette name
     accent: t.light-dark(
-      t.palette(oklch(0.50 0.20 150)),
+      t.palette(oklch(0.52 0.17 143)),
       t.palette(oklch(0.75 0.15 150))
     ),
   )

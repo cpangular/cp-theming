@@ -16,6 +16,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
+import { readFileSync } from 'node:fs';
 import { compileSource, coreDir, repoRoot } from '../lib/sass.ts';
 import {
   contextFor,
@@ -66,13 +67,14 @@ const hueDistance = (a: number, b: number) => Math.abs(((a - b + 540) % 360) - 1
 const outside = (c: ReturnType<typeof evaluateColor>) =>
   Math.max(0, ...c.to('srgb').coords.map((v) => Math.max((v ?? 0) - 1, -(v ?? 0))));
 
-function theme(name: string, args: string): Stylesheet {
+function theme(name: string, args: string, warnings: RegExp[] = []): Stylesheet {
   const compiled = compileSource(
     `@use "theme" as t;\n@include t.define-theme("${name}", t.theme(${args}));`,
     path.join(coreDir, 'scss', `__accent-${name}.scss`),
     [path.join(coreDir, 'scss')],
   );
-  assert.deepEqual(compiled.warnings, [], `${name} compiles without warnings`);
+  assert.equal(compiled.warnings.length, warnings.length, `${name}: ${warnings.length} warnings`);
+  warnings.forEach((w, i) => assert.match(compiled.warnings[i].message, w));
   return { ...compiled, label: path.relative(repoRoot, compiled.entry) };
 }
 
@@ -244,15 +246,14 @@ for (const t of themes.filter((x) => x.preset)) {
   });
 }
 
-test('in a preset the stroke of an accent is the accent, in both modes: its lightness and hue, its chroma as far as sRGB holds it', (ctx) => {
+test('in a preset the stroke of an accent is the accent itself, in both modes', () => {
   // The presets write their accents for the page they are on: 0.43–0.55 in
   // light mode, 0.67–0.82 in dark, so the band moves none of them. (Until
-  // Phase 19 the dark stroke was held to 0.60, darker than the accent.) Many
-  // of them are written with more chroma than sRGB holds at their lightness
-  // (azure-blue's light primary, oklch(0.43 0.19 253), has a red channel of
-  // −0.16); the fill is painted clipped, the stroke gives up the chroma.
-  let beyond = 0;
-  let most = { lost: 0, where: '' };
+  // Phase 19 the dark stroke was held to 0.60, darker than the accent.) They
+  // are written inside sRGB, so the stroke is not given any chroma to give up
+  // either: before Phase 19 half of them were outside it (azure-blue's light
+  // primary was oklch(0.43 0.19 253), a red channel of −0.16), the fill was
+  // painted clipped and the stroke had up to half its chroma.
   for (const t of themes.filter((x) => x.preset))
     for (const mode of MODES) {
       const context = contextFor(t.decls, mode);
@@ -260,25 +261,10 @@ test('in a preset the stroke of an accent is the accent, in both modes: its ligh
         const stroke = evaluateColor(`var(--color--${name}--stroke)`, context);
         const colour = evaluateColor(`var(--color--${name})`, context);
         const where = `${t.label} ${mode} ${name}`;
-        assert.ok(Math.abs(lightness(stroke) - lightness(colour)) < 1e-4, `${where}: lightness`);
-        assert.ok(hueDistance(hue(stroke), hue(colour)) < 0.01, `${where}: hue`);
-        if (outside(colour) < 1e-6) {
-          assert.ok(maxChannelDiff(stroke, colour) < 1 / 255, `${where} is the accent itself`);
-        } else {
-          beyond++;
-          const lost = 1 - chroma(stroke) / chroma(colour);
-          if (lost > most.lost) most = { lost, where };
-          assert.ok(
-            lost > 0 && lost <= 0.5 + 1e-6,
-            `${where}: ${(lost * 100).toFixed(0)}% of its chroma`,
-          );
-        }
+        assert.ok(outside(colour) < 1e-6, `${where}: inside sRGB`);
+        assert.ok(maxChannelDiff(stroke, colour) < 1 / 255, `${where}: the stroke is the accent`);
       }
     }
-  ctx.diagnostic(
-    `${beyond} of ${4 * 2 * ACCENTS.length} preset accents are outside sRGB; ` +
-      `most chroma given up: ${(most.lost * 100).toFixed(0)}% (${most.where})`,
-  );
 });
 
 test('a brand that is one dark colour in both modes: its dark stroke and text are moved to where they show', () => {
@@ -355,7 +341,9 @@ test('a vivid accent as a line keeps its hue: the chroma is given up, not the hu
 test('a vivid accent as text keeps its hue: the chroma is given up, not the hue', () => {
   // An orange at lightness 0.40 with this chroma is outside sRGB: clipped, a
   // browser paints it as a red, 16° away (what Phase 14c found for a primary).
-  const vivid = theme('vivid', '$palettes: (primary: t.palette(oklch(0.63 0.2 45)))');
+  const vivid = theme('vivid', '$palettes: (primary: t.palette(oklch(0.63 0.2 45)))', [
+    /primary colour \(both modes\).*outside sRGB.*#e55300/,
+  ]);
   const context = contextFor(themeDeclarations(core, vivid, 'vivid'), 'light');
   const text = evaluateColor('var(--color--primary--text)', context);
   assert.ok(Math.abs(lightness(text) - 0.4) < 1e-4);
@@ -364,6 +352,37 @@ test('a vivid accent as text keeps its hue: the chroma is given up, not the hue'
   assert.ok(hueDistance(hue(painted(text)), 45) < 3, `hue ${hue(painted(text)).toFixed(1)}`);
   const clipped = painted(cssColor('oklch(0.4 0.2 45)'));
   assert.ok(hueDistance(hue(clipped), 45) > 10, 'the uncorrected colour is painted off its hue');
+});
+
+test('an accent written outside sRGB warns, once per colour, with the colour a browser paints', () => {
+  // Its fill is painted clipped and its stroke and text keep its hue with less
+  // chroma, so they would not match: rose-red's error before Phase 19,
+  // oklch(0.5 0.27 27), painted #d30000 with a stroke of #a23d36.
+  theme('outside-one', '$palettes: (error: t.palette(oklch(0.5 0.27 27)))', [
+    /^The error colour \(both modes\), oklch\(50% 0\.27 27deg\), is outside sRGB\..*#d30000/,
+  ]);
+  theme(
+    'outside-two',
+    '$palettes: (primary: t.light-dark(t.palette(oklch(0.5 0.27 27)), t.palette(oklch(0.68 0.24 27))))',
+    [/primary colour \(light mode\).*#d30000/, /primary colour \(dark mode\).*#ff3f3c/],
+  );
+  // $brand is an accent too; a hex colour is always inside sRGB; so is a var().
+  theme('outside-brand', '$brand: oklch(0.6 0.3 30)', [/brand colour \(both modes\).*#ff0000/]);
+  theme('inside-hex', '$brand: #e65151, $palettes: (primary: t.palette(#0c6ab6))');
+  theme('inside-var', '$palettes: (primary: t.palette(var(--app-blue)))');
+  // The neutrals are not checked: their stroke is not the accent band's.
+  theme('neutral', '$palettes: (surface: t.palette(oklch(0.9 0.2 150)))');
+});
+
+test('the presets and the semantic defaults are written inside sRGB', () => {
+  for (const file of ['scss/presets/_palettes.scss', 'scss/_palette.scss']) {
+    const source = readFileSync(path.join(coreDir, file), 'utf8')
+      .split('\n')
+      .filter((line) => !line.trimStart().startsWith('//'))
+      .join('\n');
+    for (const [literal] of source.matchAll(/oklch\([\d.]+ [\d.]+ [\d.]+\)/g))
+      assert.ok(outside(cssColor(literal)) < 1e-6, `${file}: ${literal} is outside sRGB`);
+  }
 });
 
 // ── $text ────────────────────────────────────────────────────────────────────

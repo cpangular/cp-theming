@@ -716,8 +716,8 @@ test('error, warn, caution and pass default to the colours the presets share', (
       const token = `--color--${name}--mode-${mode}`;
       assert.equal(initial.get(token), azure.own.get(token), token);
     }
-  assert.equal(initial.get('--color--error--mode-light'), 'oklch(52% 0.22 27deg)');
-  assert.equal(initial.get('--color--error--mode-dark'), 'oklch(70% 0.2 27deg)');
+  assert.equal(initial.get('--color--error--mode-light'), 'oklch(52.5% 0.214 28.1deg)');
+  assert.equal(initial.get('--color--error--mode-dark'), 'oklch(69.4% 0.196 27deg)');
   // …and they differ by mode, unlike the grey initial values of the other palettes.
   for (const name of SEMANTIC_PALETTE_NAMES)
     assert.notEqual(

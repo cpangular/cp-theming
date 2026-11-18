@@ -66,18 +66,18 @@ Every theme is built with `t.theme()` and emitted with `t.define-theme()`.
 @use '@cpangular/cp-theming-core/scss/theme' as t;
 
 $my-theme: t.theme(
-  $brand:   oklch(0.44 0.22 253),        // the brand colour, kept exact: the `brand` palette
+  $brand:   oklch(0.45 0.2 262),        // the brand colour, kept exact: the `brand` palette
   $palettes: (
     // primary, tertiary, background and surface are left out: core generates
     // them from the brand. Everything below is optional too.
     secondary:  t.light-dark(
-                  t.palette(oklch(0.46 0.27 264)),
-                  t.palette(oklch(0.71 0.21 264)),
+                  t.palette(oklch(0.46 0.266 264)),
+                  t.palette(oklch(0.688 0.164 260.3)),
                 ),
-    error:   t.light-dark(t.palette(oklch(0.52 0.22 27)),  t.palette(oklch(0.70 0.20 27))),
-    warn:    t.light-dark(t.palette(oklch(0.55 0.18 55)),   t.palette(oklch(0.76 0.16 55))),
-    caution: t.light-dark(t.palette(oklch(0.55 0.16 103)),  t.palette(oklch(0.82 0.15 103))),
-    pass:    t.light-dark(t.palette(oklch(0.48 0.18 145)),  t.palette(oklch(0.72 0.16 145))),
+    error:   t.light-dark(t.palette(oklch(0.525 0.214 28.1)),  t.palette(oklch(0.694 0.196 27))),
+    warn:    t.light-dark(t.palette(oklch(0.55 0.161 43.5)),   t.palette(oklch(0.76 0.16 55))),
+    caution: t.light-dark(t.palette(oklch(0.55 0.113 98.8)),  t.palette(oklch(0.82 0.15 103))),
+    pass:    t.light-dark(t.palette(oklch(0.488 0.165 142.5)),  t.palette(oklch(0.72 0.16 145))),
   ),
   $weights:    t.light-dark(t.weights($text-blend: 82%), t.weights($text-blend: 78%)),
   $typography: t.typography($plain-family: system-ui),
@@ -133,11 +133,11 @@ Palettes are the color identity of a theme. Each palette emits a family of `--co
 
 ```scss
 // Simple — same color for light and dark mode
-primary: t.palette(oklch(0.55 0.18 240)),
+primary: t.palette(oklch(0.57 0.15 249)),
 
 // Light/dark variant
 primary: t.light-dark(
-  t.palette(oklch(0.55 0.18 240)),   // light mode
+  t.palette(oklch(0.57 0.15 249)),   // light mode
   t.palette(oklch(0.72 0.16 240)),   // dark mode
 ),
 
@@ -174,12 +174,12 @@ Override individual roles within a palette:
 
 ```scss
 primary: t.palette(
-  $base:   oklch(0.55 0.18 240),
-  $color:  oklch(0.50 0.20 240),   // identity color (default: $base)
+  $base:   oklch(0.55 0.12 240),
+  $color:  oklch(0.50 0.11 240),   // identity color (default: $base)
   $bg:     oklch(0.88 0.06 240),   // container/bg role
-  $stroke: oklch(0.45 0.16 240),   // border role
-  $focus:  oklch(0.40 0.22 240),   // focus ring
-  $text:   oklch(0.38 0.16 240),   // the colour as text
+  $stroke: oklch(0.45 0.10 240),   // border role
+  $focus:  oklch(0.40 0.09 240),   // focus ring
+  $text:   oklch(0.38 0.08 240),   // the colour as text
 ),
 ```
 

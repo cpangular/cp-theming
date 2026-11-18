@@ -394,7 +394,11 @@ const TOC = [
                 </div>
                 <div class="api-param-desc">
                   Base color, in any CSS color format (<code>oklch(l c h)</code> recommended). All
-                  roles are derived from this value. Required.
+                  roles are derived from this value. Required. For an accent, write a colour the
+                  screen can show (inside sRGB; every hex colour is): one outside it is painted
+                  clipped, while its stroke and text keep its hue with less chroma, so they would
+                  not match the fill. The Sass build warns about such a colour and names the one to
+                  write instead.
                 </div>
               </div>
               <div class="api-param-row">

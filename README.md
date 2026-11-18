@@ -200,7 +200,7 @@ node demos/docs/test/variables.ts chromium firefox webkit
 $my-theme: t.theme(
   $brand: #ff6a00,                 // kept exact: palette="brand", --color--brand
   $palettes: (
-    secondary: t.light-dark(t.palette(oklch(0.45 0.12 200)), t.palette(oklch(0.78 0.10 200))),
+    secondary: t.light-dark(t.palette(oklch(0.47 0.07 204)), t.palette(oklch(0.78 0.10 200))),
   ),
   $weights:    t.light-dark(t.weights(), t.weights($text-blend: 78%)),
   $typography: t.typography($plain-family: system-ui),

@@ -513,7 +513,12 @@ function chainRows(): Row[] {
   // tint of the generated colour (L 0.92, 40% of its chroma).
   row('brand-only/tertiary-bg-role', brandOnly, '--color--tertiary--bg', 'oklch(0.92 0.032 90)');
   // The semantic palettes are fixed defaults, not generated.
-  row('brand-only/error-is-the-default/light', brandOnly, '--color--error', 'oklch(0.52 0.22 27)');
+  row(
+    'brand-only/error-is-the-default/light',
+    brandOnly,
+    '--color--error',
+    'oklch(0.525 0.214 28.1)',
+  );
   row('brand-only/pass-is-the-default/dark', brandDark, '--color--pass', 'oklch(0.72 0.16 145)');
   // A default theme: the same on the root without a theme attribute.
   row('brand-only/default-theme/primary', '', '--color--primary', 'oklch(0.45 0.1509 30)', {
@@ -990,7 +995,7 @@ function chainRows(): Row[] {
       tolerance: 0.003,
     },
   );
-  row('no-theme/error-is-the-default', '', '--color--error', 'oklch(0.52 0.22 27)', none);
+  row('no-theme/error-is-the-default', '', '--color--error', 'oklch(0.525 0.214 28.1)', none);
 
   // ── Crossfade: the generated primary follows a switch between two brands ──
   row(
@@ -1886,14 +1891,16 @@ function mutedRows(): Row[] {
       'light',
     ),
   });
-  // filled() still sets its own, against its fill: white on #0c6ab6.
+  // filled() still sets its own, against its fill: white on #0c6ab6. White has
+  // no hue (`none`), so the mix keeps the fill's: with a hue of 0 the muted
+  // text was turned towards 0° by the weight and came out purple.
   row('filled-sets-its-own', {
     body: '<div palette="primary" filled><div id="p">probe</div></div>',
     token: '--container--text-deemphasis',
     expect: expectValue(
       'containers',
       'containers',
-      'color-mix(in oklch, oklch(1 0 0) 63%, #0c6ab6)',
+      'color-mix(in oklch, oklch(1 0 none) 63%, #0c6ab6)',
       'light',
     ),
   });
@@ -2293,7 +2300,7 @@ const rows: Row[] = [
     body: '<div id="p" palette="warn">x</div>',
     probe: '#p',
     token: '--mat-sys-primary',
-    expect: 'oklch(0.55 0.18 55)',
+    expect: 'oklch(0.55 0.161 43.5)',
   },
   {
     id: 'mat-sys/palette-core-name/tone-follows',
@@ -2302,7 +2309,7 @@ const rows: Row[] = [
     body: '<div id="p" palette="warn">x</div>',
     probe: '#p',
     token: '--mat-sys-primary-fixed',
-    expect: 'oklch(0.9138 0.05672 55)',
+    expect: 'oklch(0.9138 0.05073 43.5)',
   },
   {
     id: 'mat-sys/typography-reads-text-tokens',
@@ -2598,7 +2605,9 @@ const rows: Row[] = [
     token: '--container--text-deemphasis',
     // black (the contrast of the dark primary) mixed into the dark primary at
     // the dark 30% weight, what the same page gives with themeMode on <html>.
-    expect: 'oklch(0.56 0.07 283)',
+    // The fill's hue: black has none (`l 0 none`), so the mix keeps it. With a
+    // hue of 0 this was oklch(0.56 0.07 283), turned towards purple.
+    expect: 'oklch(0.56 0.07 250)',
   },
   {
     id: 'mat-sys/nested-mode-state-opacity',

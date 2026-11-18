@@ -169,3 +169,28 @@ test('a theme with a dark page in light mode: the text variables are white-based
   assert.ok(Math.abs(lightness(quiet) - (0.63 + 0.37 * 0.2)) < 1e-4, `${lightness(quiet)}`);
   assert.ok(wcagContrast(quiet, read('--color--background')) >= 4.5);
 });
+
+test('muted text on a coloured fill keeps the fill’s hue: the contrast colour has no hue', () => {
+  // Black and white are written `oklch(… l 0 none / 1)`. With a hue of 0
+  // instead, a mix in oklch turned towards 0° by the weight: muted text on a
+  // blue fill came out purple.
+  const shared = new Map(rule(':where(:root, [theme])').declarations);
+  for (const [name, value] of shared)
+    if (name.endsWith('--contrast') && value.includes('srgb-linear'))
+      assert.match(squash(value), / l 0 none \/ 1\)$/, name);
+  for (const sheet of presets)
+    for (const mode of MODES) {
+      const context = contextFor(themeDeclarations(core, sheet, themeName(sheet)), mode);
+      const fill = evaluateColor('var(--color--primary)', context);
+      const mix = evaluateColor(
+        'color-mix(in oklch, var(--color--primary--contrast) 63%, var(--color--primary))',
+        context,
+      );
+      const [fh, mh] = [fill.to('oklch').coords[2]!, mix.to('oklch').coords[2]!];
+      const distance = Math.abs(((fh - mh + 540) % 360) - 180);
+      assert.ok(
+        distance < 1,
+        `${sheet.label} ${mode}: fill ${fh.toFixed(1)}°, muted ${mh.toFixed(1)}°`,
+      );
+    }
+});

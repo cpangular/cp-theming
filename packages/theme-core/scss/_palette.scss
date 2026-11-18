@@ -24,6 +24,7 @@
 //     leaves one out gets the registered initial value, $semantic-defaults.
 // ─────────────────────────────────────────────────────────────────────────────
 @use "sass:map";
+@use "sass:color";
 @use "sass:list";
 @use "sass:math";
 @use "sass:meta";
@@ -53,25 +54,29 @@ $neutral-names: background, surface;
 // from brand or primary. The presets pass the same ones
 // (presets/_palettes.scss builds $default-error and friends from this map).
 //
-// pass    — green  145° — success, confirmation
-// caution — yellow 103° — advisory, needs attention (amber-gold, to stay readable on white)
-// warn    — orange  55° — warning, degraded state
-// error   — red     27° — failure, destructive action
+// pass    — green  ~143° — success, confirmation
+// caution — yellow  ~99° — advisory, needs attention (amber-gold, to stay readable on white)
+// warn    — orange  ~44° — warning, degraded state
+// error   — red     ~28° — failure, destructive action
+// Each is written inside sRGB, so its stroke and text role are its own
+// chroma (see "Accent stroke" below): the colour a browser painted for the
+// value written before, with warn and caution held at lightness 0.55 in light
+// mode, the top of the light stroke band, so their stroke is their colour.
 $semantic-defaults: (
   error: (
-    light: oklch(0.52 0.22 27),
-    dark: oklch(0.7 0.2 27),
+    light: oklch(0.525 0.214 28.1),
+    dark: oklch(0.694 0.196 27),
   ),
   warn: (
-    light: oklch(0.55 0.18 55),
+    light: oklch(0.55 0.161 43.5),
     dark: oklch(0.76 0.16 55),
   ),
   caution: (
-    light: oklch(0.55 0.16 103),
+    light: oklch(0.55 0.113 98.8),
     dark: oklch(0.82 0.15 103),
   ),
   pass: (
-    light: oklch(0.48 0.18 145),
+    light: oklch(0.488 0.165 142.5),
     dark: oklch(0.72 0.16 145),
   ),
 );
@@ -296,13 +301,19 @@ $_contrast-preferences: (
 // (black or white), read back as an oklch lightness so the token stays an
 // oklch value, alpha 1. $preference picks the step: null (the default one),
 // prefer-white or prefer-black.
+//
+// The hue is `none`, not 0. Black and white have no hue, and a mix in oklch
+// treats a hue written as a number as real even at chroma 0: muted text, the
+// contrast mixed with a blue fill (`--container--text-deemphasis`), was turned
+// towards 0° by the weight and came out purple. With `none` the mix takes the
+// fill's hue.
 @function _contrast-of($origin, $preference: null) {
   $s: var(#{$_contrast-step-var});
   @if $preference != null {
     $s: var(#{map.get(map.get($_contrast-preferences, $preference), var)});
   }
   @return string.unquote(
-    "oklch(from color(from #{$origin} srgb-linear #{$s} #{$s} #{$s}) l 0 0 / 1)"
+    "oklch(from color(from #{$origin} srgb-linear #{$s} #{$s} #{$s}) l 0 none / 1)"
   );
 }
 
@@ -404,11 +415,13 @@ $_stroke-contrast-lighter: 6;
 // the text role: a pure yellow brought down to 0.55 keeps a chroma sRGB does
 // not hold there, and clipped it is painted as an ochre, 12° from its hue.
 // This also applies to an accent the band does not move but that is written
-// outside sRGB (half of the presets' are: azure-blue's light primary,
-// oklch(0.43 0.19 253), has a red channel of −0.16). Its fill is painted as
-// the browser clips it; its stroke is the same lightness and hue with the
-// chroma sRGB holds. An accent inside sRGB and inside the band is its own
-// stroke, exactly.
+// outside sRGB (oklch(0.43 0.19 253) has a red channel of −0.16). Its fill is
+// painted as the browser clips it; its stroke is the same lightness and hue
+// with the chroma sRGB holds, so the two differ. An accent inside sRGB and
+// inside the band is its own stroke, exactly. That is why the presets and the
+// semantic defaults are written inside sRGB (each is the colour a browser
+// painted for the value written before), and why a theme that passes an accent
+// outside it gets a warning (`_warn-outside-srgb()`).
 //
 // Until Phase 19 the band was 0.42–0.60 in both modes, which made a dark-mode
 // accent's stroke darker than the accent: 2.7–3.0:1 for the primary of three
@@ -894,8 +907,8 @@ $_gamut-passes: 4;
 // Overrides the auto-derived focus color. Use inside t.light-dark() so you
 // can provide different values per mode:
 //   t.light-dark(
-//     t.palette(oklch(0.55 0.18 240)),
-//     t.palette(oklch(0.65 0.16 240), $focus: oklch(0.85 0.18 60)),
+//     t.palette(oklch(0.55 0.12 240)),
+//     t.palette(oklch(0.65 0.14 240), $focus: oklch(0.85 0.1 60)),
 //   )
 // If null, focus is auto-derived at CSS runtime from the color role.
 // $contrast — prefer-white or prefer-black: the text colour this palette's
@@ -925,6 +938,53 @@ $_gamut-passes: 4;
     contrast: $contrast,
     text: $text
   );
+}
+
+// Internal: a warning for an accent written outside sRGB. A browser paints its
+// fill clipped, channel by channel, which moves the hue; its stroke and its
+// text role go through _in-gamut(), which keeps the hue and gives up chroma.
+// So the line and the text are not the colour of the fill (rose-red's old
+// error, oklch(0.5 0.27 27): fill #d30000, stroke #a23d36). Only a literal
+// colour can be checked here; a var() or a generated colour is not. The
+// warning names the colour a browser paints, which is inside sRGB and can be
+// written in its place; one warning when both modes have the same colour.
+@function _hex-byte($n) {
+  $digits: "0123456789abcdef";
+  $high: math.floor(math.div($n, 16)) + 1;
+  $low: $n % 16 + 1;
+  @return string.slice($digits, $high, $high) + string.slice($digits, $low, $low);
+}
+
+@function _painted-hex($c) {
+  $painted: color.to-gamut($c, $space: rgb, $method: clip);
+  $out: "#";
+  @each $channel in "red", "green", "blue" {
+    $out: $out + _hex-byte(math.round(color.channel($painted, $channel, $space: rgb)));
+  }
+  @return $out;
+}
+
+@function _outside-srgb($c) {
+  @return meta.type-of($c) == color and not color.is-in-gamut($c, $space: rgb);
+}
+
+@mixin _warn-outside-srgb($name, $l, $d) {
+  @if $l == $d {
+    @include _warn-one-outside-srgb($name, $l, "both modes");
+  } @else {
+    @include _warn-one-outside-srgb($name, $l, "light mode");
+    @include _warn-one-outside-srgb($name, $d, "dark mode");
+  }
+}
+
+@mixin _warn-one-outside-srgb($name, $c, $modes) {
+  @if _outside-srgb($c) {
+    $hex: _painted-hex($c);
+    @warn "The #{$name} colour (#{$modes}), #{$c}, is outside sRGB. A browser paints its " +
+      "fill clipped, as #{$hex}, but its stroke and text role keep its hue with less chroma, " +
+      "so they will not match the fill. Write a colour inside sRGB: #{$hex} is the one " +
+      "painted now.";
+  }
 }
 
 // Internal: resolve a role from a config, falling back to base
@@ -960,6 +1020,9 @@ $_gamut-passes: 4;
 // of the colour role, and of any explicit $bg / $stroke / $focus / $text.
 // Everything else is derived by core.
 @mixin emit-palette($name, $light, $dark) {
+  @if not list.index($neutral-names, $name) {
+    @include _warn-outside-srgb($name, _resolve-role($light, color), _resolve-role($dark, color));
+  }
   @include _pair($name, color, _resolve-role($light, color), _resolve-role($dark, color));
 
   $l-bg: map.get($light, bg);

@@ -35,12 +35,12 @@ $palettes: (
   surface:    t.surface-from-brand(),
   primary:    t.palette-from-brand(),
   secondary:  t.light-dark(
-    t.palette(oklch(0.46 0.27 264)),
-    t.palette(oklch(0.71 0.21 264)),
+    t.palette(oklch(0.46 0.266 264)),
+    t.palette(oklch(0.688 0.164 260.3)),
   ),
   error: t.light-dark(
-    t.palette(oklch(0.52 0.22 27)),
-    t.palette(oklch(0.70 0.20 27)),
+    t.palette(oklch(0.525 0.214 28.1)),
+    t.palette(oklch(0.694 0.196 27)),
   ),
 )
 ```
@@ -50,7 +50,7 @@ $palettes: (
 The brand colour, in any CSS colour format, exactly as the guidelines give it. It becomes the `brand` palette (`--color--brand`, `palette="brand"`) and is never adjusted; passing `brand: t.palette(…)` in `$palettes` is the same thing, and passing both is an error. A `primary`, `background` and `surface` the theme leaves out are generated from it, and `t.palette-from-brand()`, `t.background-from-brand()` and `t.surface-from-brand()` read it. To change the brand at runtime set the registered pair, `--color--brand--mode-light` and `--color--brand--mode-dark`: everything generated from it follows. (`--color--brand` itself is the join of that pair; the three helpers read it, the generated palettes read the pair.)
 
 ```scss
-$brand: oklch(0.44 0.22 253)
+$brand: oklch(0.45 0.2 262)
 ```
 
 ---
@@ -375,10 +375,10 @@ A registered colour's `initial-value` is what the pair holds when nothing declar
 | `primary` | `oklch(0.20 0 0)` | `oklch(0.92 0 0)` | `oklch(0.20 0 0)` | `oklch(0.50 0 0)` |
 | `secondary` | `oklch(0.40 0 0)` | `oklch(0.92 0 0)` | `oklch(0.40 0 0)` | `oklch(0.65 0 0)` |
 | `tertiary` | `oklch(0.45 0 0)` | `oklch(0.92 0 0)` | `oklch(0.45 0 0)` | `oklch(0.68 0 0)` |
-| `error` | `oklch(0.52 0.22 27)` / `oklch(0.70 0.20 27)` | `oklch(0.92 0 0)` | `oklch(0.15 0 0)` | `oklch(0.45 0 0)` |
-| `warn` | `oklch(0.55 0.18 55)` / `oklch(0.76 0.16 55)` | `oklch(0.92 0 0)` | `oklch(0.30 0 0)` | `oklch(0.55 0 0)` |
-| `caution` | `oklch(0.55 0.16 103)` / `oklch(0.82 0.15 103)` | `oklch(0.92 0 0)` | `oklch(0.50 0 0)` | `oklch(0.68 0 0)` |
-| `pass` | `oklch(0.48 0.18 145)` / `oklch(0.72 0.16 145)` | `oklch(0.92 0 0)` | `oklch(0.35 0 0)` | `oklch(0.60 0 0)` |
+| `error` | `oklch(0.525 0.214 28.1)` / `oklch(0.694 0.196 27)` | `oklch(0.92 0 0)` | `oklch(0.15 0 0)` | `oklch(0.45 0 0)` |
+| `warn` | `oklch(0.55 0.161 43.5)` / `oklch(0.76 0.16 55)` | `oklch(0.92 0 0)` | `oklch(0.30 0 0)` | `oklch(0.55 0 0)` |
+| `caution` | `oklch(0.55 0.113 98.8)` / `oklch(0.82 0.15 103)` | `oklch(0.92 0 0)` | `oklch(0.50 0 0)` | `oklch(0.68 0 0)` |
+| `pass` | `oklch(0.488 0.165 142.5)` / `oklch(0.72 0.16 145)` | `oklch(0.92 0 0)` | `oklch(0.35 0 0)` | `oklch(0.60 0 0)` |
 
 Only the colour roles of `brand` and of the semantic palettes are ever seen: every other value in the table is replaced on the root, by the generated pair or by the bg, stroke and focus core derives from the colour role.
 

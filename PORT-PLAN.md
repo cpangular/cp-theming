@@ -1914,11 +1914,63 @@ What IdealLINK can remove:
 Open after Session C:
 
 - The two calls at the top of the list above (the dark weight, 93% or 82%; the chroma a preset's
-  stroke gives up) are the ones most worth a look.
-- Muted text's hue on a coloured fill (found on the way): not fixed.
+  stroke gives up) are the ones most worth a look. Decided 2026-11-18: 93% stays (Angular
+  Material 22's dark `on-surface-variant` is neutral-variant tone 90, checked in its
+  `_md-sys-color.scss`); the chroma is fixed below.
+- Muted text's hue on a coloured fill (found on the way): fixed below.
 - The gallery has no native `<select>`, the Learn track names none of this session's variables in
   a chapter (`--color--surface--container-{step}` is in `REFS`), and the API pages still state
   some defaults nothing checks (`$text-emphasis-blend` "default 1.0"): as before.
+
+**As landed: after Session C (the remaining fixes), 2026-11-18.** Done in the planning chat, not
+a numbered session.
+
+- **The presets and the semantic defaults inside sRGB.** 15 preset accents and 5 semantic
+  defaults (error both modes, warn, caution and pass light) were outside it. Each is now the
+  colour a browser painted for the old value (clipped, read back as oklch, chroma floored to
+  stay inside), so on an sRGB screen the fill is what it was, to 1–3 units of 255 per channel:
+  rose-red's light error `oklch(0.5 0.27 27)` (`#d30000`) is `oklch(0.544 0.223 29.2)`
+  (`#d30101`). The hues move to where clipping had put them (warn 55° → 43.5°). Warn and caution
+  in light mode are held at lightness 0.55, the top of the light stroke band, where rounding
+  would have put them at 0.553 and 0.554 and moved their strokes. A wide-gamut screen paints the
+  presets less vividly than before; that is the cost. The stroke of every preset accent is now the
+  accent exactly (the test that measured how much chroma they gave up asserts this instead).
+- **A warning for an accent outside sRGB.** `emit-palette()` warns (`_warn-outside-srgb()`)
+  when the colour role of an accent palette, `$brand` included, is a literal colour outside sRGB,
+  once when both modes have the same colour, naming the colour a browser paints as hex (Sass
+  `color.to-gamut(…, $method: clip)`). A `var()`, a generated colour, `background` and `surface`
+  are not checked. 14 docs examples, demo-core's ocean and ember, and the colours quoted in the
+  READMEs and `packages/theme-core/docs/*.md` were rewritten to colours inside sRGB (the painted
+  colour at two decimals; `palette/roles.scss` and the matching README block keep their hue and
+  lightness and lower the chroma, since they teach one hue in steps; quoted preset values are the
+  exact new ones, and the `presets.md` table is regenerated from the source). The test fixtures
+  keep their colours outside sRGB on purpose. The Palette page's `$base` says to write an accent
+  inside sRGB.
+- **The contrast colour has no hue**: `oklch(from … l 0 none / 1)`. Muted text on a filled blue
+  keeps the fill's hue (it was turned towards 0°, purple). The test evaluator treats `none` as a
+  missing channel (colorjs.io's `null`); two render rows had the drift in their expected values
+  (`mode-in-filled-scope/deemphasis-weight`, `muted/filled-sets-its-own`) and now expect the
+  fill's hue, in all three engines.
+- Two docs component stylesheets (Palette, Apply palette) now pass Angular's 8 kB warning budget
+  by 10 bytes: each contrast is three characters longer. A warning, not an error.
+
+Checks: `pnpm test` (260 core CSS, 40 API, 80 adapter, 530 docs); core `render.ts` 589/589 in
+Chromium, Firefox and WebKit; `page-base.ts`, `brand-text.ts`, `material-tokens.ts`,
+`variables.ts`, `chain.ts`, `startup.ts`, `learn.ts` (1112/1112) in Chromium; the docs
+`render.ts`, full, in Chromium: 19,120 gallery labels, 0 component labels below 4.5:1 (lowest
+4.76:1, rose-red light, a focused filled button), 2,000 form-field lines, 0 below 3:1 (lowest
+3.59:1, rose-red dark, the focused indicator of a filled field in error), 0 errors, 30 of 224
+showcase captions below 4.5:1 (unchanged). The gallery in Firefox, rose-red only (the preset with the
+lowest margins; the user chose it over the full run): 4,780 labels, 0 component labels below
+4.5:1 (lowest 4.73:1, dark, a focused filled button in error), 500 lines, 0 below 3:1 (lowest
+3.59:1, the same indicator as in Chromium), 0 errors.
+
+After a container rebuild Firefox needs `libgtk-3-0` and WebKit Playwright's `install-deps`
+again.
+
+What IdealLINK can change: nothing it must. If it passes an accent outside sRGB it now gets a
+warning naming the colour to write; writing that colour keeps its fill and makes its lines and
+text match it.
 
 ## Decisions already made
 
