@@ -179,6 +179,7 @@ primary: t.palette(
   $bg:     oklch(0.88 0.06 240),   // container/bg role
   $stroke: oklch(0.45 0.16 240),   // border role
   $focus:  oklch(0.40 0.22 240),   // focus ring
+  $text:   oklch(0.38 0.16 240),   // the colour as text
 ),
 ```
 
@@ -198,9 +199,10 @@ These names are registered and derived once by `define-core-theme()`: `brand`, `
 | `--color--{name}--bg` | Background/container role |
 | `--color--{name}--bg--contrast` | Contrast against bg role |
 | `--color--{name}--bg--high` / `--low` | Bg lightness modifiers |
-| `--color--{name}--stroke` | Border/outline role. Default: the colour clamped to lightness 0.42–0.60; for `background` and `surface`, a boundary 4.5:1 or more against the palette's own colour in either mode (above WCAG 1.4.11's 3:1). `$stroke` replaces it. The Material adapter's `--mat-sys-outline` is the surface's stroke |
+| `--color--{name}--stroke` | Border/outline role. Default: the colour with its lightness kept between 0.42 and 0.60 in light mode and at 0.65 or more in dark mode, so a mid-tone accent is its own stroke; for `background` and `surface`, a boundary 4.5:1 or more against the palette's own colour in either mode (above WCAG 1.4.11's 3:1). `$stroke` replaces it. The Material adapter's `--mat-sys-outline` is the surface's stroke; a focused field's outline is the accent's |
 | `--color--{name}--stroke--low` | Quieter stroke for a divider (the adapter's `--mat-sys-outline-variant`); may be under 3:1 |
 | `--color--{name}--focus` | Focus ring color |
+| `--color--{name}--text` | The colour as text (a link, a heading, a price): no lighter than 0.40 in light mode, no darker than 0.82 in dark, same hue, inside sRGB. Accent palettes only; `background` and `surface` have none. `$text` replaces it. `--palette-color--text` in a `[palette]` scope |
 | `--color--{name}--tint-1` … `--tint-5` | 10%/20%/38%/60%/80% opacity tints |
 
 ---
@@ -380,6 +382,7 @@ $motion: t.motion()   // M3 defaults
 --color--primary--bg--contrast     contrast against bg role
 --color--primary--tint-1           10% opacity tint
 --color--primary--focus            per-palette focus ring color
+--color--primary--text             the colour as text (links, headings)
 --space--md                        density-reactive spacing
 --shape--lg                        corner radius
 --container--text                  blended body text on a surface

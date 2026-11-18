@@ -51,9 +51,10 @@ const ACCENTS = ['secondary', 'tertiary', 'error', 'brand'];
         </p>
         <p>
           A fill is the palette's colour exactly: a filled button, a checked checkbox, a slider. A
-          label painted in that colour is not. <code>apply-material-overrides()</code> holds it to a
+          label painted in that colour is not: it is the palette's text role, the colour held to a
           lightness that reads on a surface, so a text button under a dark <code>brand</code> is
-          still legible in dark mode while the filled one beside it stays the brand colour.
+          still legible in dark mode while the filled one beside it stays the brand colour. A line
+          (a focused field's outline, its indicator, its arrow) is the palette's stroke role.
         </p>
         <p>
           The preset themes pass no brand, so their <code>brand</code> palette is their primary:

@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { TocService } from '../../shell/toc.service';
 import { CodeComponent } from '../../shared/code.component';
 import adaptorScss from '../../../examples/theme/adaptor.scss' with { loader: 'text' };
+import labelTokensScss from '../../../examples/api/label-tokens.scss' with { loader: 'text' };
 import adaptorUsageDisplayHtml from '../../../examples/api/adaptor-usage.display.html' with {
   loader: 'text',
 };
@@ -24,6 +25,7 @@ const NG_CORE_TOC = [
 
 const NG_MATERIAL_TOC = [
   { label: 'SCSS mixins', anchor: 'scss-mixins' },
+  { label: 'Accents as text and as lines', anchor: 'accent-tokens' },
   { label: 'adaptor()', anchor: 'adaptor' },
   { label: 'Precompiled CSS', anchor: 'css-exports' },
 ];
@@ -1480,7 +1482,9 @@ const NG_MATERIAL_TOC = [
                 emits <code>[palette="name"]</code> rules for the core accent palettes
                 (<code>primary</code>, <code>secondary</code>, <code>error</code>,
                 <code>warn</code>, <code>caution</code>, <code>pass</code>), so the
-                <code>palette</code> attribute recolors the Material components inside it.
+                <code>palette</code> attribute recolors the Material components inside it. It also
+                sets the component tokens for the labels and lines Material paints in an accent: see
+                <a href="#accent-tokens">Accents as text and as lines</a>.
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"
@@ -1505,7 +1509,9 @@ const NG_MATERIAL_TOC = [
                 fixed roles, <code>inverse-primary</code>, <code>surface-tint</code>) to come from a
                 cp-theming named palette, recoloring all Angular Material components inside that CSS
                 scope. Scope tightly — the override inherits to all descendants via the normal CSS
-                cascade.
+                cascade. The scope also declares the primary
+                <a href="#accent-tokens">accent tokens</a> with that palette's text and stroke
+                roles.
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"
@@ -1534,13 +1540,13 @@ const NG_MATERIAL_TOC = [
               <h3 class="api-symbol-name">apply-material-overrides</h3>
               <p class="api-symbol-desc">
                 Emit component-level patches for the cases where a component's own default does not
-                work with cp-theming's roles. Today: the slide toggle's selected icon; the accent in
-                a label (text, outlined and elevated buttons, the focused and invalid states of a
-                form field, a step in error), held to a readable lightness; the container of the
-                filled form field and of the filled card; the text Material leaves to inherit
+                work with cp-theming's roles. Today: the slide toggle's selected icon; the container
+                of the filled form field and of the filled card; the text Material leaves to inherit
                 (hints, list subheaders, tab and step content), which gets a surface role; and the
                 scrim under a grid tile's header and footer. These are targeted fixes, each with its
-                measured reason in the source, not a wholesale M2→M3 shim.
+                measured reason in the source, not a wholesale M2→M3 shim. The accent in a label is
+                no longer one of them: <code>define-ng-material-core-theme()</code> sets those
+                tokens (<a href="#accent-tokens">Accents as text and as lines</a>).
               </p>
               <div class="api-member-card">
                 <span class="api-signature-row"
@@ -1571,6 +1577,106 @@ const NG_MATERIAL_TOC = [
                 <div class="api-member-body"><p class="api-member-desc">No parameters.</p></div>
               </div>
             </div>
+          </section>
+
+          <!-- ── Accent tokens ───────────────────────────────────────────────── -->
+          <section id="accent-tokens" class="page-section">
+            <h2 class="api-section-heading">Accents as text and as lines</h2>
+            <hr class="api-section-rule" />
+            <p class="api-symbol-desc">
+              Angular Material paints some labels and some lines in <code>primary</code> or in
+              <code>error</code>. <code>define-ng-material-core-theme()</code> sets the component
+              tokens below, so that a label reads the palette's text role and a line its stroke role
+              (Palette page, "An accent as text"). A label then reaches 4.5:1 on the surfaces
+              Material puts it on, a line 3:1, and your own coloured text can use the same two
+              variables. Fills are not touched: a filled button is <code>--color--primary</code>,
+              exactly.
+            </p>
+            <table class="api-props-table">
+              <thead>
+                <tr>
+                  <th>What</th>
+                  <th>Tokens</th>
+                  <th>Reads</th>
+                  <th>Declared on</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Labels in primary</td>
+                  <td>
+                    <code>--mat-button-text-label-text-color</code><br />
+                    <code>--mat-button-outlined-label-text-color</code><br />
+                    <code>--mat-button-protected-label-text-color</code><br />
+                    <code>--mat-form-field-filled-focus-label-text-color</code><br />
+                    <code>--mat-form-field-outlined-focus-label-text-color</code>
+                  </td>
+                  <td><code>--color--primary--text</code></td>
+                  <td>theme elements; each <code>[palette]</code> scope, with its palette</td>
+                </tr>
+                <tr>
+                  <td>Lines in primary</td>
+                  <td>
+                    <code>--mat-form-field-filled-caret-color</code><br />
+                    <code>--mat-form-field-filled-focus-active-indicator-color</code><br />
+                    <code>--mat-form-field-outlined-caret-color</code><br />
+                    <code>--mat-form-field-outlined-focus-outline-color</code><br />
+                    <code>--mat-form-field-focus-select-arrow-color</code><br />
+                    <code>--mat-select-focused-arrow-color</code>
+                  </td>
+                  <td><code>--color--primary--stroke</code></td>
+                  <td>theme elements; each <code>[palette]</code> scope, with its palette</td>
+                </tr>
+                <tr>
+                  <td>Labels in error</td>
+                  <td>
+                    <code>--mat-stepper-header-error-state-label-text-color</code><br />
+                    <code>--mat-stepper-header-error-state-icon-foreground-color</code><br />
+                    <code>--mat-form-field-error-text-color</code><br />
+                    <code>--mat-form-field-error-trailing-icon-color</code><br />
+                    <code>--mat-form-field-error-focus-trailing-icon-color</code><br />
+                    <code>--mat-form-field-filled-error-label-text-color</code><br />
+                    <code>--mat-form-field-filled-error-focus-label-text-color</code><br />
+                    <code>--mat-form-field-outlined-error-label-text-color</code><br />
+                    <code>--mat-form-field-outlined-error-focus-label-text-color</code>
+                  </td>
+                  <td><code>--color--error--text</code></td>
+                  <td>theme elements</td>
+                </tr>
+                <tr>
+                  <td>Lines in error</td>
+                  <td>
+                    <code>--mat-form-field-filled-error-caret-color</code><br />
+                    <code>--mat-form-field-filled-error-active-indicator-color</code><br />
+                    <code>--mat-form-field-filled-error-focus-active-indicator-color</code><br />
+                    <code>--mat-form-field-outlined-error-caret-color</code><br />
+                    <code>--mat-form-field-outlined-error-outline-color</code><br />
+                    <code>--mat-form-field-outlined-error-focus-outline-color</code><br />
+                    <code>--mat-select-invalid-arrow-color</code>
+                  </td>
+                  <td><code>--color--error--stroke</code></td>
+                  <td>theme elements</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="api-symbol-desc">
+              <strong>Where they are declared.</strong> On <code>:root</code> and every
+              <code>[theme]</code> element, at no specificity, and the primary ones again on every
+              <code>[palette]</code> scope, with that palette's roles. Not on the component. So they
+              inherit like any other custom property and the nearest declaration wins: set one on a
+              toolbar or on any wrapper, by hand or with Angular Material's
+              <code>mat.button-overrides()</code>, and the components inside take it. A rule of
+              yours on <code>html</code> or <code>:root</code> wins as well, in any load order.
+            </p>
+            <cpa-code [code]="ex.labelTokensScss" lang="scss" />
+            <p class="api-symbol-desc">
+              A <code>[theme]</code> or <code>[palette]</code> element between your wrapper and the
+              component declares the tokens again, as it does every <code>--mat-sys-*</code> colour:
+              set them on that element, or inside it. A <code>[palette]</code> scope leaves the
+              error tokens alone, so an invalid field is in the error palette under any scope. The
+              tokens read the cp-theming roles, not <code>--mat-sys-primary</code>: to change one
+              colour for both, set the palette, not the Material role.
+            </p>
           </section>
 
           <!-- ── Functions ──────────────────────────────────────────────────── -->
@@ -1683,7 +1789,7 @@ const NG_MATERIAL_TOC = [
   ],
 })
 export class ApiPageComponent {
-  protected readonly ex = { adaptorScss, adaptorUsageDisplayHtml };
+  protected readonly ex = { adaptorScss, adaptorUsageDisplayHtml, labelTokensScss };
   private readonly _toc = inject(TocService);
   private readonly _parentParams = toSignal(inject(ActivatedRoute).parent!.params);
   readonly lib = computed(() => (this._parentParams()?.['lib'] as string) ?? 'core');

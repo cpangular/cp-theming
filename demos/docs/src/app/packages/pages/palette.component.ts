@@ -16,6 +16,10 @@ import contrastPreferenceHtml from '../../../examples/palette/contrast-preferenc
 import contrastFixedScss from '../../../examples/palette/contrast-fixed.scss' with {
   loader: 'text',
 };
+import textRoleScss from '../../../examples/palette/text-role.scss' with { loader: 'text' };
+import textExplicitScss from '../../../examples/palette/text-explicit.scss' with {
+  loader: 'text',
+};
 import { ThemeExampleComponent } from '../../shared/theme-example.component';
 
 const TOC = [
@@ -23,6 +27,7 @@ const TOC = [
   { label: 'Brand, accents and neutrals', anchor: 'chain' },
   { label: 'Runtime derivatives', anchor: 'runtime-derivatives' },
   { label: 'Brand colours that take white text', anchor: 'brand-text' },
+  { label: 'An accent as text', anchor: 'accent-text' },
   { label: 'Color variables', anchor: 'color-variables' },
   { label: 'API Reference', anchor: 'api' },
   { label: 'palette()', anchor: 'palette-fn' },
@@ -214,6 +219,48 @@ const TOC = [
         <cpa-code [code]="ex.contrastFixedScss" lang="scss" />
       </section>
 
+      <section id="accent-text" class="page-section">
+        <h2>An accent as text</h2>
+        <p>
+          <code>--color--primary</code> is the colour as you wrote it. That is right for a fill: a
+          button, a badge, a bar. As text on the page it is often too light. <code>#e65151</code> is
+          3.71:1 on white, and text needs 4.5:1.
+        </p>
+        <p>
+          So every accent palette has a <code>text</code> role, <code>--color--primary--text</code>,
+          and <code>--palette-color--text</code> inside a <code>palette</code> scope. It is the same
+          colour with its lightness limited: no lighter than 0.40 in light mode and no darker than
+          0.82 in dark mode, in oklch. The hue stays, and the chroma is lowered only as far as the
+          screen needs to show the colour. For <code>#e65151</code> in light mode that is
+          <code>#85151d</code>, 9.92:1 on white. A colour already past the limit is left as it is.
+        </p>
+        <p>Use it for your own coloured text: links, headings, prices, labels.</p>
+        <cpa-code [code]="ex.textRoleScss" lang="scss" />
+        <p>
+          <strong>Fills, icons and lines keep the colour.</strong> A fill is
+          <code>--color--primary</code>, with <code>--color--primary--contrast</code> as the text on
+          it. A line (a border, an underline, an outline) is <code>--color--primary--stroke</code>.
+          A line needs 3:1, not 4.5:1, so the stroke is the colour itself wherever a line in it
+          shows on the page: lightness 0.42 to 0.60 in light mode, 0.65 or more in dark mode. A
+          colour outside that range is moved into it.
+        </p>
+        <p>
+          <strong>With Angular Material.</strong> The Material adapter gives the same two roles to
+          what Material paints in an accent: the label of a text button and the focused label of a
+          field read the text role, the focused outline and the caret read the stroke. A link next
+          to a button is the same colour. The ng-material API page lists the tokens.
+        </p>
+        <p>
+          <strong>A text colour of your own.</strong> Pass <code>$text</code> to use another one.
+          Given in one mode only, it applies in both:
+        </p>
+        <cpa-code [code]="ex.textExplicitScss" lang="scss" />
+        <p>
+          <code>background</code> and <code>surface</code> have no text role. The text on them is
+          their <code>--contrast</code>.
+        </p>
+      </section>
+
       <section id="color-variables" class="page-section">
         <h2>Color variables</h2>
         <p>
@@ -285,6 +332,8 @@ const TOC = [
               ><span class="api-sig-punct">: </span><span class="api-sig-default">null</span
               ><span class="api-sig-punct">, </span><span class="api-sig-param">$contrast</span
               ><span class="api-sig-punct">: </span><span class="api-sig-default">null</span
+              ><span class="api-sig-punct">, </span><span class="api-sig-param">$text</span
+              ><span class="api-sig-punct">: </span><span class="api-sig-default">null</span
               ><span class="api-sig-punct">) → </span><span class="api-sig-return">map</span></span
             >
             <div class="api-member-body">
@@ -325,10 +374,11 @@ const TOC = [
                 </div>
                 <div class="api-param-desc">
                   Override for the border role (<code>--color--name--stroke</code>). Derived when
-                  left out: the colour held to lightness 0.42–0.60, or, for
-                  <code>background</code> and <code>surface</code>, a boundary 4.5:1 or more against
-                  the palette's own colour in either mode. The Material adapter's outlines are the
-                  surface's stroke.
+                  left out: the colour with its lightness kept between 0.42 and 0.60 in light mode
+                  and at 0.65 or more in dark mode, or, for <code>background</code> and
+                  <code>surface</code>, a boundary 4.5:1 or more against the palette's own colour in
+                  either mode. The Material adapter's outlines are the surface's stroke; a focused
+                  field's outline is the accent's.
                 </div>
               </div>
               <div class="api-param-row">
@@ -354,6 +404,19 @@ const TOC = [
                   white by luminance, at 4.5:1 or more. In one config of
                   <code>t.light-dark()</code> it applies in that mode only. Any other value is a
                   Sass error. See <a href="#brand-text">Brand colours that take white text</a>.
+                </div>
+              </div>
+              <div class="api-param-row">
+                <div>
+                  <span class="api-param-name">$text</span><span class="api-param-type">color?</span
+                  ><span class="api-param-default">default derived</span>
+                </div>
+                <div class="api-param-desc">
+                  Override for the text role (<code>--color--name--text</code>): the palette's
+                  colour as text. Derived when left out: the colour, no lighter than 0.40 in light
+                  mode and no darker than 0.82 in dark mode. Not for <code>background</code> or
+                  <code>surface</code>, where it is a Sass error. See
+                  <a href="#accent-text">An accent as text</a>.
                 </div>
               </div>
             </div>
@@ -630,6 +693,8 @@ export class PalettePageComponent {
     contrastPreferenceScss,
     contrastPreferenceHtml,
     contrastFixedScss,
+    textRoleScss,
+    textExplicitScss,
   };
   readonly paletteOptions = [
     'brand',

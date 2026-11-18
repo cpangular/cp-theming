@@ -82,6 +82,14 @@ test('every colour token has a swatch under its palette and role', () => {
         assert.equal(t.contrast, `${t.name}--contrast`, t.name);
     }
     assert.equal(p.focus[0].name, `--color--${p.name}--focus`);
+    // The text role: the token and its two values for an accent, nothing for
+    // background and surface.
+    assert.deepEqual(
+      p.text.map((t) => t.name),
+      p.name === 'background' || p.name === 'surface'
+        ? []
+        : ['', '--mode-light', '--mode-dark'].map((s) => `--color--${p.name}--text${s}`),
+    );
     assert.equal(p.tints.length, 5, `${p.name}: tints`);
   }
   // The chain palettes are the ones core generates.

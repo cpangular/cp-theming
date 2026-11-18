@@ -368,7 +368,7 @@ test('a default theme with a custom palette derives it inside its own rule, ahea
   assert.equal(shared.length, 1);
 });
 
-test('core derives the auto bg, stroke and focus into their registered pairs, from the colour pair', () => {
+test('core derives the auto bg, stroke, focus and text into their registered pairs, from the colour pair', () => {
   const sharedRule = rules(core.css).find(
     (r) => normalizeSelector(r.selector) === ':where(:root, [theme])' && !r.context.length,
   )!;
@@ -400,10 +400,14 @@ test('core derives the auto bg, stroke and focus into their registered pairs, fr
     for (const mode of ['light', 'dark']) {
       // background/surface: the neutral stroke, whose channels core declares
       // once on :where(:root) (contrast.test.ts holds it to its ratio).
+      // Every other palette: the colour where a line in it shows, per mode
+      // (0.42–0.60 on a light page, 0.65 or lighter on a dark one).
       const stroke =
         name === 'background' || name === 'surface'
           ? 'var\\(--theme--_stroke-l\\) var\\(--theme--_stroke-c\\) h / 1\\)$'
-          : 'clamp\\(0\\.42, l, 0\\.6\\)';
+          : mode === 'light'
+            ? 'clamp\\(0\\.42, l, 0\\.6\\) c h ?/ ?1\\)$'
+            : 'max\\(l, 0\\.65\\) c h ?/ ?1\\)$';
       assert.match(
         shared.get(`--color--${name}--stroke--mode-${mode}`)!,
         new RegExp(`^oklch\\(from var\\(--color--${name}--mode-${mode}\\) ${stroke}`),

@@ -49,7 +49,8 @@ This is a CSS-variable-based theming system. Key facts:
   and a vivid teal brand turns grey. Chromium reports no hue for a non-oklch origin below chroma
   0.02, so a corrected colour that faint is painted at hue 0 there.
 - Neutral stroke: the default stroke of `background` and `surface` (not the other palettes,
-  which keep `clamp(0.42, l, 0.6)`) is derived from the palette's colour to 4.6:1 against it when
+  whose stroke is the colour moved into a band per mode, see "Text role and accent stroke") is
+  derived from the palette's colour to 4.6:1 against it when
   darker and 6:1 when lighter (white when out of reach; never under 4.58:1), from its luminance
   in closed form (`--theme--_stroke-*`, declared once on `:where(:root)` like the contrast step,
   "Neutral stroke" in `_palette.scss`). Checks: the stroke tests in `test/css/contrast.test.ts`
@@ -71,6 +72,28 @@ This is a CSS-variable-based theming system. Key facts:
   Checks: `test/css/contrast-preference.test.ts` (not a fixture: the fixtures are swept at
   4.5:1), the `prefer/` rows of `render.ts`, `node demos/docs/test/brand-text.ts` (the Palette
   page's live example and every figure it states).
+- Text role and accent stroke (Phase 19, issues #15 and #9): every accent palette (every name
+  but `background` and `surface`; custom names too) has a fifth role, `text`:
+  `--color--{name}--text`, and `--palette-color--text` in a `[palette]` scope (cleared with
+  `initial` in a background or surface scope). It is the colour with `min(l, 0.4)` in light mode
+  and `max(l, 0.82)` in dark, hue and chroma kept, through `_in-gamut()`; a registered pair
+  derived on the shared selector like stroke and focus (ten registrations per accent, eight per
+  neutral: 125 in core), replaced by `$text` in `t.palette()` (a Sass error on a neutral). The
+  accent stroke is per mode: `clamp(0.42, l, 0.6)` in light, `max(l, 0.65)` in dark (it was
+  0.42–0.60 in both, which put a dark-mode accent's stroke under 3:1 on a filled field), so a
+  preset's stroke is its accent in both modes. The Material adapter reads both
+  (`theme-ng-material/scss/_tokens.scss`): labels Material paints in primary or error are
+  `var(--color--{name}--text)`, the lines (a field's focused outline, active indicator, caret,
+  arrow) `var(--color--{name}--stroke)`, declared by `define-ng-material-core-theme()` on
+  `:where(:root, [theme])` (no specificity: an app's `html` rule wins) and, the primary ones, by
+  `material-palette()` in every `[palette]` scope. Never declare one of them on a component: a
+  value set on a toolbar or wrapper must reach the component (#9), and a check fails it. The
+  adapter works out no lightness itself. `apply-material-overrides()` keeps the other patches.
+  Checks: `theme-core/test/css/accent-roles.test.ts`, the `text/` and `line/` rows of core's
+  `render.ts`, the accent-token tests in the adapter's `material-roles.test.ts`,
+  `node demos/docs/test/material-tokens.ts` (built site: a wrapper's token reaches three kinds of
+  button and a field), and the gallery run, which also measures every field's outline, indicator
+  and arrow (below 3:1 fails).
 - Material adapter (Phase 11): the `--mat-sys-*` colour roles come from Angular Material's own
   role tables (`theme-ng-material/scss/_roles.scss`); roles cp-theming has a token for map to it
   (containers are `--bg`, one ladder step lighter in dark mode), the rest are `m3-tone()` of the
@@ -103,7 +126,9 @@ This is a CSS-variable-based theming system. Key facts:
   `apply-material-overrides()`. `*.ts.txt` is TypeScript the docs show, verbatim from a source
   file. `node demos/docs/test/render.ts` screenshots the gallery per preset and mode with every
   overlay open (`--only=gallery`, `--preset=`, `--mode=`, `--section=`); a component label below
-  4.5:1 fails the run. The docs read the adapter's built CSS: after a change in
+  4.5:1 fails the run, and so does a line of a form field (outline, active indicator, select
+  arrow) below 3:1 against what it is drawn on (one more screenshot with those lines made
+  transparent; `gallery-{engine}-lines.txt`). The docs read the adapter's built CSS: after a change in
   `packages/theme-ng-material/scss/`, run `pnpm --filter @cpangular/cp-theming-ng-material build`
   before `npx ng build docs` (root `pnpm build` runs the docs' own build, which builds the adapter).
 - Releases (Phase 13): cpdevtools/git-flow. Every manifest carries `0.0.0-MAIN`; the version is

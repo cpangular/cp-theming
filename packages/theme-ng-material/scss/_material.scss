@@ -13,8 +13,8 @@
 
 @use "sass:list";
 @use "sass:math";
-@use "sass:string";
 @use "roles";
+@use "tokens";
 @forward "material-palette";
 @use "material-palette" as mp;
 
@@ -53,6 +53,12 @@ $_type-scales:
 // generates. The [theme] half is zero specificity so a [palette="name"] remap
 // wins on an element that carries both attributes. Literal constants, which no
 // theme can change, are declared on :root only.
+//
+// The component tokens for accents as text and as lines (_tokens.scss) are the
+// one exception to the :root half: they sit on `:where(:root, [theme])`, at no
+// specificity. Nothing Material generates sets them, so there is nothing to
+// beat, and an app's own `html { @include mat.button-overrides(…) }` wins in
+// any load order.
 @mixin define-ng-material-core-theme() {
   :root {
     --mat-sys-corner-none: 0px;
@@ -143,6 +149,12 @@ $_type-scales:
     --mat-sys-label-medium-weight-prominent: var(--text--bold-weight);
   }
 
+  // ── Accents as text, accents as lines ───────────────────────────────────────
+  :where(:root, [theme]) {
+    @include tokens.accent(primary);
+    @include tokens.error();
+  }
+
   // A weight is re-picked on every [themeMode] element, and the alias above
   // was substituted on the nearest :root or [theme]; re-declare it where the
   // weight changes without a theme attribute.
@@ -151,7 +163,8 @@ $_type-scales:
   }
 
   // [palette="name"] for the core accent palettes: Material components inside
-  // the scope take that palette as their primary. A custom palette name gets
+  // the scope take that palette as their primary, labels and lines included
+  // (material-palette() declares the accent tokens too). A custom palette name gets
   // the same rule from the mat.adaptor() hook of the theme that defines it.
   @each $name in roles.$accent-names {
     [palette="#{$name}"] {
@@ -182,100 +195,13 @@ $_type-scales:
     --mat-slide-toggle-selected-icon-color: var(--mat-sys-primary);
   }
 
-  // Accents as text.
-  //
-  // Material paints some labels in primary or in error, on the surface or on a
-  // container: the label of a text, outlined or elevated button, the focused
-  // and the invalid label of a form field, an error message, the label of a
-  // step in error. In M3 those are tone 40 / 80 accents, which read on every
-  // surface container with a state layer over it. A cp-theming accent is the
-  // colour its author wrote, and `brand` is one colour in both modes.
-  // Measured in the presets, as Material has it:
-  //   - a text button on a filled card: 3.8–4.4:1 in five of the eight preset
-  //     modes, and 3.3–4.4:1 with keyboard focus in all eight;
-  //   - a focused text, outlined or elevated button on the surface: 4.3:1 in
-  //     magenta-violet and rose-red, light mode;
-  //   - the label of a step in error, and anything under palette="error":
-  //     4.49:1 in cyan-orange, light mode;
-  //   - the focused or invalid label of a filled field, on its container in
-  //     surface-variant: 2.3–3.5:1 in dark mode, and the invalid one is under
-  //     4.5:1 in light mode as well;
-  //   - every one of them under palette="brand" in dark mode, with a brand that
-  //     is dark: 1.04–1.11:1 (measured with core's grey default as the brand;
-  //     since Phase 14d a preset's brand is its primary, but a brand a theme
-  //     passes is still one colour in both modes).
-  // So the accent in a label is held to a lightness: no lighter than 0.40 in
-  // light mode, no darker than 0.82 in dark mode. M3's tone 40 is about 0.44,
-  // on a surface at tone 98; the presets' light surface is near tone 91, and at
-  // 0.44 a focused button under palette="error" or "secondary" was 4.37:1 on
-  // it in rose-red. Hue and chroma are kept, and a colour already past the
-  // limit is unchanged. With the limits, a focused label in any palette is at
-  // 4.9:1 or better on the surface and 4.6:1 on surface-container-low in every
-  // preset in both modes. On surface-container-high (a dialog, the filled card
-  // below) the theme's primary is at 4.6:1 or better; a focused label there
-  // under palette="error" is still 4.0–4.4:1 in rose-red and in dark mode. A fill
-  // (a filled button, a checkbox, a slider) stays the author's colour, exactly.
-  // The lines and icons that belong to a held label (a field's outline,
-  // indicator, caret and arrow, the icon of a step in error) are held with it,
-  // so the two stay one colour.
-  //
-  // Each token is declared on the component itself, so the accent resolves in
-  // the [theme] and [palette] it is in. :where() keeps the rule at no
-  // specificity: Material's own rules for the same element (a button in a
-  // toolbar, the calendar's period button) and yours win, wherever they load.
-  // A value set on an ancestor does not: set these on the component.
-  $primary: _as-text(var(--mat-sys-primary));
-  $error: _as-text(var(--mat-sys-error));
-
-  :where(.mat-mdc-button) {
-    --mat-button-text-label-text-color: #{$primary};
-  }
-  :where(.mat-mdc-outlined-button) {
-    --mat-button-outlined-label-text-color: #{$primary};
-  }
-  :where(.mat-mdc-raised-button) {
-    --mat-button-protected-label-text-color: #{$primary};
-  }
-
-  :where(.mat-step-header) {
-    --mat-stepper-header-error-state-label-text-color: #{$error};
-    --mat-stepper-header-error-state-icon-foreground-color: #{$error};
-  }
-
-  :where(.mat-mdc-form-field) {
-    --mat-form-field-error-text-color: #{$error};
-    --mat-form-field-error-trailing-icon-color: #{$error};
-    --mat-form-field-error-focus-trailing-icon-color: #{$error};
-    --mat-form-field-focus-select-arrow-color: #{$primary};
-    --mat-select-focused-arrow-color: #{$primary};
-    --mat-select-invalid-arrow-color: #{$error};
-
-    --mat-form-field-filled-caret-color: #{$primary};
-    --mat-form-field-filled-focus-label-text-color: #{$primary};
-    --mat-form-field-filled-focus-active-indicator-color: #{$primary};
-    --mat-form-field-filled-error-caret-color: #{$error};
-    --mat-form-field-filled-error-label-text-color: #{$error};
-    --mat-form-field-filled-error-focus-label-text-color: #{$error};
-    --mat-form-field-filled-error-active-indicator-color: #{$error};
-    --mat-form-field-filled-error-focus-active-indicator-color: #{$error};
-
-    --mat-form-field-outlined-caret-color: #{$primary};
-    --mat-form-field-outlined-focus-label-text-color: #{$primary};
-    --mat-form-field-outlined-focus-outline-color: #{$primary};
-    --mat-form-field-outlined-error-caret-color: #{$error};
-    --mat-form-field-outlined-error-label-text-color: #{$error};
-    --mat-form-field-outlined-error-focus-label-text-color: #{$error};
-    --mat-form-field-outlined-error-outline-color: #{$error};
-    --mat-form-field-outlined-error-focus-outline-color: #{$error};
-  }
-
   // Filled card: the container.
   //
   // Material's is surface-container-highest, the furthest container from the
-  // surface, and a card holds text buttons. With the held label above, a
-  // hovered or focused one was still 3.9–4.5:1 on it in six of the eight
-  // preset modes; in dark mode the limit would have to be 0.89, close to
-  // white (rose-red: 4.46:1 at 0.88). One step closer to the surface, the same
+  // surface, and a card holds text buttons. With the label in the palette's
+  // text role (_tokens.scss), a hovered or focused one was still 3.9–4.5:1 on
+  // it in six of the eight preset modes; in dark mode the role's limit would
+  // have to be 0.89, close to white (rose-red: 4.46:1 at 0.88). One step closer to the surface, the same
   // as a dialog, it is 4.6:1 or better in all eight.
   // The elevated and the outlined card keep Material's containers.
   :where(.mat-mdc-card-filled) {
@@ -286,9 +212,9 @@ $_type-scales:
   //
   // Material's is surface-variant, tone 90 / 30 in M3: the furthest neutral
   // from the surface that a label sits on. surface-container-high is a step
-  // closer to the surface. With it and the held accents above, the focused and
-  // the invalid label of a filled field are at 4.75:1 or better in every preset
-  // in both modes.
+  // closer to the surface. With it and the labels in the text role
+  // (_tokens.scss), the focused and the invalid label of a filled field are at
+  // 4.75:1 or better in every preset in both modes.
   :where(.mat-mdc-form-field.mat-form-field-appearance-fill) {
     --mat-form-field-filled-container-color: var(--mat-sys-surface-container-high);
   }
@@ -328,14 +254,6 @@ $_type-scales:
   .mat-grid-list .mat-grid-tile .mat-grid-tile-footer {
     background: rgb(0 0 0 / 0.6);
   }
-}
-
-// An accent as a label: held to the lightness M3 gives the accents it paints
-// as text (see "Accents as text" above).
-@function _as-text($origin) {
-  @return string.unquote(
-    "light-dark(oklch(from #{$origin} min(l, 0.4) c h / 1), oklch(from #{$origin} max(l, 0.82) c h / 1))"
-  );
 }
 
 // ─── Per-element density scopes ───────────────────────────────────────────────

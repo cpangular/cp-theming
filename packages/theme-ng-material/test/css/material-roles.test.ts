@@ -36,6 +36,11 @@ import {
 
 const MODES: Mode[] = ['light', 'dark'];
 const ROOT_AND_THEME = ':root, :where([theme])';
+/** Where the accent component tokens are: no specificity (issue #9). */
+const ACCENT_TOKENS = ':where(:root, [theme])';
+/** A component token, as opposed to a --mat-sys-* role. */
+const isComponentToken = (name: string) =>
+  name.startsWith('--mat-') && !name.startsWith('--mat-sys-');
 
 const { core, presets } = coreSheets();
 const adapterCore = materialSheets().find((s) => s.label.endsWith('material-core.scss'))!;
@@ -219,17 +224,94 @@ test('tokens that read a cp-theming variable are on `:root, :where([theme])`; li
     [],
     'a var() on :root alone would not follow a nested theme',
   );
-  // No selector other than these, [themeMode] and [palette="name"] declares a token.
+  // No selector other than these, the accent tokens' rule, [themeMode] and
+  // [palette="name"] declares a token.
   const others = adapterRules
     .map((r) => normalizeSelector(r.selector))
     .filter(
       (s) =>
         s !== ROOT_AND_THEME &&
+        s !== ACCENT_TOKENS &&
         s !== ':root' &&
         s !== ':where([themeMode])' &&
         !/^\[palette=[\w-]+\]$/.test(s),
     );
   assert.deepEqual(others, []);
+});
+
+// ─── Accents as text and as lines (issues #15 and #9) ────────────────────────
+
+// Material paints these in `primary` or `error`. A label takes the palette's
+// text role, a line its stroke. Written out here, not read from the Sass: a
+// token that moves from one list to the other, or leaves, has to be moved here.
+const PRIMARY_LABELS = [
+  '--mat-button-text-label-text-color',
+  '--mat-button-outlined-label-text-color',
+  '--mat-button-protected-label-text-color',
+  '--mat-form-field-filled-focus-label-text-color',
+  '--mat-form-field-outlined-focus-label-text-color',
+];
+const PRIMARY_LINES = [
+  '--mat-form-field-filled-caret-color',
+  '--mat-form-field-filled-focus-active-indicator-color',
+  '--mat-form-field-outlined-caret-color',
+  '--mat-form-field-outlined-focus-outline-color',
+  '--mat-form-field-focus-select-arrow-color',
+  '--mat-select-focused-arrow-color',
+];
+const ERROR_LABELS = [
+  '--mat-stepper-header-error-state-label-text-color',
+  '--mat-stepper-header-error-state-icon-foreground-color',
+  '--mat-form-field-error-text-color',
+  '--mat-form-field-error-trailing-icon-color',
+  '--mat-form-field-error-focus-trailing-icon-color',
+  '--mat-form-field-filled-error-label-text-color',
+  '--mat-form-field-filled-error-focus-label-text-color',
+  '--mat-form-field-outlined-error-label-text-color',
+  '--mat-form-field-outlined-error-focus-label-text-color',
+];
+const ERROR_LINES = [
+  '--mat-form-field-filled-error-caret-color',
+  '--mat-form-field-filled-error-active-indicator-color',
+  '--mat-form-field-filled-error-focus-active-indicator-color',
+  '--mat-form-field-outlined-error-caret-color',
+  '--mat-form-field-outlined-error-outline-color',
+  '--mat-form-field-outlined-error-focus-outline-color',
+  '--mat-select-invalid-arrow-color',
+];
+/** The accent tokens a scope declares for palette `name`. */
+const accentTokens = (name: string): [string, string][] => [
+  ...PRIMARY_LABELS.map((t): [string, string] => [t, `var(--color--${name}--text)`]),
+  ...PRIMARY_LINES.map((t): [string, string] => [t, `var(--color--${name}--stroke)`]),
+];
+const byName = (a: [string, string], b: [string, string]) => a[0].localeCompare(b[0]);
+
+test('labels in primary and in error read the palette’s text role, lines its stroke, on the theme elements', () => {
+  const found = adapterRules.filter((r) => normalizeSelector(r.selector) === ACCENT_TOKENS);
+  assert.equal(found.length, 1, 'one rule');
+  assert.deepEqual(
+    [...found[0].declarations].sort(byName),
+    [
+      ...accentTokens('primary'),
+      ...ERROR_LABELS.map((t): [string, string] => [t, 'var(--color--error--text)']),
+      ...ERROR_LINES.map((t): [string, string] => [t, 'var(--color--error--stroke)']),
+    ].sort(byName),
+  );
+});
+
+test('no accent token is declared on a component: a value set on an ancestor reaches it (issue #9)', () => {
+  // Every rule of both sheets that declares one of these tokens matches a
+  // theme element or a [palette] scope, never a Material class or element.
+  const all = [...PRIMARY_LABELS, ...PRIMARY_LINES, ...ERROR_LABELS, ...ERROR_LINES];
+  const where = materialSheets()
+    .flatMap((s) => rules(s.css))
+    .filter((r) => r.declarations.some(([n]) => all.includes(n)))
+    .map((r) => normalizeSelector(r.selector))
+    .filter((s) => s !== ACCENT_TOKENS && !/^\[palette=[\w-]+\]$/.test(s));
+  assert.deepEqual(where, []);
+  // …and the adapter no longer works a lightness out itself: it reads core's role.
+  for (const s of materialSheets())
+    assert.doesNotMatch(s.css, /min\(l, 0\.4\)|max\(l, 0\.82\)/, s.label);
 });
 
 // ─── [palette] scopes ────────────────────────────────────────────────────────
@@ -253,15 +335,37 @@ primary { @each $role, $tone in md.md-sys-color-values-light((primary: $tones)) 
   assert.ok(scopes.length > 0, 'the adapter emits [palette] rules');
   for (const scope of scopes) {
     const name = /^\[palette=([\w-]+)\]$/.exec(normalizeSelector(scope.selector))![1];
-    assert.deepEqual(scope.declarations.map(([n]) => n).sort(), primaryRoles, name);
+    const roles = scope.declarations.filter(([n]) => !isComponentToken(n));
+    assert.deepEqual(roles.map(([n]) => n).sort(), primaryRoles, name);
     // …and each is the root's expression with this palette as the origin.
-    for (const [token, value] of scope.declarations)
+    for (const [token, value] of roles)
       assert.equal(
         value,
         rootDecls.get(token)!.replaceAll('var(--color--primary', `var(--color--${name}`),
         `${name} ${token}`,
       );
+    // With the roles, the labels and lines Material paints in primary: this
+    // palette's text and stroke. The error ones are left to the theme element,
+    // as --mat-sys-error is.
+    assert.deepEqual(
+      scope.declarations.filter(([n]) => isComponentToken(n)).sort(byName),
+      accentTokens(name).sort(byName),
+      name,
+    );
   }
+});
+
+test('mat.adaptor() gives a custom palette name the same scope: roles, labels and lines', () => {
+  const fixture = materialFixtureSheets().find((s) => s.label.endsWith('adaptor-theme.scss'))!;
+  const scope = rules(fixture.css).find(
+    (r) =>
+      normalizeSelector(r.selector) === '[palette=accent]' &&
+      r.declarations.some(([n]) => n === '--mat-sys-primary'),
+  )!;
+  assert.deepEqual(
+    scope.declarations.filter(([n]) => isComponentToken(n)).sort(byName),
+    accentTokens('accent').sort(byName),
+  );
 });
 
 // ─── Surface order ───────────────────────────────────────────────────────────

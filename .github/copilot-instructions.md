@@ -103,6 +103,20 @@ demos/demo-brand-material/  @acme/theme-material           — Example theme pac
   Do not turn `$contrast` into a fixed colour: the issue asked for one and the user chose the
   preference, so that the ladder steps follow the same rule (PORT-PLAN.md Phase 19, #8).
 
+- **An accent has a text role; lines use its stroke.** `--color--{name}--text` is the accent as
+  text (links, headings, labels): the colour, no lighter than 0.40 in light mode and no darker
+  than 0.82 in dark, same hue, inside sRGB (`_palette.scss`, "Text role"). A registered pair like
+  stroke and focus, derived on the shared selector, replaced by `$text`. `background` and
+  `surface` have none. The accent stroke is the colour moved into a band per mode (0.42–0.60
+  light, 0.65 or more dark): a line needs 3:1, not 4.5:1, so a mid-tone accent is its own stroke.
+  The Material adapter points Material's accent labels at the text role and its accent lines
+  (a field's focused outline, indicator, caret, arrow) at the stroke, and declares those
+  component tokens where `--mat-sys-primary` is declared (theme elements, at no specificity, and
+  each `[palette]` scope), never on the component: a value an app sets on a toolbar or wrapper
+  has to reach the component (issue #9). Do not move a lightness limit back into the adapter, do
+  not hold a line with the label, and do not put the raw accent on a line (PORT-PLAN.md Phase 19,
+  #15 and #9).
+
 - **Derivations are opaque.** Every relative-colour derivation ends `/ 1`, so a translucent
   input cannot make ladder steps, auto roles or text translucent. Only `--tint-1..5` carry an
   alpha. The contrast check fails a derivation without it.
@@ -159,7 +173,8 @@ demos/demo-brand-material/  @acme/theme-material           — Example theme pac
   after `pnpm --filter docs build`: the painted contrast of every label on the showcase in light and dark,
   and the component gallery (Phase 15) per preset and mode: every section screenshotted, as
   loaded, hovered, focused and with every overlay open. A component label below 4.5:1 fails the
-  run; a disabled control and a docs caption are reported. `--only=gallery|showcase`,
+  run, and so does a line of a form field (outline, active indicator, select arrow) below 3:1; a
+  disabled control and a docs caption are reported. `--only=gallery|showcase`,
   `--preset=`, `--mode=`, `--section=a,b`, `--jobs=N`; engines as arguments (`chromium firefox`).
 - Component gallery examples: `demos/docs/src/examples/components/*.ng.html` are Angular
   templates, each the `templateUrl` of a component in
@@ -241,6 +256,15 @@ demos/demo-brand-material/  @acme/theme-material           — Example theme pac
   `render.ts` are black or white written by hand; `demos/docs/test/brand-text.ts` (after
   `pnpm --filter docs build`) measures the Palette page's live example and each ratio the page
   states. Measure a ratio before writing it into a page.
+- Accent roles (PORT-PLAN.md Phase 19, issues #15 and #9):
+  `packages/theme-core/test/css/accent-roles.test.ts` holds the text role to 4.5:1 and the accent
+  stroke to 3:1 on the background and the surface in every preset (the limits are written in the
+  test, not read from the Sass) and checks `$text`; the `text/` and `line/` rows of core's
+  `render.ts` prove the browsers agree. The adapter's `material-roles.test.ts` lists the accent
+  tokens by hand and fails one declared on a component. `demos/docs/test/material-tokens.ts`
+  (after `pnpm --filter docs build`) sets tokens on a wrapper in the built gallery and reads the
+  buttons and fields inside. A token the adapter starts or stops setting goes into the test's
+  lists, the adapter's README and the ng-material API page's table.
 - Fixture themes live in `packages/theme-core/test/fixtures/` and `packages/theme-ng-material/test/fixtures/`.
 - CI: `.github/workflows/test.yml` (cpdevtools/git-flow) runs `github.actions.build` then
   `github.actions.test` in every package that defines them.

@@ -268,6 +268,15 @@
   --palette-color--tint-5: var(--color--#{$name}--tint-5);
   --palette-color--focus: var(--color--#{$name}--focus);
 
+  // The palette's colour as text (a link, a heading). background and surface
+  // have no text role, so their scope clears the variable instead of letting
+  // the text colour of a palette around it through.
+  @if $name == background or $name == surface {
+    --palette-color--text: initial;
+  } @else {
+    --palette-color--text: var(--color--#{$name}--text);
+  }
+
   // Identity text, plus a default stroke color so outlined() works with just a
   // palette (no surface fill required).
   color: var(--palette-color);

@@ -1,0 +1,13 @@
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+$my-theme: t.theme(
+  $palettes: (
+    // The text role as passed. Nothing checks its contrast.
+    primary: t.light-dark(
+      t.palette(#0c6ab6, $text: #084a80),
+      t.palette(#62a8e5, $text: #a8d1f5)
+    ),
+  )
+);
+
+@include t.define-theme("my-theme", $my-theme);

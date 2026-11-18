@@ -514,6 +514,13 @@ export const REFS: Ref[] = [
     anchor: 'brand-text',
     find: '$contrast',
   },
+  {
+    name: '--color--{name}--text',
+    chapter: 7,
+    page: 'core/palette',
+    anchor: 'accent-text',
+    find: '--text',
+  },
 
   // 8 — everything else a theme carries
   {

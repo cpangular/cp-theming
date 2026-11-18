@@ -36,6 +36,11 @@ export interface PaletteGroup {
   roles: RoleGroup[];
   /** The focus ring colour, then its light and dark value. */
   focus: ColourToken[];
+  /**
+   * The colour as text, then its light and dark value. Empty for background
+   * and surface, which have no text role.
+   */
+  text: ColourToken[];
   tints: ColourToken[];
 }
 

@@ -1,0 +1,12 @@
+// A header in the brand colour. Its buttons take the header's text colour:
+// set the tokens on the header and the buttons inside inherit them.
+.app-header {
+  --mat-button-text-label-text-color: var(--color--brand--contrast);
+  --mat-button-outlined-label-text-color: var(--color--brand--contrast);
+}
+
+// The same for a field on it: the focused label and the focused outline.
+.app-header .search {
+  --mat-form-field-outlined-focus-label-text-color: var(--color--brand--contrast);
+  --mat-form-field-outlined-focus-outline-color: var(--color--brand--contrast);
+}

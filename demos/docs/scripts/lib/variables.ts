@@ -91,6 +91,10 @@ function palettesOf(names: Set<string>): PaletteGroup[] {
       focus: [token(`${root}--focus`, 'focus'), ...inputs(`${root}--focus`)].filter(
         (t): t is ColourToken => !!t,
       ),
+      // An accent only: background and surface have no text role.
+      text: [token(`${root}--text`, 'text'), ...inputs(`${root}--text`)].filter(
+        (t): t is ColourToken => !!t,
+      ),
       tints: tokens(
         root,
         [1, 2, 3, 4, 5].map((n) => `tint-${n}`),
@@ -110,6 +114,7 @@ const countColour = (palettes: PaletteGroup[]): number => {
     (n, p) =>
       n +
       count(p.focus) +
+      count(p.text) +
       count(p.tints) +
       p.roles.reduce(
         (m, r) => m + count([r.base]) + count(r.inputs) + count(r.fixed) + count(r.relative),
@@ -162,6 +167,8 @@ export const NOTES: Record<string, string> = {
   '--overlay--shadow': 'The base colour of overlay shadows.',
   '--palette-color': 'The colour of the palette this element is in.',
   '--palette-src': 'The same before tone is applied: what tone slides.',
+  '--palette-color--text':
+    'The palette colour as text: a link, a heading. Unset in a background or surface scope.',
   '--container--text': 'Text on the fill of the nearest filled element.',
   '--container--text-emphasis': 'The same at full contrast.',
   '--container--text-deemphasis': 'The same for a quieter line.',
@@ -325,6 +332,7 @@ export function sectionNames(data: VariablesData): Map<string, string[]> {
     data.palettes
       .flatMap((p) => [
         ...tokens(p.focus),
+        ...tokens(p.text),
         ...tokens(p.tints),
         ...p.roles.flatMap((r) => tokens([r.base, ...r.inputs, ...r.fixed, ...r.relative])),
       ])

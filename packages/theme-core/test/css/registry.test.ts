@@ -30,10 +30,17 @@ const WEIGHTS = [
 const SIZES = ['xxs', 'xs', 'sm', 'md', 'lg', 'xl', 'xxl'];
 const ROLES = ['', '--bg', '--stroke', '--focus'];
 const MODES = ['--mode-light', '--mode-dark'];
+const NEUTRALS = ['background', 'surface'];
 
-/** The eight registrations of one palette name: four roles × light and dark. */
+/**
+ * The registrations of one palette name, light and dark of each role: eight
+ * for background and surface (colour, bg, stroke, focus), ten for an accent,
+ * which also has the text role (Phase 19).
+ */
 export const paletteRegistrations = (name: string) =>
-  ROLES.flatMap((r) => MODES.map((m) => `--color--${name}${r}${m}`));
+  [...ROLES, ...(NEUTRALS.includes(name) ? [] : ['--text'])].flatMap((r) =>
+    MODES.map((m) => `--color--${name}${r}${m}`),
+  );
 
 export const scalarRegistrations = [
   ...WEIGHTS.map((w) => `--weight--${w}`),
@@ -52,10 +59,10 @@ test('the scalar list is the 29 the plan names', () => {
   assert.equal(scalarRegistrations.length, 29);
 });
 
-test('core.css registers exactly the expected 109 properties, each once', () => {
+test('core.css registers exactly the expected 125 properties, each once', () => {
   const registered = registeredProperties(core.css);
-  // 10 palettes × 4 roles × 2 modes + 29 scalars.
-  assert.equal(registered.length, 109);
+  // 10 palettes × 4 roles × 2 modes, the text role of the 8 accents × 2 modes, 29 scalars.
+  assert.equal(registered.length, 125);
   assert.ok(!registered.includes('--color--brand'), '--color--brand is a join, not registered');
   assert.equal(new Set(registered).size, registered.length, 'no duplicate registrations');
   assert.deepEqual([...registered].sort(), [...expectedRegistrations].sort());
@@ -91,7 +98,7 @@ for (const fixture of coreFixtureSheets()) {
   const custom = [
     ...new Set([...fixture.css.matchAll(/\[palette=["']?([\w-]+)["']?\]/g)].map((m) => m[1])),
   ].filter((n) => !CORE_PALETTE_NAMES.includes(n));
-  test(`${fixture.label} registers 8 names per custom palette (${custom.join(', ') || 'none'}) and nothing else`, () => {
+  test(`${fixture.label} registers 10 names per custom palette (${custom.join(', ') || 'none'}) and nothing else`, () => {
     const expected = custom.flatMap(paletteRegistrations);
     assert.deepEqual([...registeredProperties(fixture.css)].sort(), expected.sort());
   });

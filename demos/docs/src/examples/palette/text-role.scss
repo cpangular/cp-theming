@@ -1,0 +1,21 @@
+// Coloured text of your own: the palette's text role.
+a,
+.price {
+  color: var(--color--primary--text);
+}
+
+// Inside a palette scope: the text role of whichever palette that is.
+.status {
+  color: var(--palette-color--text);
+}
+
+// A fill keeps the colour, with its contrast as the text on it.
+.badge {
+  background-color: var(--color--primary);
+  color: var(--color--primary--contrast);
+}
+
+// A line keeps the colour too: the stroke role.
+.field:focus-within {
+  outline: 2px solid var(--color--primary--stroke);
+}
