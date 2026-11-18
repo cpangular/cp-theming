@@ -1,0 +1,4 @@
+/* src/styles.css */
+@import "@cpangular/cp-theming-core/css/core";
+@import "@cpangular/cp-theming-core/css/presets/azure-blue";
+@import "@cpangular/cp-theming-core/css/base";

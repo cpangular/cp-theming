@@ -36,6 +36,16 @@ export interface PaletteGroup {
   roles: RoleGroup[];
   /** The focus ring colour, then its light and dark value. */
   focus: ColourToken[];
+  /**
+   * The colour as text, then its light and dark value. Empty for background
+   * and surface, which have no text role.
+   */
+  text: ColourToken[];
+  /**
+   * The container colours, lowest to highest: Material 3's surface containers.
+   * The surface has them; empty for every other palette.
+   */
+  containers: ColourToken[];
   tints: ColourToken[];
 }
 

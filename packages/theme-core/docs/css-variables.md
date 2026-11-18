@@ -77,6 +77,18 @@ Transparent versions of the identity color role. Opacity is the mode-varying `--
 |----------|-------------|
 | `--color--{name}--focus` | Per-palette focus ring color. Auto-derived as: inverted lightness + 60° hue shift from `--color--{name}`. Override via `$focus` in `t.palette()`. |
 
+### Surface containers
+
+The surface only. Five colours a small step from `--color--surface`, for a card, a panel, a toolbar, a dialog. They are Material 3's surface containers, under M3's names, at M3's distance from the surface in each mode; the Material adapter's `--mat-sys-surface-container-*` read them. Each has a `--contrast`. They are not the shade steps (`--high`, `--low`, ±0.12 per step).
+
+| Variable | Lightness from the surface, light mode | Dark mode |
+|----------|------|------|
+| `--color--surface--container-lowest` | +0.017 | −0.024 |
+| `--color--surface--container-low` | −0.017 | +0.036 |
+| `--color--surface--container` | −0.035 | +0.053 |
+| `--color--surface--container-high` | −0.052 | +0.097 |
+| `--color--surface--container-highest` | −0.069 | +0.140 |
+
 ### Brand
 
 | Variable | Description |
@@ -106,13 +118,13 @@ Set by `t.apply-palette($name)` or the `[palette="name"]` attribute. Point at th
 
 ## Container — surface variables
 
-Set by `t.container()`, `t.filled()`, or `t.outlined()`.
+The three text variables are declared by core on every theme element (`:where(:root, [theme])`) for the page, against `--color--background`, and again by `t.filled()` against its own fill. `t.bg()` and `t.outlined()` leave them as they are. So `var(--container--text-deemphasis)` is muted text anywhere.
 
 | Variable | Description |
 |----------|-------------|
-| `--container--text` | Blended body text color (`contrast × weight--text-blend`) |
-| `--container--text-emphasis` | Pure contrast (white or black) |
-| `--container--text-deemphasis` | De-emphasized text (`contrast × weight--text-deemphasis-blend`) |
+| `--container--text` | The text colour: the contrast (white or black) of the fill, or of the background |
+| `--container--text-emphasis` | The same |
+| `--container--text-deemphasis` | Muted text: that contrast mixed with the fill, or the background, at `--weight--text-deemphasis-blend` (63% light, 93% dark). The Material adapter's `--mat-sys-on-surface-variant` is the same mix against the surface |
 | `--container--stroke` | Border color for the active surface |
 | `--container--stroke-width` | Set by `t.stroke()` — resolves `--stroke-width` (default 1px) |
 
@@ -213,7 +225,7 @@ Set by the theme's typography config.
 |----------|---------|-------------|
 | `--weight--text-blend` | 82% | Body text opacity on container backgrounds |
 | `--weight--text-emphasis-blend` | 96% | Emphasized text opacity |
-| `--weight--text-deemphasis-blend` | 55% | De-emphasized text opacity |
+| `--weight--text-deemphasis-blend` | 63% light, 93% dark | How much of the text colour muted text keeps (where Angular Material has `on-surface-variant`) |
 | `--weight--text-primary-tint` | 0% | Hue tint toward primary palette |
 | `--weight--state-hover` | 8% | Hover overlay opacity |
 | `--weight--state-press` | 12% | Press/active overlay opacity |
@@ -272,11 +284,11 @@ Use with `--palette-color--focus` (set by `apply-palette`):
 
 ## Elevation
 
-6 levels (0–5). Each level has a shadow var and a tint var. A shadow's colour uses `light-dark()` — it adjusts automatically with `color-scheme`; its offsets and blur are the same in both modes. Tints are percentages and cannot use `light-dark()`.
+6 levels (0–5). Each level has a shadow var and a tint var. Levels 1–5 are the shadows Angular Material draws for its own levels: three layers each (key, penumbra, ambient), in black at 20%, 14% and 12% in light mode and at 33%, 23% and 20% in dark. Each layer's colour uses `light-dark()` — it adjusts automatically with `color-scheme`; the offsets, blurs and spreads are the same in both modes. Tints are percentages and cannot use `light-dark()`.
 
 | Variable | Level 0 | Level 1 | Level 5 |
 |----------|---------|---------|---------|
-| `--elevation-{N}--shadow` | none | 0 1px 2px light-dark(…) | 0 8px 16px light-dark(…) |
+| `--elevation-{N}--shadow` | none | 0 2px 1px -1px light-dark(…), 0 1px 1px 0 light-dark(…), 0 1px 3px 0 light-dark(…) | 0 7px 8px -4px light-dark(…), 0 12px 17px 2px light-dark(…), 0 5px 22px 4px light-dark(…) |
 | `--elevation-{N}--tint` | 0% | 5% | 14% |
 
 Use in component CSS:

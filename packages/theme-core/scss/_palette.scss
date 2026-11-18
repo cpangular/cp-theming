@@ -10,6 +10,9 @@
 //     they are used, and every derivation (ladders, contrasts, aliases, tints).
 //   • A theme rule declares only the pairs its author passed (plus the join);
 //     define-core-theme() derives everything else once on :where(:root, [theme]).
+//   • Roles: every palette has colour, bg, stroke and focus. An accent palette
+//     (every name but background and surface) also has text: its colour held
+//     to a lightness that reads as text (see "Text role").
 //
 // Chain (Phase 14): brand → primary → secondary, tertiary → background, surface.
 //   • A theme passes whichever of these it has. Core generates each one it
@@ -21,7 +24,9 @@
 //     leaves one out gets the registered initial value, $semantic-defaults.
 // ─────────────────────────────────────────────────────────────────────────────
 @use "sass:map";
+@use "sass:color";
 @use "sass:list";
+@use "sass:math";
 @use "sass:meta";
 @use "sass:string";
 @use "variables" as vars;
@@ -32,40 +37,63 @@
 $core-palette-names:
   background, surface, brand, primary, secondary, tertiary, error, warn, caution, pass;
 $roles: color, bg, stroke, focus;
+$neutral-names: background, surface;
+
+// The roles of one palette name: the four above, and `text` for an accent.
+// background and surface are what text is written on; the text on them is
+// their --contrast.
+@function roles-of($name) {
+  @if list.index($neutral-names, $name) {
+    @return $roles;
+  }
+  @return list.append($roles, text);
+}
 
 // The colours of the semantic palettes when a theme does not pass them: the
 // registered initial values of their colour pairs. They are fixed, not derived
 // from brand or primary. The presets pass the same ones
 // (presets/_palettes.scss builds $default-error and friends from this map).
 //
-// pass    — green  145° — success, confirmation
-// caution — yellow 103° — advisory, needs attention (amber-gold, to stay readable on white)
-// warn    — orange  55° — warning, degraded state
-// error   — red     27° — failure, destructive action
+// pass    — green  ~143° — success, confirmation
+// caution — yellow  ~99° — advisory, needs attention (amber-gold, to stay readable on white)
+// warn    — orange  ~44° — warning, degraded state
+// error   — red     ~28° — failure, destructive action
+// Each is written inside sRGB, so its stroke and text role are its own
+// chroma (see "Accent stroke" below): the colour a browser painted for the
+// value written before, with warn and caution held at lightness 0.55 in light
+// mode, the top of the light stroke band, so their stroke is their colour.
 $semantic-defaults: (
   error: (
-    light: oklch(0.52 0.22 27),
-    dark: oklch(0.7 0.2 27),
+    light: oklch(0.525 0.214 28.1),
+    dark: oklch(0.694 0.196 27),
   ),
   warn: (
-    light: oklch(0.55 0.18 55),
+    light: oklch(0.55 0.161 43.5),
     dark: oklch(0.76 0.16 55),
   ),
   caution: (
-    light: oklch(0.55 0.16 103),
+    light: oklch(0.55 0.113 98.8),
     dark: oklch(0.82 0.15 103),
   ),
   pass: (
-    light: oklch(0.48 0.18 145),
+    light: oklch(0.488 0.165 142.5),
     dark: oklch(0.72 0.16 145),
   ),
 );
 
-// Initial values per palette role (colour, bg, stroke, focus): what a pair holds
-// when nothing declares it. With no theme loaded core still generates primary,
-// the accents and the neutrals from the brand pair (see "Generated palettes"),
-// so the grey brand below makes all of them grey: a legible black-on-white
-// print fallback. The colour role of a semantic palette is $semantic-defaults,
+// The text role when nothing declares it: a grey at the two limits of the role
+// (see "Text role"). Core derives the pair for every accent, so this is only
+// what a page without core's rules would get.
+$_text-initial: (
+  light: oklch(0.4 0 0),
+  dark: oklch(0.82 0 0),
+);
+
+// Initial values per palette role (colour, bg, stroke, focus, and text for an
+// accent): what a pair holds when nothing declares it. With no theme loaded
+// core still generates primary, the accents and the neutrals from the brand
+// pair (see "Generated palettes"), so the grey brand below makes all of them
+// grey: a legible black-on-white print fallback. The colour role of a semantic palette is $semantic-defaults,
 // one value per mode; its other roles are always derived from it.
 $_core-initial: (
   // background/surface: bg is the base (core joins the pair, no theme → initial).
@@ -86,48 +114,62 @@ $_core-initial: (
     bg: oklch(0.92 0 0),
     stroke: oklch(0.2 0 0),
     focus: oklch(0.5 0 0),
+    text: (
+      light: oklch(0.2 0 0),
+      dark: oklch(0.82 0 0),
+    ),
   ),
   primary: (
     color: oklch(0.2 0 0),
     bg: oklch(0.92 0 0),
     stroke: oklch(0.2 0 0),
     focus: oklch(0.5 0 0),
+    text: (
+      light: oklch(0.2 0 0),
+      dark: oklch(0.82 0 0),
+    ),
   ),
   secondary: (
     color: oklch(0.4 0 0),
     bg: oklch(0.92 0 0),
     stroke: oklch(0.4 0 0),
     focus: oklch(0.65 0 0),
+    text: $_text-initial,
   ),
   tertiary: (
     color: oklch(0.45 0 0),
     bg: oklch(0.92 0 0),
     stroke: oklch(0.45 0 0),
     focus: oklch(0.68 0 0),
+    text: $_text-initial,
   ),
   error: (
     color: map.get($semantic-defaults, error),
     bg: oklch(0.92 0 0),
     stroke: oklch(0.15 0 0),
     focus: oklch(0.45 0 0),
+    text: $_text-initial,
   ),
   warn: (
     color: map.get($semantic-defaults, warn),
     bg: oklch(0.92 0 0),
     stroke: oklch(0.3 0 0),
     focus: oklch(0.55 0 0),
+    text: $_text-initial,
   ),
   caution: (
     color: map.get($semantic-defaults, caution),
     bg: oklch(0.92 0 0),
     stroke: oklch(0.5 0 0),
     focus: oklch(0.68 0 0),
+    text: $_text-initial,
   ),
   pass: (
     color: map.get($semantic-defaults, pass),
     bg: oklch(0.92 0 0),
     stroke: oklch(0.35 0 0),
     focus: oklch(0.6 0 0),
+    text: $_text-initial,
   )
 );
 
@@ -139,6 +181,7 @@ $_custom-initial: (
   bg: transparent,
   stroke: transparent,
   focus: oklch(0.3 0 0),
+  text: transparent,
 );
 
 // Dedup list — custom palette names whose root-level pieces are already emitted.
@@ -157,11 +200,11 @@ $_registered-palette-names: ();
 }
 
 // ─── Registration ─────────────────────────────────────────────────────────────
-// Eight @property rules per palette: four roles × light and dark.
-// Must be emitted at root level. An initial value is one colour for both modes
-// or a (light, dark) map.
+// Two @property rules per role, light and dark: eight for background and
+// surface, ten for an accent (the text role). Must be emitted at root level.
+// An initial value is one colour for both modes or a (light, dark) map.
 @mixin _register-palette-properties($name, $initial) {
-  @each $role in $roles {
+  @each $role in roles-of($name) {
     @each $mode in light, dark {
       $value: map.get($initial, $role);
       @if meta.type-of($value) == map {
@@ -212,12 +255,42 @@ $_contrast-step-var: --theme--_contrast-step;
 $_luminance: "(0.2126 * clamp(0, r, 1) + 0.7152 * clamp(0, g, 1) + 0.0722 * clamp(0, b, 1))";
 $_contrast-step: string.unquote("clamp(0, (0.179 - #{$_luminance}) * 1e6, 1)");
 
+// A palette may prefer white or black text: `$contrast: prefer-white` (or
+// `prefer-black`) in t.palette(). Brand guidelines often say "this red takes
+// white" where the step above picks black (#e65151: black 5.66:1, white
+// 3.71:1). The preferred colour is then used wherever it reaches 3:1, the WCAG
+// floor for large text and icons, and the other one elsewhere:
+//
+//   prefer-white  white while 1.05 / (Y + 0.05) >= 3, that is Y < 0.30
+//   prefer-black  black while (Y + 0.05) / 0.05 >= 3, that is Y >= 0.10
+//
+// Each is the same step with another cut-off, declared once beside it. A theme
+// rule re-declares the contrasts of the palette's colour role with it
+// (_emit-contrast-preference()); nothing changes for a palette without one.
+$_contrast-preferences: (
+  prefer-white: (
+    var: --theme--_contrast-step--prefer-white,
+    cutoff: 0.3,
+  ),
+  prefer-black: (
+    var: --theme--_contrast-step--prefer-black,
+    cutoff: 0.1,
+  ),
+);
+
 // Called once from define-core-theme() inside :where(:root): the contrast
-// step, the neutral stroke's channels (see "Neutral stroke"), and every pair of
+// step, the gamut factor (see "Gamut correction"), the neutral stroke's
+// channels (see "Neutral stroke"), and every pair of
 // the palette chain pointed at its generated colour (see "Generated
 // palettes"), which a theme that passes the palette replaces.
 @mixin root-defaults() {
   #{$_contrast-step-var}: #{$_contrast-step};
+  @each $preference, $step in $_contrast-preferences {
+    #{map.get($step, var)}: string.unquote(
+      "clamp(0, (#{map.get($step, cutoff)} - #{$_luminance}) * 1e6, 1)"
+    );
+  }
+  #{$_gamut-factor-var}: string.unquote($_gamut-factor);
   @include _neutral-stroke-channels();
   @each $name in $_generated-names {
     @include _use-generated($name);
@@ -226,11 +299,21 @@ $_contrast-step: string.unquote("clamp(0, (0.179 - #{$_luminance}) * 1e6, 1)");
 
 // The contrast colour of $origin: the step on all three linear-sRGB channels
 // (black or white), read back as an oklch lightness so the token stays an
-// oklch value, alpha 1.
-@function _contrast-of($origin) {
+// oklch value, alpha 1. $preference picks the step: null (the default one),
+// prefer-white or prefer-black.
+//
+// The hue is `none`, not 0. Black and white have no hue, and a mix in oklch
+// treats a hue written as a number as real even at chroma 0: muted text, the
+// contrast mixed with a blue fill (`--container--text-deemphasis`), was turned
+// towards 0° by the weight and came out purple. With `none` the mix takes the
+// fill's hue.
+@function _contrast-of($origin, $preference: null) {
   $s: var(#{$_contrast-step-var});
+  @if $preference != null {
+    $s: var(#{map.get(map.get($_contrast-preferences, $preference), var)});
+  }
   @return string.unquote(
-    "oklch(from color(from #{$origin} srgb-linear #{$s} #{$s} #{$s}) l 0 0 / 1)"
+    "oklch(from color(from #{$origin} srgb-linear #{$s} #{$s} #{$s}) l 0 none / 1)"
   );
 }
 
@@ -311,6 +394,153 @@ $_stroke-contrast-lighter: 6;
 // The default stroke of background or surface whose colour is $origin.
 @function _neutral-stroke($origin) {
   @return string.unquote("oklch(from #{$origin} var(#{_private(l)}) var(#{_private(c)}) h / 1)");
+}
+
+// ─── Accent stroke ────────────────────────────────────────────────────────────
+// The stroke of an accent palette is a line in that colour on the page: the
+// border outlined() draws, the focused outline and the active indicator of a
+// Material field, its caret and its arrow. WCAG 1.4.11 asks 3:1 of such a
+// line, not the 4.5:1 of text, so a mid-tone accent is its own stroke; only
+// one that would not show is moved, keeping its hue:
+//
+//   light  lightness clamped into 0.42–0.55. An accent written for a light
+//          page (0.43–0.55 in the presets) keeps its lightness; a pale one
+//          comes down to 0.55, a near-black one up to 0.42 so it still has a
+//          colour.
+//   dark   no darker than 0.65. An accent written for a dark page (0.67–0.82
+//          in the presets) keeps its lightness; a darker one (a brand that is
+//          one colour in both modes) comes up to 0.65.
+//
+// Then it gives up chroma until the screen can show it (_in-gamut()), like
+// the text role: a pure yellow brought down to 0.55 keeps a chroma sRGB does
+// not hold there, and clipped it is painted as an ochre, 12° from its hue.
+// This also applies to an accent the band does not move but that is written
+// outside sRGB (oklch(0.43 0.19 253) has a red channel of −0.16). Its fill is
+// painted as the browser clips it; its stroke is the same lightness and hue
+// with the chroma sRGB holds, so the two differ. An accent inside sRGB and
+// inside the band is its own stroke, exactly. That is why the presets and the
+// semantic defaults are written inside sRGB (each is the colour a browser
+// painted for the value written before), and why a theme that passes an accent
+// outside it gets a warning (`_warn-outside-srgb()`).
+//
+// Until Phase 19 the band was 0.42–0.60 in both modes, which made a dark-mode
+// accent's stroke darker than the accent: 2.7–3.0:1 for the primary of three
+// of the four presets on the container of a filled Material field. Now the
+// presets' dark strokes are at their accents' lightness (3.6:1 or more
+// there), and at the floor of 0.65 any colour is 3.1:1 or more there and
+// 4.3:1 on the surface. In light mode the ceiling was 0.60 until Session C,
+// where a green is 2.9:1 on the presets' surface; at 0.55 every colour is
+// 3.58:1 or more on the presets' surface, 4.1:1 on their background and
+// 3.04:1 on that container. The presets' own light strokes are 3.2:1 or more
+// on the container.
+$_accent-stroke-lightness: (
+  light: string.unquote("clamp(0.42, l, 0.55)"),
+  dark: string.unquote("max(l, 0.65)"),
+);
+
+// ─── Text role ────────────────────────────────────────────────────────────────
+// --color--{name}--text is an accent as text: a link, a heading, a price, the
+// label of a text button. The colour role is the colour as its author wrote
+// it, which is right for a fill; as text on the page it has to reach 4.5:1 on
+// the background, the surface and the containers a little further from them,
+// and an accent of lightness 0.52 does not (#0c6ab6: 3.6–3.7:1 on the darkest
+// Material surface container of the presets; a lighter one, #e65151, is
+// 3.7:1 on white).
+//
+// So the text role is the colour held to a lightness: no lighter than 0.40 in
+// light mode, no darker than 0.82 in dark mode, with its hue and chroma. Those
+// are the limits the Material adapter measured for the labels Material paints
+// in an accent (Phase 15): 4.9:1 or better on the surface and 4.6:1 on a
+// dialog's container in every preset and mode. A colour already past the
+// limit is unchanged. Moving the lightness can leave sRGB (a vivid red at
+// 0.40), so the result gives up chroma until the screen can show it
+// (_in-gamut()) and the hue painted is the hue of the accent.
+//
+// It is a role like stroke and focus: a registered pair, derived on the shared
+// selector from the colour pair, which `$text` in t.palette() replaces.
+// background and surface have none: the text on them is their --contrast.
+$_text-lightness: (
+  light: string.unquote("min(l, 0.4)"),
+  dark: string.unquote("max(l, 0.82)"),
+);
+
+@function _as-text($origin, $mode) {
+  @return _in-gamut("oklch(from #{$origin} #{map.get($_text-lightness, $mode)} c h / 1)");
+}
+
+// The accent stroke of $origin (see "Accent stroke"): the band, then inside sRGB.
+@function _accent-stroke($origin, $mode) {
+  @return _in-gamut("oklch(from #{$origin} #{map.get($_accent-stroke-lightness, $mode)} c h / 1)");
+}
+
+// ─── Surface containers ───────────────────────────────────────────────────────
+// Five colours a step or two away from the surface, for what sits on it or in
+// it: a card, a panel, a toolbar, a dialog, the well of a text field.
+//
+//   --color--surface--container-lowest   --color--surface--container-high
+//   --color--surface--container-low      --color--surface--container-highest
+//   --color--surface--container
+//
+// each with its --contrast. They are Material 3's surface containers, by their
+// M3 names and at M3's distances from the surface: the lightness that
+// separates each container's tone from the surface's own tone in M3's tables
+// (light: tones 100, 96, 94, 92, 90 around a surface at 98; dark: 4, 10, 12,
+// 17, 22 around 6; lightness of a tone as in the Material adapter's
+// _m3-tone.scss). In light mode `lowest` is lighter than the surface and the
+// other four are darker, each a little more; in dark mode `lowest` is darker
+// and the other four lighter. The Material adapter's --mat-sys-surface-
+// container-* read these, so an app's own panel and a Material card beside it
+// are one colour.
+//
+// The ladder steps (--high, --low, …) are a different scale: emphasis steps of
+// 0.12 that every palette has, three to each side and the same in both modes.
+// The containers are one to one side and four to the other, 0.017 apart in
+// light mode and 0.017 to 0.043 apart in dark, which the ladder cannot express.
+// Hue and chroma are the surface's. Derived from the joined token, like the
+// ladder, so a hand-written --color--surface moves them too.
+$surface-containers: (
+  container-lowest: (
+    light: 0.0172,
+    dark: -0.0238,
+  ),
+  container-low: (
+    light: -0.0172,
+    dark: 0.0362,
+  ),
+  container: (
+    light: -0.0345,
+    dark: 0.0534,
+  ),
+  container-high: (
+    light: -0.0517,
+    dark: 0.0965,
+  ),
+  container-highest: (
+    light: -0.069,
+    dark: 0.1396,
+  ),
+);
+
+// $origin with its lightness moved by $offset.
+@function _moved($origin, $offset) {
+  $op: "+";
+  @if $offset < 0 {
+    $op: "-";
+  }
+  @return string.unquote(
+    "oklch(from #{$origin} clamp(0, l #{$op} #{math.abs($offset)}, 1) c h / 1)"
+  );
+}
+
+@mixin _surface-containers() {
+  $surface: token(surface, color);
+  @each $step, $offset in $surface-containers {
+    #{$surface}--#{$step}: light-dark(
+      _moved(var(#{$surface}), map.get($offset, light)),
+      _moved(var(#{$surface}), map.get($offset, dark))
+    );
+    #{$surface}--#{$step}--contrast: _contrast-of(var(#{$surface}--#{$step}));
+  }
 }
 
 // All modifier vars + their contrasts for one role.
@@ -398,18 +628,16 @@ $_stroke-contrast-lighter: 6;
   // Stroke — the line drawn around something.
   //   background, surface: a boundary on the palette's own colour, 4.5:1 or
   //     more against it whatever its lightness (see "Neutral stroke").
-  //   every other palette: the colour role's lightness clamped into the
-  //     mid-tone band 0.42–0.60, so a mid-tone accent (L≈0.43) keeps its
-  //     colour and a pale or deep one is moved to where it shows.
+  //   every other palette: the colour itself where a line in it shows on the
+  //     page, moved to where it does otherwise (see "Accent stroke").
   // _role-derivatives adds --stroke--low (subtle divider) and --stroke--high.
   // Focus ring — per palette: inverted lightness + 60° hue shift, always distinct.
   @each $mode in light, dark {
     @if $name == background or $name == surface {
       #{token($name, stroke)}--mode-#{$mode}: _neutral-stroke(var(#{$c}--mode-#{$mode}));
     } @else {
-      #{token($name, stroke)}--mode-#{$mode}: oklch(
-        from var(#{$c}--mode-#{$mode}) clamp(0.42, l, 0.6) c h / 1
-      );
+      #{token($name, stroke)}--mode-#{$mode}: _accent-stroke(var(#{$c}--mode-#{$mode}), $mode);
+      #{token($name, text)}--mode-#{$mode}: _as-text(var(#{$c}--mode-#{$mode}), $mode);
     }
     #{token($name, focus)}--mode-#{$mode}: oklch(
       from var(#{$c}--mode-#{$mode}) clamp(0.1, calc(1 - l), 0.9) c calc(h + 60) / 1
@@ -417,10 +645,16 @@ $_stroke-contrast-lighter: 6;
   }
   @include _join($name, stroke);
   @include _join($name, focus);
+  @if $name != background and $name != surface {
+    @include _join($name, text);
+  }
 
   @include _role-derivatives($name, color);
   @include _role-derivatives($name, bg);
   @include _role-derivatives($name, stroke);
+  @if $name == surface {
+    @include _surface-containers();
+  }
 
   // Palette tints — transparent versions of the colour role. The alpha is a
   // mode-varying weight; a percentage substituted here would freeze at this
@@ -565,12 +799,19 @@ $_generated-names: primary, secondary, tertiary, background, surface;
 // its hue than before, not on it.
 //
 // A colour already inside sRGB comes back unchanged, a grey stays grey.
+//
+// The factor reads r, g and b, so it only means something inside
+// `color(from … srgb …)`. Like the contrast step, core declares it once on
+// :where(:root) as a private variable and each pass substitutes it: written
+// out it is 80 bytes four times in every corrected colour, and the text role
+// alone has twenty of those.
+$_gamut-factor-var: --theme--_gamut-factor;
 $_gamut-factor: "calc(1 - 2 * clamp(0, max(r - 1, g - 1, b - 1, -1 * r, -1 * g, -1 * b), 0.25))";
 $_gamut-passes: 4;
 
 @function _in-gamut($colour) {
   @for $i from 1 through $_gamut-passes {
-    $colour: "oklch(from color(from #{$colour} srgb r g b / #{$_gamut-factor}) l calc(c * alpha) h / 1)";
+    $colour: "oklch(from color(from #{$colour} srgb r g b / var(#{$_gamut-factor-var})) l calc(c * alpha) h / 1)";
   }
   @return string.unquote($colour);
 }
@@ -614,7 +855,7 @@ $_gamut-passes: 4;
 // Public: the brand palette of a theme that passes `primary` and no `brand`
 // (Phase 14d): its primary, exactly as that primary is, passed role by role.
 // The brand pair takes the primary pair by reference, and so does the pair of
-// each role the theme gave its primary explicitly ($bg, $stroke, $focus); the
+// each role the theme gave its primary explicitly ($bg, $stroke, $focus, $text); the
 // roles it left to core are derived from the brand pair on the shared
 // selector, which is now the primary pair, so they agree too. $light and $dark
 // are the primary's config per mode.
@@ -626,7 +867,7 @@ $_gamut-passes: 4;
 // primary: with nothing loaded the brand is its grey initial value and
 // nothing reads in a circle.
 @mixin emit-brand-from-primary($light, $dark) {
-  @each $role in $roles {
+  @each $role in roles-of(brand) {
     @if $role == color or map.get($light, $role) != null or map.get($dark, $role) != null {
       @each $mode in light, dark {
         #{token(brand, $role)}--mode-#{$mode}: var(#{token(primary, $role)}--mode-#{$mode});
@@ -634,6 +875,8 @@ $_gamut-passes: 4;
       @include _join(brand, $role);
     }
   }
+  // The brand is the primary, so it takes white or black as the primary does.
+  @include _emit-contrast-preference(brand, map.get($light, contrast), map.get($dark, contrast));
 }
 
 // Public: the root-level pieces of a custom palette name, once per compilation:
@@ -664,12 +907,84 @@ $_gamut-passes: 4;
 // Overrides the auto-derived focus color. Use inside t.light-dark() so you
 // can provide different values per mode:
 //   t.light-dark(
-//     t.palette(oklch(0.55 0.18 240)),
-//     t.palette(oklch(0.65 0.16 240), $focus: oklch(0.85 0.18 60)),
+//     t.palette(oklch(0.55 0.12 240)),
+//     t.palette(oklch(0.65 0.14 240), $focus: oklch(0.85 0.1 60)),
 //   )
 // If null, focus is auto-derived at CSS runtime from the color role.
-@function config($base, $color: null, $bg: null, $stroke: null, $focus: null) {
-  @return (base: $base, color: $color, bg: $bg, stroke: $stroke, focus: $focus);
+// $contrast — prefer-white or prefer-black: the text colour this palette's
+// colour takes wherever that colour reaches 3:1 on it (see "Contrast"). If
+// null, text is black or white by the default step.
+// $text — the palette's colour as text (--color--{name}--text), in place of the
+// one core holds to a lightness (see "Text role"). Accent palettes only.
+@function config(
+  $base,
+  $color: null,
+  $bg: null,
+  $stroke: null,
+  $focus: null,
+  $contrast: null,
+  $text: null
+) {
+  @if $contrast != null and not map.has-key($_contrast-preferences, $contrast) {
+    @error "t.palette(): $contrast is prefer-white or prefer-black, not `#{$contrast}`. " +
+      "For one fixed text colour, set --color--{name}--contrast in a rule after the theme.";
+  }
+  @return (
+    base: $base,
+    color: $color,
+    bg: $bg,
+    stroke: $stroke,
+    focus: $focus,
+    contrast: $contrast,
+    text: $text
+  );
+}
+
+// Internal: a warning for an accent written outside sRGB. A browser paints its
+// fill clipped, channel by channel, which moves the hue; its stroke and its
+// text role go through _in-gamut(), which keeps the hue and gives up chroma.
+// So the line and the text are not the colour of the fill (rose-red's old
+// error, oklch(0.5 0.27 27): fill #d30000, stroke #a23d36). Only a literal
+// colour can be checked here; a var() or a generated colour is not. The
+// warning names the colour a browser paints, which is inside sRGB and can be
+// written in its place; one warning when both modes have the same colour.
+@function _hex-byte($n) {
+  $digits: "0123456789abcdef";
+  $high: math.floor(math.div($n, 16)) + 1;
+  $low: $n % 16 + 1;
+  @return string.slice($digits, $high, $high) + string.slice($digits, $low, $low);
+}
+
+@function _painted-hex($c) {
+  $painted: color.to-gamut($c, $space: rgb, $method: clip);
+  $out: "#";
+  @each $channel in "red", "green", "blue" {
+    $out: $out + _hex-byte(math.round(color.channel($painted, $channel, $space: rgb)));
+  }
+  @return $out;
+}
+
+@function _outside-srgb($c) {
+  @return meta.type-of($c) == color and not color.is-in-gamut($c, $space: rgb);
+}
+
+@mixin _warn-outside-srgb($name, $l, $d) {
+  @if $l == $d {
+    @include _warn-one-outside-srgb($name, $l, "both modes");
+  } @else {
+    @include _warn-one-outside-srgb($name, $l, "light mode");
+    @include _warn-one-outside-srgb($name, $d, "dark mode");
+  }
+}
+
+@mixin _warn-one-outside-srgb($name, $c, $modes) {
+  @if _outside-srgb($c) {
+    $hex: _painted-hex($c);
+    @warn "The #{$name} colour (#{$modes}), #{$c}, is outside sRGB. A browser paints its " +
+      "fill clipped, as #{$hex}, but its stroke and text role keep its hue with less chroma, " +
+      "so they will not match the fill. Write a colour inside sRGB: #{$hex} is the one " +
+      "painted now.";
+  }
 }
 
 // Internal: resolve a role from a config, falling back to base
@@ -702,9 +1017,12 @@ $_gamut-passes: 4;
 }
 
 // Public: what a theme rule holds for one palette — the light and dark colour
-// of the colour role, and of any explicit $bg / $stroke / $focus. Everything
-// else is derived by core.
+// of the colour role, and of any explicit $bg / $stroke / $focus / $text.
+// Everything else is derived by core.
 @mixin emit-palette($name, $light, $dark) {
+  @if not list.index($neutral-names, $name) {
+    @include _warn-outside-srgb($name, _resolve-role($light, color), _resolve-role($dark, color));
+  }
   @include _pair($name, color, _resolve-role($light, color), _resolve-role($dark, color));
 
   $l-bg: map.get($light, bg);
@@ -729,6 +1047,45 @@ $_gamut-passes: 4;
   $d-focus: map.get($dark, focus);
   @if $l-focus != null or $d-focus != null {
     @include _explicit-pair($name, focus, $l-focus, $d-focus);
+  }
+
+  $l-text: map.get($light, text);
+  $d-text: map.get($dark, text);
+  @if $l-text != null or $d-text != null {
+    @if list.index($neutral-names, $name) {
+      @error "t.palette(): `#{$name}` has no text role, so $text does nothing there. " +
+        "The text on it is --color--#{$name}--contrast.";
+    }
+    @include _explicit-pair($name, text, $l-text, $d-text);
+  }
+
+  @include _emit-contrast-preference($name, map.get($light, contrast), map.get($dark, contrast));
+}
+
+// The contrasts of a palette's colour role under a preference ($contrast in
+// t.palette()): the colour itself and its six ladder steps; the high / low
+// aliases read these, so they follow. $l and $d are the preference of the light
+// and of the dark config (null: the default step); when they differ, each mode
+// gets its own. The bg and stroke roles keep the default step.
+//
+// These declarations sit in the theme rule, so they hold on the element that
+// carries the theme and are inherited below it. A theme nested inside
+// re-derives its contrasts with the default step (the shared derivation rule
+// matches every [theme] element) unless it passes the preference itself: the
+// preference belongs to the theme that passed it.
+$_ladder-steps: "", "--dark", "--darker", "--darkest", "--light", "--lighter", "--lightest";
+
+@mixin _emit-contrast-preference($name, $l, $d) {
+  @if $l != null or $d != null {
+    $p: token($name, color);
+    @each $step in $_ladder-steps {
+      $origin: var(#{$p}#{$step});
+      @if $l == $d {
+        #{$p}#{$step}--contrast: _contrast-of($origin, $l);
+      } @else {
+        #{$p}#{$step}--contrast: light-dark(_contrast-of($origin, $l), _contrast-of($origin, $d));
+      }
+    }
   }
 }
 

@@ -1,4 +1,7 @@
 import './scss/base.scss'; // core first
+// The page rule as compiled CSS: <body> takes the theme's font family (and its
+// background and text colour, which base.scss then sets again through bg()).
+import '@cpangular/cp-theming-core/css/base';
 // A third theme, from a package and without Sass: the compiled CSS of
 // @acme/theme (demos/demo-brand-core). It is a default theme, like ocean; it
 // loads first, so ocean, which loads after it, is this page's default.

@@ -1,0 +1,8 @@
+// src/styles.scss
+@use "@cpangular/cp-theming-core/scss/theme" as t;
+
+@include t.define-core-theme();
+@include t.define-theme("my-brand", t.theme($brand: #ff6a00), $default: true);
+
+// The page takes the theme: background, text colour and font family on <body>.
+@include t.apply-document-base();

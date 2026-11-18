@@ -14,8 +14,11 @@
 // one the contrast sweep, test/css/contrast.test.ts, predicts), and the chain/
 // rows that of Phase 14 (palettes a theme did not pass are generated from the
 // nearest thing it passed), the gamut/ rows that of Phase 14c (a generated
-// colour is painted in the hue that was asked for). Stylesheets load in the
-// order core, themes, adapter, user CSS.
+// colour is painted in the hue that was asked for), the base/ rows that of
+// Phase 19 (the opt-in page rule, issue #10), the prefer/ rows that of Phase 19
+// too (a palette that prefers white or black text, issue #8), the text/ and line/ rows that of
+// Phase 19 as well (an accent as text and as a line, issue #15). Stylesheets load in the order
+// core, themes, adapter, user CSS.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { chromium, firefox, webkit, type BrowserType } from 'playwright';
@@ -113,6 +116,8 @@ const sheets: Record<string, string> = {
   core: compileFile(path.join(coreDir, 'scss/core.scss')).css,
   azure: compileFile(path.join(coreDir, 'scss/presets/azure-blue.scss')).css,
   rose: compileFile(path.join(coreDir, 'scss/presets/rose-red.scss')).css,
+  cyan: compileFile(path.join(coreDir, 'scss/presets/cyan-orange.scss')).css,
+  magenta: compileFile(path.join(coreDir, 'scss/presets/magenta-violet.scss')).css,
   material: compileFile(path.join(materialDir, 'scss/material-core.scss')).css,
   userRoot: `:root { --color--primary: ${COLOR.user}; }`,
 };
@@ -122,6 +127,42 @@ for (const [key, spec] of Object.entries(THEMES)) {
     path.join(coreDir, 'test/fixtures', `__render-${key}.scss`),
   ).css;
 }
+
+// The themes of the text/ rows (Phase 19): a primary with a $text of its own, a
+// vivid orange primary, and a brand that is one dark colour in both modes.
+for (const [key, name, args] of [
+  ['textExplicit', 'text-explicit', '$palettes: (primary: t.palette(#0c6ab6, $text: #084a80))'],
+  ['textOrange', 'text-orange', '$palettes: (primary: t.palette(oklch(0.63 0.2 45)))'],
+  ['textNavy', 'text-navy', '$brand: oklch(0.25 0.1 260)'],
+  ['strokeYellow', 'stroke-yellow', '$palettes: (primary: t.palette(#ffd400))'],
+  // The elevation/ rows: a shadow colour of the theme's own, and a level passed
+  // whole (what IdealLINK passed while core's shadows were one layer).
+  [
+    'shadowTint',
+    'shadow-tint',
+    '$elevation: t.elevation($shadow-color: oklch(0.45 0.2 300 / 45%))',
+  ],
+  [
+    'shadowLevels',
+    'shadow-levels',
+    '$elevation: t.elevation($levels: (1: (shadow: (0 2px 1px -1px rgb(0 0 90 / 20%), ' +
+      '0 1px 1px 0 rgb(0 0 90 / 14%), 0 1px 3px 0 rgb(0 0 90 / 12%)))))',
+  ],
+  // The surface of the container/ rows and the page of the muted/ rows: a
+  // blue-grey surface and a grey background whose numbers are easy to move by
+  // hand.
+  [
+    'containers',
+    'containers',
+    '$palettes: (primary: t.palette(#0c6ab6), ' +
+      'background: t.light-dark(t.palette(oklch(0.97 0 0)), t.palette(oklch(0.17 0 0))), ' +
+      'surface: t.light-dark(t.palette(oklch(0.93 0.01 250)), t.palette(oklch(0.22 0.01 250))))',
+  ],
+])
+  sheets[key] = compileSource(
+    `@use "../../scss/theme" as t;\n@include t.define-theme("${name}", t.theme(${args}));`,
+    path.join(coreDir, 'test/fixtures', `__render-${key}.scss`),
+  ).css;
 
 // The transition list an author puts on the element whose `theme` changes.
 const CROSSFADE =
@@ -147,6 +188,17 @@ function expectFrom(
   mode: Mode,
   overrides?: Record<string, string>,
 ): string {
+  return expectValue(sheet, theme, `var(${token})`, mode, overrides);
+}
+
+/** The same for any colour expression, read against that theme's declarations. */
+function expectValue(
+  sheet: string,
+  theme: string,
+  expression: string,
+  mode: Mode,
+  overrides?: Record<string, string>,
+): string {
   const decls = new Map<string, string>();
   for (const [n, v] of registeredInitialValues(sheets.core)) decls.set(n, v);
   for (const rule of rules(sheets.core))
@@ -154,7 +206,7 @@ function expectFrom(
       for (const [n, v] of rule.declarations) decls.set(n, v);
   for (const [n, v] of declarationsFor(sheets[sheet], themeSelector(theme))) decls.set(n, v);
   const ctx = contextFor(decls, mode, overrides ? new Map(Object.entries(overrides)) : undefined);
-  return evaluateColor(`var(${token})`, ctx).toString();
+  return evaluateColor(expression, ctx).toString();
 }
 
 /**
@@ -461,7 +513,12 @@ function chainRows(): Row[] {
   // tint of the generated colour (L 0.92, 40% of its chroma).
   row('brand-only/tertiary-bg-role', brandOnly, '--color--tertiary--bg', 'oklch(0.92 0.032 90)');
   // The semantic palettes are fixed defaults, not generated.
-  row('brand-only/error-is-the-default/light', brandOnly, '--color--error', 'oklch(0.52 0.22 27)');
+  row(
+    'brand-only/error-is-the-default/light',
+    brandOnly,
+    '--color--error',
+    'oklch(0.525 0.214 28.1)',
+  );
   row('brand-only/pass-is-the-default/dark', brandDark, '--color--pass', 'oklch(0.72 0.16 145)');
   // A default theme: the same on the root without a theme attribute.
   row('brand-only/default-theme/primary', '', '--color--primary', 'oklch(0.45 0.1509 30)', {
@@ -938,7 +995,7 @@ function chainRows(): Row[] {
       tolerance: 0.003,
     },
   );
-  row('no-theme/error-is-the-default', '', '--color--error', 'oklch(0.52 0.22 27)', none);
+  row('no-theme/error-is-the-default', '', '--color--error', 'oklch(0.525 0.214 28.1)', none);
 
   // ── Crossfade: the generated primary follows a switch between two brands ──
   row(
@@ -1119,6 +1176,321 @@ sheets['gamut-vivid-primary'] = chainTheme(
   '$palettes: (primary: t.palette(oklch(0.45 0.3 150)))',
 );
 
+// ─── The page rule (PORT-PLAN.md Phase 19, issue #10) ────────────────────────
+// `css/base` as it is built, a theme whose background and font family are its
+// own, and an app's `body` rule. Expectations are the colours written here.
+const BASE = {
+  bgLight: 'oklch(0.93 0.04 150)',
+  bgDark: 'oklch(0.25 0.04 150)',
+  namedLight: 'oklch(0.9 0.06 30)',
+  app: 'rgb(10, 20, 30)',
+};
+sheets.base = compileFile(path.join(coreDir, 'scss/base.scss')).css;
+sheets.baseTheme = chainTheme(
+  'base-theme',
+  `$palettes: (background: t.light-dark(t.palette(${BASE.bgLight}), t.palette(${BASE.bgDark}))),
+   $typography: t.typography($plain-family: monospace)`,
+  true,
+);
+sheets.baseNamed = chainTheme(
+  'base-named',
+  `$palettes: (background: t.palette(${BASE.namedLight}))`,
+);
+sheets.baseApp = `body { background-color: ${BASE.app}; font-family: fantasy; }`;
+
+function baseRows(): Row[] {
+  const row = (id: string, more: Partial<Row> & Pick<Row, 'token' | 'expect'>): Row => ({
+    id: `base/${id}`,
+    sheets: ['core', 'baseTheme', 'base'],
+    html: '',
+    body: P,
+    probe: 'body',
+    read: 'property',
+    ...more,
+  });
+  return [
+    row('background/light', { token: 'background-color', expect: BASE.bgLight }),
+    row('background/dark', {
+      token: 'background-color',
+      expect: BASE.bgDark,
+      html: 'themeMode="dark"',
+    }),
+    row('background/os-dark', { token: 'background-color', expect: BASE.bgDark, scheme: 'dark' }),
+    // The background's contrast: black on the light one, white on the dark one.
+    row('text/light', { token: 'color', expect: 'rgb(0, 0, 0)' }),
+    row('text/dark', { token: 'color', expect: 'rgb(255, 255, 255)', html: 'themeMode="dark"' }),
+    row('font-family', { token: 'font-family', read: 'raw', expect: 'monospace' }),
+    // The theme on <body> itself: the body is the theme element and derives there.
+    row('theme-on-body', {
+      sheets: ['core', 'baseTheme', 'baseNamed', 'base'],
+      act: `document.body.setAttribute('theme', 'base-named')`,
+      token: 'background-color',
+      expect: BASE.namedLight,
+    }),
+    row('mode-on-body', {
+      act: `document.body.setAttribute('themeMode', 'dark')`,
+      token: 'background-color',
+      expect: BASE.bgDark,
+    }),
+    // Opt-in: without the rule the page keeps the browser's own colours and font
+    // (each engine names its default family its own way; none is the theme's).
+    row('absent/background', {
+      sheets: ['core', 'baseTheme'],
+      token: 'background-color',
+      expect: 'rgba(0, 0, 0, 0)',
+    }),
+    row('absent/font-family', {
+      sheets: ['core', 'baseTheme'],
+      token: 'font-family',
+      read: 'raw',
+      expect: { chromium: '"Times New Roman"', firefox: 'serif', webkit: '-webkit-standard' },
+    }),
+    // Zero specificity: an app's body rule wins, loaded before or after.
+    row('app-rule-wins/loaded-before', {
+      sheets: ['core', 'baseTheme', 'baseApp', 'base'],
+      token: 'background-color',
+      expect: BASE.app,
+    }),
+    row('app-rule-wins/loaded-after', {
+      sheets: ['core', 'baseTheme', 'base', 'baseApp'],
+      token: 'background-color',
+      expect: BASE.app,
+    }),
+    row('app-rule-wins/font-family', {
+      sheets: ['core', 'baseTheme', 'baseApp', 'base'],
+      token: 'font-family',
+      read: 'raw',
+      expect: 'fantasy',
+    }),
+    // What the app's rule leaves alone still comes from the theme.
+    row('app-rule-wins/text-kept', {
+      sheets: ['core', 'baseTheme', 'baseApp', 'base'],
+      token: 'color',
+      expect: 'rgb(0, 0, 0)',
+    }),
+  ];
+}
+
+// ─── A palette that prefers white or black text (Phase 19, issue #8) ─────────
+// #e65151 takes black by the default step (5.66:1) and white with
+// `$contrast: prefer-white` (3.71:1); #2e7d32 takes white by default and black
+// with prefer-black. Every expectation is black or white, written here.
+const PREFER = { red: '#e65151', green: '#2e7d32' };
+sheets.preferNone = chainTheme('prefer-none', `$brand: ${PREFER.red}`);
+sheets.preferWhite = chainTheme(
+  'prefer-white',
+  `$brand: t.palette(${PREFER.red}, $contrast: prefer-white)`,
+);
+sheets.preferWhiteDefault = chainTheme(
+  'prefer-white-default',
+  `$brand: t.palette(${PREFER.red}, $contrast: prefer-white)`,
+  true,
+);
+// A theme that passes no colour, and one that passes the same preference again.
+sheets.preferInner = chainTheme('prefer-inner', `$density: t.density(-1)`);
+sheets.preferInnerOwn = chainTheme(
+  'prefer-inner-own',
+  `$brand: t.palette(${PREFER.red}, $contrast: prefer-white)`,
+);
+sheets.preferPrimary = chainTheme(
+  'prefer-primary',
+  `$palettes: (primary: t.palette(${PREFER.red}, $contrast: prefer-white))`,
+);
+sheets.preferLightOnly = chainTheme(
+  'prefer-light-only',
+  `$palettes: (primary: t.light-dark(t.palette(${PREFER.red}, $contrast: prefer-white), t.palette(${PREFER.red})))`,
+);
+sheets.preferBlack = chainTheme(
+  'prefer-black',
+  `$palettes: (primary: t.palette(${PREFER.green}, $contrast: prefer-black))`,
+);
+sheets.preferBlackNone = chainTheme(
+  'prefer-black-none',
+  `$palettes: (primary: t.palette(${PREFER.green}))`,
+);
+
+function preferRows(): Row[] {
+  const BLACK = 'rgb(0, 0, 0)';
+  const WHITE = 'rgb(255, 255, 255)';
+  const out: Row[] = [];
+  const row = (
+    id: string,
+    sheet: string,
+    theme: string,
+    token: string,
+    expect: string,
+    more: Partial<Row> = {},
+  ) =>
+    out.push({
+      id: `prefer/${id}`,
+      sheets: ['core', sheet],
+      html: `theme="${theme}"`,
+      body: P,
+      probe: '#p',
+      token,
+      expect,
+      ...more,
+    });
+  const dark = (theme: string) => ({ html: `theme="${theme}" themeMode="dark"` });
+
+  // The colour of the issue: black by default, white when the palette prefers it.
+  row('default/base=black', 'preferNone', 'prefer-none', '--color--brand--contrast', BLACK);
+  row('white/base=white', 'preferWhite', 'prefer-white', '--color--brand--contrast', WHITE);
+  row(
+    'white/base=white/dark-mode',
+    'preferWhite',
+    'prefer-white',
+    '--color--brand--contrast',
+    WHITE,
+    dark('prefer-white'),
+  );
+  // The ladder: the darker steps take white, the lighter ones black (white is under 3:1 there).
+  for (const step of ['dark', 'darker', 'darkest'])
+    row(
+      `white/${step}=white`,
+      'preferWhite',
+      'prefer-white',
+      `--color--brand--${step}--contrast`,
+      WHITE,
+    );
+  for (const step of ['light', 'lighter', 'lightest'])
+    row(
+      `white/${step}=black`,
+      'preferWhite',
+      'prefer-white',
+      `--color--brand--${step}--contrast`,
+      BLACK,
+    );
+  // The aliases follow: high is the dark step in light mode, the light step in dark mode.
+  row(
+    'white/high/light-mode=white',
+    'preferWhite',
+    'prefer-white',
+    '--color--brand--high--contrast',
+    WHITE,
+  );
+  row(
+    'white/high/dark-mode=black',
+    'preferWhite',
+    'prefer-white',
+    '--color--brand--high--contrast',
+    BLACK,
+    dark('prefer-white'),
+  );
+  // What paints with it: a filled brand element's text.
+  row('white/filled-text=white', 'preferWhite', 'prefer-white', 'color', WHITE, {
+    body: '<div id="p" palette="brand" filled>x</div>',
+    read: 'text',
+  });
+  row('default/filled-text=black', 'preferNone', 'prefer-none', 'color', BLACK, {
+    body: '<div id="p" palette="brand" filled>x</div>',
+    read: 'text',
+  });
+  // It resolves where it is used: a themeMode scope inside the page.
+  row('white/nested-mode=white', 'preferWhite', 'prefer-white', '--color--brand--contrast', WHITE, {
+    body: '<div themeMode="dark"><div id="p">x</div></div>',
+  });
+  // A default theme: the page without a theme attribute has it too.
+  row('white/default-theme=white', 'preferWhiteDefault', '', '--color--brand--contrast', WHITE, {
+    html: '',
+  });
+  // The bg and stroke roles keep the default step. The stroke of #e65151 is
+  // the colour at lightness 0.55 (Session C; 0.60 before), which takes white
+  // under either step, so the row reads the stroke's lighter step: lightness
+  // 0.67, where the default step says black and the preference would say white.
+  row(
+    'white/stroke-role-unchanged',
+    'preferWhite',
+    'prefer-white',
+    '--color--brand--stroke--light--contrast',
+    BLACK,
+  );
+
+  // The preference belongs to the theme that passed it: a theme nested inside
+  // re-derives with the default step, unless it passes the preference itself.
+  const nested = (inner: string) => ({
+    body: `<div theme="${inner}"><div id="p">x</div></div>`,
+  });
+  row(
+    'nested/theme-without=black',
+    'preferWhite',
+    'prefer-white',
+    '--color--brand--contrast',
+    BLACK,
+    {
+      sheets: ['core', 'preferWhite', 'preferInner'],
+      ...nested('prefer-inner'),
+    },
+  );
+  row(
+    'nested/theme-with-its-own=white',
+    'preferWhite',
+    'prefer-white',
+    '--color--brand--contrast',
+    WHITE,
+    {
+      sheets: ['core', 'preferWhite', 'preferInnerOwn'],
+      ...nested('prefer-inner-own'),
+    },
+  );
+  // …and an element that is not a theme inherits it.
+  row(
+    'nested/plain-element=white',
+    'preferWhite',
+    'prefer-white',
+    '--color--brand--contrast',
+    WHITE,
+    {
+      body: '<section><div id="p">x</div></section>',
+    },
+  );
+
+  // A primary with a preference and no brand: the brand palette is that primary.
+  row(
+    'primary/primary=white',
+    'preferPrimary',
+    'prefer-primary',
+    '--color--primary--contrast',
+    WHITE,
+  );
+  row('primary/brand=white', 'preferPrimary', 'prefer-primary', '--color--brand--contrast', WHITE);
+  // A preference in the light config only.
+  row(
+    'light-only/light=white',
+    'preferLightOnly',
+    'prefer-light-only',
+    '--color--primary--contrast',
+    WHITE,
+  );
+  row(
+    'light-only/dark=black',
+    'preferLightOnly',
+    'prefer-light-only',
+    '--color--primary--contrast',
+    BLACK,
+    dark('prefer-light-only'),
+  );
+
+  // prefer-black, the mirror.
+  row(
+    'black/default=white',
+    'preferBlackNone',
+    'prefer-black-none',
+    '--color--primary--contrast',
+    WHITE,
+  );
+  row('black/base=black', 'preferBlack', 'prefer-black', '--color--primary--contrast', BLACK);
+  // Its darker steps are too dark for black at 3:1: white.
+  row(
+    'black/darker=white',
+    'preferBlack',
+    'prefer-black',
+    '--color--primary--darker--contrast',
+    WHITE,
+  );
+  return out;
+}
+
 function gamutRows(): Row[] {
   const out: Row[] = [];
   const row = (
@@ -1239,6 +1611,429 @@ function strokeRows(): Row[] {
   );
 }
 
+// ─── An accent as text and as a line (Phase 19, issue #15) ────────────────────
+// --color--{name}--text is the accent held to a lightness and brought inside
+// sRGB (min() / max() over l, then the gamut correction); the accent stroke is
+// the colour moved into a band per mode, then brought inside sRGB the same
+// way. These rows prove the browsers evaluate
+// both as the evaluator does, for every accent of every preset in both modes.
+// The prediction itself is held to its ratio here (4.5:1 for text, 3:1 for a
+// line, on the background and on the surface), so a row cannot pass with both
+// wrong.
+const PRESET_SHEETS: [sheet: string, theme: string][] = [
+  ['azure', 'azure-blue'],
+  ['rose', 'rose-red'],
+  ['cyan', 'cyan-orange'],
+  ['magenta', 'magenta-violet'],
+];
+const ACCENT_PALETTES = [
+  'brand',
+  'primary',
+  'secondary',
+  'tertiary',
+  'error',
+  'warn',
+  'caution',
+  'pass',
+];
+// The orange of the gamut rows as a primary: as text at lightness 0.40 it is
+// outside sRGB, and clipped it would be painted as a red.
+const TEXT_ORANGE = { colour: 'oklch(0.63 0.2 45)', hue: 45 };
+const STROKE_YELLOW_HUE = 94.02;
+
+function accentRows(): Row[] {
+  const out: Row[] = [];
+  for (const [sheet, theme] of PRESET_SHEETS)
+    for (const mode of ['light', 'dark'] as const) {
+      const on = (['background', 'surface'] as const).map((name) =>
+        cssColor(expectFrom(sheet, theme, `--color--${name}`, mode)),
+      );
+      for (const name of ACCENT_PALETTES)
+        for (const [prefix, role, floor] of [
+          ['text', 'text', 4.5],
+          ['line', 'stroke', 3],
+        ] as const) {
+          const token = `--color--${name}--${role}`;
+          const expect = expectFrom(sheet, theme, token, mode);
+          const ratio = Math.min(...on.map((c) => wcagContrast(cssColor(expect), c)));
+          if (ratio < floor)
+            throw new Error(`${prefix}/${theme}-${mode}-${name}: predicted ${ratio.toFixed(2)}:1`);
+          out.push({
+            id: `${prefix}/${theme}-${mode}-${name}=${ratio.toFixed(2)}:1`,
+            sheets: ['core', sheet],
+            html: `theme="${theme}" themeMode="${mode}"`,
+            body: P,
+            probe: '#p',
+            token,
+            expect,
+          });
+        }
+    }
+
+  const row = (id: string, more: Partial<Row> & Pick<Row, 'token' | 'expect'>) =>
+    out.push({
+      id: `text/${id}`,
+      sheets: ['core', 'azure'],
+      html: 'theme="azure-blue"',
+      body: P,
+      probe: '#p',
+      ...more,
+    });
+  // In a [palette] scope: that palette's text role, and nothing in a surface scope.
+  row('palette-scope/error', {
+    body: '<div palette="error"><div id="p">probe</div></div>',
+    token: '--palette-color--text',
+    expect: expectFrom('azure', 'azure-blue', '--color--error--text', 'light'),
+  });
+  row('palette-scope/surface-inside-error-is-unset', {
+    body: '<div palette="error"><div palette="surface"><div id="p">probe</div></div></div>',
+    token: '--palette-color--text',
+    read: 'raw',
+    expect: '',
+  });
+  // A nested themeMode flips it without a rule of its own.
+  row('nested-mode/dark-inside-light', {
+    body: '<div themeMode="dark"><div id="p">probe</div></div>',
+    token: '--color--primary--text',
+    expect: expectFrom('azure', 'azure-blue', '--color--primary--text', 'dark'),
+  });
+  // $text in t.palette(): the role as passed, and the brand of a primary-only
+  // theme takes it with the primary.
+  for (const name of ['primary', 'brand'])
+    row(`explicit/${name}`, {
+      sheets: ['core', 'textExplicit'],
+      html: 'theme="text-explicit"',
+      token: `--color--${name}--text`,
+      expect: '#084a80',
+    });
+  // A vivid accent keeps its hue as text: chroma is given up, not the hue.
+  row('vivid-orange-keeps-its-hue', {
+    sheets: ['core', 'textOrange'],
+    html: 'theme="text-orange"',
+    token: '--color--primary--text',
+    expect: expectFrom('textOrange', 'text-orange', '--color--primary--text', 'light'),
+    hue: { of: TEXT_ORANGE.hue, within: 6 },
+  });
+  // A vivid accent keeps its hue as a line too. A pure yellow (#ffd400, hue
+  // 94°) comes down to the light ceiling, 0.55, where sRGB holds less than
+  // half of its chroma: uncorrected it is painted as an ochre, 12° away.
+  out.push({
+    id: 'line/vivid-yellow-keeps-its-hue',
+    sheets: ['core', 'strokeYellow'],
+    html: 'theme="stroke-yellow"',
+    body: P,
+    probe: '#p',
+    token: '--color--primary--stroke',
+    expect: expectFrom('strokeYellow', 'stroke-yellow', '--color--primary--stroke', 'light'),
+    hue: { of: STROKE_YELLOW_HUE, within: 3 },
+  });
+  // A dark brand in dark mode: the line and the text are moved to where they show.
+  for (const role of ['stroke', 'text'])
+    row(`dark-brand-in-dark-mode/${role}`, {
+      sheets: ['core', 'textNavy'],
+      html: 'theme="text-navy" themeMode="dark"',
+      token: `--color--brand--${role}`,
+      expect: expectFrom('textNavy', 'text-navy', `--color--brand--${role}`, 'dark'),
+    });
+  return out;
+}
+
+// ─── Surface containers (Phase 19, issue #12) ─────────────────────────────────
+// --color--surface--container-* are the surface moved by M3's distances, and
+// the Material adapter's --mat-sys-surface-container-* read them. The first
+// group is worked out by hand for a surface of oklch(0.93 0.01 250) in light
+// mode and oklch(0.22 0.01 250) in dark: the lightness plus the distance, hue
+// and chroma kept, black text on the light ones and white on the dark ones.
+// The second group proves, for every preset and mode, that the browser gives
+// Material's role the colour the evaluator reads from core's token.
+const CONTAINERS: [name: string, light: number, dark: number][] = [
+  ['container-lowest', 0.9472, 0.1962],
+  ['container-low', 0.9128, 0.2562],
+  ['container', 0.8955, 0.2734],
+  ['container-high', 0.8783, 0.3165],
+  ['container-highest', 0.861, 0.3596],
+];
+
+function containerRows(): Row[] {
+  const out: Row[] = [];
+  for (const mode of ['light', 'dark'] as const)
+    for (const [name, light, dark] of CONTAINERS) {
+      const expect = `oklch(${mode === 'light' ? light : dark} 0.01 250)`;
+      const at = { html: `theme="containers" themeMode="${mode}"`, body: P, probe: '#p' };
+      out.push({
+        id: `container/${mode}/${name}`,
+        sheets: ['core', 'containers'],
+        ...at,
+        token: `--color--surface--${name}`,
+        expect,
+      });
+      out.push({
+        id: `container/${mode}/${name}/contrast`,
+        sheets: ['core', 'containers'],
+        ...at,
+        token: `--color--surface--${name}--contrast`,
+        expect: mode === 'light' ? 'oklch(0 0 0)' : 'oklch(1 0 0)',
+      });
+      out.push({
+        id: `container/${mode}/${name}/material-role`,
+        sheets: ['core', 'containers', 'material'],
+        ...at,
+        token: `--mat-sys-surface-${name}`,
+        expect,
+      });
+    }
+  for (const [sheet, theme] of PRESET_SHEETS)
+    for (const mode of ['light', 'dark'] as const)
+      for (const [name] of CONTAINERS)
+        out.push({
+          id: `container/${theme}-${mode}/${name}/material-role-is-core's`,
+          sheets: ['core', sheet, 'material'],
+          html: `theme="${theme}" themeMode="${mode}"`,
+          body: P,
+          probe: '#p',
+          token: `--mat-sys-surface-${name}`,
+          expect: expectFrom(sheet, theme, `--color--surface--${name}`, mode),
+        });
+  // A themeMode scope inside the page flips them without a rule of its own,
+  // Material's role included.
+  for (const token of ['--color--surface--container-high', '--mat-sys-surface-container-high'])
+    out.push({
+      id: `container/nested-mode/dark-inside-light/${token}`,
+      sheets: ['core', 'containers', 'material'],
+      html: 'theme="containers" themeMode="light"',
+      body: '<div themeMode="dark"><div id="p">probe</div></div>',
+      probe: '#p',
+      token,
+      expect: 'oklch(0.3165 0.01 250)',
+    });
+  // A hand-written surface on a theme element moves them, like the ladder.
+  out.push({
+    id: 'container/hand-written-surface',
+    sheets: ['core', 'containers'],
+    html: 'theme="containers" themeMode="light"',
+    body: '<div id="p" theme="custom" style="--color--surface: oklch(0.8 0.03 120)">x</div>',
+    probe: '#p',
+    token: '--color--surface--container-high',
+    expect: 'oklch(0.7483 0.03 120)',
+  });
+  return out;
+}
+
+// ─── Text on the page (Phase 19, issue #13) ───────────────────────────────────
+// --container--text and its two tiers are declared on every theme element,
+// against the background; muted text is the contrast mixed with the
+// background at the de-emphasis weight (63% light, 93% dark by default). The
+// first rows are worked out by hand for a grey page, oklch(0.97 0 0) in light
+// mode and oklch(0.17 0 0) in dark: black at 63% leaves 0.97 × 0.37 = 0.3589,
+// white at 93% gives 0.93 + 0.17 × 0.07 = 0.9419. The Material adapter's
+// on-surface-variant is the same mix against the surface, read here with the
+// mix written out, not with the adapter's declaration.
+const MUTED = { light: 'oklch(0.3589 0 0)', dark: 'oklch(0.9419 0 0)' };
+const DEEMPHASIS = { light: '63%', dark: '93%' };
+
+function mutedRows(): Row[] {
+  const out: Row[] = [];
+  const row = (id: string, more: Partial<Row> & Pick<Row, 'token' | 'expect'>) =>
+    out.push({
+      id: `muted/${id}`,
+      sheets: ['core', 'containers'],
+      html: 'theme="containers" themeMode="light"',
+      body: P,
+      probe: '#p',
+      ...more,
+    });
+  for (const mode of ['light', 'dark'] as const) {
+    const html = `theme="containers" themeMode="${mode}"`;
+    const text = mode === 'light' ? 'oklch(0 0 0)' : 'oklch(1 0 0)';
+    row(`page/${mode}/text`, { html, token: '--container--text', expect: text });
+    row(`page/${mode}/emphasis`, { html, token: '--container--text-emphasis', expect: text });
+    row(`page/${mode}/deemphasis`, {
+      html,
+      token: '--container--text-deemphasis',
+      expect: MUTED[mode],
+    });
+    // Material's muted text: the same mix against the surface.
+    const surface = mode === 'light' ? 'oklch(0.93 0.01 250)' : 'oklch(0.22 0.01 250)';
+    row(`material/on-surface-variant/${mode}`, {
+      sheets: ['core', 'containers', 'material'],
+      html,
+      token: '--mat-sys-on-surface-variant',
+      expect: expectValue(
+        'containers',
+        'containers',
+        `color-mix(in oklch, ${text} ${DEEMPHASIS[mode]}, ${surface})`,
+        mode,
+      ),
+    });
+  }
+  // A themeMode scope inside the page flips all of it without a rule of its own.
+  row('nested-mode/dark-inside-light', {
+    body: '<div themeMode="dark"><div id="p">probe</div></div>',
+    token: '--container--text-deemphasis',
+    expect: MUTED.dark,
+  });
+  // A theme's own weight moves both the page's muted text and Material's.
+  const quiet = 'style="--weight--text-deemphasis-blend--mode-light: 40%"';
+  row('own-weight/page', {
+    body: `<div id="p" theme="custom" ${quiet}>x</div>`,
+    token: '--container--text-deemphasis',
+    // Black at 40% leaves 0.97 × 0.6.
+    expect: 'oklch(0.582 0 0)',
+  });
+  row('own-weight/material', {
+    sheets: ['core', 'containers', 'material'],
+    body: `<div id="p" theme="custom" ${quiet}>x</div>`,
+    token: '--mat-sys-on-surface-variant',
+    expect: expectValue(
+      'containers',
+      'containers',
+      'color-mix(in oklch, oklch(0 0 0) 40%, oklch(0.93 0.01 250))',
+      'light',
+    ),
+  });
+  // filled() still sets its own, against its fill: white on #0c6ab6. White has
+  // no hue (`none`), so the mix keeps the fill's: with a hue of 0 the muted
+  // text was turned towards 0° by the weight and came out purple.
+  row('filled-sets-its-own', {
+    body: '<div palette="primary" filled><div id="p">probe</div></div>',
+    token: '--container--text-deemphasis',
+    expect: expectValue(
+      'containers',
+      'containers',
+      'color-mix(in oklch, oklch(1 0 none) 63%, #0c6ab6)',
+      'light',
+    ),
+  });
+  // bg() sets none: inside a bg container the page's still hold.
+  row('bg-sets-none', {
+    body: '<div palette="primary" bg><div id="p">probe</div></div>',
+    token: '--container--text-deemphasis',
+    expect: MUTED.light,
+  });
+  // Every preset and mode: the browser agrees with the evaluator, for the page
+  // and for Material's role, and the prediction is held to 4.5:1 here.
+  for (const [sheet, theme] of PRESET_SHEETS)
+    for (const mode of ['light', 'dark'] as const) {
+      const html = `theme="${theme}" themeMode="${mode}"`;
+      const page = expectFrom(sheet, theme, '--container--text-deemphasis', mode);
+      const role = expectValue(
+        sheet,
+        theme,
+        `color-mix(in oklch, var(--color--surface--contrast) var(--weight--text-deemphasis-blend--mode-${mode}), var(--color--surface))`,
+        mode,
+      );
+      const on = (name: string) => cssColor(expectFrom(sheet, theme, `--color--${name}`, mode));
+      const ratios = [
+        wcagContrast(cssColor(page), on('background')),
+        wcagContrast(cssColor(page), on('surface')),
+        wcagContrast(cssColor(role), on('surface')),
+      ];
+      if (Math.min(...ratios) < 4.5)
+        throw new Error(`muted/${theme}-${mode}: predicted ${ratios.map((r) => r.toFixed(2))}`);
+      row(`${theme}-${mode}/page=${ratios[0].toFixed(2)}:1`, {
+        sheets: ['core', sheet],
+        html,
+        token: '--container--text-deemphasis',
+        expect: page,
+      });
+      row(`${theme}-${mode}/on-surface-variant=${ratios[2].toFixed(2)}:1`, {
+        sheets: ['core', sheet, 'material'],
+        html,
+        token: '--mat-sys-on-surface-variant',
+        expect: role,
+      });
+    }
+  return out;
+}
+
+// ─── Elevation (Phase 19, issue #11) ──────────────────────────────────────────
+// Each level is Material's three shadows: key, penumbra, ambient. The lengths
+// are the ones Angular Material draws for its levels 1–5, written here as a
+// browser reports them; the colours are black at 20%, 14% and 12% in light
+// mode and at 33.3%, 23.3% and 20% in dark. A theme's $shadow-color is shared
+// out over the layers by the browser (2/3, 7/15 and 2/5 of its alpha).
+const SHADOW_GEOMETRY: Record<number, string> = {
+  1: '0px 2px 1px -1px, 0px 1px 1px 0px, 0px 1px 3px 0px',
+  2: '0px 3px 3px -2px, 0px 3px 4px 0px, 0px 1px 8px 0px',
+  3: '0px 3px 5px -1px, 0px 6px 10px 0px, 0px 1px 18px 0px',
+  4: '0px 5px 5px -3px, 0px 8px 10px 1px, 0px 3px 14px 2px',
+  5: '0px 7px 8px -4px, 0px 12px 17px 2px, 0px 5px 22px 4px',
+};
+const SHADOW_ALPHA = { light: [0.2, 0.14, 0.12], dark: [0.333, 0.233, 0.2] };
+
+function elevationRows(): Row[] {
+  const out: Row[] = [];
+  const row = (id: string, more: Partial<Row> & Pick<Row, 'token' | 'expect'>) =>
+    out.push({
+      id: `elevation/${id}`,
+      sheets: ['core', 'alpha'],
+      html: 'theme="alpha"',
+      body: P,
+      probe: '#p',
+      read: 'shadow',
+      ...more,
+    });
+  for (let level = 1; level <= 5; level++) {
+    row(`level-${level}/geometry`, {
+      token: `--elevation-${level}--shadow`,
+      read: 'shadow-geometry',
+      expect: SHADOW_GEOMETRY[level],
+    });
+    // Material's own token is the same shadow.
+    row(`level-${level}/geometry/material`, {
+      sheets: ['core', 'alpha', 'material'],
+      token: `--mat-sys-level${level}`,
+      read: 'shadow-geometry',
+      expect: SHADOW_GEOMETRY[level],
+    });
+  }
+  for (const mode of ['light', 'dark'] as const)
+    for (const [layer, alpha] of SHADOW_ALPHA[mode].entries())
+      for (const level of [1, 5])
+        row(`level-${level}/${mode}/layer-${layer + 1}`, {
+          html: `theme="alpha" themeMode="${mode}"`,
+          token: `--elevation-${level}--shadow`,
+          layer,
+          expect: `oklch(0 0 0 / ${alpha})`,
+          tolerance: 0.004,
+        });
+  // A theme's own shadow colour: each layer takes its share of the alpha.
+  for (const [layer, alpha] of [0.3, 0.21, 0.18].entries())
+    row(`shadow-color/layer-${layer + 1}`, {
+      sheets: ['core', 'shadowTint'],
+      html: 'theme="shadow-tint"',
+      token: '--elevation-4--shadow',
+      layer,
+      expect: `oklch(0.45 0.2 300 / ${alpha})`,
+      tolerance: 0.004,
+    });
+  row('shadow-color/geometry', {
+    sheets: ['core', 'shadowTint'],
+    html: 'theme="shadow-tint"',
+    token: '--elevation-4--shadow',
+    read: 'shadow-geometry',
+    expect: SHADOW_GEOMETRY[4],
+  });
+  // A level passed whole in $levels is drawn as written; the others are core's.
+  for (const [layer, alpha] of [0.2, 0.14, 0.12].entries())
+    row(`levels/as-written/layer-${layer + 1}`, {
+      sheets: ['core', 'shadowLevels'],
+      html: 'theme="shadow-levels"',
+      token: '--elevation-1--shadow',
+      layer,
+      expect: `rgb(0 0 90 / ${alpha})`,
+      tolerance: 0.004,
+    });
+  row('levels/other-levels-are-core’s', {
+    sheets: ['core', 'shadowLevels'],
+    html: 'theme="shadow-levels"',
+    token: '--elevation-2--shadow',
+    expect: 'oklch(0 0 0 / 0.2)',
+    tolerance: 0.004,
+  });
+  return out;
+}
+
 // ─── Rows ────────────────────────────────────────────────────────────────────
 interface Row {
   id: string;
@@ -1255,8 +2050,15 @@ interface Row {
    * paint: read through `color: var(token)` on a probe child. raw: getPropertyValue.
    * shadow: the colour of the computed `box-shadow: var(token)` on a probe child, or `none`.
    * text: the probe's own computed `color` (the token is not read).
+   * property: the probe's computed value of the property `token` names, a colour.
    */
-  read?: 'paint' | 'raw' | 'shadow' | 'text';
+  read?: 'paint' | 'raw' | 'shadow' | 'shadow-geometry' | 'text' | 'property';
+  /**
+   * shadow: which layer of the box-shadow to read the colour of, from 0 (the
+   * first, the default). shadow-geometry: the lengths of every layer of the
+   * computed `box-shadow: var(token)`, colours left out, compared as text.
+   */
+  layer?: number;
   /** The value, or labelled candidates of which one must match (crossfade rows). */
   expect: string | Record<string, string>;
   /** Tolerance for a colour comparison (sRGB channel, 0–1). */
@@ -1498,7 +2300,7 @@ const rows: Row[] = [
     body: '<div id="p" palette="warn">x</div>',
     probe: '#p',
     token: '--mat-sys-primary',
-    expect: 'oklch(0.55 0.18 55)',
+    expect: 'oklch(0.55 0.161 43.5)',
   },
   {
     id: 'mat-sys/palette-core-name/tone-follows',
@@ -1507,7 +2309,7 @@ const rows: Row[] = [
     body: '<div id="p" palette="warn">x</div>',
     probe: '#p',
     token: '--mat-sys-primary-fixed',
-    expect: 'oklch(0.9138 0.05672 55)',
+    expect: 'oklch(0.9138 0.05073 43.5)',
   },
   {
     id: 'mat-sys/typography-reads-text-tokens',
@@ -1803,7 +2605,9 @@ const rows: Row[] = [
     token: '--container--text-deemphasis',
     // black (the contrast of the dark primary) mixed into the dark primary at
     // the dark 30% weight, what the same page gives with themeMode on <html>.
-    expect: 'oklch(0.56 0.07 283)',
+    // The fill's hue: black has none (`l 0 none`), so the mix keeps it. With a
+    // hue of 0 this was oklch(0.56 0.07 283), turned towards purple.
+    expect: 'oklch(0.56 0.07 250)',
   },
   {
     id: 'mat-sys/nested-mode-state-opacity',
@@ -1827,8 +2631,10 @@ const rows: Row[] = [
     token: '--probe',
     expect: 'rgb(0 0 0 / 0.2)',
   },
-  // A shadow token is a box-shadow whose colour varies by mode; light-dark()
-  // around the whole value would be invalid and compute to `none`.
+  // A shadow token is a box-shadow whose colours vary by mode; light-dark()
+  // around the whole value would be invalid and compute to `none`. These read
+  // the first of a level's three layers (the key shadow); elevationRows() has
+  // the others.
   {
     id: 'elevation/shadow-is-a-box-shadow/light',
     sheets: ['core', 'alpha'],
@@ -1837,7 +2643,7 @@ const rows: Row[] = [
     probe: '#p',
     token: '--elevation-2--shadow',
     read: 'shadow',
-    expect: 'oklch(0 0 0 / 0.3)',
+    expect: 'oklch(0 0 0 / 0.2)',
   },
   {
     id: 'elevation/shadow-is-a-box-shadow/nested-mode',
@@ -1847,7 +2653,7 @@ const rows: Row[] = [
     probe: '#p',
     token: '--elevation-2--shadow',
     read: 'shadow',
-    expect: 'oklch(0 0 0 / 0.5)',
+    expect: 'oklch(0 0 0 / 0.333)',
   },
   {
     id: 'mat-sys/level-is-a-box-shadow/nested-mode',
@@ -1857,7 +2663,7 @@ const rows: Row[] = [
     probe: '#p',
     token: '--mat-sys-level2',
     read: 'shadow',
-    expect: 'oklch(0 0 0 / 0.5)',
+    expect: 'oklch(0 0 0 / 0.333)',
   },
   // background/surface keep their base as the bg role; a nested theme that
   // does not pass them inherits that base, not the outer's $color override.
@@ -1960,8 +2766,15 @@ const rows: Row[] = [
   ...chainRows(),
   ...bgTextRows(),
   ...gamutRows(),
+  ...baseRows(),
+  ...preferRows(),
   // ── The neutral stroke ───────────────────────────────────────────────────
   ...strokeRows(),
+  // ── Phase 19: an accent as text and as a line ───────────────────────────
+  ...accentRows(),
+  ...containerRows(),
+  ...mutedRows(),
+  ...elevationRows(),
 ];
 
 // A theme that passes one palette and nothing else, for the inheritance rows.
@@ -2044,19 +2857,35 @@ interface Outcome {
 }
 
 // Runs inside the page: reads the token on the probe, after the act when there is one.
-const probeScript = `(({ probe, token, read, act, transitioned, animates }) => {
+const probeScript = `(({ probe, token, read, layer, act, transitioned, animates }) => {
   const el = document.querySelector(probe);
   if (!el) return { error: 'no element matches ' + probe };
   const readValue = () => {
     if (read === 'raw') return getComputedStyle(el).getPropertyValue(token).trim();
     if (read === 'text') return getComputedStyle(el).color;
+    if (read === 'property') return getComputedStyle(el).getPropertyValue(token);
     const span = document.createElement('span');
-    if (read === 'shadow') span.style.boxShadow = 'var(' + token + ')';
+    const shadow = read === 'shadow' || read === 'shadow-geometry';
+    if (shadow) span.style.boxShadow = 'var(' + token + ')';
     else span.style.color = 'var(' + token + ')';
     el.appendChild(span);
-    const v = read === 'shadow'
-      ? getComputedStyle(span).boxShadow.replace(/(^|\\s)-?[\\d.]+px/g, '').trim()
-      : getComputedStyle(span).color;
+    let v = getComputedStyle(span).color;
+    if (shadow) {
+      // The layers of the computed box-shadow: split at its top-level commas.
+      const layers = [];
+      let depth = 0, current = '';
+      for (const ch of getComputedStyle(span).boxShadow) {
+        if (ch === '(') depth++;
+        if (ch === ')') depth--;
+        if (ch === ',' && depth === 0) { layers.push(current.trim()); current = ''; }
+        else current += ch;
+      }
+      layers.push(current.trim());
+      const lengths = /(^|\\s)-?[\\d.]+px/g;
+      v = read === 'shadow'
+        ? (layers[layer || 0] || 'no layer ' + layer).replace(lengths, '').trim()
+        : layers.map((l) => (l.match(lengths) || []).map((x) => x.trim()).join(' ')).join(', ');
+    }
     span.remove();
     return v;
   };
@@ -2080,7 +2909,7 @@ function judge(row: Row, value: string, animations: number | undefined): Outcome
   if (row.animates === false && animations)
     return { ok: false, detail: `${animations} transition(s) ran; value ${value}` };
   const expected = candidates(row);
-  if (row.read === 'raw')
+  if (row.read === 'raw' || row.read === 'shadow-geometry')
     return {
       ok: expected.some(([, v]) => v === value),
       detail: `${value} expected ${expected[0][1]}`,
@@ -2139,6 +2968,7 @@ async function runBrowser(type: BrowserType, selected: Row[]): Promise<Map<strin
       probe: row.probe,
       token: row.token,
       read: row.read ?? 'paint',
+      layer: row.layer ?? 0,
       act: row.act ?? '',
       transitioned: row.transitioned ?? '',
       animates: row.animates ?? null,
@@ -2168,6 +2998,7 @@ function selfContainedPage(selected: Row[]): string {
     probe: row.probe,
     token: row.token,
     read: row.read ?? 'paint',
+    layer: row.layer ?? 0,
     act: row.act ?? '',
     transitioned: row.transitioned ?? '',
     animates: row.animates ?? null,
@@ -2203,7 +3034,7 @@ async function run(){
     if(!r.error){
       if(row.animates===true&&!r.animations){got+=' (no transition ran)'}
       else if(row.animates===false&&r.animations){got+=' ('+r.animations+' transition ran)'}
-      else if(row.read==='raw'){ok=row.expect.includes(r.value)}
+      else if(row.read==='raw'||row.read==='shadow-geometry'){ok=row.expect.includes(r.value)}
       else{const a=canvasRgb(r.value);ok=row.expect.some(e=>{const b=canvasRgb(e);return Math.max(...a.map((v,i)=>Math.abs(v-b[i])))<row.tolerance});
         if(ok&&row.hue){const h=hueOf(a),off=Math.abs((h-row.hue.of+540)%360-180);if(off>row.hue.within){ok=false;got+=' (painted at hue '+h.toFixed(1)+', '+off.toFixed(1)+' from '+row.hue.of+')'}}}
     }

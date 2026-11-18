@@ -2,12 +2,17 @@
 // examples/getting-started/brand-chain.html. It is examples/getting-started/
 // custom-theme.scss without core (angular.json loads core.css) and without
 // $default (the docs' own themes are the presets); test/examples.test.ts fails
-// if the two theme rules differ. The package path resolves through this app's
-// node_modules, which angular.json names as a Sass include path.
+// if the two theme rules differ. The package path resolves through the
+// package's `exports`, as in any app (no include path into node_modules).
 @use "@cpangular/cp-theming-core/scss/theme" as t;
 @use "@acme/theme" as acme;
 
 @include t.define-theme("my-brand", t.theme($brand: #ff6a00));
+
+// The Palette page's example of a brand that takes white text, rendered there
+// by examples/palette/contrast-preference.html: the theme of
+// examples/palette/contrast-preference.scss, held to it by the same test.
+@include t.define-theme("red-brand", t.theme($brand: t.palette(#e65151, $contrast: prefer-white)));
 
 // The two themes of Learn chapter 10, whose live example Angular renders in
 // the page: examples/learn/10-material/theme.scss without core and without the
@@ -20,6 +25,10 @@
 // switcher offers it. Not as a default: the docs' default is a preset.
 @include acme.define($default: false);
 
+// The page takes the theme's background and text colour (Getting Started,
+// "Style the page"). The rule has no specificity, so the font below wins.
+@include t.apply-document-base();
+
 html,
 body {
   height: 100%;
@@ -31,15 +40,13 @@ body {
   box-sizing: border-box;
 }
 
-body {
-  background-color: var(--color--background, #fafafa);
-  color: var(--color--background--contrast, #1a1a1a);
-}
-
+// Inline code is small text in the primary on a primary tint, so it takes the
+// palette's text role, not the colour as written (3.5–3.8:1 in dark mode on
+// the showcase).
 code {
   font-family: "Roboto Mono", monospace;
   background: var(--color--primary--tint-1, rgba(0, 0, 0, 0.06));
-  color: var(--color--primary);
+  color: var(--color--primary--text);
   padding: 1px 6px;
   border-radius: 5px;
   font-size: 0.85em;

@@ -2,8 +2,10 @@
 // Apply — composable palette/container/stroke mixins.
 @use "sass:map";
 @use "sass:list";
+@use "sass:string";
 @use "density" as _dn;
 @use "palette" as _pal;
+@use "weights" as _w;
 // Usage — atomic, composable layers (each does ONE thing, stack on a palette):
 //   @include apply-palette(primary)   → select palette, identity text color
 //   @include bg()                     → subtle tonal fill, keeps identity text
@@ -14,11 +16,16 @@
 //   @include define-core-theme()      → emit [palette="name"] for the core names and
 //                                       [palette][bg|filled|outlined|container|shape] globally
 //
-// Surface vars set by bg()/filled()/outlined():
+// Text vars: what reads on the fill behind an element. Core declares them for
+// the page on every theme element (page-text(): text on the background), and
+// filled() declares them again for its own fill. bg() and outlined() leave
+// them as they are.
+//   --container--text           the text colour: the fill's contrast
+//   --container--text-emphasis  the same at full contrast (white or black)
+//   --container--text-deemphasis muted text: the contrast mixed with the fill
+//                               at --weight--text-deemphasis-blend
+// Stroke var, set by apply-palette() and filled():
 //   --container--stroke         color of the stroke border
-//   --container--text           blended body text color
-//   --container--text-emphasis  pure contrast (white or black)
-//   --container--text-deemphasis deemphasized text
 //
 // User-facing layout vars:
 //   --container--radius         all corners (base fallback)
@@ -268,6 +275,15 @@
   --palette-color--tint-5: var(--color--#{$name}--tint-5);
   --palette-color--focus: var(--color--#{$name}--focus);
 
+  // The palette's colour as text (a link, a heading). background and surface
+  // have no text role, so their scope clears the variable instead of letting
+  // the text colour of a palette around it through.
+  @if $name == background or $name == surface {
+    --palette-color--text: initial;
+  } @else {
+    --palette-color--text: var(--color--#{$name}--text);
+  }
+
   // Identity text, plus a default stroke color so outlined() works with just a
   // palette (no surface fill required).
   color: var(--palette-color);
@@ -287,6 +303,41 @@
 
 // The text colour bg() offers the palette: read only by background and surface.
 $_bg-text: --container--_bg-text;
+
+// ─── Text on a fill ───────────────────────────────────────────────────────────
+// The three text variables for text of colour $contrast on a fill of colour
+// $fill (two var() references). Muted text is the contrast mixed with the fill
+// at the de-emphasis weight. That weight varies by mode; substituted here it
+// would freeze at this element and a themeMode subtree would mix the flipped
+// colours at the outer weight, so each side of the light-dark() reads its own
+// mode's weight. The fallbacks are for a page without core's root rule.
+// $contrast mixed with $fill at one mode's de-emphasis weight. One line: a
+// custom property keeps the white space it is written with.
+@function _muted($contrast, $fill, $mode) {
+  $weight: "var(--weight--text-deemphasis-blend--mode-#{$mode}, #{_w.default-of(text-deemphasis-blend, $mode)})";
+  @return string.unquote("color-mix(in oklch, #{$contrast} #{$weight}, #{$fill})");
+}
+
+@mixin _text-on($contrast, $fill) {
+  --container--text: #{$contrast};
+  --container--text-emphasis: #{$contrast};
+  --container--text-deemphasis: light-dark(
+    #{_muted($contrast, $fill, light)},
+    #{_muted($contrast, $fill, dark)}
+  );
+}
+
+// ─── Page text ────────────────────────────────────────────────────────────────
+// The text variables outside any container (issue #13): text on the page,
+// which is the background palette (apply-document-base() paints <body> with
+// it). Emitted once by define-core-theme() on :where(:root, [theme]), so every
+// theme element has them against its own background, a nested themeMode flips
+// them, and muted text is var(--container--text-deemphasis) anywhere. Zero
+// specificity: filled() on the same element wins, and a filled() container
+// further in sets its own.
+@mixin page-text() {
+  @include _text-on(var(--color--background--contrast), var(--color--background));
+}
 
 // ─── Shared surface extent ────────────────────────────────────────────────────
 // Shared outer extent for every surface layer (bg fill, filled fill, outlined
@@ -358,23 +409,7 @@ $_bg-text: --container--_bg-text;
   isolation: isolate;
 
   // Pure contrast (on-color) text, with a deemphasis tier for secondary text.
-  // The blend weight varies by mode; substituted here it would freeze at this
-  // element and a themeMode subtree would mix the flipped colours at the
-  // outer weight, so each side of the light-dark() reads its own mode's weight.
-  --container--text: var(#{$contrast});
-  --container--text-emphasis: var(#{$contrast});
-  --container--text-deemphasis: light-dark(
-    color-mix(
-      in oklch,
-      var(#{$contrast}) var(--weight--text-deemphasis-blend--mode-light, 55%),
-      var(#{$bg})
-    ),
-    color-mix(
-      in oklch,
-      var(#{$contrast}) var(--weight--text-deemphasis-blend--mode-dark, 55%),
-      var(#{$bg})
-    )
-  );
+  @include _text-on(var(#{$contrast}), var(#{$bg}));
   // When composed with outlined(), the border uses the palette's solid bg role —
   // the same tonal tint bg() paints (color blended toward surface).
   --container--stroke: var(--palette-color--bg);

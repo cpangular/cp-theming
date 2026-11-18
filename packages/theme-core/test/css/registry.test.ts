@@ -30,10 +30,17 @@ const WEIGHTS = [
 const SIZES = ['xxs', 'xs', 'sm', 'md', 'lg', 'xl', 'xxl'];
 const ROLES = ['', '--bg', '--stroke', '--focus'];
 const MODES = ['--mode-light', '--mode-dark'];
+const NEUTRALS = ['background', 'surface'];
 
-/** The eight registrations of one palette name: four roles × light and dark. */
+/**
+ * The registrations of one palette name, light and dark of each role: eight
+ * for background and surface (colour, bg, stroke, focus), ten for an accent,
+ * which also has the text role (Phase 19).
+ */
 export const paletteRegistrations = (name: string) =>
-  ROLES.flatMap((r) => MODES.map((m) => `--color--${name}${r}${m}`));
+  [...ROLES, ...(NEUTRALS.includes(name) ? [] : ['--text'])].flatMap((r) =>
+    MODES.map((m) => `--color--${name}${r}${m}`),
+  );
 
 export const scalarRegistrations = [
   ...WEIGHTS.map((w) => `--weight--${w}`),
@@ -52,10 +59,10 @@ test('the scalar list is the 29 the plan names', () => {
   assert.equal(scalarRegistrations.length, 29);
 });
 
-test('core.css registers exactly the expected 109 properties, each once', () => {
+test('core.css registers exactly the expected 125 properties, each once', () => {
   const registered = registeredProperties(core.css);
-  // 10 palettes × 4 roles × 2 modes + 29 scalars.
-  assert.equal(registered.length, 109);
+  // 10 palettes × 4 roles × 2 modes, the text role of the 8 accents × 2 modes, 29 scalars.
+  assert.equal(registered.length, 125);
   assert.ok(!registered.includes('--color--brand'), '--color--brand is a join, not registered');
   assert.equal(new Set(registered).size, registered.length, 'no duplicate registrations');
   assert.deepEqual([...registered].sort(), [...expectedRegistrations].sort());
@@ -65,12 +72,19 @@ test('core.css registers exactly the expected 109 properties, each once', () => 
 // ten palette names since Phase 14 (about 20 KB expanded per name). The
 // gzipped size is the one that matters: the expanded ceiling is 256 KiB since
 // Phase 14b, when core.css was 221,168 bytes (216 KiB), 15,211 gzipped.
-test('core.css stays under 256 KiB expanded and 16 KiB gzipped', (t) => {
+//
+// 16.5 KiB gzipped since Phase 19, Session C (16 KiB until then), where
+// core.css came to 16,471 bytes: the surface's ten container declarations
+// (132 bytes gzipped), the three text variables of the page (66), ten more
+// shadow layers (89) and the accent stroke through the gamut correction (36).
+// Declaring the gamut factor once took 4.4 KB off the expanded file and 31
+// bytes off the gzipped one: gzip had already folded the repetition.
+test('core.css stays under 256 KiB expanded and 16.5 KiB gzipped', (t) => {
   const bytes = Buffer.byteLength(core.css);
   const gz = gzipSync(core.css).length;
   t.diagnostic(`core.css: ${bytes} bytes, ${gz} gzipped`);
   assert.ok(bytes <= 256 * 1024, `${bytes} bytes`);
-  assert.ok(gz <= 16 * 1024, `${gz} bytes gzipped`);
+  assert.ok(gz <= 16.5 * 1024, `${gz} bytes gzipped`);
 });
 
 test('each preset stays under 4 KiB (a theme rule holds only what was passed)', (t) => {
@@ -91,7 +105,7 @@ for (const fixture of coreFixtureSheets()) {
   const custom = [
     ...new Set([...fixture.css.matchAll(/\[palette=["']?([\w-]+)["']?\]/g)].map((m) => m[1])),
   ].filter((n) => !CORE_PALETTE_NAMES.includes(n));
-  test(`${fixture.label} registers 8 names per custom palette (${custom.join(', ') || 'none'}) and nothing else`, () => {
+  test(`${fixture.label} registers 10 names per custom palette (${custom.join(', ') || 'none'}) and nothing else`, () => {
     const expected = custom.flatMap(paletteRegistrations);
     assert.deepEqual([...registeredProperties(fixture.css)].sort(), expected.sort());
   });

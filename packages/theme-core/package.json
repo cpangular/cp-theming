@@ -10,8 +10,24 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./scss/*": "./scss/*",
+    "./scss/theme": {
+      "sass": "./scss/_theme.scss"
+    },
+    "./scss/variables": {
+      "sass": "./scss/_variables.scss"
+    },
+    "./scss/presets": {
+      "sass": "./scss/presets/index.scss"
+    },
+    "./scss/presets/themes": {
+      "sass": "./scss/presets/_themes.scss"
+    },
+    "./scss/presets/palettes": {
+      "sass": "./scss/presets/_palettes.scss"
+    },
+    "./scss/*.scss": "./scss/*.scss",
     "./css/core": "./dist/core.css",
+    "./css/base": "./dist/base.css",
     "./css/presets/azure-blue": "./dist/presets/azure-blue.css",
     "./css/presets/rose-red": "./dist/presets/rose-red.css",
     "./css/presets/cyan-orange": "./dist/presets/cyan-orange.css",
@@ -28,8 +44,24 @@
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
       },
-      "./scss/*": "./scss/*",
+      "./scss/theme": {
+        "sass": "./scss/_theme.scss"
+      },
+      "./scss/variables": {
+        "sass": "./scss/_variables.scss"
+      },
+      "./scss/presets": {
+        "sass": "./scss/presets/index.scss"
+      },
+      "./scss/presets/themes": {
+        "sass": "./scss/presets/_themes.scss"
+      },
+      "./scss/presets/palettes": {
+        "sass": "./scss/presets/_palettes.scss"
+      },
+      "./scss/*.scss": "./scss/*.scss",
       "./css/core": "./dist/core.css",
+      "./css/base": "./dist/base.css",
       "./css/presets/azure-blue": "./dist/presets/azure-blue.css",
       "./css/presets/rose-red": "./dist/presets/rose-red.css",
       "./css/presets/cyan-orange": "./dist/presets/cyan-orange.css",
@@ -55,7 +87,7 @@
       ]
     },
     "build.css": {
-      "command": "sass --style=expanded scss/core.scss:dist/core.css scss/theme-vars.scss:dist/theme-vars.css scss/presets/azure-blue.scss:dist/presets/azure-blue.css scss/presets/rose-red.scss:dist/presets/rose-red.css scss/presets/cyan-orange.scss:dist/presets/cyan-orange.css scss/presets/magenta-violet.scss:dist/presets/magenta-violet.css",
+      "command": "sass --style=expanded scss/core.scss:dist/core.css scss/base.scss:dist/base.css scss/theme-vars.scss:dist/theme-vars.css scss/presets/azure-blue.scss:dist/presets/azure-blue.css scss/presets/rose-red.scss:dist/presets/rose-red.css scss/presets/cyan-orange.scss:dist/presets/cyan-orange.css scss/presets/magenta-violet.scss:dist/presets/magenta-violet.css",
       "files": [
         "scss/**/*.scss"
       ],

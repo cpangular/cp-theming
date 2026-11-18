@@ -1,0 +1,6 @@
+// After the theme. This text colour is used as written, on every element:
+// nothing checks it against the palette's colour.
+:root,
+[theme] {
+  --color--brand--contrast: white;
+}

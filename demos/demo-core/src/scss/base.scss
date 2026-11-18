@@ -10,9 +10,9 @@
   box-sizing: border-box;
 }
 
+// The font family comes from the theme: main.ts imports core's `css/base`.
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
   font-size: 1rem;
   line-height: 1.5;
 }

@@ -50,6 +50,14 @@ const PALETTE_ORDER = [
 const FIXED_STEPS = ['darkest', 'darker', 'dark', 'light', 'lighter', 'lightest'];
 const RELATIVE_STEPS = ['lowest', 'lower', 'low', 'high', 'higher', 'highest'];
 const ROLES = ['bg', 'stroke'];
+/** The surface's container colours, in M3's order from the far side of the surface. */
+const CONTAINERS = [
+  'container-lowest',
+  'container-low',
+  'container',
+  'container-high',
+  'container-highest',
+];
 const MODES: [suffix: string, label: string][] = [
   ['mode-light', 'light value'],
   ['mode-dark', 'dark value'],
@@ -91,6 +99,15 @@ function palettesOf(names: Set<string>): PaletteGroup[] {
       focus: [token(`${root}--focus`, 'focus'), ...inputs(`${root}--focus`)].filter(
         (t): t is ColourToken => !!t,
       ),
+      // An accent only: background and surface have no text role.
+      text: [token(`${root}--text`, 'text'), ...inputs(`${root}--text`)].filter(
+        (t): t is ColourToken => !!t,
+      ),
+      // The surface only.
+      // Labelled by step (`lowest` … `highest`): the row names the family.
+      containers: CONTAINERS.flatMap(
+        (s) => token(`${root}--${s}`, s.replace(/^container-/, '')) ?? [],
+      ),
       tints: tokens(
         root,
         [1, 2, 3, 4, 5].map((n) => `tint-${n}`),
@@ -110,6 +127,8 @@ const countColour = (palettes: PaletteGroup[]): number => {
     (n, p) =>
       n +
       count(p.focus) +
+      count(p.text) +
+      count(p.containers) +
       count(p.tints) +
       p.roles.reduce(
         (m, r) => m + count([r.base]) + count(r.inputs) + count(r.fixed) + count(r.relative),
@@ -162,9 +181,13 @@ export const NOTES: Record<string, string> = {
   '--overlay--shadow': 'The base colour of overlay shadows.',
   '--palette-color': 'The colour of the palette this element is in.',
   '--palette-src': 'The same before tone is applied: what tone slides.',
-  '--container--text': 'Text on the fill of the nearest filled element.',
+  '--palette-color--text':
+    'The palette colour as text: a link, a heading. Unset in a background or surface scope.',
+  '--container--text':
+    'Text on the fill of the nearest filled element; outside one, text on the background.',
   '--container--text-emphasis': 'The same at full contrast.',
-  '--container--text-deemphasis': 'The same for a quieter line.',
+  '--container--text-deemphasis':
+    'The same for a quieter line: mixed with the fill, or the background, at the de-emphasis weight.',
   '--container--stroke': 'The border colour outlined draws with.',
   '--container--stroke-width': 'The border width outlined draws with.',
   '--container--radius': 'The corner radius shape sets.',
@@ -325,6 +348,8 @@ export function sectionNames(data: VariablesData): Map<string, string[]> {
     data.palettes
       .flatMap((p) => [
         ...tokens(p.focus),
+        ...tokens(p.text),
+        ...tokens(p.containers),
         ...tokens(p.tints),
         ...p.roles.flatMap((r) => tokens([r.base, ...r.inputs, ...r.fixed, ...r.relative])),
       ])

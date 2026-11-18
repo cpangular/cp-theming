@@ -3,14 +3,14 @@
 // One accent: secondary and tertiary are generated from primary.
 $one: t.theme(
   $palettes: (
-    primary: t.light-dark(t.palette(oklch(0.40 0.22 270)), t.palette(oklch(0.78 0.18 270))),
+    primary: t.light-dark(t.palette(oklch(0.40 0.22 270)), t.palette(oklch(0.76 0.12 266))),
   )
 );
 
 // Two accents: secondary is used as passed, tertiary is generated from primary.
 $two: t.theme(
   $palettes: (
-    primary:   t.light-dark(t.palette(oklch(0.40 0.22 270)), t.palette(oklch(0.78 0.18 270))),
+    primary:   t.light-dark(t.palette(oklch(0.40 0.22 270)), t.palette(oklch(0.76 0.12 266))),
     secondary: t.light-dark(t.palette(#00796b), t.palette(hsl(174 42% 65%))),
   )
 );
@@ -20,9 +20,9 @@ $two: t.theme(
 $three: t.theme(
   $brand: #ff6a00,
   $palettes: (
-    primary:   t.light-dark(t.palette(oklch(0.40 0.22 270)), t.palette(oklch(0.78 0.18 270))),
+    primary:   t.light-dark(t.palette(oklch(0.40 0.22 270)), t.palette(oklch(0.76 0.12 266))),
     secondary: t.light-dark(t.palette(#00796b), t.palette(hsl(174 42% 65%))),
-    tertiary:  t.light-dark(t.palette(oklch(0.45 0.16 20)), t.palette(oklch(0.80 0.12 20))),
+    tertiary:  t.light-dark(t.palette(oklch(0.45 0.16 20)), t.palette(oklch(0.8 0.11 20))),
   )
 );
 

@@ -10,23 +10,63 @@
 // Light/dark varying — use via:
 //   t.light-dark(t.elevation(), t.elevation($shadow-color: oklch(0 0 0 / 50%)))
 //
-// Defaults: light uses 30% opacity shadows; dark uses 50% (shadows need more
-// opacity on dark surfaces). Core declares these once; a theme declares only
-// the levels its author's $shadow-color or $levels touch. A level's light and
-// dark shadow may differ in their colours only: same offsets, blur and spread.
+// Geometry: Material's. Each level is three shadows, as Angular Material draws
+// its own levels 1–5 (elevations 1, 3, 6, 8 and 12): a key shadow straight
+// below, a penumbra around it and a wide, faint ambient one. The ambient layer
+// is what makes a level-1 card read as lifted on a light surface; until Phase
+// 19 a level was one small shadow (`0 1px 2px` at level 1), which barely
+// showed there (issue #11). A harness check in the Material adapter holds the
+// offsets, blurs and spreads to the installed Material's.
+//
+// Colour: one $shadow-color per mode, shared out over the three layers. The
+// key layer takes 2/3 of its alpha, the penumbra 7/15 and the ambient 2/5, so
+// the light default of 30% gives Material's 20%, 14% and 12%, and the dark
+// default of 50% gives 33%, 23% and 20% (shadows need more opacity on dark
+// surfaces). A $shadow-color an author passes is shared out the same way, in
+// the browser: `oklch(from <colour> l c h / calc(alpha * <share>))`, so any
+// CSS colour works, a var() too, and no colour is computed by Sass.
+//
+// Core declares these once; a theme declares only the levels its author's
+// $shadow-color or $levels touch. A $levels shadow is used as written, with as
+// many layers as it has. A level's light and dark shadow may differ in their
+// colours only: same layers, offsets, blur and spread.
 // ─────────────────────────────────────────────────────────────────────────────
 @use "sass:list";
 @use "sass:map";
 @use "sass:meta";
+@use "sass:string";
 @use "mode" as _m;
 
+// Per level: key, penumbra, ambient.
 $_geometry: (
-  1: 0 1px 2px,
-  2: 0 2px 6px,
-  3: 0 4px 8px,
-  4: 0 6px 12px,
-  5: 0 8px 16px,
+  1: (
+    0 2px 1px -1px,
+    0 1px 1px 0,
+    0 1px 3px 0,
+  ),
+  2: (
+    0 3px 3px -2px,
+    0 3px 4px 0,
+    0 1px 8px 0,
+  ),
+  3: (
+    0 3px 5px -1px,
+    0 6px 10px 0,
+    0 1px 18px 0,
+  ),
+  4: (
+    0 5px 5px -3px,
+    0 8px 10px 1px,
+    0 3px 14px 2px,
+  ),
+  5: (
+    0 7px 8px -4px,
+    0 12px 17px 2px,
+    0 5px 22px 4px,
+  ),
 );
+// The share of the shadow colour's alpha each layer takes: 2/3, 7/15, 2/5.
+$_layer-share: 0.6667, 0.4667, 0.4;
 $_tints: (
   0: 0%,
   1: 5%,
@@ -35,9 +75,20 @@ $_tints: (
   4: 12%,
   5: 14%,
 );
-$_shadow-color: (
-  light: oklch(0 0 0 / 30%),
-  dark: oklch(0 0 0 / 50%),
+// The default colour of each layer, per mode: black at the shares above of 30%
+// (light) and of 50% (dark). Written out, so core.css holds six plain colours
+// and no relative-colour expression for them.
+$_layer-color: (
+  light: (
+    oklch(0 0 0 / 20%),
+    oklch(0 0 0 / 14%),
+    oklch(0 0 0 / 12%),
+  ),
+  dark: (
+    oklch(0 0 0 / 33.3%),
+    oklch(0 0 0 / 23.3%),
+    oklch(0 0 0 / 20%),
+  ),
 );
 
 // config($shadow-color) — rescales shadow opacity across levels 1–5.
@@ -54,16 +105,39 @@ $_shadow-color: (
   @return $result;
 }
 
-// A level's geometry followed by a colour, as a space-separated list.
+// A level's three layers, each followed by its colour: a comma-separated list
+// of space-separated lists. $colors is one colour per layer.
+@function _layers($level, $colors) {
+  $out: ();
+  $geometry: map.get($_geometry, $level);
+  @for $i from 1 through list.length($geometry) {
+    $out: list.append(
+      $out,
+      list.append(list.nth($geometry, $i), list.nth($colors, $i), $separator: space),
+      $separator: comma
+    );
+  }
+  @return $out;
+}
+
+// A level drawn in an author's $shadow-color: each layer takes its share of
+// that colour's alpha, worked out by the browser.
 @function _shadow($level, $color) {
-  @return list.append(map.get($_geometry, $level), $color, $separator: space);
+  $colors: ();
+  @each $share in $_layer-share {
+    $colors: list.append(
+      $colors,
+      string.unquote("oklch(from #{$color} l c h / calc(alpha * #{$share}))")
+    );
+  }
+  @return _layers($level, $colors);
 }
 
 @function _default-shadow($level, $mode) {
   @if $level == 0 {
     @return none;
   }
-  @return _shadow($level, map.get($_shadow-color, $mode));
+  @return _layers($level, map.get($_layer-color, $mode));
 }
 
 // Whether two box-shadow values differ in their colours only, so that one

@@ -26,8 +26,22 @@
 // (@forward can't rename individual members, so we use wrapper functions.)
 // Every builder returns only the keys it was given; core supplies the defaults.
 
-@function palette($base, $color: null, $bg: null, $stroke: null, $focus: null) {
-  @return _pal.config($base, $color, $bg, $stroke, $focus);
+// $contrast — prefer-white or prefer-black: the palette's colour and its ladder
+// steps take that text colour wherever it reaches 3:1 on them, the other one
+// elsewhere. Without it, text is black or white by luminance (4.5:1 or more).
+// $text — the palette's colour as text, --color--{name}--text, when the one
+// core derives (the colour, no lighter than 0.40 in light mode and no darker
+// than 0.82 in dark) is not the one you want. Accent palettes only.
+@function palette(
+  $base,
+  $color: null,
+  $bg: null,
+  $stroke: null,
+  $focus: null,
+  $contrast: null,
+  $text: null
+) {
+  @return _pal.config($base, $color, $bg, $stroke, $focus, $contrast, $text);
 }
 
 // palette-from-var($var) — derives a palette from any CSS custom property at runtime.
@@ -206,8 +220,10 @@
 //
 // $brand — the brand colour exactly as the guidelines give it. It becomes the
 // `brand` palette (--color--brand) and is never adjusted; the same as passing
-// `brand: t.palette(…)` in $palettes. A theme that passes `primary` and no
-// brand gets that primary as its brand palette.
+// `brand: t.palette(…)` in $palettes. A colour, or a t.palette() when the brand
+// has more to say (`$brand: t.palette(#e65151, $contrast: prefer-white)`). A
+// theme that passes `primary` and no brand gets that primary as its brand
+// palette.
 @function theme(
   $palettes: (),
   $weights: null,
@@ -278,7 +294,7 @@ $_palette-hooks-emitted: ();
 // Emits one rule, :where([theme="name"]):not(cp-theming-none) (plus
 // :where(:root) when $default), holding only what the author passed to
 // t.theme(): for each palette the light and dark colour of the colour role and
-// of any explicit $bg / $stroke / $focus (background and surface always carry
+// of any explicit $bg / $stroke / $focus / $text (background and surface always carry
 // their bg pair: their base), each followed by its joined token; the brand
 // palette's pair when $brand was passed, or pointed at the primary's pair
 // when `primary` was passed and no brand; for each palette of the chain the
@@ -304,15 +320,19 @@ $_palette-hooks-emitted: ();
     $palettes: ();
   }
 
-  // $brand is the brand palette: one colour, the same in both modes.
+  // $brand is the brand palette: a colour (the same in both modes), or a
+  // t.palette() config / t.light-dark() pair of them.
   $brand: map.get($theme, brand);
   @if $brand != null {
     @if map.has-key($palettes, brand) {
       @error "Theme `#{$name}` passes the brand colour twice: as $brand and as the `brand` palette.";
     }
+    @if meta.type-of($brand) != map {
+      $brand: _pal.config($brand);
+    }
     $palettes: map.merge(
       (
-        brand: _pal.config($brand),
+        brand: $brand,
       ),
       $palettes
     );
@@ -407,8 +427,9 @@ $_palette-hooks-emitted: ();
 //   3. The themeMode rules.
 //   4. :where(:root, [theme]): the colour core generates for each palette of
 //      the chain (brand → primary → secondary, tertiary → background,
-//      surface), every derivation for the core palette names and the
-//      typography role fonts. :where(:root) in (2) points every pair of the
+//      surface), every derivation for the core palette names, the text
+//      variables of the page (--container--text and its two tiers, against
+//      the background) and the typography role fonts. :where(:root) in (2) points every pair of the
 //      chain at its generated colour; a theme rule does so for what it left
 //      out.
 //   5. :where(:root, [theme], [themeMode]): the mode-varying percentages picked
@@ -436,6 +457,7 @@ $_palette-hooks-emitted: ();
 
   :where(:root, [theme]) {
     @include _pal.derive-core-palettes();
+    @include _ap.page-text();
     @include _ty.emit-derived();
   }
 
@@ -445,6 +467,25 @@ $_palette-hooks-emitted: ();
   }
 
   @include _ap.define-core-theme();
+}
+
+// ─── Public: apply-document-base ──────────────────────────────────────────────
+// Opt-in: the page itself takes the theme. Core declares the variables and
+// styles no element with them; this one rule gives <body> the background
+// palette's colour, its contrast as text, and the plain font family.
+//
+//   @include t.define-core-theme();
+//   @include t.apply-document-base();
+//
+// :where() keeps it at zero specificity, so a `body` rule of the app wins
+// wherever it loads. It sets no font size and no scrollbar colours. The same
+// rule compiled: `@cpangular/cp-theming-core/css/base` (scss/base.scss).
+@mixin apply-document-base() {
+  @at-root :where(body) {
+    background-color: var(--color--background);
+    color: var(--color--background--contrast);
+    font-family: var(--text--plain-family);
+  }
 }
 
 // ─── Apply mixins — re-exported for single @use 'theme' as t convenience ──────

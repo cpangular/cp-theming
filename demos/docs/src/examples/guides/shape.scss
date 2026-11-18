@@ -2,7 +2,7 @@
 
 $my-theme: t.theme(
   $palettes: (
-    primary: t.palette(oklch(0.44 0.22 253)),
+    primary: t.palette(oklch(0.45 0.2 262)),
   ),
   // pass only the steps you change
   $shape: t.shape($sm: 6px, $md: 10px, $lg: 14px)

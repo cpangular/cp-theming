@@ -11,10 +11,15 @@
 //   - an accent tone is the cp-theming colour at that M3 tone (m3-tone());
 //   - a neutral tone is --color--surface moved by the tone's distance from the
 //     tone M3 gives its own surface (98 in the light table, 6 in the dark one),
-//     so --mat-sys-surface stays --color--surface and the containers, dim and
-//     bright keep M3's order around it.
+//     so --mat-sys-surface stays --color--surface and dim, bright and the
+//     variants keep M3's order around it.
 // Roles cp-theming already has a token for are written out in $_direct and
-// replace the table's value. Every outline is the surface's stroke: `outline`
+// replace the table's value. The five surface containers are core's
+// --color--surface--container-*: core derives them at these same distances
+// (theme-core/scss/_palette.scss, "Surface containers"), so an app's own panel
+// in one of them and a Material card are one colour, and a theme or a rule
+// that sets one sets it for both. A harness check holds core's distances to
+// the tones the installed Material's tables name. Every outline is the surface's stroke: `outline`
 // (the boundary of outlined buttons, fields, chips and button toggles) is
 // --color--surface--stroke, `outline-variant` (dividers) its --low step. A
 // theme sets them by passing the surface a $stroke, a nested theme likewise,
@@ -44,6 +49,23 @@ $_surface-tone: (
   light: 98,
   dark: 6,
 );
+
+// ─── Muted text ───────────────────────────────────────────────────────────────
+// on-surface-variant is M3's muted text on a surface: a hint, a placeholder,
+// a supporting line, an unselected icon. In cp-theming muted text is the
+// contrast colour mixed with what it is written on at the de-emphasis weight
+// (--container--text-deemphasis; theme-core/scss/_apply.scss). This is that
+// same mix, at that same weight, against the surface, so a theme's
+// $text-deemphasis-blend moves Material's muted text with the app's own and
+// the two cannot drift apart (issue #13). Core's default weight (63% light,
+// 93% dark) puts it where Material's own tables have the role on the default
+// surface, so with no weight passed a component's muted text is the colour
+// Angular Material's theme gives it.
+// Each side of the light-dark() reads its own mode's weight, as core does.
+@function _muted($mode) {
+  @return "color-mix(in oklch, var(--color--surface--contrast) var(--weight--text-deemphasis-blend--mode-#{$mode}), var(--color--surface))";
+}
+$_on-surface-variant: string.unquote("light-dark(#{_muted(light)}, #{_muted(dark)})");
 
 // ─── Roles cp-theming already has a token for ─────────────────────────────────
 
@@ -77,6 +99,12 @@ $_direct: map.merge(
   (
     surface: var(--color--surface),
     on-surface: var(--color--surface--contrast),
+    on-surface-variant: $_on-surface-variant,
+    surface-container-lowest: var(--color--surface--container-lowest),
+    surface-container-low: var(--color--surface--container-low),
+    surface-container: var(--color--surface--container),
+    surface-container-high: var(--color--surface--container-high),
+    surface-container-highest: var(--color--surface--container-highest),
     background: var(--color--background),
     on-background: var(--color--background--contrast),
     outline: var(--color--surface--stroke),

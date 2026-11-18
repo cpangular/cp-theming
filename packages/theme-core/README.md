@@ -66,18 +66,18 @@ Every theme is built with `t.theme()` and emitted with `t.define-theme()`.
 @use '@cpangular/cp-theming-core/scss/theme' as t;
 
 $my-theme: t.theme(
-  $brand:   oklch(0.44 0.22 253),        // the brand colour, kept exact: the `brand` palette
+  $brand:   oklch(0.45 0.2 262),        // the brand colour, kept exact: the `brand` palette
   $palettes: (
     // primary, tertiary, background and surface are left out: core generates
     // them from the brand. Everything below is optional too.
     secondary:  t.light-dark(
-                  t.palette(oklch(0.46 0.27 264)),
-                  t.palette(oklch(0.71 0.21 264)),
+                  t.palette(oklch(0.46 0.266 264)),
+                  t.palette(oklch(0.688 0.164 260.3)),
                 ),
-    error:   t.light-dark(t.palette(oklch(0.52 0.22 27)),  t.palette(oklch(0.70 0.20 27))),
-    warn:    t.light-dark(t.palette(oklch(0.55 0.18 55)),   t.palette(oklch(0.76 0.16 55))),
-    caution: t.light-dark(t.palette(oklch(0.55 0.16 103)),  t.palette(oklch(0.82 0.15 103))),
-    pass:    t.light-dark(t.palette(oklch(0.48 0.18 145)),  t.palette(oklch(0.72 0.16 145))),
+    error:   t.light-dark(t.palette(oklch(0.525 0.214 28.1)),  t.palette(oklch(0.694 0.196 27))),
+    warn:    t.light-dark(t.palette(oklch(0.55 0.161 43.5)),   t.palette(oklch(0.76 0.16 55))),
+    caution: t.light-dark(t.palette(oklch(0.55 0.113 98.8)),  t.palette(oklch(0.82 0.15 103))),
+    pass:    t.light-dark(t.palette(oklch(0.488 0.165 142.5)),  t.palette(oklch(0.72 0.16 145))),
   ),
   $weights:    t.light-dark(t.weights($text-blend: 82%), t.weights($text-blend: 78%)),
   $typography: t.typography($plain-family: system-ui),
@@ -96,6 +96,18 @@ $my-theme: t.theme(
 ```
 
 `define-core-theme()` is theme-independent — load the pre-built `dist/core.css` before your theme CSS instead of calling it if preferred. A theme declares only what its author passed, so a nested theme inherits the rest from the theme around it.
+
+### Style the page
+
+Core declares the variables and styles no element with them. To give `<body>` the theme's background, text colour and font family, opt in once:
+
+```scss
+@include t.define-core-theme();
+@include t.define-theme('my-theme', $my-theme, $default: true);
+@include t.apply-document-base();
+```
+
+Without Sass, load `dist/base.css` (`@import "@cpangular/cp-theming-core/css/base";`) after core. The rule is `:where(body)`, at zero specificity, so a `body` rule of your own wins wherever it loads. It sets `background-color`, `color` and `font-family` only. Without it the page keeps the browser's default font (apps coming from `ng-material-theme`, whose `core.css` styled the page, need this line).
 
 ### Multiple themes
 
@@ -121,11 +133,11 @@ Palettes are the color identity of a theme. Each palette emits a family of `--co
 
 ```scss
 // Simple — same color for light and dark mode
-primary: t.palette(oklch(0.55 0.18 240)),
+primary: t.palette(oklch(0.57 0.15 249)),
 
 // Light/dark variant
 primary: t.light-dark(
-  t.palette(oklch(0.55 0.18 240)),   // light mode
+  t.palette(oklch(0.57 0.15 249)),   // light mode
   t.palette(oklch(0.72 0.16 240)),   // dark mode
 ),
 
@@ -146,17 +158,28 @@ Colours follow the chain **brand → primary → secondary, tertiary → backgro
 
 `error`, `warn`, `caution` and `pass` have fixed defaults. A nested theme generates what follows from what it passes and inherits the rest. Details: [docs/palettes.md](docs/palettes.md#brand-accents-and-neutrals-pass-what-you-have).
 
+### Text colour on a palette
+
+`--color--{name}--contrast` is black or white by luminance, at 4.5:1 or more. When the brand's rule is "this colour takes white", say so:
+
+```scss
+$brand: t.palette(#e65151, $contrast: prefer-white),
+```
+
+The palette's colour and its ladder steps then take white wherever white reaches 3:1 (large text and icons), black elsewhere. `prefer-black` is the mirror. Details: [docs/palettes.md](docs/palettes.md#a-palette-that-prefers-white-or-black-text).
+
 ### Custom palette roles
 
 Override individual roles within a palette:
 
 ```scss
 primary: t.palette(
-  $base:   oklch(0.55 0.18 240),
-  $color:  oklch(0.50 0.20 240),   // identity color (default: $base)
+  $base:   oklch(0.55 0.12 240),
+  $color:  oklch(0.50 0.11 240),   // identity color (default: $base)
   $bg:     oklch(0.88 0.06 240),   // container/bg role
-  $stroke: oklch(0.45 0.16 240),   // border role
-  $focus:  oklch(0.40 0.22 240),   // focus ring
+  $stroke: oklch(0.45 0.10 240),   // border role
+  $focus:  oklch(0.40 0.09 240),   // focus ring
+  $text:   oklch(0.38 0.08 240),   // the colour as text
 ),
 ```
 
@@ -176,10 +199,13 @@ These names are registered and derived once by `define-core-theme()`: `brand`, `
 | `--color--{name}--bg` | Background/container role |
 | `--color--{name}--bg--contrast` | Contrast against bg role |
 | `--color--{name}--bg--high` / `--low` | Bg lightness modifiers |
-| `--color--{name}--stroke` | Border/outline role. Default: the colour clamped to lightness 0.42–0.60; for `background` and `surface`, a boundary 4.5:1 or more against the palette's own colour in either mode (above WCAG 1.4.11's 3:1). `$stroke` replaces it. The Material adapter's `--mat-sys-outline` is the surface's stroke |
+| `--color--{name}--stroke` | Border/outline role. Default: the colour with its lightness kept between 0.42 and 0.55 in light mode and at 0.65 or more in dark mode, inside sRGB, so a mid-tone accent is its own stroke; for `background` and `surface`, a boundary 4.5:1 or more against the palette's own colour in either mode (above WCAG 1.4.11's 3:1). `$stroke` replaces it. The Material adapter's `--mat-sys-outline` is the surface's stroke; a focused field's outline is the accent's |
 | `--color--{name}--stroke--low` | Quieter stroke for a divider (the adapter's `--mat-sys-outline-variant`); may be under 3:1 |
 | `--color--{name}--focus` | Focus ring color |
+| `--color--{name}--text` | The colour as text (a link, a heading, a price): no lighter than 0.40 in light mode, no darker than 0.82 in dark, same hue, inside sRGB. Accent palettes only; `background` and `surface` have none. `$text` replaces it. `--palette-color--text` in a `[palette]` scope |
 | `--color--{name}--tint-1` … `--tint-5` | 10%/20%/38%/60%/80% opacity tints |
+| `--container--text`, `--container--text-emphasis`, `--container--text-deemphasis` | Not per palette: the text colours for where an element is. On every theme element they are the page's (the background's contrast, and for `-deemphasis` that contrast mixed with the background at `--weight--text-deemphasis-blend`); inside a `filled` element they are that fill's. `var(--container--text-deemphasis)` is muted text anywhere |
+| `--color--surface--container-lowest`, `-low`, `--color--surface--container`, `-high`, `-highest` | The surface only: Material 3's five surface containers, at M3's distance from the surface in each mode (light: +0.017, −0.017, −0.035, −0.052, −0.069 in oklch lightness; dark: −0.024, +0.036, +0.053, +0.097, +0.140), each with a `--contrast`. For a card, a panel, a toolbar. The Material adapter's `--mat-sys-surface-container-*` read them. Not the shade steps (`--high`, `--low`: ±0.12 per step) |
 
 ---
 
@@ -284,7 +310,7 @@ $weights: t.light-dark(
 |---|---|---|
 | `$text-blend` | `82%` | Body text opacity (color-mixed against surface) |
 | `$text-emphasis-blend` | `96%` | Emphasis text opacity |
-| `$text-deemphasis-blend` | `55%` | De-emphasis / hint text opacity |
+| `$text-deemphasis-blend` | `63%` light, `93%` dark | How much of the text colour muted text keeps. The default is where Angular Material has `on-surface-variant` |
 | `$state-hover` | `8%` | Hover state layer opacity |
 | `$state-press` | `12%` | Press state layer opacity |
 | `$state-focus` | `12%` | Focus state layer opacity |
@@ -358,6 +384,7 @@ $motion: t.motion()   // M3 defaults
 --color--primary--bg--contrast     contrast against bg role
 --color--primary--tint-1           10% opacity tint
 --color--primary--focus            per-palette focus ring color
+--color--primary--text             the colour as text (links, headings)
 --space--md                        density-reactive spacing
 --shape--lg                        corner radius
 --container--text                  blended body text on a surface

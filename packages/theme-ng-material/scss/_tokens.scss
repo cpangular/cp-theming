@@ -1,0 +1,97 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// _tokens.scss — internal to the Material adapter.
+//
+// The component tokens the adapter sets for an accent that Material paints as
+// text or as a line. define-ng-material-core-theme() declares them for
+// `primary` and `error` on the theme elements; material-palette() declares the
+// primary ones again for its palette.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Material paints some labels in primary or in error, on the surface or on a
+// container: the label of a text, outlined or elevated button, the focused
+// and the invalid label of a form field, an error message, the label of a
+// step in error. In M3 those are tone 40 / 80 accents, which read on every
+// surface container with a state layer over it. A cp-theming accent is the
+// colour its author wrote, and `brand` may be one colour in both modes.
+// Measured in the presets with Material's own tokens (Phase 15):
+//   - a text button on a filled card: 3.8–4.4:1 in five of the eight preset
+//     modes, and 3.3–4.4:1 with keyboard focus in all eight;
+//   - a focused text, outlined or elevated button on the surface: 4.3:1 in
+//     magenta-violet and rose-red, light mode;
+//   - the label of a step in error, and anything under palette="error":
+//     4.49:1 in cyan-orange, light mode;
+//   - the focused or invalid label of a filled field, on its container in
+//     surface-variant: 2.3–3.5:1 in dark mode, and the invalid one is under
+//     4.5:1 in light mode as well;
+//   - every one of them under palette="brand" in dark mode, with a brand that
+//     is dark: 1.04–1.11:1.
+//
+// Labels take the palette's text role, --color--{name}--text: core holds the
+// colour to a lightness there (no lighter than 0.40 in light mode, no darker
+// than 0.82 in dark; _palette.scss, "Text role"), and an app's own coloured
+// text reads the same variable, so a link and a button label are one colour.
+// A fill (a filled button, a checkbox, a slider) stays the author's colour,
+// exactly. The icon that stands in for a label (a step in error, a field's
+// error icon) goes with the label.
+//
+// Lines take the palette's stroke role, --color--{name}--stroke: the focused
+// outline and the active indicator of a field, its caret and its arrow. A
+// line is not text: WCAG 1.4.11 asks 3:1 of it, which a mid-tone accent has as
+// it is, so the stroke is the accent itself unless it would not show
+// (_palette.scss, "Accent stroke"). Until Phase 19 these were held with the
+// label, darker than every other stroke of the accent.
+//
+// Where they are declared: on the elements that declare --mat-sys-primary and
+// --mat-sys-error, which are the theme elements and, for the primary ones,
+// each [palette] scope. Not on the component. So they inherit like every
+// other Material token, and the nearest declaration wins: a value set on a
+// toolbar or on any wrapper (`mat.button-overrides()`, or the token by hand)
+// reaches the buttons inside it. A [theme] or [palette] element between the
+// wrapper and the component declares them again, as it does every
+// --mat-sys-* colour. (Until Phase 19 they sat on the component itself, where
+// no ancestor's value could reach: issue #9.)
+
+// The tokens Material derives from `primary`, with palette $name in its place.
+@mixin accent($name) {
+  $text: var(--color--#{$name}--text);
+  $line: var(--color--#{$name}--stroke);
+
+  --mat-button-text-label-text-color: #{$text};
+  --mat-button-outlined-label-text-color: #{$text};
+  --mat-button-protected-label-text-color: #{$text};
+  --mat-form-field-filled-focus-label-text-color: #{$text};
+  --mat-form-field-outlined-focus-label-text-color: #{$text};
+
+  --mat-form-field-filled-caret-color: #{$line};
+  --mat-form-field-filled-focus-active-indicator-color: #{$line};
+  --mat-form-field-outlined-caret-color: #{$line};
+  --mat-form-field-outlined-focus-outline-color: #{$line};
+  --mat-form-field-focus-select-arrow-color: #{$line};
+  --mat-select-focused-arrow-color: #{$line};
+}
+
+// The tokens Material derives from `error`. A [palette] scope leaves them
+// alone, as it leaves --mat-sys-error: an invalid field is in the error
+// palette under any scope.
+@mixin error() {
+  $text: var(--color--error--text);
+  $line: var(--color--error--stroke);
+
+  --mat-stepper-header-error-state-label-text-color: #{$text};
+  --mat-stepper-header-error-state-icon-foreground-color: #{$text};
+  --mat-form-field-error-text-color: #{$text};
+  --mat-form-field-error-trailing-icon-color: #{$text};
+  --mat-form-field-error-focus-trailing-icon-color: #{$text};
+  --mat-form-field-filled-error-label-text-color: #{$text};
+  --mat-form-field-filled-error-focus-label-text-color: #{$text};
+  --mat-form-field-outlined-error-label-text-color: #{$text};
+  --mat-form-field-outlined-error-focus-label-text-color: #{$text};
+
+  --mat-form-field-filled-error-caret-color: #{$line};
+  --mat-form-field-filled-error-active-indicator-color: #{$line};
+  --mat-form-field-filled-error-focus-active-indicator-color: #{$line};
+  --mat-form-field-outlined-error-caret-color: #{$line};
+  --mat-form-field-outlined-error-outline-color: #{$line};
+  --mat-form-field-outlined-error-focus-outline-color: #{$line};
+  --mat-select-invalid-arrow-color: #{$line};
+}

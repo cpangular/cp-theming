@@ -1,0 +1,11 @@
+// A side panel one step from the surface, with the text colour that reads on it.
+.side-panel {
+  background-color: var(--color--surface--container-low);
+  color: var(--color--surface--container-low--contrast);
+}
+
+// A card inside it, a step further.
+.side-panel .card {
+  background-color: var(--color--surface--container-high);
+  color: var(--color--surface--container-high--contrast);
+}

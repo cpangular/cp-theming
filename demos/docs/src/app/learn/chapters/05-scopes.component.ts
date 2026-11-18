@@ -82,7 +82,8 @@ import trySwappedHtml from '../../../examples/learn/05-scopes/try-swapped.html' 
           fill, in variables whose names start with <em>container</em>.
           <cpa-ref name="--container--text" /> is the contrast, and
           <cpa-ref name="--container--text-deemphasis" /> is a quieter version for a secondary line:
-          "a quieter line" in the example uses it. <cpa-ref name="bg" /> does not set them. One
+          "a quieter line" in the example uses it. <cpa-ref name="bg" /> does not set them, and
+          outside any <cpa-ref name="filled" /> they hold the colours that read on the page. One
           more, <cpa-ref name="--container--stroke" />, is the colour
           <cpa-ref name="outlined" /> draws with. <cpa-ref name="palette" /> sets it to the stroke
           role, and <cpa-ref name="filled" /> changes it to the soft background.

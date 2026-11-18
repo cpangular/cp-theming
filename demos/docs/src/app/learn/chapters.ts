@@ -175,6 +175,11 @@ export const PATTERNS: Pattern[] = [
   { chapter: 7, what: 'the contrast guarantee', pattern: /\bWCAG\b|\b4\.5:1/ },
   {
     chapter: 7,
+    what: 'a palette that prefers white or black text',
+    pattern: /\$contrast\b|\bprefer-(?:white|black)\b/,
+  },
+  {
+    chapter: 7,
     what: 'a fixed palette (error, warn, caution, pass)',
     pattern:
       /--color--(?:error|warn|caution|pass)\b|\bpalette="(?:error|warn|caution|pass)"|\b(?:error|warn|caution|pass):\s*t\./,
@@ -190,6 +195,11 @@ export const PATTERNS: Pattern[] = [
     chapter: 8,
     what: 'a non-colour attribute (shape, container, elevated, themeDensity)',
     pattern: /\b(?:shape|elevated|themeDensity)=|<[a-z][^<>]*\scontainer(?=[\s>])/,
+  },
+  {
+    chapter: 8,
+    what: 'the page rule (it reads the font family)',
+    pattern: /\bapply-document-base\(|cp-theming-core\/css\/base\b/,
   },
   {
     chapter: 8,
@@ -496,6 +506,29 @@ export const REFS: Ref[] = [
   // 6 — nesting, $default, coexisting themes
   { name: '$default', chapter: 6, page: 'core/theme', anchor: 'define-theme', find: '$default' },
 
+  // 7 — the contrast guarantee, and a palette's preference within it
+  {
+    name: '$contrast',
+    chapter: 7,
+    page: 'core/palette',
+    anchor: 'brand-text',
+    find: '$contrast',
+  },
+  {
+    name: '--color--{name}--text',
+    chapter: 7,
+    page: 'core/palette',
+    anchor: 'accent-text',
+    find: '--text',
+  },
+  {
+    name: '--color--surface--container-{step}',
+    chapter: 7,
+    page: 'core/palette',
+    anchor: 'surface-containers',
+    find: '--color--surface--container-high',
+  },
+
   // 8 — everything else a theme carries
   {
     name: '--space--{size}',
@@ -577,6 +610,13 @@ export const REFS: Ref[] = [
     page: 'core/typography',
     anchor: 'typography-fn',
     find: 'typography',
+  },
+  {
+    name: 't.apply-document-base()',
+    chapter: 8,
+    page: 'core/getting-started',
+    anchor: 'page-base',
+    find: 'apply-document-base',
   },
   {
     name: 't.elevation()',

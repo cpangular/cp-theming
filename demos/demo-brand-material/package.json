@@ -7,7 +7,7 @@
     ".": {
       "sass": "./_index.scss"
     },
-    "./scss/*": "./scss/*",
+    "./scss/*.scss": "./scss/*.scss",
     "./css": "./dist/acme-material.css"
   },
   "files": [

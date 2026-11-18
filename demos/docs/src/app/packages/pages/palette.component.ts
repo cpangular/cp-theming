@@ -7,11 +7,31 @@ import brandOnlyScss from '../../../examples/palette/brand-only.scss' with { loa
 import primaryOnlyScss from '../../../examples/palette/primary-only.scss' with { loader: 'text' };
 import fromBrandScss from '../../../examples/palette/from-brand.scss' with { loader: 'text' };
 import derivedOutputCss from '../../../examples/palette/derived.output.css' with { loader: 'text' };
+import contrastPreferenceScss from '../../../examples/palette/contrast-preference.scss' with {
+  loader: 'text',
+};
+import contrastPreferenceHtml from '../../../examples/palette/contrast-preference.html' with {
+  loader: 'text',
+};
+import contrastFixedScss from '../../../examples/palette/contrast-fixed.scss' with {
+  loader: 'text',
+};
+import textRoleScss from '../../../examples/palette/text-role.scss' with { loader: 'text' };
+import textExplicitScss from '../../../examples/palette/text-explicit.scss' with {
+  loader: 'text',
+};
+import surfaceContainersScss from '../../../examples/palette/surface-containers.scss' with {
+  loader: 'text',
+};
+import { ThemeExampleComponent } from '../../shared/theme-example.component';
 
 const TOC = [
   { label: 'Overview', anchor: 'overview' },
   { label: 'Brand, accents and neutrals', anchor: 'chain' },
   { label: 'Runtime derivatives', anchor: 'runtime-derivatives' },
+  { label: 'Brand colours that take white text', anchor: 'brand-text' },
+  { label: 'An accent as text', anchor: 'accent-text' },
+  { label: 'Surface containers', anchor: 'surface-containers' },
   { label: 'Color variables', anchor: 'color-variables' },
   { label: 'API Reference', anchor: 'api' },
   { label: 'palette()', anchor: 'palette-fn' },
@@ -24,7 +44,7 @@ const TOC = [
 @Component({
   selector: 'cpa-palette-page',
   standalone: true,
-  imports: [CodeComponent],
+  imports: [CodeComponent, ThemeExampleComponent],
   template: `
     <article class="doc-page">
       <header class="page-header">
@@ -140,7 +160,154 @@ const TOC = [
           relative luminance is below 0.179, black text above it. That is the point where both give
           the same contrast, so the text reaches at least 4.5:1 on every opaque colour, in any
           colour format and whatever its hue. Every derived colour is opaque (alpha 1) even when the
-          input is not; only the tints carry an alpha.
+          input is not; only the tints carry an alpha. A palette can prefer white or black instead,
+          down to 3:1: see <a href="#brand-text">Brand colours that take white text</a>.
+        </p>
+      </section>
+
+      <section id="brand-text" class="page-section">
+        <h2>Brand colours that take white text</h2>
+        <p>
+          Brand guidelines often pair a mid-tone colour with white: a red header with a white logo.
+          <code>--contrast</code> is chosen by luminance, and for such a colour it picks black. On
+          <code>#e65151</code> black text is 5.66:1 and white text 3.71:1. To state the brand's
+          rule, give the palette a preference with <code>$contrast</code>:
+        </p>
+        <cpa-code [code]="ex.contrastPreferenceScss" lang="scss" />
+        <p>
+          With <code>prefer-white</code>, the palette's colour and each of its ladder steps take
+          white text wherever white reaches 3:1 on them, and black everywhere else, so a step too
+          light for white still gets black. <code>prefer-black</code> is the mirror: black wherever
+          black reaches 3:1, white elsewhere. Without <code>$contrast</code> nothing changes: text
+          is the one of the two that reaches 4.5:1. The preference covers the colour itself and its
+          steps (<code>--color--brand--contrast</code>, <code>--color--brand--dark--contrast</code>,
+          the <code>--high</code> and <code>--low</code> aliases and so on); the palette's
+          <code>--bg</code> and <code>--stroke</code> roles keep the default choice.
+        </p>
+        <cpa-theme-example
+          title="A brand that prefers white text"
+          [attrsHtml]="ex.contrastPreferenceHtml"
+        />
+        <p>
+          <strong>What 3:1 is enough for.</strong> 3:1 is what WCAG asks of large text (24px, or
+          18.66px bold) and of icons, so a header's title and its icons pass on the brand colour.
+          Smaller text needs 4.5:1. There are two ways to give it that. Put it on the next step,
+          <code>--color--brand--dark</code> (<code>tone="high"</code> in light mode): for
+          <code>#e65151</code> that is <code>#bb252e</code>, where white is 6.13:1. Or make the
+          header colour slightly darker: <code>#e65151</code> with 0.05 less oklch lightness is
+          <code>#d44042</code>, where white is 4.55:1.
+        </p>
+        <p>
+          <strong>Brand and primary.</strong> <code>brand</code> is identity: the header, the logo,
+          a few highlights. <code>primary</code> is interaction: buttons, links, the selected state.
+          They do not have to be the same hue. When the guidelines add an accent of another hue, a
+          blue beside the red, pass it as <code>primary</code>: it stays out of the brand's areas
+          and goes on the interactive elements of the content.
+        </p>
+        <p>
+          <strong>A red brand next to <code>error</code>.</strong> Inside the content a red means
+          that something went wrong. Keep the brand red out of the content area, and keep
+          <code>error</code> a distinct red that comes with an icon, so it is never told apart by
+          colour alone.
+        </p>
+        <p>
+          <strong>Nested themes.</strong> The preference belongs to the theme that passes it. The
+          elements inside that theme inherit it; a theme nested inside chooses its text by the
+          default rule again unless it passes the preference too.
+        </p>
+        <p>
+          <strong>One fixed text colour.</strong> To use one text colour whatever the palette's
+          colour is, set the variable in a rule of your own, after the theme. Nothing checks its
+          contrast then:
+        </p>
+        <cpa-code [code]="ex.contrastFixedScss" lang="scss" />
+      </section>
+
+      <section id="accent-text" class="page-section">
+        <h2>An accent as text</h2>
+        <p>
+          <code>--color--primary</code> is the colour as you wrote it. That is right for a fill: a
+          button, a badge, a bar. As text on the page it is often too light. <code>#e65151</code> is
+          3.71:1 on white, and text needs 4.5:1.
+        </p>
+        <p>
+          So every accent palette has a <code>text</code> role, <code>--color--primary--text</code>,
+          and <code>--palette-color--text</code> inside a <code>palette</code> scope. It is the same
+          colour with its lightness limited: no lighter than 0.40 in light mode and no darker than
+          0.82 in dark mode, in oklch. The hue stays, and the chroma is lowered only as far as the
+          screen needs to show the colour. For <code>#e65151</code> in light mode that is
+          <code>#85151d</code>, 9.92:1 on white. A colour already past the limit is left as it is.
+        </p>
+        <p>Use it for your own coloured text: links, headings, prices, labels.</p>
+        <cpa-code [code]="ex.textRoleScss" lang="scss" />
+        <p>
+          <strong>Fills, icons and lines keep the colour.</strong> A fill is
+          <code>--color--primary</code>, with <code>--color--primary--contrast</code> as the text on
+          it. A line (a border, an underline, an outline) is <code>--color--primary--stroke</code>.
+          A line needs 3:1, not 4.5:1, so the stroke is the colour itself wherever a line in it
+          shows on the page: lightness 0.42 to 0.55 in light mode, 0.65 or more in dark mode. A
+          colour outside that range is moved into it, and, like the text role, a stroke gives up
+          chroma when the screen cannot show the colour.
+        </p>
+        <p>
+          <strong>With Angular Material.</strong> The Material adapter gives the same two roles to
+          what Material paints in an accent: the label of a text button and the focused label of a
+          field read the text role, the focused outline and the caret read the stroke. A link next
+          to a button is the same colour. The ng-material API page lists the tokens.
+        </p>
+        <p>
+          <strong>A text colour of your own.</strong> Pass <code>$text</code> to use another one.
+          Given in one mode only, it applies in both:
+        </p>
+        <cpa-code [code]="ex.textExplicitScss" lang="scss" />
+        <p>
+          <code>background</code> and <code>surface</code> have no text role. The text on them is
+          their <code>--contrast</code>.
+        </p>
+      </section>
+
+      <section id="surface-containers" class="page-section">
+        <h2>Surface containers</h2>
+        <p>
+          The surface has five more colours, each a small step away from it, for what sits on the
+          surface: a card, a side panel, a toolbar, a dialog, the well of a text field. Each has a
+          <code>--contrast</code> for the text on it.
+        </p>
+        <div class="swatch-grid">
+          @for (c of surfaceContainers; track c.token) {
+            <div
+              class="swatch-chip"
+              [style.background]="'var(' + c.token + ')'"
+              [style.color]="'var(' + c.token + '--contrast)'"
+            >
+              <code [title]="c.token">{{ c.token.slice(18) || 'surface' }}</code>
+              <span class="swatch-aa">{{ c.light }} / {{ c.dark }}</span>
+            </div>
+          }
+        </div>
+        <p>
+          They are Material 3's surface containers, under M3's names and at M3's distance from the
+          surface: <code>--color--surface--container-lowest</code>, <code>-low</code>,
+          <code>--color--surface--container</code>, <code>-high</code> and <code>-highest</code>.
+          The two numbers on each one above are that distance in oklch lightness, in light mode and
+          in dark mode. In light mode <code>container-lowest</code> is a little lighter than the
+          surface and the other four are darker in turn. In dark mode it is the other way round. Hue
+          and chroma are the surface's.
+        </p>
+        <cpa-code [code]="ex.surfaceContainersScss" lang="scss" />
+        <p>
+          <strong>With Angular Material.</strong> The Material adapter reads these five for
+          <code>--mat-sys-surface-container-lowest</code> to
+          <code>--mat-sys-surface-container-highest</code>, so a panel of your own and a Material
+          card beside it are one colour. The ng-material API page lists which cp-theming variable
+          each Material role equals.
+        </p>
+        <p>
+          <strong>They are not the shade steps.</strong> <code>--color--surface--high</code>,
+          <code>--higher</code> and <code>--highest</code> are steps of 0.12, which every palette
+          has in both directions. The containers are closer together and differ by mode, so the two
+          scales do not line up. Use a container for a panel that should match Material, and a shade
+          step for emphasis.
         </p>
       </section>
 
@@ -213,6 +380,10 @@ const TOC = [
               ><span class="api-sig-punct">: </span><span class="api-sig-default">null</span
               ><span class="api-sig-punct">, </span><span class="api-sig-param">$focus</span
               ><span class="api-sig-punct">: </span><span class="api-sig-default">null</span
+              ><span class="api-sig-punct">, </span><span class="api-sig-param">$contrast</span
+              ><span class="api-sig-punct">: </span><span class="api-sig-default">null</span
+              ><span class="api-sig-punct">, </span><span class="api-sig-param">$text</span
+              ><span class="api-sig-punct">: </span><span class="api-sig-default">null</span
               ><span class="api-sig-punct">) → </span><span class="api-sig-return">map</span></span
             >
             <div class="api-member-body">
@@ -223,7 +394,11 @@ const TOC = [
                 </div>
                 <div class="api-param-desc">
                   Base color, in any CSS color format (<code>oklch(l c h)</code> recommended). All
-                  roles are derived from this value. Required.
+                  roles are derived from this value. Required. For an accent, write a colour the
+                  screen can show (inside sRGB; every hex colour is): one outside it is painted
+                  clipped, while its stroke and text keep its hue with less chroma, so they would
+                  not match the fill. The Sass build warns about such a colour and names the one to
+                  write instead.
                 </div>
               </div>
               <div class="api-param-row">
@@ -253,10 +428,11 @@ const TOC = [
                 </div>
                 <div class="api-param-desc">
                   Override for the border role (<code>--color--name--stroke</code>). Derived when
-                  left out: the colour held to lightness 0.42–0.60, or, for
-                  <code>background</code> and <code>surface</code>, a boundary 4.5:1 or more against
-                  the palette's own colour in either mode. The Material adapter's outlines are the
-                  surface's stroke.
+                  left out: the colour with its lightness kept between 0.42 and 0.55 in light mode
+                  and at 0.65 or more in dark mode, inside sRGB, or, for <code>background</code> and
+                  <code>surface</code>, a boundary 4.5:1 or more against the palette's own colour in
+                  either mode. The Material adapter's outlines are the surface's stroke; a focused
+                  field's outline is the accent's.
                 </div>
               </div>
               <div class="api-param-row">
@@ -268,6 +444,33 @@ const TOC = [
                 <div class="api-param-desc">
                   Override for the focus ring color (<code>--color--name--focus</code>). Defaults to
                   a hue-shifted derivative for visibility on same-hue surfaces.
+                </div>
+              </div>
+              <div class="api-param-row">
+                <div>
+                  <span class="api-param-name">$contrast</span
+                  ><span class="api-param-type">prefer-white | prefer-black?</span
+                  ><span class="api-param-default">default by luminance</span>
+                </div>
+                <div class="api-param-desc">
+                  The text colour the palette's colour and its ladder steps take wherever that
+                  colour reaches 3:1 on them; the other one elsewhere. Left out, text is black or
+                  white by luminance, at 4.5:1 or more. In one config of
+                  <code>t.light-dark()</code> it applies in that mode only. Any other value is a
+                  Sass error. See <a href="#brand-text">Brand colours that take white text</a>.
+                </div>
+              </div>
+              <div class="api-param-row">
+                <div>
+                  <span class="api-param-name">$text</span><span class="api-param-type">color?</span
+                  ><span class="api-param-default">default derived</span>
+                </div>
+                <div class="api-param-desc">
+                  Override for the text role (<code>--color--name--text</code>): the palette's
+                  colour as text. Derived when left out: the colour, no lighter than 0.40 in light
+                  mode and no darker than 0.82 in dark mode. Not for <code>background</code> or
+                  <code>surface</code>, where it is a Sass error. See
+                  <a href="#accent-text">An accent as text</a>.
                 </div>
               </div>
             </div>
@@ -541,6 +744,12 @@ export class PalettePageComponent {
     brandOnlyScss,
     primaryOnlyScss,
     fromBrandScss,
+    contrastPreferenceScss,
+    contrastPreferenceHtml,
+    contrastFixedScss,
+    textRoleScss,
+    textExplicitScss,
+    surfaceContainersScss,
   };
   readonly paletteOptions = [
     'brand',
@@ -553,6 +762,20 @@ export class PalettePageComponent {
     'pass',
   ];
   readonly selectedPalette = signal('primary');
+
+  /**
+   * The surface and its five containers, in M3's order, with the lightness
+   * between each one and the surface in light and in dark mode
+   * (test/surface-scale.test.ts holds the numbers to the compiled core.css).
+   */
+  readonly surfaceContainers = [
+    { token: '--color--surface--container-lowest', light: '+0.017', dark: '−0.024' },
+    { token: '--color--surface', light: '0', dark: '0' },
+    { token: '--color--surface--container-low', light: '−0.017', dark: '+0.036' },
+    { token: '--color--surface--container', light: '−0.035', dark: '+0.053' },
+    { token: '--color--surface--container-high', light: '−0.052', dark: '+0.097' },
+    { token: '--color--surface--container-highest', light: '−0.069', dark: '+0.140' },
+  ];
 
   readonly colorGroups = [
     {

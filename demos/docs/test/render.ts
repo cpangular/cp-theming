@@ -36,6 +36,12 @@
 //   - a label of a component (inside a `.gallery-demo` or an overlay) below
 //     4.5:1. Labels of disabled controls are listed but exempt, as WCAG 1.4.3
 //     exempts them; the docs' own captions are a report, as on the showcase.
+//   - a line of a form field below 3:1 against what it is drawn on (WCAG
+//     1.4.11): the outline of an outlined field, the active indicator of a
+//     filled one, the arrow of a select; as loaded, hovered, focused and
+//     invalid. Measured like a label: one more screenshot with those lines
+//     made transparent, and the pixels that differ are the line. A disabled
+//     field's are listed but exempt.
 //   - an overlay that does not resolve the theme and the mode of the element
 //     that opened it, or, in the nested scopes, resolves the page's.
 //   - an overlay that did not open, or a section that could not be measured.
@@ -52,6 +58,8 @@ const SCALE = 2;
 const MODES = ['light', 'dark'] as const;
 const PRESETS = ['azure-blue', 'rose-red', 'cyan-orange', 'magenta-violet'];
 const AA = 4.5;
+/** WCAG 1.4.11: the boundary and the state of a control, against what is next to it. */
+const LINE = 3;
 
 // ── Arguments ────────────────────────────────────────────────────────────────
 
@@ -119,18 +127,21 @@ interface Measured extends Omit<Label, 'rects'> {
   large: boolean;
 }
 
-/** `origin` is the viewport position of the screenshots' top left corner. */
-function measure<L extends Label>(
-  label: L,
-  mode: string,
+/**
+ * Over `rects`: among the pixels that differ between the two screenshots, the
+ * one with the highest contrast between them. `origin` is the viewport
+ * position of the screenshots' top left corner.
+ */
+function strongest(
+  rects: Rect[],
   painted: Image,
   blank: Image,
-  origin: { x: number; y: number } = { x: 0, y: 0 },
-): (Omit<L, 'rects'> & Measured) | null {
+  origin: { x: number; y: number },
+): { ratio: number; fg: Rgb; bg: Rgb } | null {
   let best = 0;
   let fg: Rgb = [0, 0, 0];
   let bg: Rgb = [0, 0, 0];
-  for (const rect of label.rects) {
+  for (const rect of rects) {
     const x0 = Math.max(0, Math.floor((rect.x - origin.x) * SCALE));
     const y0 = Math.max(0, Math.floor((rect.y - origin.y) * SCALE));
     const x1 = Math.min(painted.width, Math.ceil((rect.x - origin.x + rect.width) * SCALE));
@@ -145,14 +156,26 @@ function measure<L extends Label>(
         if (ratio > best) [best, fg, bg] = [ratio, a, b];
       }
   }
-  if (best === 0) return null; // no glyph pixel: clipped, covered or off screen
+  return best === 0 ? null : { ratio: best, fg, bg };
+}
+
+/** `origin` is the viewport position of the screenshots' top left corner. */
+function measure<L extends Label>(
+  label: L,
+  mode: string,
+  painted: Image,
+  blank: Image,
+  origin: { x: number; y: number } = { x: 0, y: 0 },
+): (Omit<L, 'rects'> & Measured) | null {
+  const found = strongest(label.rects, painted, blank, origin);
+  if (!found) return null; // no glyph pixel: clipped, covered or off screen
   const { rects: _rects, ...rest } = label;
   return {
     ...rest,
     mode,
-    ratio: best,
-    text_color: hex(fg),
-    background: hex(bg),
+    ratio: found.ratio,
+    text_color: hex(found.fg),
+    background: hex(found.bg),
     large: label.fontSize >= 24 || (label.fontSize >= 18.66 && label.fontWeight >= 700),
   };
 }
@@ -165,6 +188,13 @@ const HOLD =
   '*, *::before, *::after { transition: none !important; animation-play-state: paused !important; caret-color: transparent !important; }';
 const HIDE_TEXT =
   '*, *::before, *::after { -webkit-text-fill-color: transparent !important; text-shadow: none !important; }';
+// The lines of a form field, as Material draws them: the three pieces of the
+// outline, the resting and the active indicator of a filled field (two
+// pseudo-elements of the line ripple), the arrow of a select (an SVG).
+const HIDE_LINES =
+  '.mat-mdc-notch-piece { border-color: transparent !important; } ' +
+  '.mdc-line-ripple::before, .mdc-line-ripple::after { border-bottom-color: transparent !important; } ' +
+  '.mat-mdc-select-arrow svg { fill: transparent !important; }';
 
 async function settle(page: Page): Promise<void> {
   await page.evaluate(
@@ -298,6 +328,18 @@ interface GalleryLabel extends Label {
   state: string;
 }
 
+/** A line of a form field: its outline, its active indicator or its arrow. */
+interface GalleryLine {
+  scope: string;
+  /** `mat-form-field (outline) › outline`, `… (fill) › indicator`, `… › arrow`. */
+  kind: string;
+  state: string;
+  disabled: boolean;
+  component: boolean;
+  /** Where the line is drawn, in CSS pixels of the viewport. */
+  rects: Rect[];
+}
+
 interface Trigger {
   n: number;
   type: OverlayType;
@@ -323,6 +365,7 @@ interface Control {
 
 interface PageApi {
   labels(root: Element, scope: string, overlay: boolean): GalleryLabel[];
+  lines(root: Element, scope: string): GalleryLine[];
   triggers(): Trigger[];
   controls(demo: Element): Control[];
   owner(el: Element): Element;
@@ -467,6 +510,48 @@ function installGallery(): void {
     return out;
   }
 
+  /** The lines of every form field in `root`, or of `root` when it is one. */
+  function lines(root: Element, scope: string): GalleryLine[] {
+    const out: GalleryLine[] = [];
+    const fields = [
+      ...(root.matches('mat-form-field') ? [root] : []),
+      ...root.querySelectorAll('mat-form-field'),
+    ];
+    for (const field of fields) {
+      if (field.closest('details:not([open])') || !field.getClientRects().length) continue;
+      const { kind, state, disabled } = describe(field);
+      const push = (what: string, rects: DOMRect[]) => {
+        const visible = rects.filter((r) => r.width > 0 && r.height > 0).map(visibleRect);
+        if (visible.length)
+          out.push({
+            scope,
+            kind: `${kind} › ${what}`,
+            state,
+            disabled,
+            component: !!field.closest('.gallery-demo'),
+            rects: visible,
+          });
+      };
+      push(
+        'outline',
+        [...field.querySelectorAll('.mat-mdc-notch-piece')].map((el) => el.getBoundingClientRect()),
+      );
+      // The indicator is the bottom edge of a filled field's container: two
+      // pseudo-elements with no box of their own to ask for.
+      if (field.querySelector('.mdc-line-ripple')) {
+        const box = field.querySelector('.mat-mdc-text-field-wrapper')!.getBoundingClientRect();
+        push('indicator', [new DOMRect(box.x, box.bottom - 3, box.width, 3)]);
+      }
+      push(
+        'arrow',
+        [...field.querySelectorAll('.mat-mdc-select-arrow svg')].map((el) =>
+          el.getBoundingClientRect(),
+        ),
+      );
+    }
+    return out;
+  }
+
   function triggers(): Trigger[] {
     const out: Trigger[] = [];
     document.querySelectorAll('.gallery-demo').forEach((demo) => {
@@ -524,7 +609,13 @@ function installGallery(): void {
     return out;
   }
 
-  (window as unknown as { __gallery: PageApi }).__gallery = { labels, triggers, controls, owner };
+  (window as unknown as { __gallery: PageApi }).__gallery = {
+    labels,
+    lines,
+    triggers,
+    controls,
+    owner,
+  };
 }
 
 // ── The gallery: the run ─────────────────────────────────────────────────────
@@ -549,8 +640,18 @@ const PANELS: Record<OverlayType, string> = {
   snackbar: 'mat-snack-bar-container',
 };
 
+interface LineMeasured extends Omit<GalleryLine, 'rects'> {
+  preset: string;
+  mode: string;
+  where: string;
+  ratio: number;
+  line_color: string;
+  background: string;
+}
+
 interface GalleryResult {
   measured: GalleryMeasured[];
+  lines: LineMeasured[];
   unpainted: number;
   errors: string[];
   /** `overlay in scope` → how many opened and resolved the right theme and mode. */
@@ -573,7 +674,13 @@ async function galleryPage(
   mode: (typeof MODES)[number],
   shots: string,
 ): Promise<GalleryResult> {
-  const result: GalleryResult = { measured: [], unpainted: 0, errors: [], overlays: new Map() };
+  const result: GalleryResult = {
+    measured: [],
+    lines: [],
+    unpainted: 0,
+    errors: [],
+    overlays: new Map(),
+  };
   const tag = `${preset} ${mode}`;
   const context = await browser.newContext({
     colorScheme: mode,
@@ -597,8 +704,17 @@ async function galleryPage(
   await page.evaluate(installGallery);
   await settle(page);
 
-  /** Painted and glyph-free screenshots of `clip`, and what the labels measure. */
-  async function shoot(labels: GalleryLabel[], clip: Rect, where: string, file?: string) {
+  /**
+   * Painted and glyph-free screenshots of `clip`, and what the labels measure;
+   * with `lines`, one more without the form fields' lines, and what those measure.
+   */
+  async function shoot(
+    labels: GalleryLabel[],
+    clip: Rect,
+    where: string,
+    file?: string,
+    lines: GalleryLine[] = [],
+  ) {
     const hold = await page.addStyleTag({ content: HOLD });
     await settle(page);
     const painted = decodePng(
@@ -608,11 +724,32 @@ async function galleryPage(
     await settle(page);
     const blank = decodePng(await page.screenshot({ clip }));
     await hide.evaluate((el) => el.parentNode?.removeChild(el));
+    let bare: Image | null = null;
+    if (lines.length) {
+      const hideLines = await page.addStyleTag({ content: HIDE_LINES });
+      await settle(page);
+      bare = decodePng(await page.screenshot({ clip }));
+      await hideLines.evaluate((el) => el.parentNode?.removeChild(el));
+    }
     await hold.evaluate((el) => el.parentNode?.removeChild(el));
     for (const label of labels) {
       const m = measure(label, mode, painted, blank, clip);
       if (m) result.measured.push({ ...m, preset, where });
       else result.unpainted++;
+    }
+    for (const { rects, ...line } of lines) {
+      const found = strongest(rects, painted, bare!, clip);
+      // No pixel changed: the line is clipped or off screen, or it is the same
+      // colour as what is behind it, which is the failure this looks for.
+      result.lines.push({
+        ...line,
+        preset,
+        mode,
+        where,
+        ratio: found?.ratio ?? 1,
+        line_color: found ? hex(found.fg) : 'none',
+        background: found ? hex(found.bg) : 'none',
+      });
     }
   }
 
@@ -642,12 +779,11 @@ async function galleryPage(
       result.errors.push(`${tag}: section ${id} does not fit the viewport`);
       continue;
     }
-    const labels = await section.evaluate(
-      (el, scope) =>
-        (window as unknown as { __gallery: PageApi }).__gallery.labels(el, scope, false),
-      id,
-    );
-    await shoot(labels, clip, 'static', id);
+    const found = await section.evaluate((el, scope) => {
+      const g = (window as unknown as { __gallery: PageApi }).__gallery;
+      return { labels: g.labels(el, scope, false), lines: g.lines(el, scope) };
+    }, id);
+    await shoot(found.labels, clip, 'static', id, found.lines);
   }
 
   // ── Hovered and focused: one of each kind of control in every demo of each
@@ -677,11 +813,18 @@ async function galleryPage(
               return {
                 rect: { x: r.x, y: r.y, width: r.width, height: r.height },
                 labels: g.labels(owner, scope, false),
+                lines: g.lines(owner, scope),
               };
             }, id);
             const clip = clipOf(found.rect, viewport, 4);
-            if (clip && found.labels.length)
-              await shoot(found.labels, clip, within ? `${state} in ${within}` : state);
+            if (clip && (found.labels.length || found.lines.length))
+              await shoot(
+                found.labels,
+                clip,
+                within ? `${state} in ${within}` : state,
+                undefined,
+                found.lines,
+              );
           } catch (error) {
             result.errors.push(`${tag}: ${id}: ${state} on ${control.key}: ${firstLine(error)}`);
           }
@@ -860,7 +1003,13 @@ function readScope(selector: string | null): Record<string, string | boolean> {
 }
 
 async function gallery(name: string, browser: Browser, origin: string): Promise<GalleryResult> {
-  const total: GalleryResult = { measured: [], unpainted: 0, errors: [], overlays: new Map() };
+  const total: GalleryResult = {
+    measured: [],
+    lines: [],
+    unpainted: 0,
+    errors: [],
+    overlays: new Map(),
+  };
   const tasks = presets.flatMap((preset) => modes.map((mode) => ({ preset, mode })));
   let next = 0;
   const worker = async () => {
@@ -873,16 +1022,17 @@ async function gallery(name: string, browser: Browser, origin: string): Promise<
       try {
         result = await galleryPage(browser, origin, preset, mode, shots);
       } catch (error) {
-        result = { measured: [], unpainted: 0, overlays: new Map(), errors: [] };
+        result = { measured: [], lines: [], unpainted: 0, overlays: new Map(), errors: [] };
         result.errors.push(`${preset} ${mode}: ${firstLine(error)}`);
       }
       total.measured.push(...result.measured);
+      total.lines.push(...result.lines);
       total.unpainted += result.unpainted;
       total.errors.push(...result.errors);
       for (const [key, n] of result.overlays)
         total.overlays.set(key, (total.overlays.get(key) ?? 0) + n);
       console.log(
-        `  ${name} ${preset} ${mode}: ${result.measured.length} labels, ` +
+        `  ${name} ${preset} ${mode}: ${result.measured.length} labels, ${result.lines.length} lines, ` +
           `${result.errors.length} errors, ${Math.round((Date.now() - started) / 1000)}s`,
       );
     }
@@ -897,6 +1047,15 @@ function galleryLine(m: GalleryMeasured): string {
     `${m.scope.padEnd(13)} ${m.where.padEnd(24)} ` +
     `${(m.kind + (m.state ? ` [${m.state}]` : '')).padEnd(52)} ${JSON.stringify(m.text).padEnd(34)} ` +
     `${m.text_color} on ${m.background}  ${m.fontSize}px/${m.fontWeight}`
+  );
+}
+
+function lineLine(m: LineMeasured): string {
+  return (
+    `${m.ratio.toFixed(2).padStart(5)}:1  ${m.preset.padEnd(14)} ${m.mode.padEnd(5)} ` +
+    `${m.scope.padEnd(13)} ${m.where.padEnd(24)} ` +
+    `${(m.kind + (m.state ? ` [${m.state}]` : '')).padEnd(52)} ` +
+    `${m.line_color} on ${m.background}`
   );
 }
 
@@ -937,8 +1096,21 @@ for (const name of engines.length ? engines : ['chromium']) {
 
   if (!only || only.includes('gallery')) {
     console.log(`\n${name}: the component gallery`);
-    const { measured, unpainted, errors, overlays } = await gallery(name, browser, origin);
+    const { measured, lines, unpainted, errors, overlays } = await gallery(name, browser, origin);
     measured.sort((a, b) => a.ratio - b.ratio);
+    lines.sort((a, b) => a.ratio - b.ratio);
+    const liveLines = lines.filter((m) => m.component && !m.disabled);
+    const failingLines = liveLines.filter((m) => m.ratio < LINE);
+    const exemptLines = lines.filter((m) => m.component && m.disabled && m.ratio < LINE);
+    const kinds = ['outline', 'indicator', 'arrow'].map((kind) => {
+      const set = liveLines.filter((m) => m.kind.endsWith(`› ${kind}`));
+      const focused = set.filter((m) => /\bfocused\b/.test(m.state));
+      const low = (list: LineMeasured[]) =>
+        list.length
+          ? `${list[0].ratio.toFixed(2)}:1 (${list[0].preset} ${list[0].mode}, ${list[0].where})`
+          : 'none';
+      return `    ${kind.padEnd(9)} ${String(set.length).padStart(5)} measured, lowest ${low(set)}; focused ${focused.length}, lowest ${low(focused)}`;
+    });
     const components = measured.filter((m) => m.component);
     const live = components.filter((m) => !m.disabled);
     const failing = live.filter((m) => m.ratio < AA);
@@ -947,10 +1119,15 @@ for (const name of engines.length ? engines : ['chromium']) {
     const lowest = (preset: string, mode: string) => {
       const set = live.filter((m) => m.preset === preset && m.mode === mode);
       const min = set[0];
+      const lineSet = liveLines.filter((m) => m.preset === preset && m.mode === mode);
       return (
         `  ${preset.padEnd(14)} ${mode.padEnd(5)} ${String(set.length).padStart(5)} component labels, ` +
         `${set.filter((m) => m.ratio < AA).length} below ${AA}:1` +
-        (min ? `, lowest ${min.ratio.toFixed(2)}:1 (${min.kind}, ${min.where})` : '')
+        (min ? `, lowest ${min.ratio.toFixed(2)}:1 (${min.kind}, ${min.where})` : '') +
+        `; ${lineSet.length} lines, ${lineSet.filter((m) => m.ratio < LINE).length} below ${LINE}:1` +
+        (lineSet[0]
+          ? `, lowest ${lineSet[0].ratio.toFixed(2)}:1 (${lineSet[0].kind}, ${lineSet[0].where})`
+          : '')
       );
     };
     const summary = [
@@ -960,6 +1137,9 @@ for (const name of engines.length ? engines : ['chromium']) {
       `  component labels below ${AA}:1: ${failing.length} (an error)`,
       `  labels of disabled controls below ${AA}:1: ${exempt.length} (exempt, WCAG 1.4.3)`,
       `  docs captions below ${AA}:1: ${captions.length} (a report)`,
+      `  lines of a form field measured: ${liveLines.length}; below ${LINE}:1: ${failingLines.length} (an error)`,
+      ...kinds,
+      `  lines of disabled fields below ${LINE}:1: ${exemptLines.length} (exempt)`,
       ...(unpainted
         ? [
             `  text nodes with no painted glyph (clipped, covered or behind an overlay): ${unpainted}`,
@@ -972,10 +1152,21 @@ for (const name of engines.length ? engines : ['chromium']) {
     ].join('\n');
     const block = (title: string, list: GalleryMeasured[]) =>
       list.length ? `\n${title}\n${list.map(galleryLine).join('\n')}\n` : '';
+    const lineBlock = (title: string, list: LineMeasured[]) =>
+      list.length ? `\n${title}\n${list.map(lineLine).join('\n')}\n` : '';
+    writeFileSync(
+      path.join(outDir, `gallery-${name}-lines.txt`),
+      `${name}: ${lines.length} lines of form fields measured on the component gallery\n` +
+        lineBlock(`Lines below ${LINE}:1`, failingLines) +
+        lineBlock(`Disabled, below ${LINE}:1 (exempt)`, exemptLines) +
+        lineBlock('Every line', lines),
+    );
+    writeFileSync(path.join(outDir, `gallery-${name}-lines.json`), JSON.stringify(lines, null, 2));
     writeFileSync(
       path.join(outDir, `gallery-${name}.txt`),
       `${summary}\n` +
         block(`Component labels below ${AA}:1`, failing) +
+        lineBlock(`Lines of a form field below ${LINE}:1`, failingLines) +
         block(`Disabled, below ${AA}:1 (exempt)`, exempt) +
         block(`Docs captions below ${AA}:1`, captions) +
         block('Every label', measured),
@@ -992,7 +1183,16 @@ for (const name of engines.length ? engines : ['chromium']) {
       console.log(
         `\nComponent labels below ${AA}:1\n${[...once.values()].map(galleryLine).join('\n')}`,
       );
-    if (failing.length || errors.length || !measured.length) failed = true;
+    const onceLines = new Map<string, LineMeasured>();
+    for (const m of failingLines) {
+      const key = `${m.preset} ${m.mode} ${m.scope} ${m.where} ${m.kind} ${m.state} ${m.line_color} ${m.background}`;
+      if (!onceLines.has(key)) onceLines.set(key, m);
+    }
+    if (failingLines.length)
+      console.log(
+        `\nLines of a form field below ${LINE}:1\n${[...onceLines.values()].map(lineLine).join('\n')}`,
+      );
+    if (failing.length || failingLines.length || errors.length || !measured.length) failed = true;
   }
 
   await browser.close();

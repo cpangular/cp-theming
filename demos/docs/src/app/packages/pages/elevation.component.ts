@@ -4,6 +4,7 @@ import { ThemeExampleComponent } from '../../shared/theme-example.component';
 import { TocService } from '../../shell/toc.service';
 import levelsHtml from '../../../examples/elevation/levels.html' with { loader: 'text' };
 import shadowScss from '../../../examples/elevation/shadow.scss' with { loader: 'text' };
+import levelsScss from '../../../examples/elevation/levels.scss' with { loader: 'text' };
 import lightDarkScss from '../../../examples/elevation/light-dark.scss' with { loader: 'text' };
 
 const TOC = [
@@ -30,6 +31,13 @@ const TOC = [
           opacity; in dark mode the same shadow color uses higher opacity to remain visible on dark
           surfaces. Apply elevation via the <code>elevated</code> attribute or directly from SCSS.
         </p>
+        <p>
+          Levels 1 to 5 are the shadows Angular Material draws for its own five levels. Each is
+          three shadows on top of each other: a key shadow straight below, a softer one around it,
+          and a wide, faint one that makes even a level-1 card read as lifted on a light surface.
+          With the Material adapter, Material's components and your own
+          <code>elevated</code> elements cast the same shadow.
+        </p>
         <cpa-theme-example
           title="Shadow levels"
           [attrsHtml]="ex.levelsHtml"
@@ -47,8 +55,7 @@ const TOC = [
         <div id="elevation-fn" class="api-symbol">
           <h3 class="api-symbol-name">elevation</h3>
           <p class="api-symbol-desc">
-            Configure shadow levels for the six elevation steps. Dark mode defaults to 50% shadow
-            opacity.
+            Configure the shadows of the elevation levels: their color, or a level's whole shadow.
           </p>
           <div class="api-member-card">
             <span class="api-signature-row"
@@ -68,7 +75,10 @@ const TOC = [
                   ><span class="api-param-default">oklch(0 0 0 / 30%)</span>
                 </div>
                 <div class="api-param-desc">
-                  Base shadow color. Opacity is scaled per step. Dark mode defaults to 50%.
+                  The shadow color of levels 1 to 5, in dark mode <code>oklch(0 0 0 / 50%)</code>.
+                  The three shadows of a level share it out: they take two thirds, just under a half
+                  and two fifths of its opacity, so the default gives 20%, 14% and 12% in light
+                  mode. Any CSS color, a <code>var()</code> too.
                 </div>
               </div>
               <div class="api-param-row">
@@ -78,12 +88,15 @@ const TOC = [
                 </div>
                 <div class="api-param-desc">
                   Override individual levels: a map from level (1–5) to
-                  <code>(shadow: …, tint: …)</code>.
+                  <code>(shadow: …, tint: …)</code>. A shadow given here is used as written, with as
+                  many layers as it has. Its light and its dark version may differ in their colors
+                  only.
                 </div>
               </div>
             </div>
           </div>
           <cpa-code [code]="ex.lightDarkScss" lang="scss" />
+          <cpa-code [code]="ex.levelsScss" lang="scss" />
         </div>
       </section>
 
@@ -137,7 +150,7 @@ const TOC = [
   ],
 })
 export class ElevationPageComponent {
-  protected readonly ex = { levelsHtml, shadowScss, lightDarkScss };
+  protected readonly ex = { levelsHtml, shadowScss, lightDarkScss, levelsScss };
 
   constructor() {
     inject(TocService).set(TOC);

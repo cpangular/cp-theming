@@ -5,7 +5,10 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./scss/*": "./scss/*"
+    "./scss/m3-core": {
+      "sass": "./scss/_m3-core.scss"
+    },
+    "./scss/*.scss": "./scss/*.scss"
   },
   "peerDependencies": {
     "@cpangular/cp-theming-core": "workspace:*"

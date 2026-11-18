@@ -55,9 +55,11 @@ import ts from 'typescript';
 import {
   PACKAGE_SPECIFIER,
   compileFile,
+  coreDir,
   docsDir,
   docsStyleList,
   exportsImporters,
+  isFile,
   repoRoot,
   resolveExport,
   sourceOfDist,
@@ -118,6 +120,7 @@ test('every example is a .scss, .css, .html or .ts.txt file in a page folder', (
 const { core, presets } = coreSheets();
 const preset = presets.find((p) => p.entry.endsWith('azure-blue.scss'))!;
 const adapter = materialSheets();
+const pageBase = compileFile(path.join(coreDir, 'scss/base.scss'));
 const libraryCss = [core.css, ...presets.map((p) => p.css), ...adapter.map((s) => s.css)];
 
 const compile = (file: string): Compiled => compileFile(file, [], exportsImporters);
@@ -169,7 +172,8 @@ const squash = (value: string) => value.replace(/\s+/g, ' ').trim();
 
 for (const file of outputCss) {
   test(`${rel(file)}: every declaration is compiled output, verbatim`, () => {
-    const reference = [core.css, preset.css].flatMap((css) => rules(css));
+    // core, a preset, and the opt-in page rule (`css/base`).
+    const reference = [core.css, preset.css, pageBase.css].flatMap((css) => rules(css));
     const missing: string[] = [];
     let count = 0;
     for (const rule of rules(readFileSync(file, 'utf8'))) {
@@ -598,6 +602,31 @@ test('the docs app defines the Getting Started theme exactly as the example show
   assert.match(live, /palette="brand"/);
 });
 
+// The Palette page shows contrast-preference.scss and renders
+// contrast-preference.html with it; src/styles.scss defines that theme again.
+test("the docs app defines the Palette page's red-brand theme exactly as the example shows it", () => {
+  const themeRule = (css: string) =>
+    rules(css)
+      .filter((r) => /\[theme=["']?red-brand["']?\]/.test(r.selector))
+      .map((r) => r.declarations);
+  const example = compiled.get(path.join(examplesDir, 'palette', 'contrast-preference.scss'));
+  assert.ok(example, 'contrast-preference.scss compiles');
+  const app = docsStyleList().find((s) => s.entry.endsWith('docs/src/styles.scss'));
+  assert.ok(app, 'angular.json lists the docs stylesheet');
+  assert.equal(themeRule(example.css).length, 1, 'the example defines red-brand');
+  assert.deepEqual(themeRule(app.compiled.css), themeRule(example.css));
+  // The rule carries the preference: the brand's contrasts, by the prefer-white step.
+  const contrasts = themeRule(example.css)[0].filter(([n]) => n.endsWith('--contrast'));
+  assert.equal(contrasts.length, 7);
+  for (const [name, value] of contrasts) {
+    assert.match(name, /^--color--brand(?:--\w+)?--contrast$/);
+    assert.match(value, /--theme--_contrast-step--prefer-white/);
+  }
+  const live = readFileSync(path.join(examplesDir, 'palette', 'contrast-preference.html'), 'utf8');
+  assert.match(live, /theme="red-brand"/);
+  assert.match(live, /palette="brand"[^>]* filled/);
+});
+
 // Learn chapter 10 renders its example in the page (Angular Material cannot
 // run in a frame), with the two themes its theme.scss defines. src/styles.scss
 // defines them again for the app, and the rules have to be the same.
@@ -666,12 +695,9 @@ test('every package path an example names is in the package exports', () => {
     const source = readFileSync(file, 'utf8');
     for (const [specifier] of source.matchAll(PACKAGE_SPECIFIER)) {
       const target = resolveExport(specifier);
+      // Exactly as mapped (issue #7): a built file, or a file that exists.
       const exists =
-        typeof target === 'string' &&
-        (existsSync(target) ||
-          sourceOfDist(target) !== null ||
-          existsSync(`${target}.scss`) ||
-          existsSync(path.join(path.dirname(target), `_${path.basename(target)}.scss`)));
+        typeof target === 'string' && (isFile(target) || sourceOfDist(target) !== null);
       if (!exists) bad.push(`${rel(file)}: ${specifier}`);
     }
   }

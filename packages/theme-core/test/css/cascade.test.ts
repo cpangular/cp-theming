@@ -303,7 +303,12 @@ test('fixtures/explicit-roles: explicit $bg/$stroke/$focus, weights, overlay, el
   assert.ok(!decls.has('--weight--text-emphasis-blend--mode-light'), 'unpassed weight absent');
   assert.match(decls.get('--overlay--scrim')!, /^light-dark\(/);
   assert.ok(!decls.has('--overlay--shadow'), 'unpassed overlay key absent');
-  assert.match(decls.get('--elevation-1--shadow')!, /^0 1px 2px light-dark\(.*0\.6\)\)$/);
+  // Three layers (elevation.test.ts); the dark side of each is the passed
+  // colour at that layer's share of its alpha.
+  assert.match(
+    decls.get('--elevation-1--shadow')!,
+    /^0 2px 1px -1px light-dark\(oklch\(0% 0 0deg \/ 0\.2\), oklch\(from oklch\(0% 0 0deg \/ 0\.6\) l c h \/ calc\(alpha \* 0\.6667\)\)\), 0 1px 1px 0 light-dark\(/,
+  );
   assert.ok(!decls.has('--elevation-0--shadow'), 'level 0 untouched by $shadow-color');
   assert.equal(decls.get('--shape--md'), '10px');
   assert.ok(!decls.has('--shape--xs'), 'unpassed shape absent');
@@ -342,7 +347,7 @@ test('fixtures/brand: a custom palette gets its registrations, derivations and [
   // The accent is wrapped by the gamut correction (Phase 14c), which names its origin once.
   const primary = decls.get('--color--primary--mode-light')!;
   assert.match(primary, /^oklch\(from color\(from oklch\(/);
-  assert.deepEqual(primary.match(/var\([\w-]+\)/g), ['var(--color--brand)']);
+  assert.deepEqual(primary.match(/var\(--color[\w-]+\)/g), ['var(--color--brand)']);
   assert.match(primary, /oklch\(from var\(--color--brand\) clamp\(/);
   assert.match(decls.get('--color--background--mode-dark')!, /^oklch\(from var\(--color--brand\)/);
 });
@@ -368,7 +373,7 @@ test('a default theme with a custom palette derives it inside its own rule, ahea
   assert.equal(shared.length, 1);
 });
 
-test('core derives the auto bg, stroke and focus into their registered pairs, from the colour pair', () => {
+test('core derives the auto bg, stroke, focus and text into their registered pairs, from the colour pair', () => {
   const sharedRule = rules(core.css).find(
     (r) => normalizeSelector(r.selector) === ':where(:root, [theme])' && !r.context.length,
   )!;
@@ -400,13 +405,20 @@ test('core derives the auto bg, stroke and focus into their registered pairs, fr
     for (const mode of ['light', 'dark']) {
       // background/surface: the neutral stroke, whose channels core declares
       // once on :where(:root) (contrast.test.ts holds it to its ratio).
+      // Every other palette: the colour where a line in it shows, per mode
+      // (0.42–0.55 on a light page, 0.65 or lighter on a dark one), wrapped
+      // by the gamut correction.
       const stroke =
         name === 'background' || name === 'surface'
           ? 'var\\(--theme--_stroke-l\\) var\\(--theme--_stroke-c\\) h / 1\\)$'
-          : 'clamp\\(0\\.42, l, 0\\.6\\)';
+          : mode === 'light'
+            ? 'clamp\\(0\\.42, l, 0\\.55\\) c h ?/ ?1\\) srgb '
+            : 'max\\(l, 0\\.65\\) c h ?/ ?1\\) srgb ';
       assert.match(
         shared.get(`--color--${name}--stroke--mode-${mode}`)!,
-        new RegExp(`^oklch\\(from var\\(--color--${name}--mode-${mode}\\) ${stroke}`),
+        new RegExp(
+          `^(oklch\\(from color\\(from )*oklch\\(from var\\(--color--${name}--mode-${mode}\\) ${stroke}`,
+        ),
       );
       assert.match(
         shared.get(`--color--${name}--focus--mode-${mode}`)!,

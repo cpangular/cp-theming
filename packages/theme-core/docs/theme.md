@@ -35,12 +35,12 @@ $palettes: (
   surface:    t.surface-from-brand(),
   primary:    t.palette-from-brand(),
   secondary:  t.light-dark(
-    t.palette(oklch(0.46 0.27 264)),
-    t.palette(oklch(0.71 0.21 264)),
+    t.palette(oklch(0.46 0.266 264)),
+    t.palette(oklch(0.688 0.164 260.3)),
   ),
   error: t.light-dark(
-    t.palette(oklch(0.52 0.22 27)),
-    t.palette(oklch(0.70 0.20 27)),
+    t.palette(oklch(0.525 0.214 28.1)),
+    t.palette(oklch(0.694 0.196 27)),
   ),
 )
 ```
@@ -50,7 +50,7 @@ $palettes: (
 The brand colour, in any CSS colour format, exactly as the guidelines give it. It becomes the `brand` palette (`--color--brand`, `palette="brand"`) and is never adjusted; passing `brand: t.palette(…)` in `$palettes` is the same thing, and passing both is an error. A `primary`, `background` and `surface` the theme leaves out are generated from it, and `t.palette-from-brand()`, `t.background-from-brand()` and `t.surface-from-brand()` read it. To change the brand at runtime set the registered pair, `--color--brand--mode-light` and `--color--brand--mode-dark`: everything generated from it follows. (`--color--brand` itself is the join of that pair; the three helpers read it, the generated palettes read the pair.)
 
 ```scss
-$brand: oklch(0.44 0.22 253)
+$brand: oklch(0.45 0.2 262)
 ```
 
 ---
@@ -65,7 +65,7 @@ Controls blend percentages for text and interactive state overlays.
 |-----------|---------|-------------|
 | `$text-blend` | `82%` | Normal body text opacity on containers |
 | `$text-emphasis-blend` | `96%` | Emphasized text opacity |
-| `$text-deemphasis-blend` | `55%` | De-emphasized / caption text opacity |
+| `$text-deemphasis-blend` | `63%` light, `93%` dark | How much of the text colour muted / caption text keeps |
 | `$text-primary-tint` | `0%` | Hue tinting toward the primary palette |
 | `$state-hover` | `8%` | Hover overlay opacity |
 | `$state-press` | `12%` | Press/active overlay opacity |
@@ -189,7 +189,7 @@ M3 animation defaults. Static — not light/dark varying.
 
 ### `t.elevation($shadow-color?, $levels?)`
 
-Controls box shadow levels (0–5). The shadow color defaults to `oklch(0.2 0.02 0 / 25%)` for light mode and `oklch(0 0 0 / 50%)` for dark mode — theme() applies these defaults automatically unless you override them.
+Controls box shadow levels (0–5). Levels 1–5 are the shadows Angular Material draws for its own levels: three layers each (key, penumbra, ambient). The shadow color defaults to `oklch(0 0 0 / 30%)` for light mode and `oklch(0 0 0 / 50%)` for dark mode, and the three layers take 2/3, 7/15 and 2/5 of its opacity (20%, 14% and 12% in light mode, as Material has them). A `$shadow-color` of your own is shared out the same way, by the browser, so any CSS color works. A shadow passed in `$levels` is used as written.
 
 ```scss
 $elevation: t.light-dark(
@@ -198,7 +198,7 @@ $elevation: t.light-dark(
 )
 ```
 
-A level's light and dark shadow may differ in their colours only: `light-dark()` switches a colour, not an offset or a blur, so each shadow is emitted as `<geometry> light-dark(<light colour>, <dark colour>)`. A `$levels` shadow passed for one mode with its own geometry applies to both modes; different geometries for the two modes are a compile error.
+A level's light and dark shadow may differ in their colours only: `light-dark()` switches a colour, not an offset or a blur, so each layer of a shadow is emitted as `<geometry> light-dark(<light colour>, <dark colour>)`. A `$levels` shadow passed for one mode with its own geometry applies to both modes; different geometries for the two modes are a compile error.
 
 ---
 
@@ -293,6 +293,29 @@ The pre-built `dist/core.css` is identical to calling `@include t.define-core-th
 
 ---
 
+## `@include t.apply-document-base()`
+
+Opt-in. Core styles no element; this mixin emits the one rule that gives the page the theme:
+
+```css
+:where(body) {
+  background-color: var(--color--background);
+  color: var(--color--background--contrast);
+  font-family: var(--text--plain-family);
+}
+```
+
+Include it once, after `define-core-theme()`. `:where()` keeps it at zero specificity, so a `body` rule of your own wins wherever it loads. It sets no font size, no margin and no scrollbar colours.
+
+The same rule ships compiled as `css/base` (`dist/base.css`), for an app without Sass:
+
+```css
+@import "@cpangular/cp-theming-core/css/core";
+@import "@cpangular/cp-theming-core/css/base";
+```
+
+---
+
 ## `@property` registrations and animation
 
 `define-core-theme()` registers **what animation needs, and nothing derived**:
@@ -352,10 +375,10 @@ A registered colour's `initial-value` is what the pair holds when nothing declar
 | `primary` | `oklch(0.20 0 0)` | `oklch(0.92 0 0)` | `oklch(0.20 0 0)` | `oklch(0.50 0 0)` |
 | `secondary` | `oklch(0.40 0 0)` | `oklch(0.92 0 0)` | `oklch(0.40 0 0)` | `oklch(0.65 0 0)` |
 | `tertiary` | `oklch(0.45 0 0)` | `oklch(0.92 0 0)` | `oklch(0.45 0 0)` | `oklch(0.68 0 0)` |
-| `error` | `oklch(0.52 0.22 27)` / `oklch(0.70 0.20 27)` | `oklch(0.92 0 0)` | `oklch(0.15 0 0)` | `oklch(0.45 0 0)` |
-| `warn` | `oklch(0.55 0.18 55)` / `oklch(0.76 0.16 55)` | `oklch(0.92 0 0)` | `oklch(0.30 0 0)` | `oklch(0.55 0 0)` |
-| `caution` | `oklch(0.55 0.16 103)` / `oklch(0.82 0.15 103)` | `oklch(0.92 0 0)` | `oklch(0.50 0 0)` | `oklch(0.68 0 0)` |
-| `pass` | `oklch(0.48 0.18 145)` / `oklch(0.72 0.16 145)` | `oklch(0.92 0 0)` | `oklch(0.35 0 0)` | `oklch(0.60 0 0)` |
+| `error` | `oklch(0.525 0.214 28.1)` / `oklch(0.694 0.196 27)` | `oklch(0.92 0 0)` | `oklch(0.15 0 0)` | `oklch(0.45 0 0)` |
+| `warn` | `oklch(0.55 0.161 43.5)` / `oklch(0.76 0.16 55)` | `oklch(0.92 0 0)` | `oklch(0.30 0 0)` | `oklch(0.55 0 0)` |
+| `caution` | `oklch(0.55 0.113 98.8)` / `oklch(0.82 0.15 103)` | `oklch(0.92 0 0)` | `oklch(0.50 0 0)` | `oklch(0.68 0 0)` |
+| `pass` | `oklch(0.488 0.165 142.5)` / `oklch(0.72 0.16 145)` | `oklch(0.92 0 0)` | `oklch(0.35 0 0)` | `oklch(0.60 0 0)` |
 
 Only the colour roles of `brand` and of the semantic palettes are ever seen: every other value in the table is replaced on the root, by the generated pair or by the bg, stroke and focus core derives from the colour role.
 

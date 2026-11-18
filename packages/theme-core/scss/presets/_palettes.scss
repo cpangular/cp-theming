@@ -3,6 +3,10 @@
 // Source hues derived from Angular Material M3 prebuilt palette hex values,
 // converted to oklch. Light mode uses the "40" tone as the identity color;
 // dark mode uses the "80" tone (as M3 recommends for dark surfaces).
+// Every accent is written inside sRGB: where the first values were outside it,
+// each is now the colour a browser painted for them (clipped), so the fill
+// looks the same on an sRGB screen and the palette's stroke and text role keep
+// its chroma. The hex values in the comments below are M3's sources.
 // ─────────────────────────────────────────────────────────────────────────────
 @use "sass:map";
 @use "../theme" as t;
@@ -44,10 +48,13 @@ $azure-blue-surface: t.light-dark(
   t.palette(oklch(0.93 0.008 253)),
   t.palette(oklch(0.24 0.018 253))
 );
-$azure-blue-primary: t.light-dark(t.palette(oklch(0.43 0.19 253)), t.palette(oklch(0.72 0.17 253)));
+$azure-blue-primary: t.light-dark(
+  t.palette(oklch(0.441 0.178 259.9)),
+  t.palette(oklch(0.713 0.155 250.2))
+);
 $azure-blue-secondary: t.light-dark(
-  t.palette(oklch(0.46 0.27 264)),
-  t.palette(oklch(0.71 0.21 264))
+  t.palette(oklch(0.46 0.266 264)),
+  t.palette(oklch(0.688 0.164 260.3))
 );
 $azure-blue-error: t.light-dark(t.palette(oklch(0.54 0.22 27)), t.palette(oklch(0.67 0.2 27)));
 
@@ -59,9 +66,18 @@ $rose-red-background: t.light-dark(
   t.palette(oklch(0.18 0.015 349))
 );
 $rose-red-surface: t.light-dark(t.palette(oklch(0.93 0.01 349)), t.palette(oklch(0.23 0.02 349)));
-$rose-red-primary: t.light-dark(t.palette(oklch(0.48 0.24 349)), t.palette(oklch(0.73 0.2 349)));
-$rose-red-secondary: t.light-dark(t.palette(oklch(0.44 0.26 27)), t.palette(oklch(0.7 0.22 27)));
-$rose-red-error: t.light-dark(t.palette(oklch(0.5 0.27 27)), t.palette(oklch(0.68 0.24 27)));
+$rose-red-primary: t.light-dark(
+  t.palette(oklch(0.502 0.208 350.9)),
+  t.palette(oklch(0.73 0.2 349))
+);
+$rose-red-secondary: t.light-dark(
+  t.palette(oklch(0.493 0.202 29.2)),
+  t.palette(oklch(0.68 0.207 26.9))
+);
+$rose-red-error: t.light-dark(
+  t.palette(oklch(0.544 0.223 29.2)),
+  t.palette(oklch(0.658 0.228 26.8))
+);
 
 // ── cyan-orange ───────────────────────────────────────────────────────────────
 // primary: cyan   (#006a6a → oklch ~0.44 0.10 191°)
@@ -74,8 +90,14 @@ $cyan-orange-surface: t.light-dark(
   t.palette(oklch(0.92 0.008 191)),
   t.palette(oklch(0.22 0.018 191))
 );
-$cyan-orange-primary: t.light-dark(t.palette(oklch(0.44 0.1 191)), t.palette(oklch(0.78 0.09 191)));
-$cyan-orange-secondary: t.light-dark(t.palette(oklch(0.5 0.16 55)), t.palette(oklch(0.74 0.14 55)));
+$cyan-orange-primary: t.light-dark(
+  t.palette(oklch(0.451 0.077 190.8)),
+  t.palette(oklch(0.78 0.09 191))
+);
+$cyan-orange-secondary: t.light-dark(
+  t.palette(oklch(0.503 0.145 44.4)),
+  t.palette(oklch(0.74 0.14 55))
+);
 $cyan-orange-error: t.light-dark(t.palette(oklch(0.54 0.22 27)), t.palette(oklch(0.67 0.2 27)));
 
 // ── magenta-violet ────────────────────────────────────────────────────────────
@@ -90,11 +112,11 @@ $magenta-violet-surface: t.light-dark(
   t.palette(oklch(0.23 0.02 320))
 );
 $magenta-violet-primary: t.light-dark(
-  t.palette(oklch(0.48 0.29 320)),
-  t.palette(oklch(0.72 0.24 320))
+  t.palette(oklch(0.512 0.247 318.4)),
+  t.palette(oklch(0.72 0.239 320.1))
 );
 $magenta-violet-secondary: t.light-dark(
-  t.palette(oklch(0.47 0.31 295)),
-  t.palette(oklch(0.7 0.26 295))
+  t.palette(oklch(0.502 0.279 292.6)),
+  t.palette(oklch(0.671 0.211 302.1))
 );
 $magenta-violet-error: t.light-dark(t.palette(oklch(0.54 0.22 27)), t.palette(oklch(0.67 0.2 27)));

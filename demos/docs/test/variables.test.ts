@@ -82,6 +82,22 @@ test('every colour token has a swatch under its palette and role', () => {
         assert.equal(t.contrast, `${t.name}--contrast`, t.name);
     }
     assert.equal(p.focus[0].name, `--color--${p.name}--focus`);
+    // The text role: the token and its two values for an accent, nothing for
+    // background and surface.
+    assert.deepEqual(
+      p.text.map((t) => t.name),
+      p.name === 'background' || p.name === 'surface'
+        ? []
+        : ['', '--mode-light', '--mode-dark'].map((s) => `--color--${p.name}--text${s}`),
+    );
+    // The container colours: the surface's five, each with its contrast.
+    assert.deepEqual(
+      p.containers.map((t) => t.name),
+      p.name === 'surface'
+        ? ['-lowest', '-low', '', '-high', '-highest'].map((s) => `--color--surface--container${s}`)
+        : [],
+    );
+    for (const t of p.containers) assert.equal(t.contrast, `${t.name}--contrast`, t.name);
     assert.equal(p.tints.length, 5, `${p.name}: tints`);
   }
   // The chain palettes are the ones core generates.
@@ -103,7 +119,8 @@ test('a value comes from core.css: the registration, the root rule or the declar
     '--weight--state-hover--mode-light',
     '--weight--state-hover--mode-dark',
   ]);
-  assert.match(value('--elevation-2--shadow')?.value ?? '', /^0 2px 6px light-dark\(/);
+  // Material's three layers: the key shadow first.
+  assert.match(value('--elevation-2--shadow')?.value ?? '', /^0 3px 3px -2px light-dark\(/);
   assert.equal(value('--container--padding')?.input, true);
   assert.match(value('--palette-color')?.value ?? '', /^var\(--palette-src/);
   const title = data.typeScale.styles.find((s) => s.style === 'title-large');

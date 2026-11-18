@@ -1,6 +1,7 @@
 @use "sass:meta";
 @use "sass:list";
 @use "roles";
+@use "tokens";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // material-palette($name)
@@ -10,6 +11,12 @@
 //
 // All Material components inside that selector inherit the overridden tokens.
 // Scope tightly (a single wrapper element) to avoid coloring unintended siblings.
+//
+// The scope also declares the component tokens the adapter sets for an accent
+// as text and as a line (button labels, a field's focused label, outline,
+// indicator, caret and arrow) with this palette's --text and --stroke. A value
+// you set for one of them on an element outside the scope stops here, as every
+// --mat-sys-* colour does; set it on the scope or inside it.
 //
 // The roles are the ones Angular Material's own role tables derive from the
 // primary palette (primary, on-primary, the container pair, the fixed roles,
@@ -47,6 +54,9 @@
   @each $role, $value in roles.palette-roles($name) {
     --mat-sys-#{$role}: #{$value};
   }
+  // The labels and lines Material paints in primary: this palette's text and
+  // stroke roles (_tokens.scss).
+  @include tokens.accent($name);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -36,6 +36,11 @@ import {
 
 const MODES: Mode[] = ['light', 'dark'];
 const ROOT_AND_THEME = ':root, :where([theme])';
+/** Where the accent component tokens are: no specificity (issue #9). */
+const ACCENT_TOKENS = ':where(:root, [theme])';
+/** A component token, as opposed to a --mat-sys-* role. */
+const isComponentToken = (name: string) =>
+  name.startsWith('--mat-') && !name.startsWith('--mat-sys-');
 
 const { core, presets } = coreSheets();
 const adapterCore = materialSheets().find((s) => s.label.endsWith('material-core.scss'))!;
@@ -134,6 +139,24 @@ const DIRECT: [string, string][] = [
   ...accent('error', 'error'),
   ['surface', 'var(--color--surface)'],
   ['on-surface', 'var(--color--surface--contrast)'],
+  // Muted text (issue #13): core's de-emphasis mix, against the surface.
+  [
+    'on-surface-variant',
+    'light-dark(' +
+      ['light', 'dark']
+        .map(
+          (mode) =>
+            `color-mix(in oklch, var(--color--surface--contrast) var(--weight--text-deemphasis-blend--mode-${mode}), var(--color--surface))`,
+        )
+        .join(', ') +
+      ')',
+  ],
+  // One scale (issue #12): the five containers are core's.
+  ['surface-container-lowest', 'var(--color--surface--container-lowest)'],
+  ['surface-container-low', 'var(--color--surface--container-low)'],
+  ['surface-container', 'var(--color--surface--container)'],
+  ['surface-container-high', 'var(--color--surface--container-high)'],
+  ['surface-container-highest', 'var(--color--surface--container-highest)'],
   ['background', 'var(--color--background)'],
   ['on-background', 'var(--color--background--contrast)'],
   ['outline', 'var(--color--surface--stroke)'],
@@ -219,17 +242,94 @@ test('tokens that read a cp-theming variable are on `:root, :where([theme])`; li
     [],
     'a var() on :root alone would not follow a nested theme',
   );
-  // No selector other than these, [themeMode] and [palette="name"] declares a token.
+  // No selector other than these, the accent tokens' rule, [themeMode] and
+  // [palette="name"] declares a token.
   const others = adapterRules
     .map((r) => normalizeSelector(r.selector))
     .filter(
       (s) =>
         s !== ROOT_AND_THEME &&
+        s !== ACCENT_TOKENS &&
         s !== ':root' &&
         s !== ':where([themeMode])' &&
         !/^\[palette=[\w-]+\]$/.test(s),
     );
   assert.deepEqual(others, []);
+});
+
+// ─── Accents as text and as lines (issues #15 and #9) ────────────────────────
+
+// Material paints these in `primary` or `error`. A label takes the palette's
+// text role, a line its stroke. Written out here, not read from the Sass: a
+// token that moves from one list to the other, or leaves, has to be moved here.
+const PRIMARY_LABELS = [
+  '--mat-button-text-label-text-color',
+  '--mat-button-outlined-label-text-color',
+  '--mat-button-protected-label-text-color',
+  '--mat-form-field-filled-focus-label-text-color',
+  '--mat-form-field-outlined-focus-label-text-color',
+];
+const PRIMARY_LINES = [
+  '--mat-form-field-filled-caret-color',
+  '--mat-form-field-filled-focus-active-indicator-color',
+  '--mat-form-field-outlined-caret-color',
+  '--mat-form-field-outlined-focus-outline-color',
+  '--mat-form-field-focus-select-arrow-color',
+  '--mat-select-focused-arrow-color',
+];
+const ERROR_LABELS = [
+  '--mat-stepper-header-error-state-label-text-color',
+  '--mat-stepper-header-error-state-icon-foreground-color',
+  '--mat-form-field-error-text-color',
+  '--mat-form-field-error-trailing-icon-color',
+  '--mat-form-field-error-focus-trailing-icon-color',
+  '--mat-form-field-filled-error-label-text-color',
+  '--mat-form-field-filled-error-focus-label-text-color',
+  '--mat-form-field-outlined-error-label-text-color',
+  '--mat-form-field-outlined-error-focus-label-text-color',
+];
+const ERROR_LINES = [
+  '--mat-form-field-filled-error-caret-color',
+  '--mat-form-field-filled-error-active-indicator-color',
+  '--mat-form-field-filled-error-focus-active-indicator-color',
+  '--mat-form-field-outlined-error-caret-color',
+  '--mat-form-field-outlined-error-outline-color',
+  '--mat-form-field-outlined-error-focus-outline-color',
+  '--mat-select-invalid-arrow-color',
+];
+/** The accent tokens a scope declares for palette `name`. */
+const accentTokens = (name: string): [string, string][] => [
+  ...PRIMARY_LABELS.map((t): [string, string] => [t, `var(--color--${name}--text)`]),
+  ...PRIMARY_LINES.map((t): [string, string] => [t, `var(--color--${name}--stroke)`]),
+];
+const byName = (a: [string, string], b: [string, string]) => a[0].localeCompare(b[0]);
+
+test('labels in primary and in error read the palette’s text role, lines its stroke, on the theme elements', () => {
+  const found = adapterRules.filter((r) => normalizeSelector(r.selector) === ACCENT_TOKENS);
+  assert.equal(found.length, 1, 'one rule');
+  assert.deepEqual(
+    [...found[0].declarations].sort(byName),
+    [
+      ...accentTokens('primary'),
+      ...ERROR_LABELS.map((t): [string, string] => [t, 'var(--color--error--text)']),
+      ...ERROR_LINES.map((t): [string, string] => [t, 'var(--color--error--stroke)']),
+    ].sort(byName),
+  );
+});
+
+test('no accent token is declared on a component: a value set on an ancestor reaches it (issue #9)', () => {
+  // Every rule of both sheets that declares one of these tokens matches a
+  // theme element or a [palette] scope, never a Material class or element.
+  const all = [...PRIMARY_LABELS, ...PRIMARY_LINES, ...ERROR_LABELS, ...ERROR_LINES];
+  const where = materialSheets()
+    .flatMap((s) => rules(s.css))
+    .filter((r) => r.declarations.some(([n]) => all.includes(n)))
+    .map((r) => normalizeSelector(r.selector))
+    .filter((s) => s !== ACCENT_TOKENS && !/^\[palette=[\w-]+\]$/.test(s));
+  assert.deepEqual(where, []);
+  // …and the adapter no longer works a lightness out itself: it reads core's role.
+  for (const s of materialSheets())
+    assert.doesNotMatch(s.css, /min\(l, 0\.4\)|max\(l, 0\.82\)/, s.label);
 });
 
 // ─── [palette] scopes ────────────────────────────────────────────────────────
@@ -253,15 +353,37 @@ primary { @each $role, $tone in md.md-sys-color-values-light((primary: $tones)) 
   assert.ok(scopes.length > 0, 'the adapter emits [palette] rules');
   for (const scope of scopes) {
     const name = /^\[palette=([\w-]+)\]$/.exec(normalizeSelector(scope.selector))![1];
-    assert.deepEqual(scope.declarations.map(([n]) => n).sort(), primaryRoles, name);
+    const roles = scope.declarations.filter(([n]) => !isComponentToken(n));
+    assert.deepEqual(roles.map(([n]) => n).sort(), primaryRoles, name);
     // …and each is the root's expression with this palette as the origin.
-    for (const [token, value] of scope.declarations)
+    for (const [token, value] of roles)
       assert.equal(
         value,
         rootDecls.get(token)!.replaceAll('var(--color--primary', `var(--color--${name}`),
         `${name} ${token}`,
       );
+    // With the roles, the labels and lines Material paints in primary: this
+    // palette's text and stroke. The error ones are left to the theme element,
+    // as --mat-sys-error is.
+    assert.deepEqual(
+      scope.declarations.filter(([n]) => isComponentToken(n)).sort(byName),
+      accentTokens(name).sort(byName),
+      name,
+    );
   }
+});
+
+test('mat.adaptor() gives a custom palette name the same scope: roles, labels and lines', () => {
+  const fixture = materialFixtureSheets().find((s) => s.label.endsWith('adaptor-theme.scss'))!;
+  const scope = rules(fixture.css).find(
+    (r) =>
+      normalizeSelector(r.selector) === '[palette=accent]' &&
+      r.declarations.some(([n]) => n === '--mat-sys-primary'),
+  )!;
+  assert.deepEqual(
+    scope.declarations.filter(([n]) => isComponentToken(n)).sort(byName),
+    accentTokens('accent').sort(byName),
+  );
 });
 
 // ─── Surface order ───────────────────────────────────────────────────────────
@@ -337,6 +459,192 @@ for (const theme of themes) {
     }
   });
 }
+
+// ─── Surface containers (issue #12) ──────────────────────────────────────────
+// Material's five surface containers are core's --color--surface--container-*.
+// Core writes their distances from the surface as numbers; here they are held
+// to the tones the installed Material's tables name: the lightness of each
+// container's tone less that of the surface's own tone, per mode.
+
+const CONTAINERS = ['lowest', 'low', '', 'high', 'highest'].map((step) =>
+  step ? `container-${step}` : 'container',
+);
+/** The oklch lightness of an M3 tone (a grey of that L*), as _m3-tone.scss has it. */
+const toneLightness = (tone: number) => (tone > 8 ? (tone + 16) / 116 : Math.cbrt(tone / 903.3));
+
+test('core’s five container colours are M3’s surface containers: the distances Material’s tables give, from the surface', (t) => {
+  const { decls } = themes[0];
+  for (const mode of MODES) {
+    const ctx = contextFor(decls, mode);
+    const surface = evaluateColor('var(--color--surface)', ctx).to('oklch').coords;
+    const out: string[] = [];
+    for (const name of CONTAINERS) {
+      const tone = tones[mode].get(`surface-${name}`);
+      assert.ok(tone !== undefined, `Material's ${mode} table has surface-${name}`);
+      const distance = toneLightness(tone) - toneLightness(tones[mode].get('surface')!);
+      const [l, c, h] = evaluateColor(`var(--color--surface--${name})`, ctx).to('oklch').coords;
+      out.push(`${name} ${distance >= 0 ? '+' : '−'}${Math.abs(distance).toFixed(4)}`);
+      assert.ok(
+        Math.abs(l! - (surface[0]! + distance)) < 1e-4,
+        `${mode} ${name}: lightness ${l!.toFixed(4)}, the surface's ${surface[0]!.toFixed(4)} moved by ${distance.toFixed(4)}`,
+      );
+      assert.ok(Math.abs(c! - surface[1]!) < 1e-6, `${mode} ${name}: the surface's chroma`);
+      if (surface[1]! > 1e-4)
+        assert.ok(Math.abs(h! - surface[2]!) < 1e-3, `${mode} ${name}: the surface's hue`);
+    }
+    t.diagnostic(`${mode}: ${out.join(', ')}`);
+  }
+});
+
+for (const theme of themes) {
+  test(`core + ${theme.label} + adapter: every --mat-sys-surface-container-* is core's container colour, and its contrast reads on it`, (t) => {
+    let lowest = Infinity;
+    for (const mode of MODES) {
+      const ctx = contextFor(theme.decls, mode);
+      for (const name of CONTAINERS) {
+        const core = evaluateColor(`var(--color--surface--${name})`, ctx);
+        assert.equal(
+          maxChannelDiff(evaluateColor(`var(--mat-sys-surface-${name})`, ctx), core),
+          0,
+          `${mode}: --mat-sys-surface-${name} is --color--surface--${name}`,
+        );
+        assert.equal(core.alpha ?? 1, 1, `${mode} ${name} is opaque`);
+        const ratio = wcagContrast(
+          evaluateColor(`var(--color--surface--${name}--contrast)`, ctx),
+          core,
+        );
+        lowest = Math.min(lowest, ratio);
+        assert.ok(ratio >= 4.5, `${mode} ${name}: its contrast is ${ratio.toFixed(2)}:1 on it`);
+      }
+    }
+    t.diagnostic(`lowest contrast on a container: ${lowest.toFixed(2)}:1`);
+  });
+}
+
+// ─── Elevation (issue #11) ───────────────────────────────────────────────────
+// Core's default shadows are the ones Angular Material draws for its own
+// levels: the same three layers, offsets, blurs and spreads, and in light mode
+// the same three opacities. Material's are compiled here from its own Sass.
+
+/** level → Material's box-shadow for it, in black. */
+function materialShadows(): Map<string, string> {
+  const { css } = compileSource(
+    `@use "@angular/material/core/style/elevation" as e;
+@use "@angular/material/core/tokens/m3/md-sys-elevation" as levels;
+levels { @each $name, $z in levels.md-sys-elevation-values() { #{$name}: e.get-box-shadow($z, black); } }`,
+    path.join(materialDir, 'test/fixtures/__elevation-levels.scss'),
+  );
+  return new Map(rules(css).find((r) => r.selector === 'levels')!.declarations);
+}
+
+/** A box-shadow as layers of [geometry, alpha], lengths without `px` on a zero. */
+function shadowLayers(value: string, mode: Mode): [string, number][] {
+  const out: string[] = [];
+  let depth = 0;
+  let current = '';
+  for (const ch of value) {
+    if (ch === '(') depth++;
+    if (ch === ')') depth--;
+    if (ch === ',' && depth === 0) {
+      out.push(current.trim());
+      current = '';
+    } else current += ch;
+  }
+  out.push(current.trim());
+  return out.map((layer) => {
+    const m = /^((?:-?[\d.]+(?:px)? ){4})(.+)$/.exec(layer)!;
+    const geometry = m[1].trim().replace(/\b0px\b/g, '0');
+    return [geometry, evaluateColor(m[2], contextFor(new Map(), mode)).alpha ?? 1];
+  });
+}
+
+test(`--mat-sys-level1 to level5 are core's shadows, and core's are the ones Angular Material ${matVersion} draws`, (t) => {
+  const material = materialShadows();
+  const coreRoot = declarationsFor(core.css, ':where(:root)');
+  assert.deepEqual(
+    [...material.keys()],
+    [0, 1, 2, 3, 4, 5].map((n) => `level${n}`),
+  );
+  for (let level = 1; level <= 5; level++) {
+    assert.equal(rootDecls.get(`--mat-sys-level${level}`), `var(--elevation-${level}--shadow)`);
+    const ours = shadowLayers(coreRoot.get(`--elevation-${level}--shadow`)!, 'light');
+    const theirs = shadowLayers(material.get(`level${level}`)!, 'light');
+    assert.deepEqual(
+      ours.map(([geometry]) => geometry),
+      theirs.map(([geometry]) => geometry),
+      `level ${level}: offsets, blur and spread`,
+    );
+    for (const [i, [, alpha]] of ours.entries())
+      assert.ok(Math.abs(alpha - theirs[i][1]) < 0.0005, `level ${level} layer ${i + 1}: ${alpha}`);
+    // Dark mode is stronger than Material's, as core's shadows always were.
+    for (const [i, [, alpha]] of shadowLayers(
+      coreRoot.get(`--elevation-${level}--shadow`)!,
+      'dark',
+    ).entries())
+      assert.ok(alpha > theirs[i][1], `level ${level} layer ${i + 1} dark: ${alpha}`);
+    if (level === 1) t.diagnostic(`level 1: ${ours.map(([g, a]) => `${g} @ ${a}`).join(', ')}`);
+  }
+  assert.equal(coreRoot.get('--elevation-0--shadow'), 'none');
+});
+
+// ─── Muted text (issue #13) ──────────────────────────────────────────────────
+// on-surface-variant is the mix core uses for muted text, at core's weight,
+// against the surface: --container--text-deemphasis as it would be on the
+// surface. With core's default weight it is where M3's table has the role.
+
+const oklchOf = (c: ReturnType<typeof evaluateColor>) =>
+  c.to('oklch').coords.map((v) => (Number.isNaN(v ?? NaN) ? 0 : (v ?? 0)));
+
+for (const theme of themes) {
+  test(`core + ${theme.label} + adapter: on-surface-variant is the surface's contrast mixed with the surface at the de-emphasis weight, 4.5:1 or more on every surface container`, (t) => {
+    const out: string[] = [];
+    for (const mode of MODES) {
+      const ctx = contextFor(theme.decls, mode);
+      const read = (name: string) => evaluateColor(`var(${name})`, ctx);
+      const role = read('--mat-sys-on-surface-variant');
+      const weight =
+        Number.parseFloat(theme.decls.get(`--weight--text-deemphasis-blend--mode-${mode}`)!) / 100;
+      const [sl] = oklchOf(read('--color--surface'));
+      const [cl] = oklchOf(read('--color--surface--contrast'));
+      const [l] = oklchOf(role);
+      assert.ok(
+        Math.abs(l - (weight * cl + (1 - weight) * sl)) < 1e-6,
+        `${mode}: lightness ${l.toFixed(4)} at ${weight * 100}%`,
+      );
+      assert.equal(role.alpha ?? 1, 1, `${mode}: opaque`);
+      let lowest = Infinity;
+      for (const on of ['surface', ...CONTAINERS.map((c) => `surface-${c}`)]) {
+        const ratio = wcagContrast(role, read(`--mat-sys-${on}`));
+        lowest = Math.min(lowest, ratio);
+        assert.ok(ratio >= 4.5, `${mode} on ${on}: ${ratio.toFixed(2)}:1`);
+      }
+      out.push(`${mode} L ${l.toFixed(3)}, lowest ${lowest.toFixed(2)}:1`);
+    }
+    t.diagnostic(out.join('; '));
+  });
+}
+
+test('with core’s default weight, on-surface-variant is within 0.02 of the lightness the installed Material’s tables give it, in every preset', (t) => {
+  const out: string[] = [];
+  for (const theme of themes.filter((x) => x.label.includes('/presets/')))
+    for (const mode of MODES) {
+      const ctx = contextFor(theme.decls, mode);
+      const [sl] = oklchOf(evaluateColor('var(--color--surface)', ctx));
+      const [l] = oklchOf(evaluateColor('var(--mat-sys-on-surface-variant)', ctx));
+      const m3 =
+        sl +
+        toneLightness(tones[mode].get('on-surface-variant')!) -
+        toneLightness(tones[mode].get('surface')!);
+      out.push(`${(l - m3 >= 0 ? '+' : '−') + Math.abs(l - m3).toFixed(3)}`);
+      assert.ok(
+        Math.abs(l - m3) < 0.02,
+        `${theme.label} ${mode}: ${l.toFixed(3)}, M3 ${m3.toFixed(3)}`,
+      );
+    }
+  t.diagnostic(
+    `difference from the table's lightness, preset by preset, light then dark: ${out.join(' ')}`,
+  );
+});
 
 // ─── Outline ─────────────────────────────────────────────────────────────────
 // Every Material outline is the surface's stroke: `outline` is the stroke,

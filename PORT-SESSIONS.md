@@ -42,6 +42,9 @@ How to set things in the VS Code extension (Claude Code chat panel):
 | 16 | Phase 17 Learn track: chapters 6–10 + reference | Fable 5.1 | high | Auto |
 | 17 | Phase 17 review (ultracode) | Fable 5.1 | high | Auto |
 | 18 | Phase 18 a theme as a package | Fable 5.1 | high | Auto |
+| 19 | Phase 19 A: Sass exports, page base rule, prefer-white contrast (#7, #10, #8) | Fable 5.2 | high | Auto |
+| 20 | Phase 19 B: a text colour per accent; Material labels read it (#15, #9) | Fable 5.2 | high | Auto |
+| 21 | Phase 19 C: stroke and size follow-ups; surface containers, muted text, shadows (#12, #13, #11) | Fable 5.2 | high | Auto |
 
 Subagent models are chosen inside the workflow prompts: Opus at high effort for critique, Sonnet at
 medium for reading and sweeps. You do not set these.
@@ -158,4 +161,22 @@ ultracode. Work in /devcontainer/repos/cp-theming on branch feature/port-spike-f
 
 ```
 Work in /devcontainer/repos/cp-theming on branch main. Read CLAUDE.md, .github/copilot-instructions.md, PORT-PLAN.md Phase 18, the three packages' package.json files and chapters 1, 3 and 10 of the Learn track. Build the two example packages exactly as the phase lists them: @acme/theme in demos/demo-brand-core (Sass entry exporting $theme and define(), compiled CSS entry, exports, files, peer on cp-theming-core, pack:check, README with both consumption paths) and @acme/theme-material in demos/demo-brand-material; wire demo-core to consume the CSS path and the docs app the Sass path so the theme switcher offers acme; write Learn chapter 11 "Ship your theme as a package" in the same shape as the others, its live example showing both consumption paths; add the Theme packages guide to the core Guides page. Run pnpm build at the root, pnpm test, the order and examples checks, pnpm pack --dry-run in both packages, and render.ts; screenshot chapter 11 and the showcase under acme. When the Done-when holds, update the README and PLAN.md status tables, commit and push without asking, and tell me how to view chapter 11.
+```
+
+## Session 19 — Phase 19 A: Sass exports, page base rule, prefer-white contrast
+
+```
+Work in /devcontainer/repos/cp-theming on branch main. Read CLAUDE.md, .github/copilot-instructions.md, PORT-PLAN.md Phase 19, and issues #7, #10 and #8 (gh issue view). Do #7, then #10, then #8, as the phase describes them (#8 as the prefer-white / prefer-black preference, not a fixed colour). For #7, first make the harness importer resolve exports exactly and watch it fail, then fix every package's exports and publishConfig.exports, add the esbuild resolver check, and remove demos/docs/node_modules from the docs include paths. Run pnpm build at the root, pnpm test, the order and examples checks, and render.ts. Commit each issue on its own with "Fixes #N" in the message. When the Done-when items for these three hold, update the README and PLAN.md status tables, commit and push without asking, and tell me what IdealLINK can remove.
+```
+
+## Session 20 — Phase 19 B: a text colour per accent; Material labels read it
+
+```
+Work in /devcontainer/repos/cp-theming on branch main. Read CLAUDE.md, .github/copilot-instructions.md, PORT-PLAN.md Phase 19 (Session B, and what Session A landed) and issues #15 and #9 (gh issue view). Add core's text role per accent palette, make the adapter's label tokens read it on the selectors where --mat-sys-primary and --mat-sys-error are declared, move the outlines, indicators, caret and arrows to the palette's stroke, and add the checks and docs the phase lists. Build the adapter and the docs, then run the full render.ts gallery in Chromium and Firefox; any component label below 4.5:1, or a line below 3:1, is fixed in core or the adapter, never in a gallery example. Commit with "Fixes #15" and "Fixes #9". When the Session B Done-when holds, update the README and PLAN.md status tables and Phase 19's "As landed", commit and push without asking, and tell me the lowest label and line ratio per engine and what IdealLINK can remove.
+```
+
+## Session 21 — Phase 19 C: surface containers, muted text, shadows
+
+```
+Work in /devcontainer/repos/cp-theming on branch main. Read CLAUDE.md, .github/copilot-instructions.md, PORT-PLAN.md Phase 19 (Session C, and what Sessions A and B landed) and issues #12, #13 and #11 (gh issue view). First the four items Session C takes from Session B's open list (the gamut factor declared once so core.css fits its size ceiling, the accent stroke through _in-gamut(), the light stroke ceiling at 0.55, the docs' inline code on the text role), in one commit. Then do #12, then #13, then #11, as the phase describes them: core's surface container colours with the adapter reading them, the de-emphasis weight at M3's on-surface-variant (measure the dark value), page text defaults against the background, and Material's three-layer shadows as the default geometry. Run pnpm build, pnpm test, the order and examples checks, core render.ts, and the full docs render.ts gallery in Chromium and Firefox. Commit each issue on its own with "Fixes #N". When the Session C Done-when holds, update the README and PLAN.md status tables and Phase 19's "As landed", commit and push without asking, and tell me what IdealLINK can remove.
 ```

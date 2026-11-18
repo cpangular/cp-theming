@@ -170,6 +170,7 @@ class Parser {
       this.expect(')');
       return this.ctx.mode === 'light' ? light : dark;
     }
+    if (fn === 'color-mix') return this.colorMix();
     if (this.peek(1)?.text === 'from') {
       this.expect('(');
       this.expect('from');
@@ -193,12 +194,12 @@ class Parser {
       }
       this.pos = channelParser.pos;
       this.expect(')');
-      const scaled = coords.map((v, k) => v / (space.scale?.[k] ?? 1));
+      const scaled = coords.map((v, k) => (Number.isNaN(v) ? null : v / (space.scale?.[k] ?? 1)));
       // An alpha outside 0–1 is clamped, as the browsers do: the gamut
       // correction (_in-gamut() in _palette.scss) carries a factor there.
       return new Color(
         space.id,
-        scaled as [number, number, number],
+        scaled as unknown as [number, number, number],
         Math.min(Math.max(alpha, 0), 1),
       );
     }
@@ -207,6 +208,45 @@ class Parser {
     const text = this.src.slice(t.start, this.tokens[end - 1].end);
     this.pos = end;
     return new Color(text);
+  }
+
+  /**
+   * color-mix(in <space>, <colour> <percentage>?, <colour> <percentage>?), the
+   * parser standing just before its `(`. A percentage may be a var() (a
+   * weight). Interpolated as colorjs.io does it, which for the colours the
+   * library mixes is what the browsers do: a hue written as a number is
+   * interpolated the shorter way even when the chroma beside it is 0 (the
+   * contrast colour is `oklch(l 0 0)`), and only a colour converted from an
+   * achromatic one has no hue.
+   */
+  private colorMix(): Color {
+    this.expect('(');
+    this.expect('in');
+    const spaceName = this.next().text.toLowerCase();
+    const space = SPACES[spaceName];
+    if (!space) throw new Error(`unsupported color-mix() space "${spaceName}"`);
+    // A hue interpolation method (`shorter hue`) is not one the library writes.
+    this.expect(',');
+    const part = (): [Color, number | null] => {
+      const colour = this.color();
+      const next = this.peek()?.text;
+      return [colour, next === ',' || next === ')' ? null : this.expr()];
+    };
+    const [a, pa] = part();
+    this.expect(',');
+    const [b, pb] = part();
+    this.expect(')');
+    let [wa, wb] = [pa, pb];
+    if (wa === null && wb === null) [wa, wb] = [0.5, 0.5];
+    else if (wb === null) wb = 1 - wa!;
+    else if (wa === null) wa = 1 - wb;
+    const sum = wa! + wb!;
+    if (sum <= 0) throw new Error(`color-mix() percentages add up to ${sum} in "${this.src}"`);
+    return Color.mix(a, b, wb! / sum, {
+      space: space.id,
+      outputSpace: space.id,
+      premultiplied: true,
+    }) as Color;
   }
 
   private skipToClose(): void {
@@ -329,7 +369,10 @@ class Parser {
         }
       }
       if (t.text in this.vars) return this.vars[t.text];
-      if (t.text === 'none') return 0;
+      // `none` is a missing channel (CSS Color 4). NaN here; the relative
+      // colour turns it into colorjs.io's null, so a color-mix() takes that
+      // channel from the other colour, as browsers do.
+      if (t.text === 'none') return NaN;
       throw new Error(`unknown identifier "${t.text}" in "${this.src}"`);
     }
     throw new Error(`unexpected "${t.text}" in "${this.src}"`);

@@ -93,6 +93,63 @@ demos/demo-brand-material/  @acme/theme-material           — Example theme pac
   `--theme--_contrast-step`. Do not go back to a lightness threshold: no single one passes
   every hue.
 
+- **A palette may prefer white or black text, down to 3:1.** `$contrast: prefer-white` (or
+  `prefer-black`) in `t.palette()`, and so in `$brand: t.palette(…)`: the palette's colour and
+  its ladder steps take that text colour wherever it reaches 3:1 on them (WCAG large text and
+  icons), the other one elsewhere. It is the same step with another cut-off (luminance 0.30 /
+  0.10), declared once beside `--theme--_contrast-step`; the theme rule re-declares the seven
+  colour-role contrasts of that palette with it. The default stays the 4.5:1 choice, the bg and
+  stroke roles keep it, and a nested theme goes back to it unless it passes the preference too.
+  Do not turn `$contrast` into a fixed colour: the issue asked for one and the user chose the
+  preference, so that the ladder steps follow the same rule (PORT-PLAN.md Phase 19, #8).
+
+- **An accent has a text role; lines use its stroke.** `--color--{name}--text` is the accent as
+  text (links, headings, labels): the colour, no lighter than 0.40 in light mode and no darker
+  than 0.82 in dark, same hue, inside sRGB (`_palette.scss`, "Text role"). A registered pair like
+  stroke and focus, derived on the shared selector, replaced by `$text`. `background` and
+  `surface` have none. The accent stroke is the colour moved into a band per mode (0.42–0.55
+  light, 0.65 or more dark) and then brought inside sRGB like the text role (`_in-gamut()`): a
+  line needs 3:1, not 4.5:1, so a mid-tone accent that sRGB can show is its own stroke. An accent
+  written outside sRGB keeps its lightness and hue as a stroke and gives up chroma, so its stroke
+  is not the colour its fill is painted in: the presets and semantic defaults are written inside
+  sRGB, and core warns at compile time about a literal accent outside it.
+  The Material adapter points Material's accent labels at the text role and its accent lines
+  (a field's focused outline, indicator, caret, arrow) at the stroke, and declares those
+  component tokens where `--mat-sys-primary` is declared (theme elements, at no specificity, and
+  each `[palette]` scope), never on the component: a value an app sets on a toolbar or wrapper
+  has to reach the component (issue #9). Do not move a lightness limit back into the adapter, do
+  not hold a line with the label, and do not put the raw accent on a line (PORT-PLAN.md Phase 19,
+  #15 and #9).
+
+- **One surface scale.** The surface has five container colours,
+  `--color--surface--container-lowest` / `-low` / `--color--surface--container` / `-high` /
+  `-highest` (each with `--contrast`): Material 3's surface containers by their M3 names, the
+  surface moved by M3's per-mode distances (`_palette.scss`, "Surface containers"). The Material
+  adapter's `--mat-sys-surface-container-*` read them, so an app's own panel and a Material card
+  are one colour. Do not derive a container in the adapter, do not turn the shade steps
+  (`--high`, `--low`, ±0.12, every palette) into the container scale, and do not add a fourth
+  shade step: M3's containers are one to one side of the surface and four to the other, which
+  the ladder cannot express. The de-emphasis weight defaults to where Angular Material's tables
+  have `on-surface-variant` on the default surface: 63% in light mode, 93% in dark (Angular
+  Material's dark table has tone 90; the M3 guidelines' tone 80 would be 82%) (PORT-PLAN.md
+  Phase 19, #12).
+
+- **Muted text is one mix, everywhere.** `--container--text`, `--container--text-emphasis` and
+  `--container--text-deemphasis` are declared by core on every theme element for the page
+  (against the background) and by `filled()` for its fill; `bg()` and `outlined()` set none.
+  Muted text is the contrast colour mixed with what it is written on at
+  `--weight--text-deemphasis-blend`, per mode. The Material adapter's `on-surface-variant` is
+  that same mix at that same weight against the surface, so the two cannot drift. Do not go back
+  to a tone offset for `on-surface-variant`, and do not read the picked weight in the mix (it
+  freezes at the declaring element; read the `--mode-light` / `--mode-dark` pair inside
+  `light-dark()`) (PORT-PLAN.md Phase 19, #13).
+
+- **Shadows are Material's.** Elevation levels 1–5 are the three-layer shadows Angular Material
+  draws (key, penumbra, ambient), so a Material card and an `elevated` element cast the same
+  shadow. One `$shadow-color` per mode is shared out over the layers (2/3, 7/15, 2/5 of its
+  alpha) by the browser; never work a shadow colour out in Sass. Do not go back to one shadow per
+  level: a level-1 card barely showed on a light surface (PORT-PLAN.md Phase 19, #11).
+
 - **Derivations are opaque.** Every relative-colour derivation ends `/ 1`, so a translucent
   input cannot make ladder steps, auto roles or text translucent. Only `--tint-1..5` carry an
   alpha. The contrast check fails a derivation without it.
@@ -149,7 +206,8 @@ demos/demo-brand-material/  @acme/theme-material           — Example theme pac
   after `pnpm --filter docs build`: the painted contrast of every label on the showcase in light and dark,
   and the component gallery (Phase 15) per preset and mode: every section screenshotted, as
   loaded, hovered, focused and with every overlay open. A component label below 4.5:1 fails the
-  run; a disabled control and a docs caption are reported. `--only=gallery|showcase`,
+  run, and so does a line of a form field (outline, active indicator, select arrow) below 3:1; a
+  disabled control and a docs caption are reported. `--only=gallery|showcase`,
   `--preset=`, `--mode=`, `--section=a,b`, `--jobs=N`; engines as arguments (`chromium firefox`).
 - Component gallery examples: `demos/docs/src/examples/components/*.ng.html` are Angular
   templates, each the `templateUrl` of a component in
@@ -209,6 +267,60 @@ demos/demo-brand-material/  @acme/theme-material           — Example theme pac
   (`X.theme.css`: `@import`s of package CSS only, linked by `scripts/learn.ts`). Change a colour
   of the example theme in `scss/_index.scss` only; `demos/docs/test/learn.ts` names the brand
   and tertiary it expects painted.
+- Package paths (PORT-PLAN.md Phase 19, issue #7): `demos/docs/test/exports.test.ts` (in
+  `pnpm test`) resolves every `@use`, `@forward` and `@import` of a workspace package that the
+  docs, READMEs and sources show, with the esbuild `@angular/build` depends on and the options of
+  its stylesheet bundle, against `exports` and `publishConfig.exports`. The Angular CLI takes an
+  `exports` target exactly as written, so each documented Sass entry point is its own entry under
+  the `sass` condition, pointing at the file with its underscore and extension, and
+  `./scss/*.scss` covers a full file name. Do not add a `./scss/*` pattern, and do not add an
+  include path into `node_modules` to the docs app: its build is the proof that the maps work.
+- Page rule (PORT-PLAN.md Phase 19, issue #10): `t.apply-document-base()` emits one
+  `:where(body)` rule (background, text colour, font family) and is opt-in; core itself never
+  styles an element (`packages/theme-core/test/css/base.test.ts` fails a `body` or `html`
+  selector in core or a preset). `scss/base.scss` is its compiled form, `dist/base.css`,
+  exported as `./css/base`. Browser checks: the `base/` rows of `packages/theme-core/test/render.ts`
+  and `demos/docs/test/page-base.ts` (after `pnpm --filter docs build`): the docs app takes the
+  rule from Sass, `demos/demo-core` as compiled CSS.
+- Contrast preference (PORT-PLAN.md Phase 19, issue #8):
+  `packages/theme-core/test/css/contrast-preference.test.ts` compiles its themes from source
+  (a fixture with `$contrast` would fail the 4.5:1 sweep every fixture gets) and works out what
+  "white reaches 3:1" means from the colour itself, not from the CSS; the `prefer/` rows of
+  `render.ts` are black or white written by hand; `demos/docs/test/brand-text.ts` (after
+  `pnpm --filter docs build`) measures the Palette page's live example and each ratio the page
+  states. Measure a ratio before writing it into a page.
+- Accent roles (PORT-PLAN.md Phase 19, issues #15 and #9):
+  `packages/theme-core/test/css/accent-roles.test.ts` holds the text role to 4.5:1 and the accent
+  stroke to 3:1 on the background and the surface in every preset (the limits are written in the
+  test, not read from the Sass) and checks `$text`; the `text/` and `line/` rows of core's
+  `render.ts` prove the browsers agree. The adapter's `material-roles.test.ts` lists the accent
+  tokens by hand and fails one declared on a component. `demos/docs/test/material-tokens.ts`
+  (after `pnpm --filter docs build`) sets tokens on a wrapper in the built gallery and reads the
+  buttons and fields inside. A token the adapter starts or stops setting goes into the test's
+  lists, the adapter's README and the ng-material API page's table.
+- Surface scale (PORT-PLAN.md Phase 19, issue #12):
+  `packages/theme-core/test/css/surface-containers.test.ts` holds the five container colours to
+  distances written in the test and the de-emphasis weight to 63% / 93%; the adapter's
+  `material-roles.test.ts` holds the same distances to the tones the installed Material's role
+  tables name (so a Material release that moves a container fails it) and every
+  `--mat-sys-surface-container-*` to core's token; the `container/` rows of core's `render.ts`
+  are worked out by hand. `demos/docs/test/surface-scale.test.ts` holds the Palette page's strip
+  and the role table (ng-material API page, adapter README) to the compiled CSS: a role the
+  adapter starts or stops mapping to a cp-theming variable goes into both tables.
+- Page text (PORT-PLAN.md Phase 19, issue #13): `packages/theme-core/test/css/page-text.test.ts`
+  holds the three text variables to their declarations and muted text to 4.5:1 on the background
+  and the surface in every preset and fixture; the adapter's `material-roles.test.ts` holds
+  `on-surface-variant` to the same mix, to 4.5:1 on every surface container, and (with core's
+  default weight) to within 0.02 of the lightness the installed Material's tables give it; the
+  `muted/` rows of core's `render.ts` are worked out by hand for a grey page. The evaluator in
+  `test/lib/color.ts` handles `color-mix()`.
+- Elevation (PORT-PLAN.md Phase 19, issue #11): `packages/theme-core/test/css/elevation.test.ts`
+  holds the three layers of each level to lengths and opacities written in the test, and checks
+  `$shadow-color` (shared out by the browser, a `var()` included) and `$levels` (as written, one
+  layer or three, light and dark differing in colour only). The adapter's
+  `material-roles.test.ts` compiles Angular Material's own `get-box-shadow()` for its five
+  levels and compares. The `elevation/` rows of core's `render.ts` read one layer's colour
+  (`read: 'shadow'`, `layer`) or every layer's lengths (`read: 'shadow-geometry'`).
 - Fixture themes live in `packages/theme-core/test/fixtures/` and `packages/theme-ng-material/test/fixtures/`.
 - CI: `.github/workflows/test.yml` (cpdevtools/git-flow) runs `github.actions.build` then
   `github.actions.test` in every package that defines them.
@@ -287,7 +399,7 @@ pnpm --filter @cpangular/cp-theming-core render   # browser check, local only
 
 ## Key Files
 - [PLAN.md](../PLAN.md) — full plan, status, phases
-- [PORT-PLAN.md](../PORT-PLAN.md) — phases 8–18 (harness, cascade, contrast, Material adapter, startup, release, palette chain, gallery, docs that teach, a theme as a package)
+- [PORT-PLAN.md](../PORT-PLAN.md) — phases 8–19 (harness, cascade, contrast, Material adapter, startup, release, palette chain, gallery, docs that teach, a theme as a package, the issues from the first app that moved over)
 - [packages/theme-core/scss/_theme.scss](../packages/theme-core/scss/_theme.scss) — public SCSS API (`@cpangular/cp-theming-core`)
 - [packages/theme-core/scss/_palette.scss](../packages/theme-core/scss/_palette.scss) — palette system
 

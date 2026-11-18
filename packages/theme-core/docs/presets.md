@@ -84,10 +84,10 @@ Tuned for legibility on the neutral background/surface above.
 
 | Variable | Hue | Meaning |
 |----------|-----|---------|
-| `p.$default-pass` | 145° green | Success, confirmation |
-| `p.$default-caution` | 103° amber-gold | Advisory, needs attention |
-| `p.$default-warn` | 55° orange | Warning, degraded state |
-| `p.$default-error` | 27° red | Failure, destructive action |
+| `p.$default-pass` | ~143° green | Success, confirmation |
+| `p.$default-caution` | ~99° amber-gold | Advisory, needs attention |
+| `p.$default-warn` | ~44° orange | Warning, degraded state |
+| `p.$default-error` | ~28° red | Failure, destructive action |
 
 ### azure-blue palettes
 
@@ -95,19 +95,19 @@ Tuned for legibility on the neutral background/surface above.
 |----------|------------|-----------|
 | `p.$azure-blue-background` | `0.97 0.004 253` | `0.18 0.014 253` |
 | `p.$azure-blue-surface` | `0.93 0.008 253` | `0.24 0.018 253` |
-| `p.$azure-blue-primary` | `0.43 0.19 253` | `0.72 0.17 253` |
-| `p.$azure-blue-secondary` | `0.46 0.27 264` | `0.71 0.21 264` |
-| `p.$azure-blue-error` | `0.54 0.22 27` | `0.67 0.20 27` |
+| `p.$azure-blue-primary` | `0.441 0.178 259.9` | `0.713 0.155 250.2` |
+| `p.$azure-blue-secondary` | `0.46 0.266 264` | `0.688 0.164 260.3` |
+| `p.$azure-blue-error` | `0.54 0.22 27` | `0.67 0.2 27` |
 
 ### rose-red palettes
 
 | Variable | Light oklch | Dark oklch |
 |----------|------------|-----------|
 | `p.$rose-red-background` | `0.97 0.005 349` | `0.18 0.015 349` |
-| `p.$rose-red-surface` | `0.93 0.010 349` | `0.23 0.020 349` |
-| `p.$rose-red-primary` | `0.48 0.24 349` | `0.73 0.20 349` |
-| `p.$rose-red-secondary` | `0.44 0.26 27` | `0.70 0.22 27` |
-| `p.$rose-red-error` | `0.50 0.27 27` | `0.68 0.24 27` |
+| `p.$rose-red-surface` | `0.93 0.01 349` | `0.23 0.02 349` |
+| `p.$rose-red-primary` | `0.502 0.208 350.9` | `0.73 0.2 349` |
+| `p.$rose-red-secondary` | `0.493 0.202 29.2` | `0.68 0.207 26.9` |
+| `p.$rose-red-error` | `0.544 0.223 29.2` | `0.658 0.228 26.8` |
 
 ### cyan-orange palettes
 
@@ -115,19 +115,19 @@ Tuned for legibility on the neutral background/surface above.
 |----------|------------|-----------|
 | `p.$cyan-orange-background` | `0.97 0.004 191` | `0.17 0.014 191` |
 | `p.$cyan-orange-surface` | `0.92 0.008 191` | `0.22 0.018 191` |
-| `p.$cyan-orange-primary` | `0.44 0.10 191` | `0.78 0.09 191` |
-| `p.$cyan-orange-secondary` | `0.50 0.16 55` | `0.74 0.14 55` |
-| `p.$cyan-orange-error` | `0.54 0.22 27` | `0.67 0.20 27` |
+| `p.$cyan-orange-primary` | `0.451 0.077 190.8` | `0.78 0.09 191` |
+| `p.$cyan-orange-secondary` | `0.503 0.145 44.4` | `0.74 0.14 55` |
+| `p.$cyan-orange-error` | `0.54 0.22 27` | `0.67 0.2 27` |
 
 ### magenta-violet palettes
 
 | Variable | Light oklch | Dark oklch |
 |----------|------------|-----------|
 | `p.$magenta-violet-background` | `0.97 0.005 320` | `0.18 0.016 320` |
-| `p.$magenta-violet-surface` | `0.93 0.010 320` | `0.23 0.020 320` |
-| `p.$magenta-violet-primary` | `0.48 0.29 320` | `0.72 0.24 320` |
-| `p.$magenta-violet-secondary` | `0.47 0.31 295` | `0.70 0.26 295` |
-| `p.$magenta-violet-error` | `0.54 0.22 27` | `0.67 0.20 27` |
+| `p.$magenta-violet-surface` | `0.93 0.01 320` | `0.23 0.02 320` |
+| `p.$magenta-violet-primary` | `0.512 0.247 318.4` | `0.72 0.239 320.1` |
+| `p.$magenta-violet-secondary` | `0.502 0.279 292.6` | `0.671 0.211 302.1` |
+| `p.$magenta-violet-error` | `0.54 0.22 27` | `0.67 0.2 27` |
 
 ---
 
@@ -168,7 +168,7 @@ Instead of literal colors, pass the brand colour and let core generate the rest:
 
 ```scss
 $brand-theme: t.theme(
-  $brand: oklch(0.44 0.22 253),        // the brand palette, --color--brand
+  $brand: oklch(0.45 0.2 262),        // the brand palette, --color--brand
   $palettes: (
     // a helper is only needed for numbers other than core's
     secondary:  t.palette-from-brand($c-max: 0.16),
@@ -185,8 +185,8 @@ Set the brand's registered pair at runtime to recolor everything made from it, g
 
 ```js
 const el = document.querySelector('[theme="brand-theme"]');
-el.style.setProperty('--color--brand--mode-light', 'oklch(0.48 0.24 349)');
-el.style.setProperty('--color--brand--mode-dark', 'oklch(0.48 0.24 349)');
+el.style.setProperty('--color--brand--mode-light', 'oklch(0.502 0.208 350.9)');
+el.style.setProperty('--color--brand--mode-dark', 'oklch(0.502 0.208 350.9)');
 ```
 
 See [palettes.md](palettes.md#runtime-derived-palettes) for the full `*-from-brand()` API.

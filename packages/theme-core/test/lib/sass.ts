@@ -1,7 +1,7 @@
 // Compiles the library's Sass through the Sass JS API, the way the harness
 // checks it: expanded output, dependencies quiet, every warning kept.
 import * as sass from 'sass';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -84,10 +84,11 @@ export const PACKAGE_SPECIFIER =
 /**
  * Resolves `<package>/<subpath>` the way a bundler does: through the package's
  * `exports` only. Returns the absolute target, `null` when the subpath is not
- * exported, `undefined` when the specifier names no workspace package. A
- * `./scss/*` pattern returns the path without extension (Sass adds the partial
- * underscore and the extension). A target written as conditions is read by its
- * `sass` condition, the one Sass tools ask for.
+ * exported, `undefined` when the specifier names no workspace package. The
+ * target is returned exactly as the map gives it, whether or not the file
+ * exists: the Angular CLI (esbuild) takes it that way and does not try a
+ * partial underscore or an extension (issue #7). A target written as
+ * conditions is read by its `sass` condition, the one Sass tools ask for.
  */
 export function resolveExport(specifier: string): string | null | undefined {
   // The longest name first: `@acme/theme-material` is not `@acme/theme`.
@@ -117,13 +118,20 @@ export function resolveExport(specifier: string): string | null | undefined {
   return null;
 }
 
+/** True when `target` is a file as it is written (not a folder, not a stem). */
+export function isFile(target: string): boolean {
+  return statSync(target, { throwIfNoEntry: false })?.isFile() ?? false;
+}
+
 /**
  * Sass importers for what a consumer writes: `@use '@cpangular/…'` (or one of
  * the example theme packages, `@acme/…`) resolves
  * through the package's `exports` and nothing else, so an example that names
  * an unexported path fails to compile. A built `dist/x.css` target is compiled
  * from its Sass source and loaded as CSS, so the check does not depend on a
- * prior build; a `./scss/*` target is a Sass file.
+ * prior build. Any other target has to be an existing file, exactly as mapped:
+ * Sass would find `_theme.scss` from `scss/theme` by itself, the Angular CLI's
+ * resolver does not (issue #7), so a map that relies on it fails here too.
  */
 export const exportsImporters: NonNullable<sass.Options<'sync'>['importers']> = [
   {
@@ -149,6 +157,11 @@ export const exportsImporters: NonNullable<sass.Options<'sync'>['importers']> = 
       const target = resolveExport(url);
       if (target === undefined) return null;
       if (target === null) throw new Error(`"${url}" is not in the package's "exports"`);
+      if (!isFile(target))
+        throw new Error(
+          `"${url}" maps to ${path.relative(repoRoot, target)}, which is not a file ` +
+            `(an "exports" target is taken exactly: no partial underscore, no extension)`,
+        );
       return pathToFileURL(target);
     },
   },
@@ -220,7 +233,10 @@ export function docsStyleList(): { entry: string; compiled: Compiled }[] {
   const styles: string[] = build.styles;
   return styles.map((entry) => {
     const abs = path.join(repoRoot, entry);
-    if (entry.endsWith('.scss')) return { entry, compiled: compileFile(abs, includePaths) };
+    // The app's own Sass names the packages; they resolve through `exports`, as
+    // in the Angular CLI build (no include path into node_modules, issue #7).
+    if (entry.endsWith('.scss'))
+      return { entry, compiled: compileFile(abs, includePaths, exportsImporters) };
     const source = sourceOfDist(abs);
     if (source) return { entry, compiled: compileFile(source) };
     const file = existsSync(abs) ? abs : path.join(repoRoot, 'node_modules', entry);

@@ -1,0 +1,5 @@
+:where(body) {
+  background-color: var(--color--background);
+  color: var(--color--background--contrast);
+  font-family: var(--text--plain-family);
+}
