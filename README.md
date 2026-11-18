@@ -31,9 +31,9 @@ exact version (see the repository's Releases).
 
 | Package | npm | Status |
 |---|---|---|
-| `packages/theme-core` | `@cpangular/cp-theming-core` | 🟡 In Progress — SCSS real, TS API real (Phase 3 done), harness in `test/` (Phase 8 done), cascade: core derives once, a theme is one rule (Phase 9 done), contrast by luminance step (Phase 10 done), palette chain: `brand` and `tertiary` are core palettes and a theme passes only the colours it has (Phase 14 done), generated accents kept inside sRGB so their hue is the one painted (Phase 14c done), a theme without a brand has its primary as its brand palette (Phase 14d done); Phase 19 (issues #7, #10, #8): every documented Sass entry point resolves through `exports` in the Angular CLI with no include path, the opt-in page rule `t.apply-document-base()` / `css/base`, and `$contrast: prefer-white \| prefer-black` on `t.palette()` |
+| `packages/theme-core` | `@cpangular/cp-theming-core` | 🟡 In Progress — SCSS real, TS API real (Phase 3 done), harness in `test/` (Phase 8 done), cascade: core derives once, a theme is one rule (Phase 9 done), contrast by luminance step (Phase 10 done), palette chain: `brand` and `tertiary` are core palettes and a theme passes only the colours it has (Phase 14 done), generated accents kept inside sRGB so their hue is the one painted (Phase 14c done), a theme without a brand has its primary as its brand palette (Phase 14d done); Phase 19 (issues #7, #10, #8): every documented Sass entry point resolves through `exports` in the Angular CLI with no include path, the opt-in page rule `t.apply-document-base()` / `css/base`, and `$contrast: prefer-white \| prefer-black` on `t.palette()`; (issue #15) a `text` role for every accent palette, `--color--{name}--text` (the colour held to a lightness that reads as text; `$text` replaces it), and an accent stroke that is the accent itself wherever a line in it shows, per mode |
 | `packages/theme-ng-core` | `@cpangular/cp-theming-ng-core` | ✅ Done — `ThemeService`, `ThemeDirective`, `ThemeModeDirective` |
-| `packages/theme-ng-material` | `@cpangular/cp-theming-ng-material` | ✅ Done — every `--mat-sys-*` token Angular Material 22 reads (186 declared), colour roles from Material's own role tables (Phase 11 done), tertiary roles from `--color--tertiary` (Phase 14 done), `[palette]` scopes for the eight accent palettes, six measured component patches in `apply-material-overrides()` (Phase 15 done), density scopes |
+| `packages/theme-ng-material` | `@cpangular/cp-theming-ng-material` | ✅ Done — every `--mat-sys-*` token Angular Material 22 reads (186 declared), colour roles from Material's own role tables (Phase 11 done), tertiary roles from `--color--tertiary` (Phase 14 done), `[palette]` scopes for the eight accent palettes, five measured component patches in `apply-material-overrides()` (Phase 15 done), the labels Material paints in an accent from core's text role and its lines from the stroke role, declared on the theme elements and `[palette]` scopes so a value set on a wrapper reaches the component (Phase 19, issues #15 and #9; see its [README](packages/theme-ng-material/README.md)), density scopes |
 | `packages/theme-material` | `@cpangular/cp-theming-material` | ⬛ Stub |
 | `packages/theme-m3` | `@cpangular/cp-theming-m3` | ⬛ Stub |
 
@@ -74,7 +74,7 @@ exact version (see the repository's Releases).
 | 16 | Wrap-up: the docs site as a git-flow `static-site` artifact deployed to GitHub Pages (`pages.yml` deleted), `demos/demo-core` building again and hosted inside the docs site, gallery demo links as same-page anchors with a check that refuses a relative `href` | ✅ Done — in the repo; the first deploy has not been run |
 | 17 | Docs that teach: a Learn track of ten chapters with live examples, the existing pages as the Reference underneath | ✅ Done — the ten chapters are written and pass the order check: Learn / Reference / Explore navigation with Learn first on the home page, the chapter page shape, live examples as files under `demos/docs/src/examples/learn/` that the docs build renders into `<iframe>` documents with their source beside them (chapter 9's with a script, chapter 10's rendered by Angular from the Components gallery), the order check, which fails the build, and the Reference's CSS Variables page generated from the compiled `core.css`. The review pass (one reader per chapter, Session 17) is done |
 | 18 | A theme as a package: `demos/demo-brand-core` and `demos/demo-brand-material` as the example packages `@acme/theme` and `@acme/theme-material`, used by `demo-core` (compiled CSS) and the docs app (Sass); Learn chapter 11 and a Theme packages guide | ✅ Done |
-| 19 | Issues from the IdealLINK move: Sass entry points through package `exports` (#7), the opt-in page rule (#10), a palette that prefers white or black text (#8), Material label tokens set on an ancestor (#9) | 🟡 In Progress — #7, #10 and #8 are done (core and packaging); #9 (the Material adapter, with the full gallery re-measure) is next |
+| 19 | Issues from the IdealLINK move: Sass entry points through package `exports` (#7), the opt-in page rule (#10), a palette that prefers white or black text (#8), a text colour per accent that Material's labels read (#15), Material label tokens set on an ancestor (#9); then one surface scale (#12), muted text everywhere (#13) and Material's shadows (#11) | 🟡 In Progress — #7, #10, #8 (Session A) and #15, #9 (Session B, with the full gallery re-measure in Chromium and Firefox) are done; #12, #13 and #11 (Session C) are next |
 
 Phases 8–19 are specified in [PORT-PLAN.md](PORT-PLAN.md); 14, 14b, 14c, 14d and 15 were done before 13.
 
@@ -164,9 +164,14 @@ pnpm --filter docs build && node demos/docs/test/startup.ts
 
 # Painted contrast over the built showcase and the component gallery: every preset, light and dark,
 # as loaded, hovered, focused and with overlays open; screenshots in dist/docs-render/ (local only).
-# A component label below 4.5:1 fails the run. About 14 minutes per engine for the gallery.
+# A component label below 4.5:1 fails the run, and so does a field's outline, indicator or arrow
+# below 3:1. About 14 minutes per engine for the gallery.
 pnpm --filter docs build && node demos/docs/test/render.ts chromium firefox --jobs=8
 # One part of it: --only=gallery|showcase --preset=rose-red --mode=dark --section=card,buttons
+
+# Material's accent tokens on the built gallery: labels are the palette's text role, lines its
+# stroke, and a token set on a wrapper reaches the buttons and fields inside it (local only)
+pnpm --filter docs build && node demos/docs/test/material-tokens.ts
 
 # Pixel check of the palette chain on the built docs: the brand swatch, three accents per preset (local only)
 pnpm --filter docs build && node demos/docs/test/chain.ts

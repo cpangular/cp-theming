@@ -1624,9 +1624,125 @@ gallery run was left to Session B, which changes the adapter.
 
 Open after Session A:
 
-- #15 and #9: Session B. #12, #13 and #11: Session C.
+- #15 and #9: Session B (landed, below). #12, #13 and #11: Session C.
 - The Learn track names neither `t.apply-document-base()` nor `$contrast` in a chapter; both are
   in `REFS` (chapters 8 and 7) so a chapter may.
+
+**As landed: Session B (#15 and #9), 2026-11-18.** Commit 37a1a0a.
+
+- Core, the `text` role. As specified: `--color--{name}--text` for every accent palette (core's
+  eight and custom names), `min(l, 0.4)` in light mode and `max(l, 0.82)` in dark through
+  `_in-gamut()`, a registered pair derived on the shared selector and joined;
+  `--palette-color--text` in a `[palette]` scope; `$text` on `t.palette()`; the brand of a
+  primary-only theme takes its primary's `$text`. Core registers 125 properties (109 before).
+- Adapter. As specified: the label tokens read `--color--{name}--text`, the lines (a field's
+  focused outline, active indicator, caret and arrow, in primary and in error)
+  `--color--{name}--stroke`; `_as-text()` is gone from the adapter, which works out no lightness
+  of its own. The tokens are in a new internal module, `scss/_tokens.scss`:
+  `define-ng-material-core-theme()` declares the primary and the error ones on the theme
+  elements, `material-palette()` the primary ones again, so every `[palette]` rule has them (core
+  names, custom names through `mat.adaptor()`, and a selector of your own that includes the
+  mixin). `apply-material-overrides()` keeps five patches.
+- Checks added: `packages/theme-core/test/css/accent-roles.test.ts` (25 tests: the role's shape,
+  4.5:1 for text and 3:1 for the stroke on background and surface in every preset, `$text`, the
+  figures the Palette page states); 136 `text/` and `line/` rows in core's `render.ts` (456 in all); five
+  accent-token tests in the adapter's `material-roles.test.ts` (the token lists are written out
+  there by hand; one declared on a component fails); `demos/docs/test/material-tokens.ts` on the
+  built gallery (83 checks per engine); and the gallery run measures every form field's outline,
+  active indicator and select arrow, as loaded, hovered, focused and invalid, with one more
+  screenshot in which those lines are transparent (below 3:1 fails; `gallery-{engine}-lines.txt`).
+- Docs: the Palette page has "An accent as text" and `$text`; the ng-material API page has
+  "Accents as text and as lines" with the table of tokens and where they are declared; the
+  adapter has a README with the same table; the CSS Variables page shows the text role per
+  palette; Learn `REFS` has `--color--{name}--text` (chapter 7).
+
+Calls of mine, which you may want to revisit:
+
+- **The accent stroke changed in dark mode.** The plan expected the stroke to be the accent for a
+  mid-tone accent. In dark mode it was not: the band was 0.42–0.60 in both modes, so a dark-mode
+  accent at 0.72 got a stroke at 0.60, darker than the accent, and the focused indicator of a
+  filled field was 2.7–3.0:1 for the primary of three presets (predicted from the CSS before
+  anything was moved). The band is now per mode: 0.42–0.60 in light mode as before,
+  `max(l, 0.65)` in dark. In the presets the stroke is the accent in both modes. This changes
+  every accent `outlined()` border in dark mode, not only Material's lines: it is lighter than it
+  was.
+- **The light ceiling stays at 0.60**, although a pale green at 0.60 is 2.9:1 on the presets'
+  surface (2.5:1 on a filled field's container). No preset has such an accent, so nothing
+  measured fails. 0.55 would make it 3.07:1 or more for every colour the screen can show, and
+  would darken the stroke of #e65151 (0.64) a little further.
+- **The label tokens have no specificity**: `:where(:root, [theme])`, not `:root, :where([theme])`
+  as the plan said. With `:root` an app's `html { @include mat.button-overrides(…) }` would lose
+  to the adapter, the same complaint as #9 one level up. Nothing Material generates sets these
+  tokens, so there is nothing for the adapter to beat.
+- **The tokens moved out of `apply-material-overrides()`**, as the plan said, so an app that
+  includes only `define-ng-material-core-theme()` (or only `css/material-core`) now gets the
+  labels in the text role too.
+- **They read the cp-theming role, not `--mat-sys-primary`.** A `--mat-sys-primary` set by hand
+  no longer changes a label; the palette (or `$text`) does.
+- **The icon that stands in for a label goes with the label**: a step in error and a field's
+  error icon are the text role, not the stroke.
+- **`--palette-color--text` is cleared in a `background` or `surface` scope** (`initial`), so the
+  text colour of a palette around it does not come through; `$text` on those two palettes is a
+  Sass error.
+- **No live example of the text role** on the Palette page: an attribute example cannot colour
+  text from a variable. Two Sass examples, and the figures (#e65151: 3.71:1 on white as written,
+  #85151d and 9.92:1 as text) are held by a test.
+- One commit for both issues: the lines that move the tokens (#9) are the lines that change what
+  they read (#15).
+
+Checks at the end of Session B: `pnpm test` (214 core CSS, 40 API, 55 adapter, 516 docs); core
+`render.ts` 456/456 rows in Chromium, Firefox and WebKit; `material-tokens.ts` 249/249 across the same three; the docs `render.ts`, full, in
+Chromium and Firefox:
+
+| | Chromium | Firefox |
+| --- | --- | --- |
+| Gallery labels measured | 19,120 | 19,120 |
+| Component labels below 4.5:1 | 0 | 0 |
+| Lowest component label | 4.77:1 (rose-red dark, a focused filled button under `palette="error"`) | 4.73:1 (the same one) |
+| Lines of a form field measured | 2,000 | 2,000 |
+| Lines below 3:1 | 0 | 0 |
+| Lowest line | 3.59:1 (rose-red dark, the focused indicator of a filled field under `palette="error"`) | 3.59:1 (the same one) |
+| Lowest focused outline | 5.11:1 (rose-red light) | 5.11:1 |
+| Lowest select arrow | 3.60:1 (rose-red dark, focused under `palette="error"`) | 3.60:1 |
+| Errors (overlays, sections) | 0 | 0 |
+
+The lowest line outside `palette="error"` is the theme's own focused indicator on a filled field:
+4.68:1 in azure-blue dark, 5.52:1 in azure-blue light. 16 labels fewer than Session A's 19,136
+because a paragraph of the Components page lost a `<code>` (two text nodes per page). The
+showcase report is 40 captions below 4.5:1 of 224 in both engines, all of them the docs' own
+(inline `code`, swatch and density labels), none a Material label.
+
+In Chromium as well: `variables.ts` 28/28, `learn.ts` 1111/1111, `chain.ts`, `startup.ts`,
+`page-base.ts` 20/20, `brand-text.ts` 24/24.
+
+What IdealLINK can remove:
+
+- its own `--color--{primary,secondary,tertiary,error}--text` rule on `:root, [theme]`: core
+  declares the role with the same limits (and inside sRGB, so a vivid accent's text may be a
+  little less saturated than its own);
+- `.mat-mdc-form-field { --mat-form-field-outlined-focus-outline-color: var(--color--primary); }`:
+  the outline is `--color--primary--stroke`, which for `#0c6ab6` is the colour itself in light
+  mode (in dark mode, if the primary is the same colour there, `#4193e2`);
+- the `inherit` reset of `--mat-button-text-label-text-color` on the buttons inside the header:
+  the header's value reaches them. If a `[theme]` or `[palette]` element sits between the header
+  scope and a button, set the token on that element.
+
+Open after Session B:
+
+- #12, #13 and #11: Session C.
+- `core.css` is 16,179 bytes gzipped against the 16 KiB ceiling of `registry.test.ts`
+  (205 bytes left; the sixteen text pairs each carry the four-pass gamut expression).
+  Session C adds colours: either raise the ceiling or declare the gamut factor once as a private
+  variable, as the contrast step is.
+- The accent stroke is not gamut-corrected: a vivid accent moved into the band can leave sRGB.
+- The light stroke ceiling (above).
+- Identity text in a `[palette]` scope (`color: var(--palette-color)`) is still the colour as
+  written; the text role is something an app opts into. The docs app's own inline `code` is
+  `--color--primary` on a primary tint, 3.5–3.8:1 in dark mode on the showcase (a caption, a
+  report): `--color--primary--text` would fix it.
+- The gallery has no native `<select>`, so `--mat-form-field-focus-select-arrow-color` is set
+  and not measured; the caret is checked by computed style, not painted.
+- The Learn track does not name the text role in a chapter; it is in `REFS` (chapter 7).
 
 ## Decisions already made
 
@@ -1683,7 +1799,7 @@ So they are not reopened. Tell me if you want any reversed.
 - Brand fills in dark mode (Phase 15). The presets pass no brand, so `--color--brand` is core's
   default, a near-black, in both modes. Under `palette="brand"` in dark mode a filled button, a
   checked checkbox, a radio, a slider and a progress bar are dark on a dark page. Labels are held
-  readable by the adapter; fills are the brand exactly, by design. A per-mode default brand, or
+  readable (by core's text role since Phase 19); fills are the brand exactly, by design. A per-mode default brand, or
   no default, would change it. The Components page says so.
 - A focused text button under `palette="error"` on `surface-container-high` (a dialog, the filled
   card) is 4.0–4.4:1 in rose-red light and in dark mode in three presets (Phase 15, measured by

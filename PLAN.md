@@ -736,8 +736,9 @@ The two brand demos are the worked example of a company shipping its theme to it
 
 ### 🟡 Phase 19 — Issues from the IdealLINK move (PORT-PLAN.md)
 
-Four issues from the first app that moved to 0.2.0-alpha.0. Session A (core and packaging) is
-done; Session B (#9, the Material adapter) is next.
+Issues from the first app that moved to 0.2.0-alpha.0. Session A (core and packaging: #7, #10,
+#8) and Session B (#15 and #9: a text colour per accent, and Material's labels) are done; Session
+C (#12, #13, #11: one surface scale, muted text everywhere, Material's shadows) is next.
 
 - ✅ #7 — Sass entry points resolve through `exports`. The Angular CLI takes an `exports` target
   exactly as mapped, so `"./scss/*": "./scss/*"` never found `_theme.scss`. Every documented entry
@@ -757,6 +758,24 @@ done; Session B (#9, the Material adapter) is next.
   take the preferred colour wherever it reaches 3:1, the other elsewhere. Two more private steps
   beside `--theme--_contrast-step`; the theme rule re-declares the seven colour-role contrasts.
   Palette page: "Brand colours that take white text".
-- ⬛ #9 — Material label tokens set on an ancestor are ignored: not started.
+- ✅ #15 — a text colour per accent. Every accent palette has a fifth role, `text`:
+  `--color--{name}--text` (`--palette-color--text` in a `[palette]` scope), the colour no lighter
+  than 0.40 in light mode and no darker than 0.82 in dark, hue kept, inside sRGB; a registered
+  pair derived on the shared selector, which `$text` in `t.palette()` replaces. `background` and
+  `surface` have none. The accent stroke is per mode (0.42–0.60 light, 0.65 or more dark; it was
+  0.42–0.60 in both, under 3:1 on a filled field in dark mode), so a preset's stroke is its
+  accent. The Material adapter reads both: labels in primary or error are the text role, a
+  field's focused outline, active indicator, caret and arrow the stroke. Palette page: "An accent
+  as text".
+- ✅ #9 — a Material label token set on an ancestor reaches the component. The accent tokens
+  left `apply-material-overrides()` and the component: `define-ng-material-core-theme()`
+  declares them on `:where(:root, [theme])`, `material-palette()` (so every `[palette]` scope,
+  custom names through `mat.adaptor()`) the primary ones again. The nearest declaration wins; an
+  app's rule on `html` wins too. The ng-material API page and the adapter's README list the
+  tokens and where they are. `demos/docs/test/material-tokens.ts` checks it on the built
+  gallery, and the gallery run now also measures every field's outline, indicator and arrow
+  (below 3:1 fails).
+- ⬛ #12, #13, #11 — one surface scale, muted text on every theme element, Material's
+  three-layer shadows: Session C, not started.
 
 ---
