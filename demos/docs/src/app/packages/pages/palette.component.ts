@@ -273,24 +273,26 @@ const TOC = [
           surface: a card, a side panel, a toolbar, a dialog, the well of a text field. Each has a
           <code>--contrast</code> for the text on it.
         </p>
-        <div class="swatch-grid container-strip">
+        <div class="swatch-grid">
           @for (c of surfaceContainers; track c.token) {
             <div
               class="swatch-chip"
               [style.background]="'var(' + c.token + ')'"
               [style.color]="'var(' + c.token + '--contrast)'"
             >
-              <code>{{ c.token }}</code>
+              <code [title]="c.token">{{ c.token.slice(18) || 'surface' }}</code>
               <span class="swatch-aa">{{ c.light }} / {{ c.dark }}</span>
             </div>
           }
         </div>
         <p>
           They are Material 3's surface containers, under M3's names and at M3's distance from the
-          surface. The two numbers on each one above are that distance in oklch lightness, in light
-          mode and in dark mode. In light mode <code>container-lowest</code> is a little lighter
-          than the surface and the other four are darker in turn. In dark mode it is the other way
-          round. Hue and chroma are the surface's.
+          surface: <code>--color--surface--container-lowest</code>, <code>-low</code>,
+          <code>--color--surface--container</code>, <code>-high</code> and <code>-highest</code>.
+          The two numbers on each one above are that distance in oklch lightness, in light mode and
+          in dark mode. In light mode <code>container-lowest</code> is a little lighter than the
+          surface and the other four are darker in turn. In dark mode it is the other way round. Hue
+          and chroma are the surface's.
         </p>
         <cpa-code [code]="ex.surfaceContainersScss" lang="scss" />
         <p>
@@ -693,10 +695,6 @@ const TOC = [
         opacity: 0.55;
       }
 
-      .swatch-grid.container-strip {
-        grid-template-columns: 1fr;
-        margin-bottom: 16px;
-      }
       .swatch-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

@@ -734,11 +734,11 @@ The two brand demos are the worked example of a company shipping its theme to it
   cover chapter 11; `demos/docs/test/learn.ts` checks in the browser that both apps paint the
   same. Root `pnpm build` now builds core, both packages, demo-core and the docs site.
 
-### 🟡 Phase 19 — Issues from the IdealLINK move (PORT-PLAN.md)
+### ✅ Phase 19 — Issues from the IdealLINK move (PORT-PLAN.md)
 
 Issues from the first app that moved to 0.2.0-alpha.0. Session A (core and packaging: #7, #10,
-#8) and Session B (#15 and #9: a text colour per accent, and Material's labels) are done; Session
-C (#12, #13, #11: one surface scale, muted text everywhere, Material's shadows) is next.
+#8), Session B (#15 and #9: a text colour per accent, and Material's labels) and Session C (#12,
+#13, #11: one surface scale, muted text everywhere, Material's shadows) are done.
 
 - ✅ #7 — Sass entry points resolve through `exports`. The Angular CLI takes an `exports` target
   exactly as mapped, so `"./scss/*": "./scss/*"` never found `_theme.scss`. Every documented entry
@@ -763,8 +763,9 @@ C (#12, #13, #11: one surface scale, muted text everywhere, Material's shadows) 
   than 0.40 in light mode and no darker than 0.82 in dark, hue kept, inside sRGB; a registered
   pair derived on the shared selector, which `$text` in `t.palette()` replaces. `background` and
   `surface` have none. The accent stroke is per mode (0.42–0.55 light, 0.65 or more dark; it was
-  0.42–0.60 in both, under 3:1 on a filled field in dark mode), so a preset's stroke is its
-  accent. The Material adapter reads both: labels in primary or error are the text role, a
+  0.42–0.60 in both, under 3:1 on a filled field in dark mode; the light ceiling was 0.60 until
+  Session C) and inside sRGB, so a preset's stroke has its accent's lightness and hue. The
+  Material adapter reads both: labels in primary or error are the text role, a
   field's focused outline, active indicator, caret and arrow the stroke. Palette page: "An accent
   as text".
 - ✅ #9 — a Material label token set on an ancestor reaches the component. The accent tokens
@@ -775,7 +776,26 @@ C (#12, #13, #11: one surface scale, muted text everywhere, Material's shadows) 
   tokens and where they are. `demos/docs/test/material-tokens.ts` checks it on the built
   gallery, and the gallery run now also measures every field's outline, indicator and arrow
   (below 3:1 fails).
-- ⬛ #12, #13, #11 — one surface scale, muted text on every theme element, Material's
-  three-layer shadows: Session C, not started.
+- ✅ #12 — one surface scale. The surface has five container colours,
+  `--color--surface--container-lowest`, `-low`, `--color--surface--container`, `-high` and
+  `-highest`, each with a `--contrast`: Material 3's surface containers under their M3 names, the
+  surface moved by the lightness M3 puts between its surface and each container, per mode. The
+  adapter's `--mat-sys-surface-container-*` are `var()` of them, so an app's own panel and a
+  Material card are one colour. The shade steps (`--high`, `--low`, ±0.12) stay as they are. The
+  de-emphasis weight defaults per mode, 63% light and 93% dark: where Angular Material's tables
+  have `on-surface-variant` on the default surface. Palette page: "Surface containers"; the
+  ng-material API page and the adapter's README: "Material's colour roles in cp-theming".
+- ✅ #13 — text colours for the page. Core declares `--container--text`,
+  `--container--text-emphasis` and `--container--text-deemphasis` on every theme element, against
+  the background; `filled()` still declares its own, `bg()` and `outlined()` none. The adapter's
+  `on-surface-variant` is the same mix at the same weight against the surface, so a theme's
+  `$text-deemphasis-blend` moves both. Getting Started: "Muted text".
+- ✅ #11 — Material's shadows. Elevation levels 1–5 are the three layers Angular Material draws
+  (key, penumbra, ambient), black at 20 / 14 / 12% in light mode and 33 / 23 / 20% in dark. A
+  `$shadow-color` is shared out over the layers by the browser; a `$levels` shadow is used as
+  written. `core.css` is 16,471 bytes gzipped, under a ceiling raised from 16 KiB to 16.5 KiB.
+- ✅ From Session B's open list: the gamut factor is declared once
+  (`--theme--_gamut-factor`), the accent stroke goes through the gamut correction, its light
+  ceiling is 0.55, and the docs' inline `code` is the primary's text role.
 
 ---

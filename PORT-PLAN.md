@@ -1744,16 +1744,181 @@ What IdealLINK can remove:
 
 Open after Session B:
 
-- #12, #13 and #11: Session C.
+- #12, #13 and #11: Session C (landed, below).
 - `core.css` size, the accent stroke's gamut, the light stroke ceiling (0.55) and the docs' inline
-  `code`: moved into Session C (decided 2026-11-18).
+  `code`: moved into Session C (decided 2026-11-18; landed, below).
 - Identity text in a `[palette]` scope (`color: var(--palette-color)`) is still the colour as
   written; the text role is something an app opts into. The docs app's own inline `code` is
   `--color--primary` on a primary tint, 3.5–3.8:1 in dark mode on the showcase (a caption, a
-  report): fixed in Session C.
+  report): fixed in Session C (it is the text role now).
 - The gallery has no native `<select>`, so `--mat-form-field-focus-select-arrow-color` is set
   and not measured; the caret is checked by computed style, not painted.
 - The Learn track does not name the text role in a chapter; it is in `REFS` (chapter 7).
+
+**As landed: Session C (#12, #13, #11 and the four follow-ups), 2026-11-18.** Commits 136c730
+(the four follow-ups), 5f615e7 (#12), 1ace0c4 (#13), 2b5491d (#11).
+
+- The four follow-ups from Session B's list, one commit:
+  - The gamut factor is declared once, `--theme--_gamut-factor` on `:where(:root)`, and each of
+    the four passes substitutes it. It took 4.4 KB off the expanded `core.css` and 31 bytes off
+    the gzipped one: gzip had already folded the repetition, so this did not make room for the
+    session's colours (see the ceiling, below).
+  - The accent stroke goes through `_in-gamut()`. A pure yellow (#ffd400) at the light ceiling
+    was painted 12° off its hue; it is on it now (a `line/` row in core's `render.ts`).
+  - The light ceiling of the stroke band is 0.55. Measured over every hue and chroma, gamut
+    corrected: 3.58:1 or more on the presets' surface (the plan's 3.07:1 was a figure for the
+    filled field's container, where it is 3.04:1), 4.1:1 on their background. `#e65151`'s stroke
+    is at 0.55.
+  - The docs' inline `code` is `--color--primary--text`. The showcase report went from 40
+    captions below 4.5:1 to 30.
+- #12. Five colours on the shared selector, `--color--surface--container-lowest`, `-low`,
+  `--color--surface--container`, `-high`, `-highest`, each with `--contrast`: the surface moved
+  by M3's distances (light +0.0172, −0.0172, −0.0345, −0.0517, −0.069; dark −0.0238, +0.0362,
+  +0.0534, +0.0965, +0.1396), derived from the joined surface token like the ladder. The
+  adapter's `--mat-sys-surface-container-*` are `var()` of them; nothing Material paints
+  changed. The shade steps are untouched. The de-emphasis weight defaults per mode (63% light,
+  93% dark; see the first call below). Docs: "Surface containers" on the Palette page, the table
+  "Material's colour roles in cp-theming" on the ng-material API page and in the adapter's
+  README, the containers on the generated CSS Variables page, Learn `REFS`
+  (`--color--surface--container-{step}`, chapter 7).
+- #13. `page-text()` in `_apply.scss`, included by `define-core-theme()` on
+  `:where(:root, [theme])`: `--container--text` and `--container--text-emphasis` are the
+  background's contrast, `--container--text-deemphasis` that contrast mixed with the background
+  at the de-emphasis weight, each side of a `light-dark()` reading its own mode's weight.
+  `filled()` writes its three through the same mixin. The adapter's `on-surface-variant` is the
+  same mix against the surface. Docs: "Muted text" under Getting Started's "Style the page".
+- #11. `$_geometry` holds Material's three layers per level; the default colours are written out
+  (black at 20 / 14 / 12% in light mode, 33.3 / 23.3 / 20% in dark). A `$shadow-color` is shared
+  out by the browser, `oklch(from <colour> l c h / calc(alpha * 0.6667 | 0.4667 | 0.4))`.
+  `$levels` works as before; `_compatible()` and `_by-mode()` needed no change (tested with a
+  three-layer and a one-layer level, one mode and both).
+- Checks added: `theme-core/test/css/surface-containers.test.ts`, `page-text.test.ts` and
+  `elevation.test.ts`; in the adapter's `material-roles.test.ts`, core's container distances
+  against the tones of the installed Material's tables, `on-surface-variant` against the mix and
+  against the table's lightness, and core's shadows against Material's own `get-box-shadow()`;
+  `demos/docs/test/surface-scale.test.ts` (the Palette page's strip and the role table against
+  the compiled CSS); in core's `render.ts` the `container/`, `muted/` and `elevation/` rows (589
+  rows in all; a shadow row reads one layer's colour or every layer's lengths). The test
+  evaluator handles `color-mix()`.
+
+Calls of mine, which you may want to revisit:
+
+- **The dark de-emphasis weight is 93%, not 82%.** The plan said to measure it against M3's dark
+  table. The adapter reads Angular Material's tables, and Angular Material 22's dark table has
+  `on-surface-variant` at tone 90, the same tone as `on-surface` (the Material 3 guidelines have
+  tone 80). Against that table the weight is 93% on the default surface (0.946 on 0.22), and
+  nothing Material paints in dark mode moves. The cost: in dark mode muted text is close to the
+  text colour (lightness 0.945 against white). 82% is the guidelines' position (0.86): more of a
+  step, and every Material hint, placeholder and unselected label in dark mode a little darker
+  than Angular Material's own theme has it (still 6:1 or more on every container). It is one
+  number in `_weights.scss`. Light mode is 63% either way.
+- **A stroke gives up chroma whenever its accent is written outside sRGB, moved or not.** That
+  is what "through `_in-gamut()`" means, and 33 of the presets' 64 accents are outside sRGB (their
+  fills are painted as the browser clips them). So a preset's stroke is no longer the colour its
+  fill is painted in: rose-red's light error fills #d30000 and its stroke is #a23d36 (half the
+  chroma, the most of any), azure-blue's dark primary #4ca7ff against #5aa8ff (12%). Lightness
+  and hue are the accent's. An accent inside sRGB (any hex colour) is still its own stroke. The
+  text role has behaved this way since Session B. If the presets' lines should match their fills,
+  the clean fix is to write the presets' accents inside sRGB; correcting only a stroke the band
+  moved is not something one expression can say.
+- **`core.css` is 16,471 bytes gzipped and its ceiling went from 16 KiB to 16.5 KiB**
+  (`registry.test.ts` has the sum: containers 132 bytes, page text 66, shadow layers 89, the
+  corrected stroke 36, the hoisted factor −31).
+- **The containers are the surface's only**, unregistered, with no `t.palette()` parameter and no
+  `--palette-color--container-*` in a `palette="surface"` scope. A theme that wants another
+  container colour sets the variable in a rule of its own.
+- **`bg()` still sets none of the three text variables.** The phase said "a `bg()` or `filled()`
+  container still sets its own"; only `filled()` ever did, and Learn chapter 5 says so. Inside a
+  `bg` container the values around it hold: the page's, or an enclosing `filled`'s.
+- **A `[theme]` element inside a `filled` container** gets the text variables of its own
+  background again (they are declared on every theme element).
+- **The page's muted text is mixed with the background, Material's with the surface**, as the
+  phase has it. On the presets that is lightness 0.359 against 0.344 in light mode.
+- **The default shadow colours are six literals**, not `$shadow-color` run through the shares;
+  passing the default colours gives the same shadows to within 0.0005 of alpha (tested).
+- **The derived-output example on the Palette and Guides pages lost its stroke line**: the
+  compiled value is four nested passes now.
+- **Learn chapter 8's "Quiet text" slider starts at 63**, the light default; in dark mode the
+  default is 93 until the slider is moved.
+
+Found on the way:
+
+- Muted text drifts in hue on a strongly coloured fill. The contrast colour is written
+  `oklch(l 0 0)`, and browsers interpolate a hue written as a number even at chroma 0, so
+  `color-mix(in oklch, …)` turns the hue towards 0° by the weight. On a `filled` blue, muted text
+  is slightly purple. Invisible on a near-neutral page or surface (chroma under 0.004), and it
+  was there before this session (at 55%). Writing the contrast's hue as `none` would fix it; it
+  touches every `--contrast`, so it is not done here.
+- Session B's "inside sRGB" assertions in `accent-roles.test.ts` compared two clipped colours and
+  could not fail. They read the unclipped channels now, which is how the 33 preset accents
+  showed up.
+- The zombie `git` processes that stopped Session A come from the dev container's sync service,
+  not from this repository: it runs a git sync for every file change under
+  `.devcontainer/.data/` (the pnpm store), and PID 1 reaps nothing. One `pnpm build` or
+  `pnpm test` adds about a thousand. This session ended at about 27,000 without a failure.
+  Reported as cpdevtools/dcman#124.
+
+Checks at the end of Session C: `pnpm build`; `pnpm test` (257 core CSS, 40 API, 80 adapter, 530
+docs, the order and examples checks among them); core `render.ts` 589/589 rows in Chromium,
+Firefox and WebKit; `material-tokens.ts` 249/249, `variables.ts` 84/84, `page-base.ts` 60/60 and
+`brand-text.ts` 72/72 across the same three; `chain.ts`, `startup.ts` and `learn.ts` (1112/1112)
+in Chromium; the docs `render.ts`, full, in Chromium and Firefox:
+
+| | Chromium | Firefox |
+| --- | --- | --- |
+| Gallery labels measured | 19,120 | 19,120 |
+| Component labels below 4.5:1 | 0 | 0 |
+| Lowest component label | 4.77:1 (rose-red dark, a focused filled button under `palette="error"`) | 4.73:1 (the same one) |
+| Lines of a form field measured | 2,000 | 2,000 |
+| Lines below 3:1 | 0 | 0 |
+| Lowest line | 3.61:1 (azure-blue dark, the focused indicator of a filled field under `palette="error"`) | 3.61:1 (the same one) |
+| Lowest focused outline | 5.21:1 (azure-blue light) | 5.21:1 |
+| Lowest select arrow | 3.61:1 (azure-blue dark, focused under `palette="error"`) | 3.61:1 |
+| Errors (overlays, sections) | 0 | 0 |
+| Showcase captions below 4.5:1, of 224 | 30 | 30 |
+
+The lowest line moved from rose-red (3.59:1 in Session B) to azure-blue: the strokes of accents
+outside sRGB have less chroma now. The 30 showcase captions are the docs' own (swatch labels,
+and density labels and `code` in light mode that the page dims with `opacity`), none a Material
+label; the dark-mode `code`
+captions of Session B's report are gone. The Firefox gallery was run on its own: started beside
+the Chromium run, all eight of its pages timed out at load.
+
+Done-when, as it holds: the gamut factor is declared once, and `core.css` is under its ceiling
+only because the ceiling was raised (16,471 bytes against 16.5 KiB; it would be 87 bytes over
+16 KiB); the accent stroke is gamut-corrected and at most 0.55 in light mode, 3.58:1 or more on
+the presets' surface for any colour; the adapter's five surface containers are core's; muted
+text is defined on every theme element; Material's three-layer shadows are the default. Issues
+#12, #13 and #11 are closed by their commits.
+
+What IdealLINK can remove:
+
+- its surface-tone overrides (`--color--surface--low`, `--high`, `--higher`, `--highest` set to
+  the adapter's container steps). Its own styles then name the containers instead:
+  `--color--surface--container-lowest` where it used `--low`, `-low` for `--high`,
+  `--color--surface--container` for `--higher`, `-highest` for `--highest`, and `-high`, which
+  had no slot. The shade steps go back to ±0.12, so any style still reading
+  `--color--surface--high` gets darker than it was;
+- its 63% de-emphasis weight. Light mode is the same. If it set 63% for both modes, dark-mode
+  muted text gets lighter (93%); to keep its own in dark mode it passes that side only,
+  `t.light-dark(t.weights(), t.weights($text-deemphasis-blend: 63%))`;
+- its `:root, [theme]` rule for `--container--text-deemphasis` (and `--container--text` /
+  `-emphasis` if it set them). Core's is mixed with the background, IdealLINK's was mixed with
+  the surface: 0.359 against 0.344 in light mode on a preset. Text that has to be Material's
+  muted colour exactly reads `--mat-sys-on-surface-variant`;
+- its `$elevation` levels (`$material-elevation`). The light shadows are the same ones. In dark
+  mode core's are stronger (33 / 23 / 20%) than the Material values it passed for both modes;
+- nothing from the first commit, unless it overrode a stroke: `#e65151`'s stroke is at
+  lightness 0.55 now (0.60 before).
+
+Open after Session C:
+
+- The two calls at the top of the list above (the dark weight, 93% or 82%; the chroma a preset's
+  stroke gives up) are the ones most worth a look.
+- Muted text's hue on a coloured fill (found on the way): not fixed.
+- The gallery has no native `<select>`, the Learn track names none of this session's variables in
+  a chapter (`--color--surface--container-{step}` is in `REFS`), and the API pages still state
+  some defaults nothing checks (`$text-emphasis-blend` "default 1.0"): as before.
 
 ## Decisions already made
 
