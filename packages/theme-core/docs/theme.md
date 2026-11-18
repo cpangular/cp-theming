@@ -293,6 +293,29 @@ The pre-built `dist/core.css` is identical to calling `@include t.define-core-th
 
 ---
 
+## `@include t.apply-document-base()`
+
+Opt-in. Core styles no element; this mixin emits the one rule that gives the page the theme:
+
+```css
+:where(body) {
+  background-color: var(--color--background);
+  color: var(--color--background--contrast);
+  font-family: var(--text--plain-family);
+}
+```
+
+Include it once, after `define-core-theme()`. `:where()` keeps it at zero specificity, so a `body` rule of your own wins wherever it loads. It sets no font size, no margin and no scrollbar colours.
+
+The same rule ships compiled as `css/base` (`dist/base.css`), for an app without Sass:
+
+```css
+@import "@cpangular/cp-theming-core/css/core";
+@import "@cpangular/cp-theming-core/css/base";
+```
+
+---
+
 ## `@property` registrations and animation
 
 `define-core-theme()` registers **what animation needs, and nothing derived**:

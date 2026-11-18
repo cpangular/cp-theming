@@ -1,0 +1,18 @@
+// Pre-built page rule. Opt-in: load it AFTER core, anywhere among your own CSS.
+//
+// Contains one rule, `:where(body)`: the background palette's colour, its
+// contrast colour as text, and the plain font family. Zero specificity, so a
+// `body` rule of your own wins wherever it loads. Without it (or
+// `t.apply-document-base()` in Sass) core styles no element and the page keeps
+// the browser's own colours and font.
+//
+// Usage (HTML):
+//   <link rel="stylesheet" href="node_modules/@cpangular/cp-theming-core/dist/core.css">
+//   <link rel="stylesheet" href="node_modules/@cpangular/cp-theming-core/dist/base.css">
+//
+// Usage (CSS):
+//   @import "@cpangular/cp-theming-core/css/core";
+//   @import "@cpangular/cp-theming-core/css/base";
+@use "theme" as t;
+
+@include t.apply-document-base();

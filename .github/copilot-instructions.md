@@ -217,6 +217,13 @@ demos/demo-brand-material/  @acme/theme-material           — Example theme pac
   the `sass` condition, pointing at the file with its underscore and extension, and
   `./scss/*.scss` covers a full file name. Do not add a `./scss/*` pattern, and do not add an
   include path into `node_modules` to the docs app: its build is the proof that the maps work.
+- Page rule (PORT-PLAN.md Phase 19, issue #10): `t.apply-document-base()` emits one
+  `:where(body)` rule (background, text colour, font family) and is opt-in; core itself never
+  styles an element (`packages/theme-core/test/css/base.test.ts` fails a `body` or `html`
+  selector in core or a preset). `scss/base.scss` is its compiled form, `dist/base.css`,
+  exported as `./css/base`. Browser checks: the `base/` rows of `packages/theme-core/test/render.ts`
+  and `demos/docs/test/page-base.ts` (after `pnpm --filter docs build`): the docs app takes the
+  rule from Sass, `demos/demo-core` as compiled CSS.
 - Fixture themes live in `packages/theme-core/test/fixtures/` and `packages/theme-ng-material/test/fixtures/`.
 - CI: `.github/workflows/test.yml` (cpdevtools/git-flow) runs `github.actions.build` then
   `github.actions.test` in every package that defines them.

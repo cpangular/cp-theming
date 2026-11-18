@@ -193,6 +193,11 @@ export const PATTERNS: Pattern[] = [
   },
   {
     chapter: 8,
+    what: 'the page rule (it reads the font family)',
+    pattern: /\bapply-document-base\(|cp-theming-core\/css\/base\b/,
+  },
+  {
+    chapter: 8,
     what: 'a non-colour config',
     pattern:
       /\bt\.(?:weights|typography|density|shape|motion|elevation|overlays|focus|container|radius|padding)\(/,
@@ -577,6 +582,13 @@ export const REFS: Ref[] = [
     page: 'core/typography',
     anchor: 'typography-fn',
     find: 'typography',
+  },
+  {
+    name: 't.apply-document-base()',
+    chapter: 8,
+    page: 'core/getting-started',
+    anchor: 'page-base',
+    find: 'apply-document-base',
   },
   {
     name: 't.elevation()',

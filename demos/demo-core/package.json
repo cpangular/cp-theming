@@ -17,6 +17,7 @@
     "build": {
       "command": "vite build",
       "dependencies": [
+        "../../packages/theme-core:build",
         "build.theme"
       ]
     },

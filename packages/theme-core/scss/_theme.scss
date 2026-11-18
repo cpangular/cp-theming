@@ -447,6 +447,25 @@ $_palette-hooks-emitted: ();
   @include _ap.define-core-theme();
 }
 
+// ─── Public: apply-document-base ──────────────────────────────────────────────
+// Opt-in: the page itself takes the theme. Core declares the variables and
+// styles no element with them; this one rule gives <body> the background
+// palette's colour, its contrast as text, and the plain font family.
+//
+//   @include t.define-core-theme();
+//   @include t.apply-document-base();
+//
+// :where() keeps it at zero specificity, so a `body` rule of the app wins
+// wherever it loads. It sets no font size and no scrollbar colours. The same
+// rule compiled: `@cpangular/cp-theming-core/css/base` (scss/base.scss).
+@mixin apply-document-base() {
+  @at-root :where(body) {
+    background-color: var(--color--background);
+    color: var(--color--background--contrast);
+    font-family: var(--text--plain-family);
+  }
+}
+
 // ─── Apply mixins — re-exported for single @use 'theme' as t convenience ──────
 @mixin apply-palette($name) {
   @include _ap.apply-palette($name);

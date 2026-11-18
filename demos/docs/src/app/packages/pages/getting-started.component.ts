@@ -17,6 +17,16 @@ import customThemeScss from '../../../examples/getting-started/custom-theme.scss
   loader: 'text',
 };
 import accentsScss from '../../../examples/getting-started/accents.scss' with { loader: 'text' };
+import pageBaseScss from '../../../examples/getting-started/page-base.scss' with {
+  loader: 'text',
+};
+import pageBaseCss from '../../../examples/getting-started/page-base.css' with { loader: 'text' };
+import pageBaseOutputCss from '../../../examples/getting-started/page-base.output.css' with {
+  loader: 'text',
+};
+import pageBaseOwnScss from '../../../examples/getting-started/page-base-own.scss' with {
+  loader: 'text',
+};
 import brandChainHtml from '../../../examples/getting-started/brand-chain.html' with {
   loader: 'text',
 };
@@ -35,8 +45,10 @@ const CORE_TOC = [
   { label: 'Install', anchor: 'install' },
   { label: 'Option A — Prebuilt CSS', anchor: 'option-a' },
   { label: 'Option B — Custom theme', anchor: 'option-b' },
+  { label: 'Style the page', anchor: 'page-base' },
   { label: 'TypeScript API', anchor: 'typescript-api' },
   { label: 'No flash on reload', anchor: 'no-flash' },
+  { label: 'Coming from ng-material-theme', anchor: 'from-ng-material-theme' },
 ];
 
 const NG_CORE_TOC = [
@@ -196,6 +208,34 @@ pnpm add @cpangular/cp-theming-core</code></pre>
             </p>
           </section>
 
+          <section id="page-base" class="page-section">
+            <h2>Style the page</h2>
+            <p>
+              Core declares the theme's variables and styles no element with them. Until something
+              uses them, the page keeps the browser's own background, text colour and default font.
+              To give <code>&lt;body&gt;</code> the theme's background, its text colour and its font
+              family, include <code>t.apply-document-base()</code> once:
+            </p>
+            <cpa-code [code]="ex.pageBaseScss" lang="scss" />
+            <p>Without Sass, import the same rule compiled, after core:</p>
+            <cpa-code [code]="ex.pageBaseCss" lang="css" />
+            <p>Either way this is the whole rule:</p>
+            <cpa-code [code]="ex.pageBaseOutputCss" lang="css" />
+            <p>
+              <code>:where()</code> gives it no specificity, so a <code>body</code> rule of your own
+              wins wherever it is loaded, before or after. Set only what you want to differ; the
+              rest still comes from the theme. This site keeps its own font this way:
+            </p>
+            <cpa-code [code]="ex.pageBaseOwnScss" lang="scss" />
+            <p>
+              The rule sets no font size, no margin and no scrollbar colours. The colours follow the
+              theme and the mode of the page: <code>--color--background</code> and its contrast are
+              read on <code>&lt;body&gt;</code>, so a <code>theme</code> or
+              <code>themeMode</code> attribute on <code>&lt;html&gt;</code> or on
+              <code>&lt;body&gt;</code> itself changes them.
+            </p>
+          </section>
+
           <section id="typescript-api" class="page-section">
             <h2>TypeScript API</h2>
             <p>
@@ -264,6 +304,23 @@ Content-Security-Policy: script-src 'self' 'nonce-RANDOM_PER_RESPONSE'</code></p
               The package can be imported where there is no <code>localStorage</code> (a server
               render, a test runner): nothing touches storage until a function is called, and
               without storage the theme and mode still apply, unsaved.
+            </p>
+          </section>
+
+          <section id="from-ng-material-theme" class="page-section">
+            <h2>Coming from ng-material-theme</h2>
+            <p>
+              The <code>core.css</code> of <code>ng-material-theme</code> styled the page: it gave
+              <code>&lt;body&gt;</code> the theme's background, text colour and font. The core of
+              cp-theming declares variables and styles no element unless you ask. An app that moves
+              over and adds nothing keeps its components' colours, but its page falls back to the
+              browser's default font, a serif in most browsers, and to the browser's own page
+              colours.
+            </p>
+            <p>
+              Add the rule from <a href="#page-base">Style the page</a>: one include in Sass, or one
+              import of <code>&#64;cpangular/cp-theming-core/css/base</code>. If the app had a
+              <code>body</code> rule of its own for the font, it still wins.
             </p>
           </section>
         }
@@ -567,6 +624,10 @@ export class GettingStartedPageComponent {
     materialSassScss,
     customThemeScss,
     accentsScss,
+    pageBaseScss,
+    pageBaseCss,
+    pageBaseOutputCss,
+    pageBaseOwnScss,
     brandChainHtml,
     htmlRootHtml,
     htmlRootCustomHtml,

@@ -55,6 +55,7 @@ import ts from 'typescript';
 import {
   PACKAGE_SPECIFIER,
   compileFile,
+  coreDir,
   docsDir,
   docsStyleList,
   exportsImporters,
@@ -119,6 +120,7 @@ test('every example is a .scss, .css, .html or .ts.txt file in a page folder', (
 const { core, presets } = coreSheets();
 const preset = presets.find((p) => p.entry.endsWith('azure-blue.scss'))!;
 const adapter = materialSheets();
+const pageBase = compileFile(path.join(coreDir, 'scss/base.scss'));
 const libraryCss = [core.css, ...presets.map((p) => p.css), ...adapter.map((s) => s.css)];
 
 const compile = (file: string): Compiled => compileFile(file, [], exportsImporters);
@@ -170,7 +172,8 @@ const squash = (value: string) => value.replace(/\s+/g, ' ').trim();
 
 for (const file of outputCss) {
   test(`${rel(file)}: every declaration is compiled output, verbatim`, () => {
-    const reference = [core.css, preset.css].flatMap((css) => rules(css));
+    // core, a preset, and the opt-in page rule (`css/base`).
+    const reference = [core.css, preset.css, pageBase.css].flatMap((css) => rules(css));
     const missing: string[] = [];
     let count = 0;
     for (const rule of rules(readFileSync(file, 'utf8'))) {

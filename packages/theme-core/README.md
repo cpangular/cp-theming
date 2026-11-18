@@ -97,6 +97,18 @@ $my-theme: t.theme(
 
 `define-core-theme()` is theme-independent — load the pre-built `dist/core.css` before your theme CSS instead of calling it if preferred. A theme declares only what its author passed, so a nested theme inherits the rest from the theme around it.
 
+### Style the page
+
+Core declares the variables and styles no element with them. To give `<body>` the theme's background, text colour and font family, opt in once:
+
+```scss
+@include t.define-core-theme();
+@include t.define-theme('my-theme', $my-theme, $default: true);
+@include t.apply-document-base();
+```
+
+Without Sass, load `dist/base.css` (`@import "@cpangular/cp-theming-core/css/base";`) after core. The rule is `:where(body)`, at zero specificity, so a `body` rule of your own wins wherever it loads. It sets `background-color`, `color` and `font-family` only. Without it the page keeps the browser's default font (apps coming from `ng-material-theme`, whose `core.css` styled the page, need this line).
+
 ### Multiple themes
 
 ```scss

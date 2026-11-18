@@ -164,6 +164,14 @@ This is a CSS-variable-based theming system. Key facts:
   written; `demos/docs/test/exports.test.ts` resolves every `@use` / `@forward` / `@import` of a
   package that the docs, READMEs and sources show with `@angular/build`'s own esbuild, against
   both maps. The docs app has no include path into `node_modules`.
+- Page rule (Phase 19, issue #10): core styles no element. `t.apply-document-base()` is the
+  opt-in: one `:where(body)` rule (background colour, its contrast as text, the plain font
+  family; zero specificity, so an app's `body` rule wins in any load order; no font size, margin
+  or scrollbar colours). `scss/base.scss` compiles it to `dist/base.css`, exported as
+  `./css/base`. The docs app includes the mixin and keeps Roboto on top; `demos/demo-core`
+  imports `css/base`. Checks: `test/css/base.test.ts`, the `base/` rows of `render.ts`,
+  `node demos/docs/test/page-base.ts` (built site, three engines). Getting Started has "Style
+  the page" and "Coming from ng-material-theme".
 - CSS Variables page (Phase 17): generated. `demos/docs/scripts/variables.ts` reads the compiled
   `core.css` (`scripts/lib/variables.ts`) and writes `demos/docs/.generated/variables.ts`, which
   `pages/variables.component.ts` imports: one live swatch per colour token by palette and role

@@ -14,8 +14,9 @@
 // one the contrast sweep, test/css/contrast.test.ts, predicts), and the chain/
 // rows that of Phase 14 (palettes a theme did not pass are generated from the
 // nearest thing it passed), the gamut/ rows that of Phase 14c (a generated
-// colour is painted in the hue that was asked for). Stylesheets load in the
-// order core, themes, adapter, user CSS.
+// colour is painted in the hue that was asked for), the base/ rows that of
+// Phase 19 (the opt-in page rule, issue #10). Stylesheets load in the order
+// core, themes, adapter, user CSS.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { chromium, firefox, webkit, type BrowserType } from 'playwright';
@@ -1119,6 +1120,101 @@ sheets['gamut-vivid-primary'] = chainTheme(
   '$palettes: (primary: t.palette(oklch(0.45 0.3 150)))',
 );
 
+// ─── The page rule (PORT-PLAN.md Phase 19, issue #10) ────────────────────────
+// `css/base` as it is built, a theme whose background and font family are its
+// own, and an app's `body` rule. Expectations are the colours written here.
+const BASE = {
+  bgLight: 'oklch(0.93 0.04 150)',
+  bgDark: 'oklch(0.25 0.04 150)',
+  namedLight: 'oklch(0.9 0.06 30)',
+  app: 'rgb(10, 20, 30)',
+};
+sheets.base = compileFile(path.join(coreDir, 'scss/base.scss')).css;
+sheets.baseTheme = chainTheme(
+  'base-theme',
+  `$palettes: (background: t.light-dark(t.palette(${BASE.bgLight}), t.palette(${BASE.bgDark}))),
+   $typography: t.typography($plain-family: monospace)`,
+  true,
+);
+sheets.baseNamed = chainTheme(
+  'base-named',
+  `$palettes: (background: t.palette(${BASE.namedLight}))`,
+);
+sheets.baseApp = `body { background-color: ${BASE.app}; font-family: fantasy; }`;
+
+function baseRows(): Row[] {
+  const row = (id: string, more: Partial<Row> & Pick<Row, 'token' | 'expect'>): Row => ({
+    id: `base/${id}`,
+    sheets: ['core', 'baseTheme', 'base'],
+    html: '',
+    body: P,
+    probe: 'body',
+    read: 'property',
+    ...more,
+  });
+  return [
+    row('background/light', { token: 'background-color', expect: BASE.bgLight }),
+    row('background/dark', {
+      token: 'background-color',
+      expect: BASE.bgDark,
+      html: 'themeMode="dark"',
+    }),
+    row('background/os-dark', { token: 'background-color', expect: BASE.bgDark, scheme: 'dark' }),
+    // The background's contrast: black on the light one, white on the dark one.
+    row('text/light', { token: 'color', expect: 'rgb(0, 0, 0)' }),
+    row('text/dark', { token: 'color', expect: 'rgb(255, 255, 255)', html: 'themeMode="dark"' }),
+    row('font-family', { token: 'font-family', read: 'raw', expect: 'monospace' }),
+    // The theme on <body> itself: the body is the theme element and derives there.
+    row('theme-on-body', {
+      sheets: ['core', 'baseTheme', 'baseNamed', 'base'],
+      act: `document.body.setAttribute('theme', 'base-named')`,
+      token: 'background-color',
+      expect: BASE.namedLight,
+    }),
+    row('mode-on-body', {
+      act: `document.body.setAttribute('themeMode', 'dark')`,
+      token: 'background-color',
+      expect: BASE.bgDark,
+    }),
+    // Opt-in: without the rule the page keeps the browser's own colours and font
+    // (each engine names its default family its own way; none is the theme's).
+    row('absent/background', {
+      sheets: ['core', 'baseTheme'],
+      token: 'background-color',
+      expect: 'rgba(0, 0, 0, 0)',
+    }),
+    row('absent/font-family', {
+      sheets: ['core', 'baseTheme'],
+      token: 'font-family',
+      read: 'raw',
+      expect: { chromium: '"Times New Roman"', firefox: 'serif', webkit: '-webkit-standard' },
+    }),
+    // Zero specificity: an app's body rule wins, loaded before or after.
+    row('app-rule-wins/loaded-before', {
+      sheets: ['core', 'baseTheme', 'baseApp', 'base'],
+      token: 'background-color',
+      expect: BASE.app,
+    }),
+    row('app-rule-wins/loaded-after', {
+      sheets: ['core', 'baseTheme', 'base', 'baseApp'],
+      token: 'background-color',
+      expect: BASE.app,
+    }),
+    row('app-rule-wins/font-family', {
+      sheets: ['core', 'baseTheme', 'baseApp', 'base'],
+      token: 'font-family',
+      read: 'raw',
+      expect: 'fantasy',
+    }),
+    // What the app's rule leaves alone still comes from the theme.
+    row('app-rule-wins/text-kept', {
+      sheets: ['core', 'baseTheme', 'baseApp', 'base'],
+      token: 'color',
+      expect: 'rgb(0, 0, 0)',
+    }),
+  ];
+}
+
 function gamutRows(): Row[] {
   const out: Row[] = [];
   const row = (
@@ -1255,8 +1351,9 @@ interface Row {
    * paint: read through `color: var(token)` on a probe child. raw: getPropertyValue.
    * shadow: the colour of the computed `box-shadow: var(token)` on a probe child, or `none`.
    * text: the probe's own computed `color` (the token is not read).
+   * property: the probe's computed value of the property `token` names, a colour.
    */
-  read?: 'paint' | 'raw' | 'shadow' | 'text';
+  read?: 'paint' | 'raw' | 'shadow' | 'text' | 'property';
   /** The value, or labelled candidates of which one must match (crossfade rows). */
   expect: string | Record<string, string>;
   /** Tolerance for a colour comparison (sRGB channel, 0–1). */
@@ -1960,6 +2057,7 @@ const rows: Row[] = [
   ...chainRows(),
   ...bgTextRows(),
   ...gamutRows(),
+  ...baseRows(),
   // ── The neutral stroke ───────────────────────────────────────────────────
   ...strokeRows(),
 ];
@@ -2050,6 +2148,7 @@ const probeScript = `(({ probe, token, read, act, transitioned, animates }) => {
   const readValue = () => {
     if (read === 'raw') return getComputedStyle(el).getPropertyValue(token).trim();
     if (read === 'text') return getComputedStyle(el).color;
+    if (read === 'property') return getComputedStyle(el).getPropertyValue(token);
     const span = document.createElement('span');
     if (read === 'shadow') span.style.boxShadow = 'var(' + token + ')';
     else span.style.color = 'var(' + token + ')';
