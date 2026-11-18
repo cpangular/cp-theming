@@ -24,6 +24,9 @@ import pageBaseCss from '../../../examples/getting-started/page-base.css' with {
 import pageBaseOutputCss from '../../../examples/getting-started/page-base.output.css' with {
   loader: 'text',
 };
+import mutedTextScss from '../../../examples/getting-started/muted-text.scss' with {
+  loader: 'text',
+};
 import pageBaseOwnScss from '../../../examples/getting-started/page-base-own.scss' with {
   loader: 'text',
 };
@@ -233,6 +236,21 @@ pnpm add @cpangular/cp-theming-core</code></pre>
               read on <code>&lt;body&gt;</code>, so a <code>theme</code> or
               <code>themeMode</code> attribute on <code>&lt;html&gt;</code> or on
               <code>&lt;body&gt;</code> itself changes them.
+            </p>
+            <p>
+              <strong>Muted text.</strong> Core also keeps three text colours for the page on every
+              theme element, whether or not you include the rule: <code>--container--text</code> and
+              <code>--container--text-emphasis</code> are the text colour of the page, and
+              <code>--container--text-deemphasis</code> is a muted one for a hint, a unit or a
+              caption. Muted text is the text colour mixed with the background, by default 63% of it
+              in light mode and 93% in dark (<code>$text-deemphasis-blend</code> in
+              <code>t.weights()</code>). Inside a <code>filled</code> element the same three names
+              hold the colours that read on its fill, so one declaration is right in both places:
+            </p>
+            <cpa-code [code]="ex.mutedTextScss" lang="scss" />
+            <p>
+              With the Material adapter, Material's own muted text (a field's hint, a placeholder)
+              is the same mix at the same weight, against the surface.
             </p>
           </section>
 
@@ -625,6 +643,7 @@ export class GettingStartedPageComponent {
     customThemeScss,
     accentsScss,
     pageBaseScss,
+    mutedTextScss,
     pageBaseCss,
     pageBaseOutputCss,
     pageBaseOwnScss,

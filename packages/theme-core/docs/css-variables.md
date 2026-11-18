@@ -118,13 +118,13 @@ Set by `t.apply-palette($name)` or the `[palette="name"]` attribute. Point at th
 
 ## Container — surface variables
 
-Set by `t.container()`, `t.filled()`, or `t.outlined()`.
+The three text variables are declared by core on every theme element (`:where(:root, [theme])`) for the page, against `--color--background`, and again by `t.filled()` against its own fill. `t.bg()` and `t.outlined()` leave them as they are. So `var(--container--text-deemphasis)` is muted text anywhere.
 
 | Variable | Description |
 |----------|-------------|
-| `--container--text` | Blended body text color (`contrast × weight--text-blend`) |
-| `--container--text-emphasis` | Pure contrast (white or black) |
-| `--container--text-deemphasis` | De-emphasized text (`contrast × weight--text-deemphasis-blend`) |
+| `--container--text` | The text colour: the contrast (white or black) of the fill, or of the background |
+| `--container--text-emphasis` | The same |
+| `--container--text-deemphasis` | Muted text: that contrast mixed with the fill, or the background, at `--weight--text-deemphasis-blend` (63% light, 93% dark). The Material adapter's `--mat-sys-on-surface-variant` is the same mix against the surface |
 | `--container--stroke` | Border color for the active surface |
 | `--container--stroke-width` | Set by `t.stroke()` — resolves `--stroke-width` (default 1px) |
 

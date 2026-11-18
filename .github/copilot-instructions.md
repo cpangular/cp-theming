@@ -133,6 +133,16 @@ demos/demo-brand-material/  @acme/theme-material           — Example theme pac
   Material's dark table has tone 90; the M3 guidelines' tone 80 would be 82%) (PORT-PLAN.md
   Phase 19, #12).
 
+- **Muted text is one mix, everywhere.** `--container--text`, `--container--text-emphasis` and
+  `--container--text-deemphasis` are declared by core on every theme element for the page
+  (against the background) and by `filled()` for its fill; `bg()` and `outlined()` set none.
+  Muted text is the contrast colour mixed with what it is written on at
+  `--weight--text-deemphasis-blend`, per mode. The Material adapter's `on-surface-variant` is
+  that same mix at that same weight against the surface, so the two cannot drift. Do not go back
+  to a tone offset for `on-surface-variant`, and do not read the picked weight in the mix (it
+  freezes at the declaring element; read the `--mode-light` / `--mode-dark` pair inside
+  `light-dark()`) (PORT-PLAN.md Phase 19, #13).
+
 - **Derivations are opaque.** Every relative-colour derivation ends `/ 1`, so a translucent
   input cannot make ladder steps, auto roles or text translucent. Only `--tint-1..5` carry an
   alpha. The contrast check fails a derivation without it.
@@ -290,6 +300,13 @@ demos/demo-brand-material/  @acme/theme-material           — Example theme pac
   are worked out by hand. `demos/docs/test/surface-scale.test.ts` holds the Palette page's strip
   and the role table (ng-material API page, adapter README) to the compiled CSS: a role the
   adapter starts or stops mapping to a cp-theming variable goes into both tables.
+- Page text (PORT-PLAN.md Phase 19, issue #13): `packages/theme-core/test/css/page-text.test.ts`
+  holds the three text variables to their declarations and muted text to 4.5:1 on the background
+  and the surface in every preset and fixture; the adapter's `material-roles.test.ts` holds
+  `on-surface-variant` to the same mix, to 4.5:1 on every surface container, and (with core's
+  default weight) to within 0.02 of the lightness the installed Material's tables give it; the
+  `muted/` rows of core's `render.ts` are worked out by hand for a grey page. The evaluator in
+  `test/lib/color.ts` handles `color-mix()`.
 - Fixture themes live in `packages/theme-core/test/fixtures/` and `packages/theme-ng-material/test/fixtures/`.
 - CI: `.github/workflows/test.yml` (cpdevtools/git-flow) runs `github.actions.build` then
   `github.actions.test` in every package that defines them.

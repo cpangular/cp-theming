@@ -114,6 +114,21 @@ This is a CSS-variable-based theming system. Key facts:
   tables), the `container/` rows of core's `render.ts`, and `demos/docs/test/surface-scale.test.ts`
   (the Palette page's strip, and the table "Material's colour roles in cp-theming" on the
   ng-material API page and in the adapter's README against the adapter's compiled CSS).
+- Page text (Phase 19, issue #13): core declares `--container--text`, `--container--text-emphasis`
+  and `--container--text-deemphasis` on `:where(:root, [theme])` (`page-text()` in `_apply.scss`,
+  included by `define-core-theme()`), against the **background**: the first two are
+  `--color--background--contrast`, the third that contrast mixed with the background in oklch at
+  the de-emphasis weight, each side of a `light-dark()` reading its own mode's weight (never the
+  picked `--weight--text-deemphasis-blend`). `filled()` declares the same three against its fill
+  through the same mixin (`_text-on()`); `bg()` and `outlined()` declare none, as Learn chapter 5
+  says. The adapter's `--mat-sys-on-surface-variant` is the same mix at the same weight against
+  the surface (`_roles.scss`, "Muted text"), not a tone offset: a theme's
+  `$text-deemphasis-blend` moves both. The test evaluator (`test/lib/color.ts`) evaluates
+  `color-mix()`. A hue written as a number is interpolated even at chroma 0, and the contrast
+  colour is `oklch(l 0 0)`, so muted text on a strongly coloured fill drifts towards hue 0°;
+  invisible on a near-neutral page or surface. Checks: `theme-core/test/css/page-text.test.ts`,
+  the muted-text tests in the adapter's `material-roles.test.ts`, the `muted/` rows of core's
+  `render.ts`.
 - Material adapter (Phase 11): the `--mat-sys-*` colour roles come from Angular Material's own
   role tables (`theme-ng-material/scss/_roles.scss`); roles cp-theming has a token for map to it
   (containers are `--bg`, one ladder step lighter in dark mode; the five surface containers are

@@ -1698,11 +1698,18 @@ const NG_MATERIAL_TOC = [
               surface containers are on the Palette page, "Surface containers".
             </p>
             <p class="api-symbol-desc">
+              <code>--mat-sys-on-surface-variant</code> is Material's muted text: a hint, a
+              placeholder, a supporting line. It is the surface's text colour mixed with the surface
+              at <code>--weight--text-deemphasis-blend</code>, the mix cp-theming's own muted text,
+              <code>--container--text-deemphasis</code>, is made with. A theme's
+              <code>$text-deemphasis-blend</code> moves both.
+            </p>
+            <p class="api-symbol-desc">
               Every other colour role (<code>surface-dim</code>, <code>surface-bright</code>,
-              <code>surface-variant</code>, <code>on-surface-variant</code>, the
-              <code>inverse-*</code> and <code>*-fixed</code> roles) has no cp-theming variable of
-              its own. The adapter derives each from the theme's colours at the tone Material's own
-              tables give it; read the <code>--mat-sys-*</code> role itself.
+              <code>surface-variant</code>, the <code>inverse-*</code> and
+              <code>*-fixed</code> roles) has no cp-theming variable of its own. The adapter derives
+              each from the theme's colours at the tone Material's own tables give it; read the
+              <code>--mat-sys-*</code> role itself.
             </p>
           </section>
 

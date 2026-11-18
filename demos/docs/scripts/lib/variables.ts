@@ -183,9 +183,11 @@ export const NOTES: Record<string, string> = {
   '--palette-src': 'The same before tone is applied: what tone slides.',
   '--palette-color--text':
     'The palette colour as text: a link, a heading. Unset in a background or surface scope.',
-  '--container--text': 'Text on the fill of the nearest filled element.',
+  '--container--text':
+    'Text on the fill of the nearest filled element; outside one, text on the background.',
   '--container--text-emphasis': 'The same at full contrast.',
-  '--container--text-deemphasis': 'The same for a quieter line.',
+  '--container--text-deemphasis':
+    'The same for a quieter line: mixed with the fill, or the background, at the de-emphasis weight.',
   '--container--stroke': 'The border colour outlined draws with.',
   '--container--stroke-width': 'The border width outlined draws with.',
   '--container--radius': 'The corner radius shape sets.',

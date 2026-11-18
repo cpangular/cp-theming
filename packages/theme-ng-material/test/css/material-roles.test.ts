@@ -139,6 +139,18 @@ const DIRECT: [string, string][] = [
   ...accent('error', 'error'),
   ['surface', 'var(--color--surface)'],
   ['on-surface', 'var(--color--surface--contrast)'],
+  // Muted text (issue #13): core's de-emphasis mix, against the surface.
+  [
+    'on-surface-variant',
+    'light-dark(' +
+      ['light', 'dark']
+        .map(
+          (mode) =>
+            `color-mix(in oklch, var(--color--surface--contrast) var(--weight--text-deemphasis-blend--mode-${mode}), var(--color--surface))`,
+        )
+        .join(', ') +
+      ')',
+  ],
   // One scale (issue #12): the five containers are core's.
   ['surface-container-lowest', 'var(--color--surface--container-lowest)'],
   ['surface-container-low', 'var(--color--surface--container-low)'],
@@ -508,6 +520,65 @@ for (const theme of themes) {
     t.diagnostic(`lowest contrast on a container: ${lowest.toFixed(2)}:1`);
   });
 }
+
+// ─── Muted text (issue #13) ──────────────────────────────────────────────────
+// on-surface-variant is the mix core uses for muted text, at core's weight,
+// against the surface: --container--text-deemphasis as it would be on the
+// surface. With core's default weight it is where M3's table has the role.
+
+const oklchOf = (c: ReturnType<typeof evaluateColor>) =>
+  c.to('oklch').coords.map((v) => (Number.isNaN(v ?? NaN) ? 0 : (v ?? 0)));
+
+for (const theme of themes) {
+  test(`core + ${theme.label} + adapter: on-surface-variant is the surface's contrast mixed with the surface at the de-emphasis weight, 4.5:1 or more on every surface container`, (t) => {
+    const out: string[] = [];
+    for (const mode of MODES) {
+      const ctx = contextFor(theme.decls, mode);
+      const read = (name: string) => evaluateColor(`var(${name})`, ctx);
+      const role = read('--mat-sys-on-surface-variant');
+      const weight =
+        Number.parseFloat(theme.decls.get(`--weight--text-deemphasis-blend--mode-${mode}`)!) / 100;
+      const [sl] = oklchOf(read('--color--surface'));
+      const [cl] = oklchOf(read('--color--surface--contrast'));
+      const [l] = oklchOf(role);
+      assert.ok(
+        Math.abs(l - (weight * cl + (1 - weight) * sl)) < 1e-6,
+        `${mode}: lightness ${l.toFixed(4)} at ${weight * 100}%`,
+      );
+      assert.equal(role.alpha ?? 1, 1, `${mode}: opaque`);
+      let lowest = Infinity;
+      for (const on of ['surface', ...CONTAINERS.map((c) => `surface-${c}`)]) {
+        const ratio = wcagContrast(role, read(`--mat-sys-${on}`));
+        lowest = Math.min(lowest, ratio);
+        assert.ok(ratio >= 4.5, `${mode} on ${on}: ${ratio.toFixed(2)}:1`);
+      }
+      out.push(`${mode} L ${l.toFixed(3)}, lowest ${lowest.toFixed(2)}:1`);
+    }
+    t.diagnostic(out.join('; '));
+  });
+}
+
+test('with core’s default weight, on-surface-variant is within 0.02 of the lightness the installed Material’s tables give it, in every preset', (t) => {
+  const out: string[] = [];
+  for (const theme of themes.filter((x) => x.label.includes('/presets/')))
+    for (const mode of MODES) {
+      const ctx = contextFor(theme.decls, mode);
+      const [sl] = oklchOf(evaluateColor('var(--color--surface)', ctx));
+      const [l] = oklchOf(evaluateColor('var(--mat-sys-on-surface-variant)', ctx));
+      const m3 =
+        sl +
+        toneLightness(tones[mode].get('on-surface-variant')!) -
+        toneLightness(tones[mode].get('surface')!);
+      out.push(`${(l - m3 >= 0 ? '+' : '−') + Math.abs(l - m3).toFixed(3)}`);
+      assert.ok(
+        Math.abs(l - m3) < 0.02,
+        `${theme.label} ${mode}: ${l.toFixed(3)}, M3 ${m3.toFixed(3)}`,
+      );
+    }
+  t.diagnostic(
+    `difference from the table's lightness, preset by preset, light then dark: ${out.join(' ')}`,
+  );
+});
 
 // ─── Outline ─────────────────────────────────────────────────────────────────
 // Every Material outline is the surface's stroke: `outline` is the stroke,

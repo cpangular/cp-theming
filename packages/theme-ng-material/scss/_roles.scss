@@ -50,6 +50,23 @@ $_surface-tone: (
   dark: 6,
 );
 
+// ─── Muted text ───────────────────────────────────────────────────────────────
+// on-surface-variant is M3's muted text on a surface: a hint, a placeholder,
+// a supporting line, an unselected icon. In cp-theming muted text is the
+// contrast colour mixed with what it is written on at the de-emphasis weight
+// (--container--text-deemphasis; theme-core/scss/_apply.scss). This is that
+// same mix, at that same weight, against the surface, so a theme's
+// $text-deemphasis-blend moves Material's muted text with the app's own and
+// the two cannot drift apart (issue #13). Core's default weight (63% light,
+// 93% dark) puts it where Material's own tables have the role on the default
+// surface, so with no weight passed a component's muted text is the colour
+// Angular Material's theme gives it.
+// Each side of the light-dark() reads its own mode's weight, as core does.
+@function _muted($mode) {
+  @return "color-mix(in oklch, var(--color--surface--contrast) var(--weight--text-deemphasis-blend--mode-#{$mode}), var(--color--surface))";
+}
+$_on-surface-variant: string.unquote("light-dark(#{_muted(light)}, #{_muted(dark)})");
+
 // ─── Roles cp-theming already has a token for ─────────────────────────────────
 
 // The four roles of one accent: $role, on-$role, $role-container,
@@ -82,6 +99,7 @@ $_direct: map.merge(
   (
     surface: var(--color--surface),
     on-surface: var(--color--surface--contrast),
+    on-surface-variant: $_on-surface-variant,
     surface-container-lowest: var(--color--surface--container-lowest),
     surface-container-low: var(--color--surface--container-low),
     surface-container: var(--color--surface--container),

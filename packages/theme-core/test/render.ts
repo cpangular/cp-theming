@@ -135,12 +135,14 @@ for (const [key, name, args] of [
   ['textOrange', 'text-orange', '$palettes: (primary: t.palette(oklch(0.63 0.2 45)))'],
   ['textNavy', 'text-navy', '$brand: oklch(0.25 0.1 260)'],
   ['strokeYellow', 'stroke-yellow', '$palettes: (primary: t.palette(#ffd400))'],
-  // The surface of the container/ rows: a blue-grey whose numbers are easy to
-  // move by hand.
+  // The surface of the container/ rows and the page of the muted/ rows: a
+  // blue-grey surface and a grey background whose numbers are easy to move by
+  // hand.
   [
     'containers',
     'containers',
     '$palettes: (primary: t.palette(#0c6ab6), ' +
+      'background: t.light-dark(t.palette(oklch(0.97 0 0)), t.palette(oklch(0.17 0 0))), ' +
       'surface: t.light-dark(t.palette(oklch(0.93 0.01 250)), t.palette(oklch(0.22 0.01 250))))',
   ],
 ])
@@ -173,6 +175,17 @@ function expectFrom(
   mode: Mode,
   overrides?: Record<string, string>,
 ): string {
+  return expectValue(sheet, theme, `var(${token})`, mode, overrides);
+}
+
+/** The same for any colour expression, read against that theme's declarations. */
+function expectValue(
+  sheet: string,
+  theme: string,
+  expression: string,
+  mode: Mode,
+  overrides?: Record<string, string>,
+): string {
   const decls = new Map<string, string>();
   for (const [n, v] of registeredInitialValues(sheets.core)) decls.set(n, v);
   for (const rule of rules(sheets.core))
@@ -180,7 +193,7 @@ function expectFrom(
       for (const [n, v] of rule.declarations) decls.set(n, v);
   for (const [n, v] of declarationsFor(sheets[sheet], themeSelector(theme))) decls.set(n, v);
   const ctx = contextFor(decls, mode, overrides ? new Map(Object.entries(overrides)) : undefined);
-  return evaluateColor(`var(${token})`, ctx).toString();
+  return evaluateColor(expression, ctx).toString();
 }
 
 /**
@@ -1788,6 +1801,131 @@ function containerRows(): Row[] {
   return out;
 }
 
+// ─── Text on the page (Phase 19, issue #13) ───────────────────────────────────
+// --container--text and its two tiers are declared on every theme element,
+// against the background; muted text is the contrast mixed with the
+// background at the de-emphasis weight (63% light, 93% dark by default). The
+// first rows are worked out by hand for a grey page, oklch(0.97 0 0) in light
+// mode and oklch(0.17 0 0) in dark: black at 63% leaves 0.97 × 0.37 = 0.3589,
+// white at 93% gives 0.93 + 0.17 × 0.07 = 0.9419. The Material adapter's
+// on-surface-variant is the same mix against the surface, read here with the
+// mix written out, not with the adapter's declaration.
+const MUTED = { light: 'oklch(0.3589 0 0)', dark: 'oklch(0.9419 0 0)' };
+const DEEMPHASIS = { light: '63%', dark: '93%' };
+
+function mutedRows(): Row[] {
+  const out: Row[] = [];
+  const row = (id: string, more: Partial<Row> & Pick<Row, 'token' | 'expect'>) =>
+    out.push({
+      id: `muted/${id}`,
+      sheets: ['core', 'containers'],
+      html: 'theme="containers" themeMode="light"',
+      body: P,
+      probe: '#p',
+      ...more,
+    });
+  for (const mode of ['light', 'dark'] as const) {
+    const html = `theme="containers" themeMode="${mode}"`;
+    const text = mode === 'light' ? 'oklch(0 0 0)' : 'oklch(1 0 0)';
+    row(`page/${mode}/text`, { html, token: '--container--text', expect: text });
+    row(`page/${mode}/emphasis`, { html, token: '--container--text-emphasis', expect: text });
+    row(`page/${mode}/deemphasis`, {
+      html,
+      token: '--container--text-deemphasis',
+      expect: MUTED[mode],
+    });
+    // Material's muted text: the same mix against the surface.
+    const surface = mode === 'light' ? 'oklch(0.93 0.01 250)' : 'oklch(0.22 0.01 250)';
+    row(`material/on-surface-variant/${mode}`, {
+      sheets: ['core', 'containers', 'material'],
+      html,
+      token: '--mat-sys-on-surface-variant',
+      expect: expectValue(
+        'containers',
+        'containers',
+        `color-mix(in oklch, ${text} ${DEEMPHASIS[mode]}, ${surface})`,
+        mode,
+      ),
+    });
+  }
+  // A themeMode scope inside the page flips all of it without a rule of its own.
+  row('nested-mode/dark-inside-light', {
+    body: '<div themeMode="dark"><div id="p">probe</div></div>',
+    token: '--container--text-deemphasis',
+    expect: MUTED.dark,
+  });
+  // A theme's own weight moves both the page's muted text and Material's.
+  const quiet = 'style="--weight--text-deemphasis-blend--mode-light: 40%"';
+  row('own-weight/page', {
+    body: `<div id="p" theme="custom" ${quiet}>x</div>`,
+    token: '--container--text-deemphasis',
+    // Black at 40% leaves 0.97 × 0.6.
+    expect: 'oklch(0.582 0 0)',
+  });
+  row('own-weight/material', {
+    sheets: ['core', 'containers', 'material'],
+    body: `<div id="p" theme="custom" ${quiet}>x</div>`,
+    token: '--mat-sys-on-surface-variant',
+    expect: expectValue(
+      'containers',
+      'containers',
+      'color-mix(in oklch, oklch(0 0 0) 40%, oklch(0.93 0.01 250))',
+      'light',
+    ),
+  });
+  // filled() still sets its own, against its fill: white on #0c6ab6.
+  row('filled-sets-its-own', {
+    body: '<div palette="primary" filled><div id="p">probe</div></div>',
+    token: '--container--text-deemphasis',
+    expect: expectValue(
+      'containers',
+      'containers',
+      'color-mix(in oklch, oklch(1 0 0) 63%, #0c6ab6)',
+      'light',
+    ),
+  });
+  // bg() sets none: inside a bg container the page's still hold.
+  row('bg-sets-none', {
+    body: '<div palette="primary" bg><div id="p">probe</div></div>',
+    token: '--container--text-deemphasis',
+    expect: MUTED.light,
+  });
+  // Every preset and mode: the browser agrees with the evaluator, for the page
+  // and for Material's role, and the prediction is held to 4.5:1 here.
+  for (const [sheet, theme] of PRESET_SHEETS)
+    for (const mode of ['light', 'dark'] as const) {
+      const html = `theme="${theme}" themeMode="${mode}"`;
+      const page = expectFrom(sheet, theme, '--container--text-deemphasis', mode);
+      const role = expectValue(
+        sheet,
+        theme,
+        `color-mix(in oklch, var(--color--surface--contrast) var(--weight--text-deemphasis-blend--mode-${mode}), var(--color--surface))`,
+        mode,
+      );
+      const on = (name: string) => cssColor(expectFrom(sheet, theme, `--color--${name}`, mode));
+      const ratios = [
+        wcagContrast(cssColor(page), on('background')),
+        wcagContrast(cssColor(page), on('surface')),
+        wcagContrast(cssColor(role), on('surface')),
+      ];
+      if (Math.min(...ratios) < 4.5)
+        throw new Error(`muted/${theme}-${mode}: predicted ${ratios.map((r) => r.toFixed(2))}`);
+      row(`${theme}-${mode}/page=${ratios[0].toFixed(2)}:1`, {
+        sheets: ['core', sheet],
+        html,
+        token: '--container--text-deemphasis',
+        expect: page,
+      });
+      row(`${theme}-${mode}/on-surface-variant=${ratios[2].toFixed(2)}:1`, {
+        sheets: ['core', sheet, 'material'],
+        html,
+        token: '--mat-sys-on-surface-variant',
+        expect: role,
+      });
+    }
+  return out;
+}
+
 // ─── Rows ────────────────────────────────────────────────────────────────────
 interface Row {
   id: string;
@@ -2517,6 +2655,7 @@ const rows: Row[] = [
   // ── Phase 19: an accent as text and as a line ───────────────────────────
   ...accentRows(),
   ...containerRows(),
+  ...mutedRows(),
 ];
 
 // A theme that passes one palette and nothing else, for the inheritance rows.

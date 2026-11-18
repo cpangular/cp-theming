@@ -64,8 +64,13 @@ the Material component next to it.
 same name. The five `--color--surface--container-*` are Material 3's surface containers, which core
 derives from the surface at M3's distances (core's Palette page, "Surface containers").
 
-Every other colour role (`surface-dim`, `surface-bright`, `surface-variant`, `on-surface-variant`,
-the `inverse-*` and `*-fixed` roles) has no cp-theming variable of its own: the adapter derives it
+`--mat-sys-on-surface-variant` is Material's muted text (a hint, a placeholder, a supporting line):
+the surface's text colour mixed with the surface at `--weight--text-deemphasis-blend`, the mix
+cp-theming's own muted text, `--container--text-deemphasis`, is made with. A theme's
+`$text-deemphasis-blend` moves both.
+
+Every other colour role (`surface-dim`, `surface-bright`, `surface-variant`, the `inverse-*` and
+`*-fixed` roles) has no cp-theming variable of its own: the adapter derives it
 from the theme's colours at the tone Material's own tables give it. Read the `--mat-sys-*` role.
 
 ## Accents as text and as lines

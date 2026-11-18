@@ -170,6 +170,7 @@ class Parser {
       this.expect(')');
       return this.ctx.mode === 'light' ? light : dark;
     }
+    if (fn === 'color-mix') return this.colorMix();
     if (this.peek(1)?.text === 'from') {
       this.expect('(');
       this.expect('from');
@@ -207,6 +208,45 @@ class Parser {
     const text = this.src.slice(t.start, this.tokens[end - 1].end);
     this.pos = end;
     return new Color(text);
+  }
+
+  /**
+   * color-mix(in <space>, <colour> <percentage>?, <colour> <percentage>?), the
+   * parser standing just before its `(`. A percentage may be a var() (a
+   * weight). Interpolated as colorjs.io does it, which for the colours the
+   * library mixes is what the browsers do: a hue written as a number is
+   * interpolated the shorter way even when the chroma beside it is 0 (the
+   * contrast colour is `oklch(l 0 0)`), and only a colour converted from an
+   * achromatic one has no hue.
+   */
+  private colorMix(): Color {
+    this.expect('(');
+    this.expect('in');
+    const spaceName = this.next().text.toLowerCase();
+    const space = SPACES[spaceName];
+    if (!space) throw new Error(`unsupported color-mix() space "${spaceName}"`);
+    // A hue interpolation method (`shorter hue`) is not one the library writes.
+    this.expect(',');
+    const part = (): [Color, number | null] => {
+      const colour = this.color();
+      const next = this.peek()?.text;
+      return [colour, next === ',' || next === ')' ? null : this.expr()];
+    };
+    const [a, pa] = part();
+    this.expect(',');
+    const [b, pb] = part();
+    this.expect(')');
+    let [wa, wb] = [pa, pb];
+    if (wa === null && wb === null) [wa, wb] = [0.5, 0.5];
+    else if (wb === null) wb = 1 - wa!;
+    else if (wa === null) wa = 1 - wb;
+    const sum = wa! + wb!;
+    if (sum <= 0) throw new Error(`color-mix() percentages add up to ${sum} in "${this.src}"`);
+    return Color.mix(a, b, wb! / sum, {
+      space: space.id,
+      outputSpace: space.id,
+      premultiplied: true,
+    }) as Color;
   }
 
   private skipToClose(): void {

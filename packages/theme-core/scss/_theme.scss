@@ -427,8 +427,9 @@ $_palette-hooks-emitted: ();
 //   3. The themeMode rules.
 //   4. :where(:root, [theme]): the colour core generates for each palette of
 //      the chain (brand → primary → secondary, tertiary → background,
-//      surface), every derivation for the core palette names and the
-//      typography role fonts. :where(:root) in (2) points every pair of the
+//      surface), every derivation for the core palette names, the text
+//      variables of the page (--container--text and its two tiers, against
+//      the background) and the typography role fonts. :where(:root) in (2) points every pair of the
 //      chain at its generated colour; a theme rule does so for what it left
 //      out.
 //   5. :where(:root, [theme], [themeMode]): the mode-varying percentages picked
@@ -456,6 +457,7 @@ $_palette-hooks-emitted: ();
 
   :where(:root, [theme]) {
     @include _pal.derive-core-palettes();
+    @include _ap.page-text();
     @include _ty.emit-derived();
   }
 
