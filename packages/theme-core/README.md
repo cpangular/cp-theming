@@ -204,6 +204,7 @@ These names are registered and derived once by `define-core-theme()`: `brand`, `
 | `--color--{name}--focus` | Focus ring color |
 | `--color--{name}--text` | The colour as text (a link, a heading, a price): no lighter than 0.40 in light mode, no darker than 0.82 in dark, same hue, inside sRGB. Accent palettes only; `background` and `surface` have none. `$text` replaces it. `--palette-color--text` in a `[palette]` scope |
 | `--color--{name}--tint-1` … `--tint-5` | 10%/20%/38%/60%/80% opacity tints |
+| `--color--surface--container-lowest`, `-low`, `--color--surface--container`, `-high`, `-highest` | The surface only: Material 3's five surface containers, at M3's distance from the surface in each mode (light: +0.017, −0.017, −0.035, −0.052, −0.069 in oklch lightness; dark: −0.024, +0.036, +0.053, +0.097, +0.140), each with a `--contrast`. For a card, a panel, a toolbar. The Material adapter's `--mat-sys-surface-container-*` read them. Not the shade steps (`--high`, `--low`: ±0.12 per step) |
 
 ---
 
@@ -308,7 +309,7 @@ $weights: t.light-dark(
 |---|---|---|
 | `$text-blend` | `82%` | Body text opacity (color-mixed against surface) |
 | `$text-emphasis-blend` | `96%` | Emphasis text opacity |
-| `$text-deemphasis-blend` | `55%` | De-emphasis / hint text opacity |
+| `$text-deemphasis-blend` | `63%` light, `93%` dark | How much of the text colour muted text keeps. The default is where Angular Material has `on-surface-variant` |
 | `$state-hover` | `8%` | Hover state layer opacity |
 | `$state-press` | `12%` | Press state layer opacity |
 | `$state-focus` | `12%` | Focus state layer opacity |

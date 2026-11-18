@@ -25,6 +25,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 @use "sass:map";
 @use "sass:list";
+@use "sass:math";
 @use "sass:meta";
 @use "sass:string";
 @use "variables" as vars;
@@ -459,6 +460,76 @@ $_text-lightness: (
   @return _in-gamut("oklch(from #{$origin} #{map.get($_accent-stroke-lightness, $mode)} c h / 1)");
 }
 
+// ─── Surface containers ───────────────────────────────────────────────────────
+// Five colours a step or two away from the surface, for what sits on it or in
+// it: a card, a panel, a toolbar, a dialog, the well of a text field.
+//
+//   --color--surface--container-lowest   --color--surface--container-high
+//   --color--surface--container-low      --color--surface--container-highest
+//   --color--surface--container
+//
+// each with its --contrast. They are Material 3's surface containers, by their
+// M3 names and at M3's distances from the surface: the lightness that
+// separates each container's tone from the surface's own tone in M3's tables
+// (light: tones 100, 96, 94, 92, 90 around a surface at 98; dark: 4, 10, 12,
+// 17, 22 around 6; lightness of a tone as in the Material adapter's
+// _m3-tone.scss). In light mode `lowest` is lighter than the surface and the
+// other four are darker, each a little more; in dark mode `lowest` is darker
+// and the other four lighter. The Material adapter's --mat-sys-surface-
+// container-* read these, so an app's own panel and a Material card beside it
+// are one colour.
+//
+// The ladder steps (--high, --low, …) are a different scale: emphasis steps of
+// 0.12 that every palette has, three to each side and the same in both modes.
+// The containers are one to one side and four to the other, 0.017 apart in
+// light mode and 0.017 to 0.043 apart in dark, which the ladder cannot express.
+// Hue and chroma are the surface's. Derived from the joined token, like the
+// ladder, so a hand-written --color--surface moves them too.
+$surface-containers: (
+  container-lowest: (
+    light: 0.0172,
+    dark: -0.0238,
+  ),
+  container-low: (
+    light: -0.0172,
+    dark: 0.0362,
+  ),
+  container: (
+    light: -0.0345,
+    dark: 0.0534,
+  ),
+  container-high: (
+    light: -0.0517,
+    dark: 0.0965,
+  ),
+  container-highest: (
+    light: -0.069,
+    dark: 0.1396,
+  ),
+);
+
+// $origin with its lightness moved by $offset.
+@function _moved($origin, $offset) {
+  $op: "+";
+  @if $offset < 0 {
+    $op: "-";
+  }
+  @return string.unquote(
+    "oklch(from #{$origin} clamp(0, l #{$op} #{math.abs($offset)}, 1) c h / 1)"
+  );
+}
+
+@mixin _surface-containers() {
+  $surface: token(surface, color);
+  @each $step, $offset in $surface-containers {
+    #{$surface}--#{$step}: light-dark(
+      _moved(var(#{$surface}), map.get($offset, light)),
+      _moved(var(#{$surface}), map.get($offset, dark))
+    );
+    #{$surface}--#{$step}--contrast: _contrast-of(var(#{$surface}--#{$step}));
+  }
+}
+
 // All modifier vars + their contrasts for one role.
 @mixin _role-derivatives($palette, $role) {
   $p: token($palette, $role);
@@ -568,6 +639,9 @@ $_text-lightness: (
   @include _role-derivatives($name, color);
   @include _role-derivatives($name, bg);
   @include _role-derivatives($name, stroke);
+  @if $name == surface {
+    @include _surface-containers();
+  }
 
   // Palette tints — transparent versions of the colour role. The alpha is a
   // mode-varying weight; a percentage substituted here would freeze at this

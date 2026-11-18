@@ -521,6 +521,13 @@ export const REFS: Ref[] = [
     anchor: 'accent-text',
     find: '--text',
   },
+  {
+    name: '--color--surface--container-{step}',
+    chapter: 7,
+    page: 'core/palette',
+    anchor: 'surface-containers',
+    find: '--color--surface--container-high',
+  },
 
   // 8 — everything else a theme carries
   {

@@ -97,11 +97,28 @@ This is a CSS-variable-based theming system. Key facts:
   `node demos/docs/test/material-tokens.ts` (built site: a wrapper's token reaches three kinds of
   button and a field), and the gallery run, which also measures every field's outline, indicator
   and arrow (below 3:1 fails).
+- Surface scale (Phase 19, issue #12): the surface has five container colours,
+  `--color--surface--container-lowest`, `-low`, `--color--surface--container`, `-high`,
+  `-highest`, each with a `--contrast`: Material 3's surface containers, the surface moved by the
+  lightness M3 puts between its surface and each container (light +0.0172, −0.0172, −0.0345,
+  −0.0517, −0.069; dark −0.0238, +0.0362, +0.0534, +0.0965, +0.1396; `$surface-containers` in
+  `_palette.scss`). Derived on the shared selector from the joined `--color--surface`, like the
+  ladder; not registered; surface only. The adapter's `--mat-sys-surface-container-*` are
+  `var()` of them, so there is one scale: never derive a container in the adapter again. The
+  shade steps (`--high`, `--low`, ±0.12) stay as they are for every palette. The de-emphasis
+  weight defaults per mode, 63% light and 93% dark (`_weights.scss`: a default may be a
+  `(light, dark)` map), which is where Angular Material 22's tables have `on-surface-variant`
+  on the default surface (its dark table has tone 90; the M3 guidelines' tone 80 would be 82%). Checks:
+  `theme-core/test/css/surface-containers.test.ts`, the container tests in the adapter's
+  `material-roles.test.ts` (core's distances against the tones of the installed Material's
+  tables), the `container/` rows of core's `render.ts`, and `demos/docs/test/surface-scale.test.ts`
+  (the Palette page's strip, and the table "Material's colour roles in cp-theming" on the
+  ng-material API page and in the adapter's README against the adapter's compiled CSS).
 - Material adapter (Phase 11): the `--mat-sys-*` colour roles come from Angular Material's own
   role tables (`theme-ng-material/scss/_roles.scss`); roles cp-theming has a token for map to it
-  (containers are `--bg`, one ladder step lighter in dark mode), the rest are `m3-tone()` of the
-  theme colour, and the neutral roles (surface containers, dim, bright) are offsets from
-  `--color--surface`. `outline` is `--color--surface--stroke` and `outline-variant` its `--low`
+  (containers are `--bg`, one ladder step lighter in dark mode; the five surface containers are
+  core's `--color--surface--container-*`), the rest are `m3-tone()` of the theme colour, and the
+  other neutral roles (dim, bright, the variants) are offsets from `--color--surface`. `outline` is `--color--surface--stroke` and `outline-variant` its `--low`
   step, so a theme's surface `$stroke` drives every Material outline. Tokens that read a cp-theming variable sit on `:root, :where([theme])`.
   State-layer opacities are numbers (`calc(weight / 100%)`), as Material expects. Harness checks
   fail any `--mat-sys-*` name the installed Material reads that the adapter does not declare, and

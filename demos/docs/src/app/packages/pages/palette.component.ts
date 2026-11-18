@@ -20,6 +20,9 @@ import textRoleScss from '../../../examples/palette/text-role.scss' with { loade
 import textExplicitScss from '../../../examples/palette/text-explicit.scss' with {
   loader: 'text',
 };
+import surfaceContainersScss from '../../../examples/palette/surface-containers.scss' with {
+  loader: 'text',
+};
 import { ThemeExampleComponent } from '../../shared/theme-example.component';
 
 const TOC = [
@@ -28,6 +31,7 @@ const TOC = [
   { label: 'Runtime derivatives', anchor: 'runtime-derivatives' },
   { label: 'Brand colours that take white text', anchor: 'brand-text' },
   { label: 'An accent as text', anchor: 'accent-text' },
+  { label: 'Surface containers', anchor: 'surface-containers' },
   { label: 'Color variables', anchor: 'color-variables' },
   { label: 'API Reference', anchor: 'api' },
   { label: 'palette()', anchor: 'palette-fn' },
@@ -259,6 +263,49 @@ const TOC = [
         <p>
           <code>background</code> and <code>surface</code> have no text role. The text on them is
           their <code>--contrast</code>.
+        </p>
+      </section>
+
+      <section id="surface-containers" class="page-section">
+        <h2>Surface containers</h2>
+        <p>
+          The surface has five more colours, each a small step away from it, for what sits on the
+          surface: a card, a side panel, a toolbar, a dialog, the well of a text field. Each has a
+          <code>--contrast</code> for the text on it.
+        </p>
+        <div class="swatch-grid container-strip">
+          @for (c of surfaceContainers; track c.token) {
+            <div
+              class="swatch-chip"
+              [style.background]="'var(' + c.token + ')'"
+              [style.color]="'var(' + c.token + '--contrast)'"
+            >
+              <code>{{ c.token }}</code>
+              <span class="swatch-aa">{{ c.light }} / {{ c.dark }}</span>
+            </div>
+          }
+        </div>
+        <p>
+          They are Material 3's surface containers, under M3's names and at M3's distance from the
+          surface. The two numbers on each one above are that distance in oklch lightness, in light
+          mode and in dark mode. In light mode <code>container-lowest</code> is a little lighter
+          than the surface and the other four are darker in turn. In dark mode it is the other way
+          round. Hue and chroma are the surface's.
+        </p>
+        <cpa-code [code]="ex.surfaceContainersScss" lang="scss" />
+        <p>
+          <strong>With Angular Material.</strong> The Material adapter reads these five for
+          <code>--mat-sys-surface-container-lowest</code> to
+          <code>--mat-sys-surface-container-highest</code>, so a panel of your own and a Material
+          card beside it are one colour. The ng-material API page lists which cp-theming variable
+          each Material role equals.
+        </p>
+        <p>
+          <strong>They are not the shade steps.</strong> <code>--color--surface--high</code>,
+          <code>--higher</code> and <code>--highest</code> are steps of 0.12, which every palette
+          has in both directions. The containers are closer together and differ by mode, so the two
+          scales do not line up. Use a container for a panel that should match Material, and a shade
+          step for emphasis.
         </p>
       </section>
 
@@ -646,6 +693,10 @@ const TOC = [
         opacity: 0.55;
       }
 
+      .swatch-grid.container-strip {
+        grid-template-columns: 1fr;
+        margin-bottom: 16px;
+      }
       .swatch-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -696,6 +747,7 @@ export class PalettePageComponent {
     contrastFixedScss,
     textRoleScss,
     textExplicitScss,
+    surfaceContainersScss,
   };
   readonly paletteOptions = [
     'brand',
@@ -708,6 +760,20 @@ export class PalettePageComponent {
     'pass',
   ];
   readonly selectedPalette = signal('primary');
+
+  /**
+   * The surface and its five containers, in M3's order, with the lightness
+   * between each one and the surface in light and in dark mode
+   * (test/surface-scale.test.ts holds the numbers to the compiled core.css).
+   */
+  readonly surfaceContainers = [
+    { token: '--color--surface--container-lowest', light: '+0.017', dark: '−0.024' },
+    { token: '--color--surface', light: '0', dark: '0' },
+    { token: '--color--surface--container-low', light: '−0.017', dark: '+0.036' },
+    { token: '--color--surface--container', light: '−0.035', dark: '+0.053' },
+    { token: '--color--surface--container-high', light: '−0.052', dark: '+0.097' },
+    { token: '--color--surface--container-highest', light: '−0.069', dark: '+0.140' },
+  ];
 
   readonly colorGroups = [
     {

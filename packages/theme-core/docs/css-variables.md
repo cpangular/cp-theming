@@ -77,6 +77,18 @@ Transparent versions of the identity color role. Opacity is the mode-varying `--
 |----------|-------------|
 | `--color--{name}--focus` | Per-palette focus ring color. Auto-derived as: inverted lightness + 60° hue shift from `--color--{name}`. Override via `$focus` in `t.palette()`. |
 
+### Surface containers
+
+The surface only. Five colours a small step from `--color--surface`, for a card, a panel, a toolbar, a dialog. They are Material 3's surface containers, under M3's names, at M3's distance from the surface in each mode; the Material adapter's `--mat-sys-surface-container-*` read them. Each has a `--contrast`. They are not the shade steps (`--high`, `--low`, ±0.12 per step).
+
+| Variable | Lightness from the surface, light mode | Dark mode |
+|----------|------|------|
+| `--color--surface--container-lowest` | +0.017 | −0.024 |
+| `--color--surface--container-low` | −0.017 | +0.036 |
+| `--color--surface--container` | −0.035 | +0.053 |
+| `--color--surface--container-high` | −0.052 | +0.097 |
+| `--color--surface--container-highest` | −0.069 | +0.140 |
+
 ### Brand
 
 | Variable | Description |
@@ -213,7 +225,7 @@ Set by the theme's typography config.
 |----------|---------|-------------|
 | `--weight--text-blend` | 82% | Body text opacity on container backgrounds |
 | `--weight--text-emphasis-blend` | 96% | Emphasized text opacity |
-| `--weight--text-deemphasis-blend` | 55% | De-emphasized text opacity |
+| `--weight--text-deemphasis-blend` | 63% light, 93% dark | How much of the text colour muted text keeps (where Angular Material has `on-surface-variant`) |
 | `--weight--text-primary-tint` | 0% | Hue tint toward primary palette |
 | `--weight--state-hover` | 8% | Hover overlay opacity |
 | `--weight--state-press` | 12% | Press/active overlay opacity |

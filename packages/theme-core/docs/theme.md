@@ -65,7 +65,7 @@ Controls blend percentages for text and interactive state overlays.
 |-----------|---------|-------------|
 | `$text-blend` | `82%` | Normal body text opacity on containers |
 | `$text-emphasis-blend` | `96%` | Emphasized text opacity |
-| `$text-deemphasis-blend` | `55%` | De-emphasized / caption text opacity |
+| `$text-deemphasis-blend` | `63%` light, `93%` dark | How much of the text colour muted / caption text keeps |
 | `$text-primary-tint` | `0%` | Hue tinting toward the primary palette |
 | `$state-hover` | `8%` | Hover overlay opacity |
 | `$state-press` | `12%` | Press/active overlay opacity |

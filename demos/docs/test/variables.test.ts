@@ -90,6 +90,14 @@ test('every colour token has a swatch under its palette and role', () => {
         ? []
         : ['', '--mode-light', '--mode-dark'].map((s) => `--color--${p.name}--text${s}`),
     );
+    // The container colours: the surface's five, each with its contrast.
+    assert.deepEqual(
+      p.containers.map((t) => t.name),
+      p.name === 'surface'
+        ? ['-lowest', '-low', '', '-high', '-highest'].map((s) => `--color--surface--container${s}`)
+        : [],
+    );
+    for (const t of p.containers) assert.equal(t.contrast, `${t.name}--contrast`, t.name);
     assert.equal(p.tints.length, 5, `${p.name}: tints`);
   }
   // The chain palettes are the ones core generates.

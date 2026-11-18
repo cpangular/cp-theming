@@ -135,6 +135,14 @@ for (const [key, name, args] of [
   ['textOrange', 'text-orange', '$palettes: (primary: t.palette(oklch(0.63 0.2 45)))'],
   ['textNavy', 'text-navy', '$brand: oklch(0.25 0.1 260)'],
   ['strokeYellow', 'stroke-yellow', '$palettes: (primary: t.palette(#ffd400))'],
+  // The surface of the container/ rows: a blue-grey whose numbers are easy to
+  // move by hand.
+  [
+    'containers',
+    'containers',
+    '$palettes: (primary: t.palette(#0c6ab6), ' +
+      'surface: t.light-dark(t.palette(oklch(0.93 0.01 250)), t.palette(oklch(0.22 0.01 250))))',
+  ],
 ])
   sheets[key] = compileSource(
     `@use "../../scss/theme" as t;\n@include t.define-theme("${name}", t.theme(${args}));`,
@@ -1699,6 +1707,87 @@ function accentRows(): Row[] {
   return out;
 }
 
+// ─── Surface containers (Phase 19, issue #12) ─────────────────────────────────
+// --color--surface--container-* are the surface moved by M3's distances, and
+// the Material adapter's --mat-sys-surface-container-* read them. The first
+// group is worked out by hand for a surface of oklch(0.93 0.01 250) in light
+// mode and oklch(0.22 0.01 250) in dark: the lightness plus the distance, hue
+// and chroma kept, black text on the light ones and white on the dark ones.
+// The second group proves, for every preset and mode, that the browser gives
+// Material's role the colour the evaluator reads from core's token.
+const CONTAINERS: [name: string, light: number, dark: number][] = [
+  ['container-lowest', 0.9472, 0.1962],
+  ['container-low', 0.9128, 0.2562],
+  ['container', 0.8955, 0.2734],
+  ['container-high', 0.8783, 0.3165],
+  ['container-highest', 0.861, 0.3596],
+];
+
+function containerRows(): Row[] {
+  const out: Row[] = [];
+  for (const mode of ['light', 'dark'] as const)
+    for (const [name, light, dark] of CONTAINERS) {
+      const expect = `oklch(${mode === 'light' ? light : dark} 0.01 250)`;
+      const at = { html: `theme="containers" themeMode="${mode}"`, body: P, probe: '#p' };
+      out.push({
+        id: `container/${mode}/${name}`,
+        sheets: ['core', 'containers'],
+        ...at,
+        token: `--color--surface--${name}`,
+        expect,
+      });
+      out.push({
+        id: `container/${mode}/${name}/contrast`,
+        sheets: ['core', 'containers'],
+        ...at,
+        token: `--color--surface--${name}--contrast`,
+        expect: mode === 'light' ? 'oklch(0 0 0)' : 'oklch(1 0 0)',
+      });
+      out.push({
+        id: `container/${mode}/${name}/material-role`,
+        sheets: ['core', 'containers', 'material'],
+        ...at,
+        token: `--mat-sys-surface-${name}`,
+        expect,
+      });
+    }
+  for (const [sheet, theme] of PRESET_SHEETS)
+    for (const mode of ['light', 'dark'] as const)
+      for (const [name] of CONTAINERS)
+        out.push({
+          id: `container/${theme}-${mode}/${name}/material-role-is-core's`,
+          sheets: ['core', sheet, 'material'],
+          html: `theme="${theme}" themeMode="${mode}"`,
+          body: P,
+          probe: '#p',
+          token: `--mat-sys-surface-${name}`,
+          expect: expectFrom(sheet, theme, `--color--surface--${name}`, mode),
+        });
+  // A themeMode scope inside the page flips them without a rule of its own,
+  // Material's role included.
+  for (const token of ['--color--surface--container-high', '--mat-sys-surface-container-high'])
+    out.push({
+      id: `container/nested-mode/dark-inside-light/${token}`,
+      sheets: ['core', 'containers', 'material'],
+      html: 'theme="containers" themeMode="light"',
+      body: '<div themeMode="dark"><div id="p">probe</div></div>',
+      probe: '#p',
+      token,
+      expect: 'oklch(0.3165 0.01 250)',
+    });
+  // A hand-written surface on a theme element moves them, like the ladder.
+  out.push({
+    id: 'container/hand-written-surface',
+    sheets: ['core', 'containers'],
+    html: 'theme="containers" themeMode="light"',
+    body: '<div id="p" theme="custom" style="--color--surface: oklch(0.8 0.03 120)">x</div>',
+    probe: '#p',
+    token: '--color--surface--container-high',
+    expect: 'oklch(0.7483 0.03 120)',
+  });
+  return out;
+}
+
 // ─── Rows ────────────────────────────────────────────────────────────────────
 interface Row {
   id: string;
@@ -2427,6 +2516,7 @@ const rows: Row[] = [
   ...strokeRows(),
   // ── Phase 19: an accent as text and as a line ───────────────────────────
   ...accentRows(),
+  ...containerRows(),
 ];
 
 // A theme that passes one palette and nothing else, for the inheritance rows.

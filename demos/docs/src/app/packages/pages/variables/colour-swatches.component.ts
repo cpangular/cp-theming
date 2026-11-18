@@ -91,6 +91,16 @@ interface Picked {
               </div>
             </div>
           }
+          @if (p.containers.length) {
+            <div class="var-role">
+              <code class="var-role-name">{{ p.containers[2].name }}, -lowest to -highest</code>
+              <div class="var-tiles">
+                @for (t of p.containers; track t.name) {
+                  <ng-container *ngTemplateOutlet="tile; context: { $implicit: t }" />
+                }
+              </div>
+            </div>
+          }
           <div class="var-role">
             <code class="var-role-name"
               >{{ p.focus[0].name }}{{ p.text.length ? ', text' : '' }}, tints</code

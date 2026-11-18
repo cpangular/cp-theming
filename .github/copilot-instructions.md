@@ -120,6 +120,19 @@ demos/demo-brand-material/  @acme/theme-material           — Example theme pac
   not hold a line with the label, and do not put the raw accent on a line (PORT-PLAN.md Phase 19,
   #15 and #9).
 
+- **One surface scale.** The surface has five container colours,
+  `--color--surface--container-lowest` / `-low` / `--color--surface--container` / `-high` /
+  `-highest` (each with `--contrast`): Material 3's surface containers by their M3 names, the
+  surface moved by M3's per-mode distances (`_palette.scss`, "Surface containers"). The Material
+  adapter's `--mat-sys-surface-container-*` read them, so an app's own panel and a Material card
+  are one colour. Do not derive a container in the adapter, do not turn the shade steps
+  (`--high`, `--low`, ±0.12, every palette) into the container scale, and do not add a fourth
+  shade step: M3's containers are one to one side of the surface and four to the other, which
+  the ladder cannot express. The de-emphasis weight defaults to where Angular Material's tables
+  have `on-surface-variant` on the default surface: 63% in light mode, 93% in dark (Angular
+  Material's dark table has tone 90; the M3 guidelines' tone 80 would be 82%) (PORT-PLAN.md
+  Phase 19, #12).
+
 - **Derivations are opaque.** Every relative-colour derivation ends `/ 1`, so a translucent
   input cannot make ladder steps, auto roles or text translucent. Only `--tint-1..5` carry an
   alpha. The contrast check fails a derivation without it.
@@ -268,6 +281,15 @@ demos/demo-brand-material/  @acme/theme-material           — Example theme pac
   (after `pnpm --filter docs build`) sets tokens on a wrapper in the built gallery and reads the
   buttons and fields inside. A token the adapter starts or stops setting goes into the test's
   lists, the adapter's README and the ng-material API page's table.
+- Surface scale (PORT-PLAN.md Phase 19, issue #12):
+  `packages/theme-core/test/css/surface-containers.test.ts` holds the five container colours to
+  distances written in the test and the de-emphasis weight to 63% / 93%; the adapter's
+  `material-roles.test.ts` holds the same distances to the tones the installed Material's role
+  tables name (so a Material release that moves a container fails it) and every
+  `--mat-sys-surface-container-*` to core's token; the `container/` rows of core's `render.ts`
+  are worked out by hand. `demos/docs/test/surface-scale.test.ts` holds the Palette page's strip
+  and the role table (ng-material API page, adapter README) to the compiled CSS: a role the
+  adapter starts or stops mapping to a cp-theming variable goes into both tables.
 - Fixture themes live in `packages/theme-core/test/fixtures/` and `packages/theme-ng-material/test/fixtures/`.
 - CI: `.github/workflows/test.yml` (cpdevtools/git-flow) runs `github.actions.build` then
   `github.actions.test` in every package that defines them.

@@ -80,10 +80,12 @@ const TOC = [
                 <div>
                   <span class="api-param-name">$text-deemphasis-blend</span
                   ><span class="api-param-type">number?</span
-                  ><span class="api-param-default">default 0.55</span>
+                  ><span class="api-param-default">default 63% light, 93% dark</span>
                 </div>
                 <div class="api-param-desc">
-                  Low-emphasis / hint text opacity (→ <code>--weight--text-deemphasis-blend</code>).
+                  How much of the text colour muted text keeps (→
+                  <code>--weight--text-deemphasis-blend</code>). The default puts muted text where
+                  Angular Material has <code>on-surface-variant</code>.
                 </div>
               </div>
               <div class="api-param-row">

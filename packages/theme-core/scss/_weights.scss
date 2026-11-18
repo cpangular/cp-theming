@@ -7,15 +7,38 @@
 // --weight--x is picked from them with the mode flag (see _mode.scss). Core
 // declares the default pair of every weight; a theme declares only the sides
 // its author passed.
+//
+// A default is one value for both modes, or a (light, dark) map.
+//
+// text-deemphasis-blend is how much of the contrast colour a quieter line of
+// text keeps: muted text is that colour (black or white) mixed with what it is
+// written on, at this weight. The default puts it where Angular Material has
+// on-surface-variant, measured against the role tables of Angular Material 22
+// (which the Material adapter reads) on the default surface:
+//   light  tone 30 against a surface at tone 98 is a lightness of 0.586 below
+//          the surface: 0.344 on a surface of 0.93, which is black mixed in at
+//          63%.
+//   dark   tone 90 against a surface at tone 6 is 0.726 above the surface:
+//          0.946 on a surface of 0.22, which is white mixed in at 93%.
+// The dark tone is Angular Material's: the Material 3 guidelines have tone 80
+// there, which would be 82%. With 93% the muted text of a Material component
+// is the colour Angular Material's own theme gives it, and quiet text in dark
+// mode is close to the text colour. A theme that wants more of a step passes
+// its own (t.weights($text-deemphasis-blend: …) inside t.light-dark()).
+// (It was 55% in both modes until Phase 19: 0.42 in light mode, 0.65 in dark.)
 // ─────────────────────────────────────────────────────────────────────────────
 @use "sass:map";
 @use "sass:list";
+@use "sass:meta";
 @use "mode" as _m;
 
 $_defaults: (
   text-blend: 82%,
   text-emphasis-blend: 96%,
-  text-deemphasis-blend: 55%,
+  text-deemphasis-blend: (
+    light: 63%,
+    dark: 93%,
+  ),
   text-primary-tint: 0%,
   state-hover: 8%,
   state-press: 12%,
@@ -37,6 +60,15 @@ $tokens:
 
 @function defaults() {
   @return $_defaults;
+}
+
+// The default of one weight in one mode.
+@function default-of($token, $mode) {
+  $v: map.get(_flat($_defaults), $token);
+  @if meta.type-of($v) == map {
+    @return map.get($v, $mode);
+  }
+  @return $v;
 }
 
 @function config(
@@ -98,10 +130,8 @@ $tokens:
 
 // Core: the default light and dark value of every weight. Once, on :where(:root).
 @mixin emit-root-defaults() {
-  $flat: _flat($_defaults);
   @each $token in $tokens {
-    $v: map.get($flat, $token);
-    @include _m.pair(--weight--#{$token}, $v, $v);
+    @include _m.pair(--weight--#{$token}, default-of($token, light), default-of($token, dark));
   }
 }
 
@@ -123,14 +153,14 @@ $tokens:
 
 // Register all --weight--* vars as <percentage> so they can be animated
 // (required for color-mix() blend percentage transitions).
-// Call once from define-core-theme().
+// Call once from define-core-theme(). The initial value is the light default:
+// what a page without core's rules would get.
 @mixin register-properties() {
-  $flat: _flat($_defaults);
   @each $token in $tokens {
     @property --weight--#{$token} {
       syntax: "<percentage>";
       inherits: true;
-      initial-value: #{map.get($flat, $token)};
+      initial-value: #{default-of($token, light)};
     }
   }
 }

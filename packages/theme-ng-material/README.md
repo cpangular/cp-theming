@@ -34,6 +34,40 @@ and a preset's CSS.
 | `material-palette($name)` | What a `[palette]` scope declares, for a selector of your own | where you include it |
 | `adaptor()` | Hooks for `t.define-theme($adaptor: mat.adaptor())`: the `[palette]` rule of a custom palette name | `[palette="name"]` |
 
+## Material's colour roles in cp-theming
+
+`define-ng-material-core-theme()` points each Material role below at the cp-theming variable beside
+it, so the two are one colour. Style a panel of your own with the cp-theming variable and it matches
+the Material component next to it.
+
+| Material role | cp-theming variable | |
+| --- | --- | --- |
+| `--mat-sys-primary` | `--color--primary` |  |
+| `--mat-sys-on-primary` | `--color--primary--contrast` |  |
+| `--mat-sys-primary-container` | `--color--primary--bg` | In dark mode `--color--primary--bg--light`, one shade step lighter, so it shows on a dark surface. |
+| `--mat-sys-on-primary-container` | `--color--primary--bg--contrast` | In dark mode the contrast of that step. |
+| `--mat-sys-surface` | `--color--surface` |  |
+| `--mat-sys-on-surface` | `--color--surface--contrast` |  |
+| `--mat-sys-surface-container-lowest` | `--color--surface--container-lowest` |  |
+| `--mat-sys-surface-container-low` | `--color--surface--container-low` |  |
+| `--mat-sys-surface-container` | `--color--surface--container` |  |
+| `--mat-sys-surface-container-high` | `--color--surface--container-high` |  |
+| `--mat-sys-surface-container-highest` | `--color--surface--container-highest` |  |
+| `--mat-sys-background` | `--color--background` |  |
+| `--mat-sys-on-background` | `--color--background--contrast` |  |
+| `--mat-sys-outline` | `--color--surface--stroke` | Pass the surface a `$stroke` to set every Material outline. |
+| `--mat-sys-outline-variant` | `--color--surface--stroke--low` | Dividers. |
+| `--mat-sys-scrim` | `--overlay--scrim` |  |
+| `--mat-sys-shadow` | `--overlay--shadow` |  |
+
+`secondary`, `tertiary` and `error` have the same four roles as `primary`, from the palette of the
+same name. The five `--color--surface--container-*` are Material 3's surface containers, which core
+derives from the surface at M3's distances (core's Palette page, "Surface containers").
+
+Every other colour role (`surface-dim`, `surface-bright`, `surface-variant`, `on-surface-variant`,
+the `inverse-*` and `*-fixed` roles) has no cp-theming variable of its own: the adapter derives it
+from the theme's colours at the tone Material's own tables give it. Read the `--mat-sys-*` role.
+
 ## Accents as text and as lines
 
 Angular Material paints some labels and some lines in `primary` or in `error`. A cp-theming accent

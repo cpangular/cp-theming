@@ -139,6 +139,12 @@ const DIRECT: [string, string][] = [
   ...accent('error', 'error'),
   ['surface', 'var(--color--surface)'],
   ['on-surface', 'var(--color--surface--contrast)'],
+  // One scale (issue #12): the five containers are core's.
+  ['surface-container-lowest', 'var(--color--surface--container-lowest)'],
+  ['surface-container-low', 'var(--color--surface--container-low)'],
+  ['surface-container', 'var(--color--surface--container)'],
+  ['surface-container-high', 'var(--color--surface--container-high)'],
+  ['surface-container-highest', 'var(--color--surface--container-highest)'],
   ['background', 'var(--color--background)'],
   ['on-background', 'var(--color--background--contrast)'],
   ['outline', 'var(--color--surface--stroke)'],
@@ -439,6 +445,67 @@ for (const theme of themes) {
         `${mode}: --mat-sys-surface is --color--surface`,
       );
     }
+  });
+}
+
+// ─── Surface containers (issue #12) ──────────────────────────────────────────
+// Material's five surface containers are core's --color--surface--container-*.
+// Core writes their distances from the surface as numbers; here they are held
+// to the tones the installed Material's tables name: the lightness of each
+// container's tone less that of the surface's own tone, per mode.
+
+const CONTAINERS = ['lowest', 'low', '', 'high', 'highest'].map((step) =>
+  step ? `container-${step}` : 'container',
+);
+/** The oklch lightness of an M3 tone (a grey of that L*), as _m3-tone.scss has it. */
+const toneLightness = (tone: number) => (tone > 8 ? (tone + 16) / 116 : Math.cbrt(tone / 903.3));
+
+test('core’s five container colours are M3’s surface containers: the distances Material’s tables give, from the surface', (t) => {
+  const { decls } = themes[0];
+  for (const mode of MODES) {
+    const ctx = contextFor(decls, mode);
+    const surface = evaluateColor('var(--color--surface)', ctx).to('oklch').coords;
+    const out: string[] = [];
+    for (const name of CONTAINERS) {
+      const tone = tones[mode].get(`surface-${name}`);
+      assert.ok(tone !== undefined, `Material's ${mode} table has surface-${name}`);
+      const distance = toneLightness(tone) - toneLightness(tones[mode].get('surface')!);
+      const [l, c, h] = evaluateColor(`var(--color--surface--${name})`, ctx).to('oklch').coords;
+      out.push(`${name} ${distance >= 0 ? '+' : '−'}${Math.abs(distance).toFixed(4)}`);
+      assert.ok(
+        Math.abs(l! - (surface[0]! + distance)) < 1e-4,
+        `${mode} ${name}: lightness ${l!.toFixed(4)}, the surface's ${surface[0]!.toFixed(4)} moved by ${distance.toFixed(4)}`,
+      );
+      assert.ok(Math.abs(c! - surface[1]!) < 1e-6, `${mode} ${name}: the surface's chroma`);
+      if (surface[1]! > 1e-4)
+        assert.ok(Math.abs(h! - surface[2]!) < 1e-3, `${mode} ${name}: the surface's hue`);
+    }
+    t.diagnostic(`${mode}: ${out.join(', ')}`);
+  }
+});
+
+for (const theme of themes) {
+  test(`core + ${theme.label} + adapter: every --mat-sys-surface-container-* is core's container colour, and its contrast reads on it`, (t) => {
+    let lowest = Infinity;
+    for (const mode of MODES) {
+      const ctx = contextFor(theme.decls, mode);
+      for (const name of CONTAINERS) {
+        const core = evaluateColor(`var(--color--surface--${name})`, ctx);
+        assert.equal(
+          maxChannelDiff(evaluateColor(`var(--mat-sys-surface-${name})`, ctx), core),
+          0,
+          `${mode}: --mat-sys-surface-${name} is --color--surface--${name}`,
+        );
+        assert.equal(core.alpha ?? 1, 1, `${mode} ${name} is opaque`);
+        const ratio = wcagContrast(
+          evaluateColor(`var(--color--surface--${name}--contrast)`, ctx),
+          core,
+        );
+        lowest = Math.min(lowest, ratio);
+        assert.ok(ratio >= 4.5, `${mode} ${name}: its contrast is ${ratio.toFixed(2)}:1 on it`);
+      }
+    }
+    t.diagnostic(`lowest contrast on a container: ${lowest.toFixed(2)}:1`);
   });
 }
 

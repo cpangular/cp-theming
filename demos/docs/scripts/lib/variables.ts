@@ -50,6 +50,14 @@ const PALETTE_ORDER = [
 const FIXED_STEPS = ['darkest', 'darker', 'dark', 'light', 'lighter', 'lightest'];
 const RELATIVE_STEPS = ['lowest', 'lower', 'low', 'high', 'higher', 'highest'];
 const ROLES = ['bg', 'stroke'];
+/** The surface's container colours, in M3's order from the far side of the surface. */
+const CONTAINERS = [
+  'container-lowest',
+  'container-low',
+  'container',
+  'container-high',
+  'container-highest',
+];
 const MODES: [suffix: string, label: string][] = [
   ['mode-light', 'light value'],
   ['mode-dark', 'dark value'],
@@ -95,6 +103,11 @@ function palettesOf(names: Set<string>): PaletteGroup[] {
       text: [token(`${root}--text`, 'text'), ...inputs(`${root}--text`)].filter(
         (t): t is ColourToken => !!t,
       ),
+      // The surface only.
+      // Labelled by step (`lowest` … `highest`): the row names the family.
+      containers: CONTAINERS.flatMap(
+        (s) => token(`${root}--${s}`, s.replace(/^container-/, '')) ?? [],
+      ),
       tints: tokens(
         root,
         [1, 2, 3, 4, 5].map((n) => `tint-${n}`),
@@ -115,6 +128,7 @@ const countColour = (palettes: PaletteGroup[]): number => {
       n +
       count(p.focus) +
       count(p.text) +
+      count(p.containers) +
       count(p.tints) +
       p.roles.reduce(
         (m, r) => m + count([r.base]) + count(r.inputs) + count(r.fixed) + count(r.relative),
@@ -333,6 +347,7 @@ export function sectionNames(data: VariablesData): Map<string, string[]> {
       .flatMap((p) => [
         ...tokens(p.focus),
         ...tokens(p.text),
+        ...tokens(p.containers),
         ...tokens(p.tints),
         ...p.roles.flatMap((r) => tokens([r.base, ...r.inputs, ...r.fixed, ...r.relative])),
       ])

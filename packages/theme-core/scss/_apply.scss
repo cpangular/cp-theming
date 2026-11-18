@@ -4,6 +4,7 @@
 @use "sass:list";
 @use "density" as _dn;
 @use "palette" as _pal;
+@use "weights" as _w;
 // Usage — atomic, composable layers (each does ONE thing, stack on a palette):
 //   @include apply-palette(primary)   → select palette, identity text color
 //   @include bg()                     → subtle tonal fill, keeps identity text
@@ -297,6 +298,10 @@
 // The text colour bg() offers the palette: read only by background and surface.
 $_bg-text: --container--_bg-text;
 
+// The fallbacks of the de-emphasis weight, for a page without core's root rule.
+$_deemphasis-light: _w.default-of(text-deemphasis-blend, light);
+$_deemphasis-dark: _w.default-of(text-deemphasis-blend, dark);
+
 // ─── Shared surface extent ────────────────────────────────────────────────────
 // Shared outer extent for every surface layer (bg fill, filled fill, outlined
 // border). A negative inset bleeds the surface past the content box so a bare
@@ -375,12 +380,12 @@ $_bg-text: --container--_bg-text;
   --container--text-deemphasis: light-dark(
     color-mix(
       in oklch,
-      var(#{$contrast}) var(--weight--text-deemphasis-blend--mode-light, 55%),
+      var(#{$contrast}) var(--weight--text-deemphasis-blend--mode-light, #{$_deemphasis-light}),
       var(#{$bg})
     ),
     color-mix(
       in oklch,
-      var(#{$contrast}) var(--weight--text-deemphasis-blend--mode-dark, 55%),
+      var(#{$contrast}) var(--weight--text-deemphasis-blend--mode-dark, #{$_deemphasis-dark}),
       var(#{$bg})
     )
   );

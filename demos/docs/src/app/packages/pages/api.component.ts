@@ -25,6 +25,7 @@ const NG_CORE_TOC = [
 
 const NG_MATERIAL_TOC = [
   { label: 'SCSS mixins', anchor: 'scss-mixins' },
+  { label: "Material's colour roles", anchor: 'role-map' },
   { label: 'Accents as text and as lines', anchor: 'accent-tokens' },
   { label: 'adaptor()', anchor: 'adaptor' },
   { label: 'Precompiled CSS', anchor: 'css-exports' },
@@ -597,9 +598,12 @@ const NG_MATERIAL_TOC = [
                     <div>
                       <span class="api-param-name">$text-deemphasis-blend</span
                       ><span class="api-param-type">number?</span
-                      ><span class="api-param-default">default 0.55</span>
+                      ><span class="api-param-default">default 63% light, 93% dark</span>
                     </div>
-                    <div class="api-param-desc">Low-emphasis / hint text opacity.</div>
+                    <div class="api-param-desc">
+                      How much of the text colour muted text keeps. The default is where Angular
+                      Material has <code>on-surface-variant</code>.
+                    </div>
                   </div>
                   <div class="api-param-row">
                     <div>
@@ -1577,6 +1581,129 @@ const NG_MATERIAL_TOC = [
                 <div class="api-member-body"><p class="api-member-desc">No parameters.</p></div>
               </div>
             </div>
+          </section>
+
+          <!-- ── Role map ────────────────────────────────────────────────────── -->
+          <section id="role-map" class="page-section">
+            <h2 class="api-section-heading">Material's colour roles in cp-theming</h2>
+            <hr class="api-section-rule" />
+            <p class="api-symbol-desc">
+              Angular Material's components read <code>--mat-sys-*</code> roles.
+              <code>define-ng-material-core-theme()</code> points each role below at the cp-theming
+              variable beside it, so the two are one colour. Style a panel of your own with the
+              cp-theming variable and it matches the Material component next to it.
+            </p>
+            <table class="api-props-table" data-role-map>
+              <thead>
+                <tr>
+                  <th>Material role</th>
+                  <th>cp-theming variable</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>--mat-sys-primary</code></td>
+                  <td><code>--color--primary</code></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td><code>--mat-sys-on-primary</code></td>
+                  <td><code>--color--primary--contrast</code></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td><code>--mat-sys-primary-container</code></td>
+                  <td><code>--color--primary--bg</code></td>
+                  <td>
+                    In dark mode <code>--color--primary--bg--light</code>, one shade step lighter,
+                    so it shows on a dark surface.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>--mat-sys-on-primary-container</code></td>
+                  <td><code>--color--primary--bg--contrast</code></td>
+                  <td>In dark mode the contrast of that step.</td>
+                </tr>
+                <tr>
+                  <td><code>--mat-sys-surface</code></td>
+                  <td><code>--color--surface</code></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td><code>--mat-sys-on-surface</code></td>
+                  <td><code>--color--surface--contrast</code></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td><code>--mat-sys-surface-container-lowest</code></td>
+                  <td><code>--color--surface--container-lowest</code></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td><code>--mat-sys-surface-container-low</code></td>
+                  <td><code>--color--surface--container-low</code></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td><code>--mat-sys-surface-container</code></td>
+                  <td><code>--color--surface--container</code></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td><code>--mat-sys-surface-container-high</code></td>
+                  <td><code>--color--surface--container-high</code></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td><code>--mat-sys-surface-container-highest</code></td>
+                  <td><code>--color--surface--container-highest</code></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td><code>--mat-sys-background</code></td>
+                  <td><code>--color--background</code></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td><code>--mat-sys-on-background</code></td>
+                  <td><code>--color--background--contrast</code></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td><code>--mat-sys-outline</code></td>
+                  <td><code>--color--surface--stroke</code></td>
+                  <td>Pass the surface a <code>$stroke</code> to set every Material outline.</td>
+                </tr>
+                <tr>
+                  <td><code>--mat-sys-outline-variant</code></td>
+                  <td><code>--color--surface--stroke--low</code></td>
+                  <td>Dividers.</td>
+                </tr>
+                <tr>
+                  <td><code>--mat-sys-scrim</code></td>
+                  <td><code>--overlay--scrim</code></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td><code>--mat-sys-shadow</code></td>
+                  <td><code>--overlay--shadow</code></td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="api-symbol-desc">
+              <code>secondary</code>, <code>tertiary</code> and <code>error</code> have the same
+              four roles as <code>primary</code>, from the palette of the same name. The five
+              surface containers are on the Palette page, "Surface containers".
+            </p>
+            <p class="api-symbol-desc">
+              Every other colour role (<code>surface-dim</code>, <code>surface-bright</code>,
+              <code>surface-variant</code>, <code>on-surface-variant</code>, the
+              <code>inverse-*</code> and <code>*-fixed</code> roles) has no cp-theming variable of
+              its own. The adapter derives each from the theme's colours at the tone Material's own
+              tables give it; read the <code>--mat-sys-*</code> role itself.
+            </p>
           </section>
 
           <!-- ── Accent tokens ───────────────────────────────────────────────── -->

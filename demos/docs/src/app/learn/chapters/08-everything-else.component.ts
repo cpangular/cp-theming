@@ -208,7 +208,7 @@ export class EverythingElseChapterComponent {
     },
     {
       label: 'Quiet text',
-      value: '55',
+      value: '63',
       range: { min: 20, max: 100, unit: '%' },
       target: '[theme]',
       properties: [
