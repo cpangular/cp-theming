@@ -1419,6 +1419,107 @@ Open after this session:
 - The README and PLAN.md said Phase 17's review pass was not done; it landed in Session 17
   (24f3094). Both now say so.
 
+### Phase 19 — Issues from the IdealLINK move (added 2026-11-18)
+
+Issues #7–#10 came from moving IdealLINK to 0.2.0-alpha.0. IdealLINK has a workaround for each,
+so none of them blocks it, and each workaround can be removed when its fix ships. Two sessions:
+A is core and packaging (#7, #10, #8, in that order), B is the Material adapter (#9) and ends
+with the gallery run. Each commit names its issue (`Fixes #N`).
+
+**#7 — Sass entry points don't resolve through `exports` (bug).**
+
+- Cause: Angular 22 (`@angular/build`, `sass-language.js`) resolves a bare `@use` with esbuild's
+  `build.resolve` under the `style` / `sass` conditions and takes the target exactly as mapped.
+  `"./scss/*": "./scss/*"` maps `scss/theme` to `./scss/theme`, which does not exist; esbuild does
+  not try `_theme.scss`.
+- Why the harness passed: `exportsImporters` (`packages/theme-core/test/lib/sass.ts`) returns
+  the mapped path from `findFileUrl`, and Sass then applies its own partial and extension
+  lookup to it. The check is more forgiving than the Angular CLI.
+- Where it is wrong: core's `exports` **and** its `publishConfig.exports` (the map that is
+  published), the adapter, `theme-m3`, both `@acme` packages, and the Theme packages guide and the
+  API page, which teach the same map.
+- Fix: an explicit entry under the `sass` condition for every documented entry point (core:
+  `scss/theme`, `scss/presets/themes`, `scss/presets/palettes`, and any other the docs name; the
+  adapter: `scss/material` and any other the docs name), plus `"./scss/*.scss": "./scss/*.scss"`
+  for a consumer who writes the full file name. Not a single `./scss/*` → `./scss/_*.scss`
+  pattern: it maps `presets/themes` to `_presets/themes.scss`.
+- Harness: `exportsImporters` resolves exactly as mapped (the target must be an existing file); a
+  new check resolves every `@use` the docs and READMEs show with esbuild under Angular's
+  conditions. `demos/docs/node_modules` leaves the docs' `stylePreprocessorOptions.includePaths`,
+  so the docs build proves it. Chapter 11 and the Theme packages guide show the new map.
+
+**#10 — Opt-in base rule for the page.**
+
+- `t.apply-document-base()`: `:where(body)` with `background-color: var(--color--background)`,
+  `color: var(--color--background--contrast)` and `font-family: var(--text--plain-family)`. Zero
+  specificity, so an app's own `body` rule wins wherever it loads. No font size and no scrollbar
+  colours.
+- A compiled `dist/base.css`, exported as `./css/base`, for apps on the CSS path (demo-core uses
+  it).
+- The docs app uses the mixin and keeps its Roboto on top. Getting Started names it, and gets a
+  short "Coming from ng-material-theme" section (there are no migration notes yet): the old
+  `core.css` styled the page and core does not unless asked, so without it the page falls back to
+  the browser's serif font.
+
+**#8 — A palette that prefers white (or black) text.** Changed from the issue, which asked for a
+fixed `$contrast` colour: the brand rule is "this red takes white", which should also hold for the
+palette's darker and lighter steps, not only its base.
+
+- `t.palette(…, $contrast: prefer-white)`: every contrast of that palette (the base and the six
+  ladder steps; the high/low aliases follow from them) is white wherever white reaches 3:1 (WCAG
+  large text and icons), black elsewhere. `prefer-black` is the mirror. Default: today's
+  black-or-white step at relative luminance 0.179.
+- Mechanism: a second private step declared once on `:where(:root)` beside
+  `--theme--_contrast-step`, with the cut-off at Y = 1.05 / 3 − 0.05 = 0.30 (prefer-white) or
+  Y = 0.05 × 3 − 0.05 = 0.10 (prefer-black); the theme rule re-declares that palette's contrasts
+  with it. `emit-brand-from-primary` carries a primary's preference to the brand it points at
+  primary. A nested theme re-derives with the default step unless it passes the preference
+  itself: the preference belongs to the theme that passed it.
+- Measured for #e65151 (IdealLINK's brand): white 3.71:1 (today black, 5.66:1); its `--dark`
+  step (L − 0.12) white at about 5.9:1.
+- A fixed text colour stays possible by hand (`--color--x--contrast` after the theme), as the
+  Palette page documents it.
+- Docs, a section on the Palette page, "Brand colours that take white text":
+  - the preference and the 3:1 floor: a header title and icons pass; text under 18.66px bold or
+    24px needs 4.5:1, so put it on `--color--brand--dark` (white at about 5.9:1 here) or darken
+    the header colour slightly (#e65151 at L − 0.05, #d44042, is 4.55:1);
+  - brand is identity (header, logo, a few highlights), primary is interaction; an accent of
+    another hue (blue beside a red brand) stays out of the brand's areas and goes on the
+    interactive elements of the content;
+  - a red brand next to the error palette: keep brand red out of the content area and keep error
+    a distinct red with an icon.
+- Learn `REFS` gets `$contrast` (Palette page) and `apply-document-base()` (Getting Started).
+
+**#9 — Material label tokens set on an ancestor are ignored.**
+
+- Today `apply-material-overrides()` declares the held accent labels (`_as-text()`, "Accents as
+  text") on each component, so `mat.button-overrides()` on a toolbar, or the token on a wrapper,
+  no longer reaches the button's label. IdealLINK's header buttons all turned primary blue.
+- The issue's first option does not fix that: `mat.button-overrides()` writes
+  `--mat-button-text-label-text-color` itself, not an `-override` name, and a component cannot
+  read its parent's value of a property it declares (a self-reference is a cycle).
+- Fix (the issue's second option): declare the held tokens where `--mat-sys-primary` and
+  `--mat-sys-error` are declared, `:root, :where([theme])` and each `[palette="x"]` rule (core
+  names in `define-ng-material-core-theme()`, custom names in the adaptor hook). The nearest
+  declaration wins, so a toolbar or wrapper value reaches its buttons again; a `[theme]` or
+  `[palette]` between the wrapper and the button resets it, as for every `--mat-sys-*` token.
+  `light-dark()` in the held value still resolves per element, so `[themeMode]` scopes keep
+  working.
+- Re-measure: the 4.5:1 figures in the comment were taken with the tokens on the component. The
+  full gallery run in Chromium and Firefox (about 14 min per engine).
+- A browser check: a token set on a wrapper reaches a text, outlined and raised button and a form
+  field's focus label inside it; under `palette="error"` the held error colour applies.
+- The adapter's README and the Material page list the tokens the adapter sets and where.
+  IdealLINK's `inherit` reset becomes unnecessary (harmless if left).
+
+Done when: `@use "@cpangular/cp-theming-core/scss/theme"` and
+`@use "@cpangular/cp-theming-ng-material/scss/material"` build in the docs app with no include path
+into `node_modules`, and the new resolver check passes for every documented `@use`;
+`apply-document-base()` and `css/base` style the page; `$contrast: prefer-white` gives #e65151
+white text and its ladder the contrasts above; a token set on a wrapper reaches the buttons inside
+it; `pnpm test`, the order and examples checks and the full `render.ts` run (0 component labels
+below 4.5:1) pass; the four issues are closed by their commits.
+
 ## Decisions already made
 
 So they are not reopened. Tell me if you want any reversed.

@@ -42,6 +42,8 @@ How to set things in the VS Code extension (Claude Code chat panel):
 | 16 | Phase 17 Learn track: chapters 6–10 + reference | Fable 5.1 | high | Auto |
 | 17 | Phase 17 review (ultracode) | Fable 5.1 | high | Auto |
 | 18 | Phase 18 a theme as a package | Fable 5.1 | high | Auto |
+| 19 | Phase 19 A: Sass exports, page base rule, prefer-white contrast (#7, #10, #8) | Fable 5.2 | high | Auto |
+| 20 | Phase 19 B: Material label tokens from an ancestor (#9) | Fable 5.2 | high | Auto |
 
 Subagent models are chosen inside the workflow prompts: Opus at high effort for critique, Sonnet at
 medium for reading and sweeps. You do not set these.
@@ -158,4 +160,16 @@ ultracode. Work in /devcontainer/repos/cp-theming on branch feature/port-spike-f
 
 ```
 Work in /devcontainer/repos/cp-theming on branch main. Read CLAUDE.md, .github/copilot-instructions.md, PORT-PLAN.md Phase 18, the three packages' package.json files and chapters 1, 3 and 10 of the Learn track. Build the two example packages exactly as the phase lists them: @acme/theme in demos/demo-brand-core (Sass entry exporting $theme and define(), compiled CSS entry, exports, files, peer on cp-theming-core, pack:check, README with both consumption paths) and @acme/theme-material in demos/demo-brand-material; wire demo-core to consume the CSS path and the docs app the Sass path so the theme switcher offers acme; write Learn chapter 11 "Ship your theme as a package" in the same shape as the others, its live example showing both consumption paths; add the Theme packages guide to the core Guides page. Run pnpm build at the root, pnpm test, the order and examples checks, pnpm pack --dry-run in both packages, and render.ts; screenshot chapter 11 and the showcase under acme. When the Done-when holds, update the README and PLAN.md status tables, commit and push without asking, and tell me how to view chapter 11.
+```
+
+## Session 19 — Phase 19 A: Sass exports, page base rule, prefer-white contrast
+
+```
+Work in /devcontainer/repos/cp-theming on branch main. Read CLAUDE.md, .github/copilot-instructions.md, PORT-PLAN.md Phase 19, and issues #7, #10 and #8 (gh issue view). Do #7, then #10, then #8, as the phase describes them (#8 as the prefer-white / prefer-black preference, not a fixed colour). For #7, first make the harness importer resolve exports exactly and watch it fail, then fix every package's exports and publishConfig.exports, add the esbuild resolver check, and remove demos/docs/node_modules from the docs include paths. Run pnpm build at the root, pnpm test, the order and examples checks, and render.ts. Commit each issue on its own with "Fixes #N" in the message. When the Done-when items for these three hold, update the README and PLAN.md status tables, commit and push without asking, and tell me what IdealLINK can remove.
+```
+
+## Session 20 — Phase 19 B: Material label tokens from an ancestor
+
+```
+Work in /devcontainer/repos/cp-theming on branch main. Read CLAUDE.md, .github/copilot-instructions.md, PORT-PLAN.md Phase 19 and issue #9 (gh issue view 9). Move the held label tokens of apply-material-overrides() to where --mat-sys-primary and --mat-sys-error are declared, as the phase describes, add the browser check for a token set on a wrapper, and document the tokens. Build the adapter and the docs, then run the full render.ts gallery in Chromium and Firefox; any component label below 4.5:1 is fixed in the adapter, never in a gallery example. Commit with "Fixes #9". When the Done-when holds, update the README and PLAN.md status tables, commit and push without asking, and tell me the lowest label ratio per engine.
 ```
