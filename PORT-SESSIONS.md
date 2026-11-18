@@ -43,7 +43,8 @@ How to set things in the VS Code extension (Claude Code chat panel):
 | 17 | Phase 17 review (ultracode) | Fable 5.1 | high | Auto |
 | 18 | Phase 18 a theme as a package | Fable 5.1 | high | Auto |
 | 19 | Phase 19 A: Sass exports, page base rule, prefer-white contrast (#7, #10, #8) | Fable 5.2 | high | Auto |
-| 20 | Phase 19 B: Material label tokens from an ancestor (#9) | Fable 5.2 | high | Auto |
+| 20 | Phase 19 B: a text colour per accent; Material labels read it (#15, #9) | Fable 5.2 | high | Auto |
+| 21 | Phase 19 C: surface containers, muted text, shadows (#12, #13, #11) | Fable 5.2 | high | Auto |
 
 Subagent models are chosen inside the workflow prompts: Opus at high effort for critique, Sonnet at
 medium for reading and sweeps. You do not set these.
@@ -168,8 +169,14 @@ Work in /devcontainer/repos/cp-theming on branch main. Read CLAUDE.md, .github/c
 Work in /devcontainer/repos/cp-theming on branch main. Read CLAUDE.md, .github/copilot-instructions.md, PORT-PLAN.md Phase 19, and issues #7, #10 and #8 (gh issue view). Do #7, then #10, then #8, as the phase describes them (#8 as the prefer-white / prefer-black preference, not a fixed colour). For #7, first make the harness importer resolve exports exactly and watch it fail, then fix every package's exports and publishConfig.exports, add the esbuild resolver check, and remove demos/docs/node_modules from the docs include paths. Run pnpm build at the root, pnpm test, the order and examples checks, and render.ts. Commit each issue on its own with "Fixes #N" in the message. When the Done-when items for these three hold, update the README and PLAN.md status tables, commit and push without asking, and tell me what IdealLINK can remove.
 ```
 
-## Session 20 — Phase 19 B: Material label tokens from an ancestor
+## Session 20 — Phase 19 B: a text colour per accent; Material labels read it
 
 ```
-Work in /devcontainer/repos/cp-theming on branch main. Read CLAUDE.md, .github/copilot-instructions.md, PORT-PLAN.md Phase 19 and issue #9 (gh issue view 9). Move the held label tokens of apply-material-overrides() to where --mat-sys-primary and --mat-sys-error are declared, as the phase describes, add the browser check for a token set on a wrapper, and document the tokens. Build the adapter and the docs, then run the full render.ts gallery in Chromium and Firefox; any component label below 4.5:1 is fixed in the adapter, never in a gallery example. Commit with "Fixes #9". When the Done-when holds, update the README and PLAN.md status tables, commit and push without asking, and tell me the lowest label ratio per engine.
+Work in /devcontainer/repos/cp-theming on branch main. Read CLAUDE.md, .github/copilot-instructions.md, PORT-PLAN.md Phase 19 (Session B, and what Session A landed) and issues #15 and #9 (gh issue view). Add core's text role per accent palette, make the adapter's label tokens read it on the selectors where --mat-sys-primary and --mat-sys-error are declared, move the outlines, indicators, caret and arrows to the palette's stroke, and add the checks and docs the phase lists. Build the adapter and the docs, then run the full render.ts gallery in Chromium and Firefox; any component label below 4.5:1, or a line below 3:1, is fixed in core or the adapter, never in a gallery example. Commit with "Fixes #15" and "Fixes #9". When the Session B Done-when holds, update the README and PLAN.md status tables and Phase 19's "As landed", commit and push without asking, and tell me the lowest label and line ratio per engine and what IdealLINK can remove.
+```
+
+## Session 21 — Phase 19 C: surface containers, muted text, shadows
+
+```
+Work in /devcontainer/repos/cp-theming on branch main. Read CLAUDE.md, .github/copilot-instructions.md, PORT-PLAN.md Phase 19 (Session C, and what Sessions A and B landed) and issues #12, #13 and #11 (gh issue view). Do #12, then #13, then #11, as the phase describes them: core's surface container colours with the adapter reading them, the de-emphasis weight at M3's on-surface-variant (measure the dark value), page text defaults against the background, and Material's three-layer shadows as the default geometry. Run pnpm build, pnpm test, the order and examples checks, core render.ts, and the full docs render.ts gallery in Chromium and Firefox. Commit each issue on its own with "Fixes #N". When the Session C Done-when holds, update the README and PLAN.md status tables and Phase 19's "As landed", commit and push without asking, and tell me what IdealLINK can remove.
 ```

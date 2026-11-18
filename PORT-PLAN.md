@@ -1491,35 +1491,101 @@ palette's darker and lighter steps, not only its base.
     a distinct red with an icon.
 - Learn `REFS` gets `$contrast` (Palette page) and `apply-document-base()` (Getting Started).
 
-**#9 — Material label tokens set on an ancestor are ignored.**
+**Session B — #15 and #9: a text colour per accent; Material labels read it.** (#9 was planned
+on its own; #15, filed after Session A, changes its fix, so they land together.)
 
-- Today `apply-material-overrides()` declares the held accent labels (`_as-text()`, "Accents as
+- #9: `apply-material-overrides()` declares the held accent labels (`_as-text()`, "Accents as
   text") on each component, so `mat.button-overrides()` on a toolbar, or the token on a wrapper,
-  no longer reaches the button's label. IdealLINK's header buttons all turned primary blue.
-- The issue's first option does not fix that: `mat.button-overrides()` writes
+  no longer reaches the button's label. IdealLINK's header buttons all turned primary blue. The
+  issue's first option does not fix that: `mat.button-overrides()` writes
   `--mat-button-text-label-text-color` itself, not an `-override` name, and a component cannot
   read its parent's value of a property it declares (a self-reference is a cycle).
-- Fix (the issue's second option): declare the held tokens where `--mat-sys-primary` and
-  `--mat-sys-error` are declared, `:root, :where([theme])` and each `[palette="x"]` rule (core
-  names in `define-ng-material-core-theme()`, custom names in the adaptor hook). The nearest
-  declaration wins, so a toolbar or wrapper value reaches its buttons again; a `[theme]` or
-  `[palette]` between the wrapper and the button resets it, as for every `--mat-sys-*` token.
-  `light-dark()` in the held value still resolves per element, so `[themeMode]` scopes keep
-  working.
-- Re-measure: the 4.5:1 figures in the comment were taken with the tokens on the component. The
-  full gallery run in Chromium and Firefox (about 14 min per engine).
-- A browser check: a token set on a wrapper reaches a text, outlined and raised button and a form
-  field's focus label inside it; under `palette="error"` the held error colour applies.
-- The adapter's README and the Material page list the tokens the adapter sets and where.
-  IdealLINK's `inherit` reset becomes unnecessary (harmless if left).
+- #15: the held colour exists only inside the adapter's tokens, so an app's own coloured text
+  (links, headings, prices) uses the accent as written: two blues on one screen with a primary
+  of `#0c6ab6` (L 0.52 against the labels' 0.40), and under 4.5:1 on the darker surfaces. The
+  adapter also holds the focused outline, caret and arrow with the label, darker than every
+  other stroke of the accent.
+- **Core: a `text` role per accent palette**, `--color--{palette}--text` (and
+  `--palette-color--text` in a `[palette]` scope): the colour held to L ≤ 0.40 in light mode and
+  L ≥ 0.82 in dark, hue and chroma kept, through `_in-gamut()` so a vivid red or yellow keeps its
+  hue, ending `/ 1`. Derived on the shared selector from the colour pair, like `stroke` and
+  `focus`; a theme may pass `$text` on `t.palette()` (an explicit pair, as `$stroke` and
+  `$focus`). Accent palettes only (core's and custom ones), not `background` or `surface`.
+- **Adapter:** the label tokens (button labels, the stepper's error label and icon, the form
+  field's focus and error labels and error text) are `var(--color--primary--text)` /
+  `var(--color--error--text)`, declared where `--mat-sys-primary` and `--mat-sys-error` are:
+  `:root, :where([theme])` and each `[palette="x"]` rule (core names in
+  `define-ng-material-core-theme()`, custom names in the adaptor hook, with that palette's
+  `--text`). The nearest declaration wins, so a toolbar or wrapper value reaches its buttons
+  again; a `[theme]` or `[palette]` between the wrapper and the button resets it, as for every
+  `--mat-sys-*` token. `_as-text()` goes; the adapter reads core's role.
+- **Lines are not text** (WCAG 1.4.11, 3:1): the focused outline, the active indicator, the caret
+  and the select arrow use the palette's `--stroke`, not the held label colour and not the raw
+  accent. For a mid-tone accent the stroke is the accent itself (`#0c6ab6` is inside the
+  0.42–0.60 band); a dark brand under `palette="brand"` in dark mode, measured at about 1.1:1 as
+  the raw accent, is moved to where it shows.
+- Checks: a browser check that a token set on a wrapper reaches a text, outlined and raised
+  button and a form field's focus label inside it, and that `palette="error"` gives the error
+  palette's `--text`; the core render rows for `--text` in every preset and mode (4.5:1 or more
+  on background and surface); the gallery run also measures the focused outline, indicator and
+  arrow (3:1 or more against what they sit on). The full gallery in Chromium and Firefox (about
+  14 min per engine): the 4.5:1 figures in the adapter's comment were taken with the tokens on
+  the component.
+- Docs: the Palette page names the `text` role (what it is for: an app's own coloured text;
+  fills, icons and strokes keep the colour); the adapter's README and the Material page list the
+  tokens the adapter sets and where. Learn `REFS` gets `--color--{name}--text`.
+- IdealLINK can remove its own `--color--*--text` rule and its outline override; its `inherit`
+  reset on the header buttons becomes unnecessary.
 
-Done when: `@use "@cpangular/cp-theming-core/scss/theme"` and
+**Session C — #12, #13 and #11: one surface scale, muted text everywhere, Material's shadows.**
+
+- **#12, container colours.** Core's shade steps (`$theme-step-1/2/3`, ±0.12 / 0.24 / 0.36) and
+  the adapter's `surface-container-*` (M3 tone offsets from `--color--surface`, about 0.017–0.07
+  light and 0.024–0.14 dark) are two scales, so an app's own panels cannot match Material's.
+  - Core adds five colours for the surface, `--color--surface--container-lowest`, `--low`,
+    `--container`, `--high`, `--highest` (the exact names are the session's; M3's words so the
+    mapping is obvious), at M3's per-mode offsets, with their contrasts. The adapter's
+    `--mat-sys-surface-container-*` read them. One scale.
+  - The shade steps (`--high`, `--low`, …) stay as they are for every palette, surface
+    included: they are the generic emphasis steps, and M3's containers are one lighter and four
+    darker, which they cannot express. No fourth step.
+  - The de-emphasis weight defaults to M3's `on-surface-variant`: 63% in light mode (surface
+    0.93 → 0.344), the dark value measured against M3's dark table. Muted text gets darker in
+    every app; contrast only improves.
+  - A table on the Material page: which cp-theming token equals each M3 role.
+- **#13, page text defaults.** Core declares `--container--text`, `--container--text-emphasis`
+  and `--container--text-deemphasis` on `:where(:root, [theme])`, against the **background** (the
+  page; `apply-document-base()` paints the body with it), with the per-mode weights as `filled()`
+  uses them. A `bg()` or `filled()` container still sets its own below. The adapter's
+  `on-surface-variant` is the same blend at the same weight against the surface, so the weight
+  cannot drift between the two.
+- **#11, shadows.** `$_geometry` in `_elevation.scss` becomes Material's three layers (key,
+  penumbra, ambient) per level. `$shadow-color` keeps working: the layers take 2/3, 0.47 and 0.4
+  of its alpha, so the light default (30%) gives Material's 20 / 14 / 12% and dark stays
+  stronger. `$levels` overrides (IdealLINK's) keep working as they are; `_compatible()` and
+  `_by-mode()` already handle multi-layer lists, which the session confirms with a test.
+- Checks: core render rows for the container colours against the adapter's roles (equal); the
+  muted text against background and surface; the gallery in Chromium and Firefox, since all three
+  change what Material paints; the showcase contrast report.
+- IdealLINK can remove its surface-tone overrides, its 63% weight, its `:root` muted-text default
+  and its `$elevation` levels.
+
+Done when (Session A): `@use "@cpangular/cp-theming-core/scss/theme"` and
 `@use "@cpangular/cp-theming-ng-material/scss/material"` build in the docs app with no include path
 into `node_modules`, and the new resolver check passes for every documented `@use`;
 `apply-document-base()` and `css/base` style the page; `$contrast: prefer-white` gives #e65151
-white text and its ladder the contrasts above; a token set on a wrapper reaches the buttons inside
-it; `pnpm test`, the order and examples checks and the full `render.ts` run (0 component labels
-below 4.5:1) pass; the four issues are closed by their commits.
+white text and its ladder the contrasts above.
+
+Done when (Session B): `--color--{palette}--text` exists for every accent palette and passes
+4.5:1 on background and surface in every preset and mode; Material's labels equal it; a token set
+on a wrapper reaches the buttons inside it; the focused outline, indicator and arrow reach 3:1.
+
+Done when (Session C): the adapter's five surface containers equal core's container colours;
+muted text outside a container is defined on every theme element; Material's three-layer shadows
+are the default.
+
+Every session: `pnpm test`, the order and examples checks and the full `render.ts` run (0
+component labels below 4.5:1) pass, and its issues are closed by their commits.
 
 **As landed: Session A (#7, #10, #8), 2026-11-18.** Commits e1fd006 (#7), 47ab51e (#10),
 a1586eb (#8).
@@ -1558,7 +1624,7 @@ gallery run was left to Session B, which changes the adapter.
 
 Open after Session A:
 
-- #9, the whole of Session B.
+- #15 and #9: Session B. #12, #13 and #11: Session C.
 - The Learn track names neither `t.apply-document-base()` nor `$contrast` in a chapter; both are
   in `REFS` (chapters 8 and 7) so a chapter may.
 
