@@ -56,6 +56,21 @@ This is a CSS-variable-based theming system. Key facts:
   "Neutral stroke" in `_palette.scss`). Checks: the stroke tests in `test/css/contrast.test.ts`
   (presets, fixtures, a sweep of colours) and the outline tests in the adapter's
   `material-roles.test.ts`.
+- Quiet neutral stroke (issue #16): `--stroke--low` of `background` and `surface` is a divider,
+  not a ladder step: the stroke mixed into the palette's colour, `color-mix(in oklab, …)`, 37.5%
+  stroke in light mode and 44.64% in dark, where Material's tables have `outline-variant`
+  between surface (98 / 6) and outline (50 / 60); `--lower` and `--lowest` are two thirds and
+  one third of it, so the low side stays in order (`$neutral-stroke-quiet`, "Quiet neutral
+  stroke" in `_palette.scss`; `_role-derivatives()` takes the three as `$quiet`). About 1.66:1
+  on the presets' surface in light mode and 2.1:1 in dark (it was 2.8:1 and 3.7:1 as a step of
+  0.12; Material's own is 1.62:1 and 1.98:1). Relative to the surface and the stroke, never an
+  absolute lightness: the presets' surface is darker than M3's, and a theme's `$stroke` has to
+  carry into its dividers. In oklab, not oklch: a grey surface written with hue 0 would turn a
+  coloured stroke's hue. The strong side (`--high`, …) and every accent's stroke keep the
+  ladder. The adapter's `outline-variant` is still `var(--color--surface--stroke--low)`.
+  Checks: `test/css/quiet-stroke.test.ts`, the `quiet-stroke/` rows of `render.ts`, the
+  outline-variant tests in the adapter's `material-roles.test.ts` (the share against the
+  installed Material's tables).
 - Contrast (Phase 10): `--contrast` is black or white by a step at relative luminance 0.179 in
   clamped linear sRGB; the step is declared once as `--theme--_contrast-step`. Every relative-colour
   derivation ends `/ 1` (only the tints carry an alpha); a harness check enforces it.

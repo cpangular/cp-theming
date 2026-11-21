@@ -77,7 +77,8 @@ import tryFixedScss from '../../../examples/learn/07-contrast/try-fixed.scss' wi
           The stroke of the background and surface palettes, the edge of a control drawn on them
           (chapter 4), is held the same way: it is worked out to be 4.5:1 or more against its
           palette's colour. WCAG asks 3:1 of the edge of a control. Its low step, for a divider, is
-          quieter and may be under 3:1. A stroke you pass yourself is used as you passed it.
+          much quieter, about 2:1 or less: a divider is not the edge of a control. A stroke you pass
+          yourself is used as you passed it.
         </p>
         <p>
           This guarantee covers one case exactly:

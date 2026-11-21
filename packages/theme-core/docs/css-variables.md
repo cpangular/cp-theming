@@ -59,6 +59,8 @@ Same full set of derivatives, prefixed with `--color--{name}--stroke`:
 --color--{name}--stroke--dark  ... etc.
 ```
 
+For `background` and `surface` the low side is not a lightness step. `--stroke--low` is the line of a divider, the edge of a card or a table's row line: the stroke mixed into the palette's colour in oklab, 37.5% stroke in light mode and 44.6% in dark. That is where Material 3 has `outline-variant` between its surface and its outline, so on the presets it is about 1.7:1 against the palette's colour in light mode and 2.1:1 in dark (Material's own: 1.62:1 and 1.98:1). `--stroke--lower` and `--stroke--lowest` are two thirds and one third of that share, so the three run in order from the stroke to the colour. A `$stroke` you pass is mixed the same way. The strong side (`--stroke--high`, …) and every other palette's stroke keep the 0.12 steps.
+
 ### Tints
 
 Transparent versions of the identity color role. Opacity is the mode-varying `--weight--tint-N` weight. A tint reads the weight's `--weight--tint-N--mode-light` / `--mode-dark` pair inside `light-dark()`, so it follows a nested `themeMode`; override the pair, not the picked `--weight--tint-N` token, to change a tint's opacity.

@@ -1972,6 +1972,55 @@ What IdealLINK can change: nothing it must. If it passes an accent outside sRGB 
 warning naming the colour to write; writing that colour keeps its fill and makes its lines and
 text match it.
 
+**As landed: issue #16, the low stroke of background and surface, 2026-11-21.** Done in a chat,
+not a numbered session. From IdealLINK: `--color--surface--stroke--low`, the adapter's
+`--mat-sys-outline-variant`, was one ladder step from the stroke (lightness ± 0.12): 0.63 on a
+surface of 0.93 in light mode, 2.8:1, and 0.57 on 0.24 in dark, 3.7:1. Material's
+outline-variant is 1.62:1 and 1.98:1 on Material's own surface, so every divider and outlined
+card was a mid grey, hardly quieter than the outline.
+
+- **What it is now.** For `background` and `surface`, `--stroke--low` is the stroke mixed into
+  the palette's colour, `color-mix(in oklab, …)`: 37.5% stroke in light mode, 44.64% in dark.
+  Those are the places Material's tables give outline-variant between surface and outline by
+  lightness (tones 98, 80, 50 in the light table; 6, 30, 60 in the dark one). On Material's own
+  surface and outline it is Material's outline-variant exactly. On the presets it is lightness
+  0.77 on the surface in light mode (1.66:1) and 0.43–0.44 in dark (2.10–2.14:1); on the
+  highest container 1.34:1 and 1.30:1 (Material: 1.32:1 both). `--stroke--lower` and
+  `--lowest` are two thirds and one third of the share (0.83 and 0.88 in light mode on the
+  presets), so the three run in order from the stroke to the colour: as ladder steps `--lower`
+  (0.75) would have been stronger than the new `--low`, and `[tone]` slides along that scale.
+  Each has a `--contrast` worked out from it.
+- **Not what the issue proposed, on purpose.** The issue asked for Material's absolute
+  lightness (0.83 light, 0.40 dark), which is what IdealLINK's workaround sets. The presets'
+  surface is darker than Material's (0.93 against 0.98), so at 0.83 a divider would be 1.37:1 on
+  it, fainter than Material's, and 1.1:1 on the highest container; a theme with another surface
+  would get a line that ignores it. Mixed from the stroke, it is as visible as Material's on any
+  surface, and a theme's own `$stroke` carries into its dividers (hue, chroma and lightness). On
+  the presets it comes out 0.05 darker than Material's own in light mode. A call the user may
+  revisit: the two shares are the only numbers (`$neutral-stroke-quiet` in `_palette.scss`).
+- **In oklab, not oklch.** A grey surface written with hue 0 would turn the hue of a coloured
+  `$stroke` towards 0° (286° to 332° at the light share). A test and a render row hold the hue.
+- **Unchanged.** The strong side of the neutral stroke: `--stroke--high` is lightness 0.39 in
+  light mode and 0.80–0.81 in dark, where Material's guidelines have on-surface-variant (tones
+  30 and 80: 0.40 and 0.83), so the issue's second question needs no change. Every accent's
+  stroke keeps the ladder on both sides. The adapter still maps `outline-variant` to
+  `var(--color--surface--stroke--low)`; nothing is derived there.
+- Angular Material 22 reads `outline-variant` in two places, the divider and the outlined card.
+  On the built gallery both paint `#b2b6ba` in azure-blue light and `#4d545c` in dark (Chromium
+  and Firefox).
+- `core.css` is 16,572 bytes gzipped (limit 16.5 KiB, 16,896).
+
+Checks: `pnpm test` (275 core CSS, 40 API, 91 adapter, 530 docs); core `render.ts` 625/625 in
+Chromium, Firefox and WebKit (36 new `quiet-stroke/` rows); on the built site `variables.ts`
+(28/28) and `learn.ts` (1112/1112) in Chromium, and the gallery's `divider` and `card` sections
+in every preset and mode in Chromium (0 labels below 4.5:1, 0 errors). The full gallery run was
+not repeated: no label and no field line reads `outline-variant`.
+
+What IdealLINK can change: remove its `--color--surface--stroke--low` rule on `:root, [theme]`.
+Its dividers then follow its surface and stroke; they will be a little darker than with the
+workaround (about 0.77 against 0.83 in light mode on a preset surface). Keeping the rule keeps
+its colour: it still wins over core's.
+
 ## Decisions already made
 
 So they are not reopened. Tell me if you want any reversed.

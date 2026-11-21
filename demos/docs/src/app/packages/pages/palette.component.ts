@@ -303,6 +303,18 @@ const TOC = [
           each Material role equals.
         </p>
         <p>
+          <strong>Lines on the surface.</strong> <code>--color--surface--stroke</code> is the edge
+          of a control, 4.5:1 or more against the surface.
+          <code>--color--surface--stroke--low</code> is the line of a divider, the edge of a card or
+          a table's row line: that stroke mixed into the surface, 37.5% stroke in light mode and
+          44.6% in dark. That is where Material 3 has its <code>outline-variant</code> between its
+          surface and its outline, about 1.7:1 on the surface in light mode and 2.1:1 in dark, and
+          the Material adapter's <code>--mat-sys-outline-variant</code> reads it.
+          <code>--lower</code> and <code>--lowest</code> are two thirds and one third of that. A
+          <code>$stroke</code> you pass to the surface is mixed the same way, and the background's
+          stroke has the same three for a line on the page.
+        </p>
+        <p>
           <strong>They are not the shade steps.</strong> <code>--color--surface--high</code>,
           <code>--higher</code> and <code>--highest</code> are steps of 0.12, which every palette
           has in both directions. The containers are closer together and differ by mode, so the two
@@ -852,7 +864,10 @@ export class PalettePageComponent {
         { suffix: '--stroke--higher', desc: 'stroke, strong emphasis (flips with mode).' },
         { suffix: '--stroke--high', desc: 'stroke, emphasis toward foreground.' },
         { suffix: '--stroke', desc: 'stroke base border color.' },
-        { suffix: '--stroke--low', desc: 'stroke, de-emphasis toward background.' },
+        {
+          suffix: '--stroke--low',
+          desc: 'stroke, de-emphasis toward background (background, surface: a divider).',
+        },
         { suffix: '--stroke--lower', desc: 'stroke, strong de-emphasis (flips with mode).' },
         { suffix: '--stroke--lowest', desc: 'stroke, bottom of mode-aware scale.' },
       ],

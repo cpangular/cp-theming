@@ -134,6 +134,17 @@ demos/demo-brand-material/  @acme/theme-material           — Example theme pac
   Material's dark table has tone 90; the M3 guidelines' tone 80 would be 82%) (PORT-PLAN.md
   Phase 19, #12).
 
+- **A divider is the stroke mixed into the surface.** `--stroke--low` of `background` and
+  `surface` (the Material adapter's `outline-variant` is the surface's) is the stroke mixed into
+  the palette's colour in oklab, 37.5% stroke in light mode and 44.64% in dark: the place
+  Material's tables give `outline-variant` between surface and outline. `--lower` and `--lowest`
+  are two thirds and one third of that share (`_palette.scss`, "Quiet neutral stroke"). Do not
+  turn it back into a ladder step (it was a mid grey, 2.8:1, hardly quieter than the outline), do
+  not give it an absolute lightness (it has to follow the surface and a theme's own `$stroke`),
+  do not mix in oklch (a grey surface with hue 0 turns the hue), and do not derive
+  `outline-variant` in the adapter. The strong side and every accent's stroke keep the ladder
+  (issue #16).
+
 - **Muted text is one mix, everywhere.** `--container--text`, `--container--text-emphasis` and
   `--container--text-deemphasis` are declared by core on every theme element for the page
   (against the background) and by `filled()` for its fill; `bg()` and `outlined()` set none.

@@ -648,8 +648,9 @@ test('with core’s default weight, on-surface-variant is within 0.02 of the lig
 
 // ─── Outline ─────────────────────────────────────────────────────────────────
 // Every Material outline is the surface's stroke: `outline` is the stroke,
-// `outline-variant` its --low step. A theme sets it by passing its surface a
-// $stroke; a theme that passes none gets core's derived one.
+// `outline-variant` its --low step, the stroke mixed into the surface (issue
+// #16). A theme sets it by passing its surface a $stroke; a theme that passes
+// none gets core's derived one.
 
 const outlineSheet = materialFixtureSheets().find((s) => s.label.endsWith('outline-theme.scss'))!;
 
@@ -723,6 +724,74 @@ test('in a nested theme that passes no surface, the outline is derived from the 
     assert.ok(ratio >= 4.5, `${mode}: ${ratio.toFixed(2)}:1`);
   }
 });
+
+// Core writes the share of the stroke in the low stroke as a number per mode.
+// Here it is held to the installed Material's tables: on a surface and an
+// outline at the tones the tables give those two roles, outline-variant has to
+// come out at the tone the tables give it.
+test('outline-variant is where Material’s tables have it between the surface and the outline', (t) => {
+  const { decls } = themes[0];
+  const grey = (tone: number) => `oklch(${toneLightness(tone)} 0 0)`;
+  for (const mode of MODES) {
+    const tone = (role: string) => {
+      const value = tones[mode].get(role);
+      assert.ok(value !== undefined, `Material's ${mode} table has ${role}`);
+      return value;
+    };
+    const ctx = contextFor(
+      decls,
+      mode,
+      new Map([
+        [`--color--surface--mode-${mode}`, grey(tone('surface'))],
+        [`--color--surface--stroke--mode-${mode}`, grey(tone('outline'))],
+      ]),
+    );
+    const l = evaluateColor('var(--mat-sys-outline-variant)', ctx).to('oklch').coords[0]!;
+    const want = toneLightness(tone('outline-variant'));
+    const share =
+      (toneLightness(tone('surface')) - want) /
+      (toneLightness(tone('surface')) - toneLightness(tone('outline')));
+    t.diagnostic(
+      `${mode}: surface ${tone('surface')}, outline ${tone('outline')}, outline-variant ${tone('outline-variant')}: ` +
+        `${(share * 100).toFixed(2)}% of the way; lightness ${l.toFixed(4)}, the tone's ${want.toFixed(4)}`,
+    );
+    assert.ok(
+      Math.abs(l - want) < 5e-4,
+      `${mode}: lightness ${l.toFixed(4)}, tone ${tone('outline-variant')} is ${want.toFixed(4)}`,
+    );
+  }
+});
+
+for (const theme of themes) {
+  if (theme.label.endsWith('outline-theme.scss')) continue;
+  test(`core + ${theme.label} + adapter: outline-variant is the surface's low stroke, a line between the surface and the outline`, (t) => {
+    const out: string[] = [];
+    for (const mode of MODES) {
+      const ctx = contextFor(theme.decls, mode);
+      const value = evaluateColor('var(--mat-sys-outline-variant)', ctx);
+      assert.ok(
+        maxChannelDiff(value, evaluateColor('var(--color--surface--stroke--low)', ctx)) < 1e-9,
+        `${mode}: outline-variant is --color--surface--stroke--low`,
+      );
+      const surface = evaluateColor('var(--mat-sys-surface)', ctx);
+      const ratio = wcagContrast(value, surface);
+      const outlineRatio = wcagContrast(evaluateColor('var(--mat-sys-outline)', ctx), surface);
+      // Material's own divider on Material's own surface, from the tables.
+      const grey = (role: string) =>
+        cssColor(`oklch(${toneLightness(tones[mode].get(role)!)} 0 0)`);
+      const stock = wcagContrast(grey('outline-variant'), grey('surface'));
+      out.push(`${mode} ${ratio.toFixed(2)}:1 (Material's own ${stock.toFixed(2)}:1)`);
+      assert.ok(ratio < outlineRatio, `${mode}: quieter than the outline`);
+      // Within a fifth of Material's own, either way: it was 2.8:1 and 3.7:1
+      // as a ladder step, against 1.62:1 and 1.98:1.
+      assert.ok(
+        ratio > stock / 1.2 && ratio < stock * 1.2,
+        `${mode}: outline-variant ${ratio.toFixed(2)}:1 on the surface, Material's own ${stock.toFixed(2)}:1`,
+      );
+    }
+    t.diagnostic(`outline-variant on the surface: ${out.join(', ')}`);
+  });
+}
 
 for (const theme of themes) {
   if (theme.label.endsWith('outline-theme.scss')) continue;

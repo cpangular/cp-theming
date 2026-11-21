@@ -396,6 +396,70 @@ $_stroke-contrast-lighter: 6;
   @return string.unquote("oklch(from #{$origin} var(#{_private(l)}) var(#{_private(c)}) h / 1)");
 }
 
+// ─── Quiet neutral stroke ─────────────────────────────────────────────────────
+// --stroke--low of background and surface is the line that separates without
+// being a boundary: a divider, the edge of a card, a table's row line (the
+// Material adapter's `outline-variant`). Material 3 draws it much nearer the
+// surface than the outline: with the surface at tone 98 and the outline at 50
+// it is tone 80 in the light table, and with 6 and 60 it is tone 30 in the
+// dark one. That is 37.5% of the way from the surface to the outline in light
+// mode and 44.6% in dark, by lightness.
+//
+// So the low stroke is the stroke mixed into the palette's colour at those
+// shares. On Material's own surface and outline it is Material's
+// outline-variant exactly; on any other surface it is as far from it as
+// Material's divider is from Material's surface (1.6–1.7:1 in light mode and
+// 2.1:1 in dark on the presets; Material's own are 1.62:1 and 1.98:1). A
+// theme's own $stroke is mixed the same way, so its dividers take its hue, and
+// the low stroke is always between the stroke and what it is drawn on.
+//
+// A ladder step (lightness ± 0.12, what every other role and palette has for
+// --low) put it at 2.8:1 in light mode and 3.7:1 in dark: a mid grey, hardly
+// quieter than the stroke (issue #16). --lower and --lowest are two thirds and
+// one third of the share, so the three still run in order from the stroke to
+// the colour, which the ladder's own steps would not (--lower would be
+// stronger than this --low). The strong side (--high, …) keeps the ladder:
+// --high is where Material has on-surface-variant (tone 30 light, 80 dark).
+//
+// Mixed in oklab, not oklch: a grey surface written with hue 0 would pull the
+// hue of a coloured $stroke round towards 0° (see _contrast-of()). The
+// lightness is the same in both. Each side of the light-dark() is its own
+// mode's share, and the mix reads the joined tokens, so it resolves where it
+// is used and a hand-written --color--surface--stroke moves it.
+$neutral-stroke-quiet: (
+  low: (
+    light: 37.5%,
+    dark: 44.64%,
+  ),
+  lower: (
+    light: 25%,
+    dark: 29.76%,
+  ),
+  lowest: (
+    light: 12.5%,
+    dark: 14.88%,
+  ),
+);
+
+// The low side of the stroke of background or surface $name, as a map for
+// _role-derivatives().
+@function _quiet-neutral-stroke($name) {
+  $stroke: var(#{token($name, stroke)});
+  $colour: var(#{token($name, color)});
+  $steps: ();
+  @each $step, $share in $neutral-stroke-quiet {
+    $steps: map.set(
+      $steps,
+      $step,
+      string.unquote(
+        "light-dark(color-mix(in oklab, #{$stroke} #{map.get($share, light)}, #{$colour}), " +
+          "color-mix(in oklab, #{$stroke} #{map.get($share, dark)}, #{$colour}))"
+      )
+    );
+  }
+  @return $steps;
+}
+
 // ─── Accent stroke ────────────────────────────────────────────────────────────
 // The stroke of an accent palette is a line in that colour on the page: the
 // border outlined() draws, the focused outline and the active indicator of a
@@ -543,8 +607,10 @@ $surface-containers: (
   }
 }
 
-// All modifier vars + their contrasts for one role.
-@mixin _role-derivatives($palette, $role) {
+// All modifier vars + their contrasts for one role. $quiet, when passed, is the
+// low side written out (low, lower, lowest: see "Quiet neutral stroke") in
+// place of the ladder's.
+@mixin _role-derivatives($palette, $role, $quiet: null) {
   $p: token($palette, $role);
 
   // contrast — black or white by the luminance step (see Contrast above).
@@ -572,9 +638,16 @@ $surface-containers: (
   #{$p}--high: light-dark(var(#{$p}--dark), var(#{$p}--light));
   #{$p}--higher: light-dark(var(#{$p}--darker), var(#{$p}--lighter));
   #{$p}--highest: light-dark(var(#{$p}--darkest), var(#{$p}--lightest));
-  #{$p}--low: light-dark(var(#{$p}--light), var(#{$p}--dark));
-  #{$p}--lower: light-dark(var(#{$p}--lighter), var(#{$p}--darker));
-  #{$p}--lowest: light-dark(var(#{$p}--lightest), var(#{$p}--darkest));
+  @if $quiet {
+    @each $step, $value in $quiet {
+      #{$p}--#{$step}: $value;
+      #{$p}--#{$step}--contrast: _contrast-of(var(#{$p}--#{$step}));
+    }
+  } @else {
+    #{$p}--low: light-dark(var(#{$p}--light), var(#{$p}--dark));
+    #{$p}--lower: light-dark(var(#{$p}--lighter), var(#{$p}--darker));
+    #{$p}--lowest: light-dark(var(#{$p}--lightest), var(#{$p}--darkest));
+  }
 
   #{$p}--high--contrast: light-dark(var(#{$p}--dark--contrast), var(#{$p}--light--contrast));
   #{$p}--higher--contrast: light-dark(var(#{$p}--darker--contrast), var(#{$p}--lighter--contrast));
@@ -582,12 +655,14 @@ $surface-containers: (
     var(#{$p}--darkest--contrast),
     var(#{$p}--lightest--contrast)
   );
-  #{$p}--low--contrast: light-dark(var(#{$p}--light--contrast), var(#{$p}--dark--contrast));
-  #{$p}--lower--contrast: light-dark(var(#{$p}--lighter--contrast), var(#{$p}--darker--contrast));
-  #{$p}--lowest--contrast: light-dark(
-    var(#{$p}--lightest--contrast),
-    var(#{$p}--darkest--contrast)
-  );
+  @if not $quiet {
+    #{$p}--low--contrast: light-dark(var(#{$p}--light--contrast), var(#{$p}--dark--contrast));
+    #{$p}--lower--contrast: light-dark(var(#{$p}--lighter--contrast), var(#{$p}--darker--contrast));
+    #{$p}--lowest--contrast: light-dark(
+      var(#{$p}--lightest--contrast),
+      var(#{$p}--darkest--contrast)
+    );
+  }
 }
 
 // Public: everything core derives for one palette name. Emitted on the shared
@@ -630,7 +705,9 @@ $surface-containers: (
   //     more against it whatever its lightness (see "Neutral stroke").
   //   every other palette: the colour itself where a line in it shows on the
   //     page, moved to where it does otherwise (see "Accent stroke").
-  // _role-derivatives adds --stroke--low (subtle divider) and --stroke--high.
+  // _role-derivatives adds --stroke--high and --stroke--low: a ladder step each
+  // way, except the low side of background and surface, which is the stroke
+  // mixed into the colour (a divider: see "Quiet neutral stroke").
   // Focus ring — per palette: inverted lightness + 60° hue shift, always distinct.
   @each $mode in light, dark {
     @if $name == background or $name == surface {
@@ -651,7 +728,11 @@ $surface-containers: (
 
   @include _role-derivatives($name, color);
   @include _role-derivatives($name, bg);
-  @include _role-derivatives($name, stroke);
+  @if $name == background or $name == surface {
+    @include _role-derivatives($name, stroke, _quiet-neutral-stroke($name));
+  } @else {
+    @include _role-derivatives($name, stroke);
+  }
   @if $name == surface {
     @include _surface-containers();
   }

@@ -61,9 +61,10 @@ import tryShadesScss from '../../../examples/learn/04-roles/try-shades.scss' wit
             the edge of a control drawn on them, such as the box of a text field. It is worked out
             from their colour to stand out from it as clearly as ordinary text has to (chapter 7
             gives the number), whatever the colour and the mode. Its low step,
-            <cpa-ref name="--color--{name}--low" /> from chapter 2, is a quieter line for a divider
-            and may be fainter than that. A theme that wants a stroke of its own passes it to
-            <cpa-ref name="t.palette()" /> beside the colour.
+            <cpa-ref name="--color--{name}--low" /> from chapter 2, is the line for a divider: that
+            stroke mixed most of the way into the colour it is drawn on, so it is much fainter. A
+            theme that wants a stroke of its own passes it to <cpa-ref name="t.palette()" /> beside
+            the colour.
           </li>
           <li>
             The palette's colour, <cpa-ref name="--color--{name}" />, counts as a role too: it is
