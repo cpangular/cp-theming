@@ -1678,7 +1678,10 @@ const NG_MATERIAL_TOC = [
                 <tr>
                   <td><code>--mat-sys-outline-variant</code></td>
                   <td><code>--color--surface--stroke--low</code></td>
-                  <td>Dividers.</td>
+                  <td>
+                    Dividers and the edge of an outlined card: the stroke mixed into the surface,
+                    where Material has this role between its surface and its outline.
+                  </td>
                 </tr>
                 <tr>
                   <td><code>--mat-sys-scrim</code></td>

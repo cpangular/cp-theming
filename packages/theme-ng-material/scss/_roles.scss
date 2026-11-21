@@ -21,11 +21,15 @@
 // that sets one sets it for both. A harness check holds core's distances to
 // the tones the installed Material's tables name. Every outline is the surface's stroke: `outline`
 // (the boundary of outlined buttons, fields, chips and button toggles) is
-// --color--surface--stroke, `outline-variant` (dividers) its --low step. A
-// theme sets them by passing the surface a $stroke, a nested theme likewise,
-// and nothing is mapped per component. When a theme passes none, core derives
-// a stroke 4.5:1 or more against the surface (_palette.scss, "Neutral
-// stroke"); --low is a step quieter and may be under 3:1, as a divider may.
+// --color--surface--stroke, `outline-variant` (a divider, the edge of an
+// outlined card) its --low step. A theme sets them by passing the surface a
+// $stroke, a nested theme likewise, and nothing is mapped per component. When
+// a theme passes none, core derives a stroke 4.5:1 or more against the surface
+// (_palette.scss, "Neutral stroke"). --low is that stroke mixed into the
+// surface, as far along as the tables have outline-variant between surface
+// and outline (_palette.scss, "Quiet neutral stroke"; issue #16): about
+// 1.7:1 on the surface in light mode and 2.1:1 in dark, where Material's own
+// is 1.62:1 and 1.98:1. A harness check holds core's share to the tables.
 //
 // The Sass path below is not in Material's `exports` map. It resolves under a
 // node_modules load path and under Sass's package importer; the harness fails

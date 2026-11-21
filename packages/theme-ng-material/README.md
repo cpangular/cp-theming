@@ -56,7 +56,7 @@ the Material component next to it.
 | `--mat-sys-background` | `--color--background` |  |
 | `--mat-sys-on-background` | `--color--background--contrast` |  |
 | `--mat-sys-outline` | `--color--surface--stroke` | Pass the surface a `$stroke` to set every Material outline. |
-| `--mat-sys-outline-variant` | `--color--surface--stroke--low` | Dividers. |
+| `--mat-sys-outline-variant` | `--color--surface--stroke--low` | Dividers and the edge of an outlined card: the stroke mixed into the surface, where Material has this role between its surface and its outline. |
 | `--mat-sys-scrim` | `--overlay--scrim` |  |
 | `--mat-sys-shadow` | `--overlay--shadow` |  |
 

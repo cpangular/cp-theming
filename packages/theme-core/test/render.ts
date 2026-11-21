@@ -1819,6 +1819,89 @@ function containerRows(): Row[] {
   return out;
 }
 
+// ─── The quiet stroke of background and surface (issue #16) ───────────────────
+// --stroke--low, --lower and --lowest of the two neutrals are the stroke mixed
+// into the palette's colour in oklab: 37.5%, 25% and 12.5% of the stroke in
+// light mode, 44.64%, 29.76% and 14.88% in dark. The first rows are worked out
+// by hand, with the surface and its stroke written on the element: a stroke
+// of lightness 0.53 on a surface of 0.93 is 0.4 away, so the three are
+// 0.93 − 0.4 × 0.375 = 0.78, 0.83 and 0.88; in dark mode 0.72 on 0.22 is 0.5
+// away and --low is 0.22 + 0.5 × 0.4464 = 0.4432. The preset rows prove that
+// the browser gives Material's outline-variant the colour the evaluator reads
+// from core's token.
+function quietStrokeRows(): Row[] {
+  const out: Row[] = [];
+  const own = (surface: string, stroke: string, mode = 'light') =>
+    `<div id="p" theme="custom" themeMode="${mode}" style="--color--surface: ${surface}; ` +
+    `--color--surface--stroke: ${stroke}">x</div>`;
+  const hand = (id: string, body: string, token: string, expect: string, adapter = false) =>
+    out.push({
+      id: `quiet-stroke/${id}`,
+      sheets: ['core', 'containers', ...(adapter ? ['material'] : [])],
+      html: 'theme="containers" themeMode="light"',
+      body,
+      probe: '#p',
+      token,
+      expect,
+    });
+  const light = own('oklch(0.93 0.01 250)', 'oklch(0.53 0.01 250)');
+  const dark = own('oklch(0.22 0.01 250)', 'oklch(0.72 0.01 250)', 'dark');
+  hand('light/low', light, '--color--surface--stroke--low', 'oklch(0.78 0.01 250)');
+  hand('light/lower', light, '--color--surface--stroke--lower', 'oklch(0.83 0.01 250)');
+  hand('light/lowest', light, '--color--surface--stroke--lowest', 'oklch(0.88 0.01 250)');
+  hand('light/low/contrast', light, '--color--surface--stroke--low--contrast', 'oklch(0 0 0)');
+  hand('dark/low', dark, '--color--surface--stroke--low', 'oklch(0.4432 0.01 250)');
+  hand('dark/lower', dark, '--color--surface--stroke--lower', 'oklch(0.3688 0.01 250)');
+  hand('dark/lowest', dark, '--color--surface--stroke--lowest', 'oklch(0.2944 0.01 250)');
+  hand('dark/low/contrast', dark, '--color--surface--stroke--low--contrast', 'oklch(1 0 0)');
+  hand('light/low/material-role', light, '--mat-sys-outline-variant', 'oklch(0.78 0.01 250)', true);
+  // A coloured stroke on a grey surface written with hue 0 keeps its hue: the
+  // mix is in oklab (in oklch it would be turned towards 0°, to 332°).
+  hand(
+    'own-stroke-keeps-its-hue',
+    own('oklch(0.9 0 0)', 'oklch(0.6 0.15 286)'),
+    '--color--surface--stroke--low',
+    'oklch(0.7875 0.05625 286)',
+  );
+  // The accents keep the ladder's step: the primary's stroke, 0.12 lighter.
+  hand(
+    'accent-keeps-the-ladder',
+    '<div id="p" theme="custom" style="--color--primary--stroke: oklch(0.5 0.1 250)">x</div>',
+    '--color--primary--stroke--low',
+    'oklch(0.62 0.1 250)',
+  );
+  for (const [sheet, theme] of PRESET_SHEETS)
+    for (const mode of ['light', 'dark'] as const) {
+      const at = { html: `theme="${theme}" themeMode="${mode}"`, body: P, probe: '#p' };
+      for (const name of ['background', 'surface'])
+        out.push({
+          id: `quiet-stroke/${theme}-${mode}/${name}`,
+          sheets: ['core', sheet],
+          ...at,
+          token: `--color--${name}--stroke--low`,
+          expect: expectFrom(sheet, theme, `--color--${name}--stroke--low`, mode),
+        });
+      out.push({
+        id: `quiet-stroke/${theme}-${mode}/material-role-is-core's`,
+        sheets: ['core', sheet, 'material'],
+        ...at,
+        token: '--mat-sys-outline-variant',
+        expect: expectFrom(sheet, theme, '--color--surface--stroke--low', mode),
+      });
+    }
+  // A themeMode scope inside the page flips it without a rule of its own.
+  out.push({
+    id: 'quiet-stroke/nested-mode/dark-inside-light',
+    sheets: ['core', 'azure', 'material'],
+    html: 'theme="azure-blue" themeMode="light"',
+    body: '<div themeMode="dark"><div id="p">probe</div></div>',
+    probe: '#p',
+    token: '--mat-sys-outline-variant',
+    expect: expectFrom('azure', 'azure-blue', '--color--surface--stroke--low', 'dark'),
+  });
+  return out;
+}
+
 // ─── Text on the page (Phase 19, issue #13) ───────────────────────────────────
 // --container--text and its two tiers are declared on every theme element,
 // against the background; muted text is the contrast mixed with the
@@ -2773,6 +2856,7 @@ const rows: Row[] = [
   // ── Phase 19: an accent as text and as a line ───────────────────────────
   ...accentRows(),
   ...containerRows(),
+  ...quietStrokeRows(),
   ...mutedRows(),
   ...elevationRows(),
 ];

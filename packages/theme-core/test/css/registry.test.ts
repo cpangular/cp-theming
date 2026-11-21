@@ -79,6 +79,8 @@ test('core.css registers exactly the expected 125 properties, each once', () => 
 // shadow layers (89) and the accent stroke through the gamut correction (36).
 // Declaring the gamut factor once took 4.4 KB off the expanded file and 31
 // bytes off the gzipped one: gzip had already folded the repetition.
+// 16,572 bytes since issue #16: the low side of the two neutral strokes is
+// written out as six mixes with a contrast each.
 test('core.css stays under 256 KiB expanded and 16.5 KiB gzipped', (t) => {
   const bytes = Buffer.byteLength(core.css);
   const gz = gzipSync(core.css).length;
